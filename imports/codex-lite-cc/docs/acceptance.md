@@ -1,0 +1,191 @@
+# Acceptance checks
+
+These checks need a live Claude Code session, a real Codex CLI, or both, so the automated
+tests cannot run them. They are not a release step: a release needs a green CI run, which
+covers macOS, Linux and Windows, a version bump and a changelog entry. Run items 1 to 8, 17
+and 18 when the installed Codex version differs from the one the test suite's fake Codex
+reproduces, or when a change alters how a request reaches Codex, the sandbox flags or the
+footer, and add a row to the record at the end when you do. Items 17 and 18 sit at the end of
+the list, under the later heading, only so the earlier item numbers stay the same. Item 19
+needs a live session and is run once, then again when `implement`, its options or Claude Code's
+Skill handling change.
+
+Use scratch state throughout: a scratch `CODEX_HOME` holding a copy of your Codex config, a
+scratch git repository, and a scratch `CLAUDE_CONFIG_DIR` seeded with a copy of your real
+permission rules for the permission items. Give scratch repositories an identity per call
+(`git -c user.email=t@example.com -c user.name=t ...`).
+
+## When Codex or the transport changes
+
+1. **Transport.** Send `/codex-lite:ask` a request containing a double quote, a backtick, a
+   command substitution such as `$(id)`, a backslash, a newline and a leading hyphen, and ask
+   Codex to echo it back. It must come back byte for byte. Run it in default permission mode
+   with your own deny rules in place, and include in the request the name of a flag one of
+   those rules matches: the request must still arrive, because it never enters a command
+   string. Then create a branch named `topic/$(id)` and run
+   `/codex-lite:review --base topic/$(id)`: the ref must reach git as that literal name, with
+   nothing executed. The Bash command Claude runs must be the constant one from the command
+   file, with no request text in it.
+2. **Review.** `review` on a real change returns a review that names a file and a line, and
+   changes no files. A base ref that does not exist, a base with no merge base, and a clean
+   repository are each refused by the plugin before Codex runs. Then check the scope of
+   `--base`, not only that the review names a file: on a branch diverged from the base, with a
+   change committed only on the base, a tracked file modified in the working tree and a new
+   file staged, `review --base <base>` must report the dirty change and the staged file and
+   must not report the base-only change. Run it a second time with `HEAD` equal to the base
+   and the same working-tree changes: it must run, not be refused, and report both.
+3. **Read-only is real.** `ask`, told to write one file in the working directory and one in
+   the home directory, is refused both, and neither file exists afterwards. Run it with
+   `approvals_reviewer = "auto_review"` in the scratch Codex config; without that setting the
+   check proves less.
+4. **Write is scoped, and the scope is stated.** From a subdirectory of a repository, `do`
+   edits a file there, and the footer's `cwd:` line names that subdirectory, not the
+   repository root. From a directory that is not a repository, `do` refuses.
+5. **The sandbox probe discriminates.** On a working host all three checks pass and `do`
+   runs. In a scratch copy of the plugin loaded with `claude --plugin-dir`, replace the
+   probe's runtime (`process.execPath` in the sandbox call) with a path that does not exist:
+   the positive control fails and `do` refuses. With `CODEX_LITE_PROBE_TARGET` set to a path
+   inside the working directory, the probe refuses rather than passing. On Windows, with no
+   `[windows]` `sandbox` value in the scratch Codex config, `setup` says so and `do` refuses
+   before the probe. With the value set, the positive control must succeed; if it does not,
+   `do` must refuse. Record the Windows result and the value used, including the error code
+   name the refusal prints.
+6. **The footer is true, checked against the repository and not against itself.** A `do` run
+   on a file that was already modified before the run shows that file in the printed tree
+   state. A `do` run that writes a file covered by `.gitignore` shows it. A `do` run told to
+   commit shows the same value twice on the `HEAD` line, because Codex's sandbox denies writes
+   to `.git` and the commit fails. The `requested:` line matches what
+   ran, and the printed resume line runs as pasted in a POSIX shell. A run that fails before
+   Codex starts a thread prints no resume line.
+7. **Codex version drift.** Record `codex --version`. The test suite's fake Codex reproduces
+   the JSON event stream of codex-cli 0.155.1. If the installed version differs, re-run items
+   2, 3 and 6 against the real CLI and read the output closely, because a change in the
+   event format leaves the automated tests green and the plugin broken.
+8. **Allow rules match the installed version.** Run `/codex-lite:setup` and check that each
+   allow rule it prints matches the paths of the version actually installed, including the
+   version number in the plugin path. Paste them into the scratch settings as printed and
+   confirm they are valid JSON and match.
+
+## Once, then again only if Claude Code changes the behaviour
+
+These were not run when 0.1.0 was built, because they need an interactive session.
+
+9. **Permission prompts in default mode.** With no allow rules for this plugin, run each
+   command once and record which prompts appear: the Write prompt for the request file, any
+   Read prompt (expected only after a Write fails on a leftover file), and whether the Bash call is prompted or pre-approved by the command file's
+   `allowed-tools` rule.
+10. **Whether the Edit allow rule silences the Write prompt.** Add the Edit allow rule `setup`
+    prints for the plugin's data directory, run once with the rule and once without, and
+    record whether the Write prompt appears. On Claude Code 2.1.280 it still appears, because
+    the file is under `~/.claude`. If that changes, update the Permissions section of the
+    README.
+11. **Plain-words dispatch in auto mode.** In a fresh auto-mode session with the plugin
+    installed, say "dispatch codex to review my changes against main". Claude must invoke
+    `/codex-lite:review` with `--base main` and no prose, the `requested:` line must show
+    `--base main`, and nothing may ask for approval. Then say "ask codex" with a question:
+    Claude must invoke `/codex-lite:ask` with that question, again with no approvals. Then ask
+    in plain words for `do`: Claude must not invoke it, because the `do` and `setup` command
+    files set `disable-model-invocation: true`.
+12. **Deny, then recover.** Run `/codex-lite:ask` and deny the Bash prompt (or, if item 9
+    found no Bash prompt, interrupt the turn after the Write), then run `/codex-lite:ask`
+    again in the same session. The second run must succeed with no Read of the request file:
+    Claude wrote the leftover in this session, so Claude Code counts it as read and the Write
+    overwrites it. This does not reach step 2's read-and-rewrite path. To reach it, leave a
+    request file behind the same way, quit, resume that session with `claude --resume`, and
+    run `/codex-lite:ask` again: the first Write must fail on the unread leftover, Claude must
+    read it and write again, and the run must succeed. If the resumed session has a new
+    session id, it writes a different request file, so the path is not reached; record that.
+    Then leave a request file behind the same way, run `/codex-lite:do` with a
+    different task, and deny the Write prompt: Claude must stop and report the failure without
+    running the script, so the leftover task never reaches Codex.
+13. **A run past ten minutes.** Run a `do` or `ask` that takes longer than the ten-minute
+    Bash timeout the command files set. Confirm the call moves to the background at ten
+    minutes rather than two, the run completes, and the `requested:` line, the tree state, the
+    thread id and the resume line all reach you unaltered through the task notification.
+    Confirm Claude set the timeout by finding `"timeout":600000` in that session's transcript,
+    `~/.claude/projects/<project folder>/<session id>.jsonl`, with the session id from
+    `/status`. The folder can hold other sessions' transcripts, so name the file.
+14. **The same long run with `CLAUDE_CODE_DISABLE_BACKGROUND_TASKS=1`**, past a short Bash
+    timeout. Since 0.5.0 the command files set an explicit ten-minute timeout, and neither
+    `BASH_DEFAULT_TIMEOUT_MS` nor `BASH_MAX_TIMEOUT_MS=30000` shortens it. To keep the run
+    short, load a scratch copy of the plugin with `--plugin-dir` whose `do.md` sets the
+    timeout to 30000, and run a `do` that sleeps 90 seconds and then writes a file. Record
+    whether the call ended at 30 s, whether the script and Codex's process group are gone
+    afterwards, and whether the file appeared. If
+    anything survives, the ten-minute cap in the README does not hold for `do`, and a
+    surviving `do` run keeps writing with no footer.
+15. **Windows install.** On Windows, run `/codex-lite:setup` and `/codex-lite:ask` twice:
+    once with only the standalone Codex on `PATH`, and once with only the npm global install
+    (`npm install -g @openai/codex`). Record the Codex version `setup` reports each time and
+    whether `ask` returns an answer.
+
+16. **Routing hook in auto mode.** In an interactive auto-mode session with the plugin
+    installed, send "draft a plan, review it with codex astra, then converge". Claude must
+    invoke `/codex-lite:ask` with `--model astra` first, and must not invoke
+    `/codex-lite:review` or start Codex directly during that scenario. Then type
+    `/codex-lite:do Report the current directory; change no files`, and confirm the hook adds
+    no routing note for it, with `claude --debug hooks` if the transcript does not show it.
+    Then type a slash command of another plugin, or a built-in one, whose text mentions Codex,
+    and confirm the hook adds no note for that either.
+    Then, in a scratch repository holding a `math.mjs`, send "draft a plan to add a subtract
+    function to math.mjs with a test, review it with codex, then converge", a prompt that
+    names its task and no model. The forwarded result must end with `status: ok` before the
+    continuation is judged. After Codex's output, Claude must go on to converge (revise the
+    plan) with no further prompt from you: in the same turn, or, if the call moved to the
+    background, in the turn its completion notification starts. A check that compares the
+    output must compare only the forwarded part, since Claude may keep working after it.
+
+17. **Resume by hand.** Run a real `/codex-lite:ask` with a question, and take the thread id
+    from the result's `thread` line. In the same session, run `/codex-lite:ask` again with
+    `--resume <thread id>`, and separately with a bare `--resume` on its own line before the
+    question, each asking Codex what the earlier turn said. Record that the `requested:` line
+    for both runs is `codex exec resume <id> ...` with `sandbox_mode="read-only"`, and that
+    Codex's answer shows it remembers the earlier turn. In a fresh session with no saved thread
+    id, confirm a bare `--resume` is refused before Codex runs.
+
+18. **Status line and `--timeout`.** Through the real CLI, run `ask --timeout 1` with a
+    question: the result must end with `timed out after 1 s` in the failure line and
+    `status: timeout` as its last line. This proves cancellation at startup, not the
+    termination of a long-running turn, so run it a second time with a longer timeout, such as
+    `--timeout 30`, against a task that makes Codex run shell commands for longer than that,
+    and confirm the turn ends at the deadline with `status: timeout` and its process group is
+    gone. Through Claude Code, confirm that a typed `/codex-lite:ask --timeout 5 ...` and a
+    model-invoked `ask` with `--timeout` both reach the request file with the flag, that a
+    resumed `ask` (`--resume` with `--timeout`) honours it, and that the `status:` line arrives
+    verbatim in the forwarded output and in a background-task notification. The cut-off case
+    from item 14, a call ended by the Bash tool's timeout, must show no `status:` line.
+
+19. **`implement` from a skill.** In a scratch git repository and a second checkout of it (a
+    `git worktree add` directory whose path contains a space), install a scratch skill whose
+    steps delegate a small change to Codex, for example adding a function and a test to a file.
+    In a session with the plugin installed, invoke the skill. Claude must call `implement`
+    through the Skill tool, not `do` and not the Codex CLI, with `--model <name>` and
+    `--timeout <seconds>` first, then `--cwd <absolute path of the worktree>` alone on its
+    line, then the task on the next line; confirm in the transcript that the request file holds
+    exactly that text. Record the prompt Claude Code shows for the Skill call in default
+    permission mode, and whether any appears in auto mode. The result must show a `requested:`
+    line with `--model <name>` and no `--timeout` or `--cwd`, a `cwd:` line naming the
+    worktree, `sandbox_mode="workspace-write"`, the `HEAD` footer for the repository, a thread
+    line and `status: ok`, and the file change must be in the worktree and not in the session's
+    directory. Then confirm a relative `--cwd`, a path that is not a git repository, and a
+    second `--timeout` after the `--cwd` line are each refused before Codex runs with
+    `status: refused`, and that `ask --resume <thread id>` with the thread from the run answers
+    read-only. In the same session, outside the skill, confirm a plain request to change a file
+    still goes to `/codex-lite:do` as a typed command, not `implement`.
+
+## Record
+
+| Date | Version | Platform | Codex version | Result |
+| --- | --- | --- | --- | --- |
+| 2026-09-23 | 0.1.0 | macOS, Claude Code 2.1.280, headless (`claude -p --plugin-dir`) | codex-cli 0.155.1 | Headless transport check passed: plugin data directory and session id substituted in the command body, a request with a double quote, a backtick, `$(id)`, a backslash, a newline, a leading hyphen and a denied flag name arrived byte for byte (plus one trailing newline the model added), `--base topic/$(id) --model x` arrived byte for byte with nothing executed. Items 1 to 15 not yet run. |
+| 2026-09-23 | 0.2.0 | Windows 11 Pro 10.0.26200, entry script run directly with `node` (no Claude Code session) | codex-cli 0.156.1 standalone; codex-cli 0.154.0 from `npm install -g @openai/codex` (package 0.154.0) | Item 15 in part: with each install as the only Codex on `PATH`, `setup` reported its version and login, and `ask` returned an answer. On both, the sandbox probe's positive control failed (exit 42, EPERM), so `do` refuses on this host. Items 1 to 14 not run; macOS not run for this version. |
+| 2026-09-23 | 0.2.0 | macOS 27.0, Claude Code 2.1.280; entry script run directly with `node`, plus headless `claude -p --plugin-dir --permission-mode default` for items 1 and 8, with the real Claude config dir and `--settings` (a scratch `CLAUDE_CONFIG_DIR` had no login) | codex-cli 0.156.1 | Items 2 to 7 passed with the real CLI and no `unparseable stream lines`, except the commit case in item 6: Codex's sandbox denied `.git/index.lock`, so `do` cannot commit and the two-`HEAD` check was not reached. Item 3 used `approvals_reviewer = "auto_review"` in the scratch config, but the plugin passes `--ignore-user-config`, so the setting may not have applied. Item 1 in part: the Write of the request file was blocked as "a sensitive file" (it is under `~/.claude`), even with the Edit allow rule from `setup` and an explicit Write allow rule. The Bash command Claude then ran was the constant one, pre-approved and without request text. The request Claude tried to write was byte for byte the typed text, including a denied flag name; sent through the entry script, Codex echoed it byte for byte plus one trailing newline. `--base topic/$(id)` reached git as that literal name. Item 8 not confirmed: the rules name the `--plugin-dir` path, which has no version number; the Edit rule did not unblock the Write, and the Bash rule was not exercised because `allowed-tools` already pre-approves the call. Items 9 to 14 are in the next row; item 15 is Windows only. |
+| 2026-09-23 | 0.2.0 | macOS 27.0, Claude Code 2.1.280, interactive session in `--permission-mode default` with `--plugin-dir` and the real Claude config dir | codex-cli 0.156.1 | Item 9: `setup` showed no prompt. `ask`, `review` and `do` each showed a Read prompt for the request file (Claude read it even when it did not exist), then a Write prompt; the Bash call was pre-approved by `allowed-tools`. Item 10 failed: with the Edit allow rule from `setup` in `--settings`, the Write prompt still appeared. The prompt's own option to allow edits in `~/.claude` for the session does silence it. Item 11 passed in a fresh session: Claude did not invoke the command, searched `PATH` for a `codex-lite` program and offered other options. In a session where the commands had already run, Claude instead repeated the command file's steps by hand; its Bash call was then prompted, not pre-approved, and was denied. Item 12 passed: after an interrupt that left the request file behind, the next `ask` read it, overwrote it and answered. Item 13 passed for `ask` and for `do`: each moved to the background at 120 s, and the `requested:` line, the tree state, the thread id and the resume line arrived intact in the notification. Item 14 passed: with `CLAUDE_CODE_DISABLE_BACKGROUND_TASKS=1` and `BASH_DEFAULT_TIMEOUT_MS=30000`, a `do` running `sleep 90` timed out at 30 s; within 15 s the script, `codex exec` and the `sleep` were gone, and the file edit that was due after the sleep never happened. |
+| 2026-09-23 | 0.2.1 | Windows 11 Pro 10.0.26200, entry script run directly with `node` (no Claude Code session) | codex-cli 0.156.1 standalone | Item 5 in part. With no `[windows]` `sandbox` value, `setup` reported it as not set, and a direct `codex sandbox` write inside the working directory was denied (exit 42, EPERM). With a scratch `CODEX_HOME` set to `"unelevated"`, and then to `"elevated"`, `setup` proved `workspace-write`: the inside write landed and the outside write was denied (EPERM). With `"elevated"`, `do` ran a shell command end to end and the file it wrote appeared in the tree. With `"unelevated"`, a direct `codex exec` could not start Codex's shell, PowerShell 7 from the Microsoft Store ("CreateProcessAsUserW failed"). Without the value, `codex exec` in `workspace-write` rejected commands with "blocked by policy". Items 1 to 4 and 6 to 15 not run. |
+| 2026-09-23 | 0.2.1 | macOS 27.0, Claude Code 2.1.280, Node 26.4.0; plugin copied to a scratch path shaped like the install cache (`.../codex-lite/0.2.1`); entry script run directly with `node`, plus headless `claude -p --permission-mode default` for items 1 and 8 with the real Claude config dir | codex-cli 0.156.1 | `npm test` (88 pass, 8 skipped) and `npm run lint` pass. `setup` shows no Windows sandbox row, and no `requested:` or `Resume:` line carries a `windows.sandbox` flag. Items 2 to 7 passed with the real CLI and no `unparseable stream lines`. Item 6 now reaches the commit case: the commit failed on `.git/index.lock` ("Operation not permitted") and the `HEAD` line showed `6098cde` twice. A pasted resume line ran in `sh` and answered. A wrapper around Codex confirmed the `requested:` line matches the argv Codex received. Item 5: with the probe's runtime replaced by a missing path, the positive control failed with exit 71 (`execvp()` failed), and `setup` and `do` both refused, but the message blames Codex's sandbox for what is a missing runtime. Item 3 again used `approvals_reviewer = "auto_review"` in the scratch config, which `--ignore-user-config` may drop. Item 1 in part, as for 0.2.0: in `default` and in `acceptEdits` mode the Write of the request file was blocked as "a sensitive file", and Claude then did not run the Bash command. The Write's content was byte for byte the typed text, including a denied flag name. Sent through the entry script, Codex echoed that text byte for byte, and `--base topic/$(id)` reached Codex as that literal name. Item 8 passed for the Bash rule: both printed rules parse as a JSON array. Asked to run the `setup` command by hand with no plugin loaded, Claude was denied without the rules and ran it with them, so the `*` matches the version directory. That `*` also let a sibling directory (`codex-lite-other/scripts/...`) and a path through `..` run unprompted, so the rule now names the exact version path; rerun the same way, it ran the installed path and was denied both others. The Edit rule was pasted but not exercised; item 10 in the 0.2.0 row covers it. Items 9 to 14 not rerun: Claude Code is unchanged since the 0.2.0 run, and the `ask`, `review` and `do` command files are unchanged from 0.2.0, so the Claude side of item 1 and items 9 to 14 stand on the 0.2.0 rows. Item 15 is Windows only. |
+| 2026-09-25 | 0.3.0 | macOS 27.0, Claude Code 2.1.280, Node 26.4.0; plugin copied to a scratch path shaped like the install cache (`.../codex-lite/0.3.0`); entry script run directly with `node` against a scratch `CODEX_HOME` (a copy of the real config, which has `approvals_reviewer = "auto_review"`); headless `claude -p --permission-mode default` with `--plugin-dir` from a scratch repository for the Claude side of items 1 and 11 | codex-cli 0.156.1 | `npm test` (89 pass, 9 skipped) and `npm run lint` pass. Item 1 passed: Claude's Write of the request file was byte for byte the typed text, with a double quote, a backtick, `$(id)`, a backslash, a newline, a leading hyphen and `--no-verify`; sent through the entry script, Codex echoed it byte for byte; `--base topic/$(id)` was refused as "no differences between topic/$(id) and HEAD", so the literal name reached git. Items 2 to 4 passed: the review named `math.mjs:2-2` and changed nothing; a missing base, a base with no merge base and a clean repository were each refused before Codex ran; `ask` was refused both writes with "operation not permitted" and neither file existed; `do` from a subdirectory edited there and the footer's `cwd:` named it; `do` outside a repository refused. Item 5 passed: with the probe runtime replaced by a missing path the positive control failed with exit 71 and `do` refused; with `CODEX_LITE_PROBE_TARGET` inside the working directory the negative control failed and `do` refused. Item 6 passed in a repository under the home directory: a file modified before the run and a file Codex created both appeared in the tree state, the commit failed on `.git/index.lock` ("Operation not permitted") and the `HEAD` line showed `17c0d17` twice; a wrapper confirmed the `requested:` line matches the argv Codex received; a pasted resume line ran in `sh` and answered; every refusal printed no resume line. Item 6 finding: in a scratch repository under `/tmp`, the same `do` commit succeeded (`e1f7364` before, `57a19fc` after), because the sandbox leaves the system temporary directory writable; the footer reported it truthfully and the README now says so. Item 7: no `unparseable stream lines` in any output. Item 8 passed: both printed rules parse as a JSON array and the Bash rule names the `0.3.0` path. Item 11 passed headless: asked in plain words to run `do`, Claude tried the Skill tool and Claude Code refused it ("cannot be used with Skill tool due to disable-model-invocation"); asked to review changes against `main`, Claude invoked `/codex-lite:review` with exactly `--base main`; asked a question, Claude invoked `/codex-lite:ask` with the question. On both, the invocation was itself a prompt in default mode ("Execute skill: ..."), and with a `Skill(...)` allow rule the command body ran to the Write of the request file, which was blocked as a sensitive file, so the Bash step was not reached. Items 9, 10, 12, 13 and 14 not run: they need an interactive session, and Claude Code is unchanged since the 0.2.0 run. Item 15 is Windows only. |
+| 2026-09-26 | 0.4.0 | Windows 11 Pro 10.0.26200, Claude Code 2.1.280, Node 26.4.0; the installed marketplace copy (`plugins/cache/.../codex-lite/0.4.0`, byte for byte the working tree); hook run directly with `node`, plus headless `claude -p --permission-mode auto --debug hooks` from a scratch repository for item 16 | codex-cli 0.156.1 standalone, `[windows] sandbox = "elevated"` | `npm test` (69 pass, 43 skipped: 41 spawn tests whose fake Codex is a `.mjs` file that Windows cannot spawn with `shell:false`, plus the two POSIX-shell tests) and `npm run lint` pass on Windows; the `ci` run on the merge commit `3114d6e` passed on ubuntu, macos and windows. Hook run directly: the plain-words prompt from item 16 printed the routing note, the typed `/codex-lite:do` line and an unrelated prompt printed nothing, all with exit 0. Item 16 passed headless, not interactively. With the exact prompt in an empty scratch repository, the hook fired once, Claude invoked nothing and asked what to plan, and said it would send the plan with `--model gpt-6-astra`. With a task named ("draft a plan to add a subtract function to math.mjs with a test, review it with codex astra, then converge"), the hook fired once, Claude drafted the plan and invoked `/codex-lite:ask` with arguments starting `--model astra `, with no `/codex-lite:review` and no direct Codex call; the request file was written and the Bash step ran with no prompt, and the `requested:` line carried `--model astra` (Codex then refused the model as unsupported on this account, status 400). For the typed `/codex-lite:do Report the current directory; change no files`, the debug log shows a hook output parsed at the same point as the note in the plain-words run but nothing printed, and no routing note appears anywhere in the log or transcript; the transcript check in the item is not available headless, since `stream-json` carries no hook context, so the log stands in for it. Then and `do` ran end to end: Codex reported the directory, `HEAD` was `22e3765` twice and no file changed. Items 1 to 15 not run. |
+| 2026-09-26 | 0.5.0 | macOS 27.0, Claude Code 2.1.280, interactive session with `--plugin-dir` on the PR branch, from a scratch repository under `/tmp` | codex-cli 0.157.1 | Item 13 passed for `do`: the call moved to the background at the 600 s timeout ("Command did not complete within its 600s timeout and was moved to the background"), was not killed, finished with exit 0 and sent its notification. The `requested:` line, `cwd: /private/tmp/cl-accept`, the `sandbox:` line, the answer, `HEAD 65d2faa before, 65d2faa after` with `?? done.txt`, the thread line and the resume line all arrived intact, and the session's transcript held `"timeout":600000`. Item 14: a first attempt with `CLAUDE_CODE_DISABLE_BACKGROUND_TASKS=1` and `BASH_MAX_TIMEOUT_MS=30000` did not reach the kill path: the call still carried `timeout: 600000`, and a `do` running `sleep 90` finished and wrote its file. Rerun with a scratch copy of the plugin whose `do.md` sets 30000, it passed: the call ended with "Command timed out after 30s", exit 143; `pgrep` for the script, `codex exec` and the `sleep`, run after the session ended, found nothing; and `done.txt` did not exist two minutes later. With no output to return, Claude described the timeout in its own words instead of returning output verbatim. |
+| 2026-09-26 | 0.6.0 | macOS 27.0, Node 26.4.0; the working tree's entry script run directly with `node` against a scratch data directory and a scratch repository under `/tmp` (no Claude Code session) | codex-cli 0.157.1 | Item 17 in part, through the entry script. A bare `--resume` with nothing saved was refused before Codex ran ("no earlier Codex thread is saved for this Claude session"), exit 1. A first `ask` ("Say only the word zebra.") answered `zebra` and saved its thread id to `thread-<session id>.txt`. A bare `--resume` on its own line, then `--resume <thread id>` on the same line as the question, each ran `codex exec resume <id> --json --ignore-user-config -c approval_policy="never" -c sandbox_mode="read-only" -`, and each answered `zebra` when asked what it said before, so the earlier turn was remembered. An unknown id failed with Codex's own "no rollout found for thread id ..." on stderr, exit 1, and the saved id was unchanged. The Claude side of item 17, through `/codex-lite:ask` in a session, not run. |
+| 2026-09-28 | 0.7.0 | macOS 27.0, Node 26.4.0; the branch's entry script run directly with `node` against a scratch data directory and a scratch repository under `/tmp` (no Claude Code session) | codex-cli 0.157.1 | `npm test` (174 pass, 10 skipped) and `npm run lint` (runtime 659/700 lines) pass. Item 2 in part: with `HEAD` equal to the base and one staged new file, `review --base main` ran instead of refusing, reported the staged file at `sub.mjs:1-1`, and ended `status: ok`; the diverged-base scope check was not run. Item 18 in part: `ask --timeout 1` ended with `timed out after 1 s; its process group was stopped` and `status: timeout`; `review --timeout 5 --timeout 6` was refused before Codex ran and ended `status: refused`; the longer-timeout termination case and the Claude Code side (typed and model-invoked flags, the resumed `ask`, the forwarded and background-task `status:` line, the cut-off case) were not run. Item 16 in part: the hook run directly printed nothing for `/ccl:run --no-codex` and printed the note for `ask codex please`. Items 1, 3 to 8 and 17 not rerun. |
+| 2026-09-30 | 0.8.0 | macOS 27.0, Node 26.4.0; the branch's entry script run directly with `node` against a scratch data directory and a scratch repository under `/tmp` (no Claude Code session) | codex-cli 0.159.0 | `npm test` (193 pass, 10 skipped) and `npm run lint` (runtime 693/700 lines) pass. Item 19 in part, through the entry script: a request of `--model gpt-6-luna --timeout 120 --cwd <repo>` on the first line and a one-line task on the next ran `codex exec --json --ignore-user-config -c approval_policy="never" -c sandbox_mode="workspace-write" --model gpt-6-luna -`, with `cwd:` naming the repository, the `sandbox:` line, `HEAD f280099 before, f280099 after`, ` M README.md` in the tree state, a thread line and `status: ok`; the file held the appended line, the request file was deleted and the thread id was saved. The `--cwd` here was the shell's own directory, not a worktree; the refusal cases, the resumed `ask`, and the Claude Code side (the Skill call from a skill, the permission prompt in default and auto mode, and the plain-words routing to `do`) were not run. |
