@@ -27,6 +27,30 @@ name a plugin are rerun under the new names and recorded here.
    Item 15, the Windows install, runs on the Windows work machine with R53. List drawn
    2026-10-03 at the start of M2. Expected: each item's own result. Rerun when that
    file's own conditions say. Run 2026-10-03; see the record.
+3. **House rules in a scratch profile.** Setup: scratch `CLAUDE_CONFIG_DIR` whose
+   `CLAUDE.md` holds text of its own, scratch `CODEX_HOME` holding an `AGENTS.md`, and
+   `recode` installed from this repository's catalog. Command: `/recode:rules`, choose
+   the options, and accept each target; start a new session and ask it to quote a rule
+   from the block; then `/recode:rules --remove` and accept each target. Repeat with no
+   Codex home. Expected: each target's diff is shown and asked about separately; the new
+   session quotes the rule; after removal each file equals its backup byte for byte; with
+   no Codex home the Codex target is reported as skipped and no directory is created.
+   Covers R33, R38, R41, and R42. Rerun when `rules.mjs`, the rules command, or a rules
+   file changes. Not yet run.
+4. **Staleness notice and decline.** Setup: as item 3, with this block in `CLAUDE.md`,
+   whose digest matches its body: begin line
+   `<!-- recode:house-rules begin version=0.0.1 options=core join=none digest=6d3e610aaf815551 -->`,
+   then the line `old rules`, then `<!-- recode:house-rules end -->`. Command: start an
+   interactive session; then `/recode:rules` and decline the Claude change; then start
+   another session. Expected: the first session shows one line naming the file and
+   `/recode:rules`; after the decline the next session shows nothing. Covers R43 and
+   R45. Rerun when `suite.mjs` or the hooks change. Not yet run.
+5. **Output style and old plugins.** Setup: as item 3, with `codex-lite` also installed
+   from its old marketplace. Command: `/output-style`, then `/recode:setup`. Expected: the
+   picker lists `recode:Concise Plain`, and replies follow it once chosen; setup's
+   output ends with `claude plugin uninstall codex-lite@vibecodedapps-codex-lite`, and
+   nothing is uninstalled. Covers R16 and R46. Rerun when the style or the old-plugin
+   list changes. Not yet run.
 
 ## Record of runs
 

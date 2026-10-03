@@ -82,3 +82,23 @@ Run on macOS with Claude Code 2.1.284 from the native installer, and 2.1.283 fro
    codex-code-review's LICENSE reads "Copyright 2025 OpenAI", so `plugins/recode-codex/`
    keeps that copy in M5. The loop's and repo-docs' copies differ from the root one
    only in whitespace. No incident is recorded.
+
+## Part 3: M3 house rules, 2026-10-03
+
+1. **The rules come from forge-ops commit 948ce5f.** `rules/core.md` is lines 6 to the
+   end of `claude/CLAUDE.md`, and `rules/windows-claude.md` is lines 1 to 4.
+   `rules/windows-codex.md` is lines 1 to 2 of `codex/AGENTS.md`, and
+   `rules/writing-codex.md` is its lines 78 to the end. The Windows part, an empty line,
+   and the core rebuild `claude/CLAUDE.md` byte for byte. The Codex parts joined the same
+   way, with the Writing part last, rebuild `codex/AGENTS.md`. The chat block matches
+   `claude/chat-instructions.md`. The output style matches
+   `claude/output-styles/concise-plain-v4.4.md` except its `name` line, now
+   `Concise Plain`. Checked with `cmp` on a run of 2026-10-03. From here this repository
+   is the source.
+2. **Options are recorded per target.** A target's options are recorded when its change
+   is applied. A target that was declined or skipped keeps the default until it is
+   applied. The other choice, one shared list, would record a choice for a file the user
+   said no to. Decided 2026-10-03; tests in `tests/rules/rules.test.mjs`.
+3. **The session notice runs on startup only.** The `SessionStart` entry matches
+   `startup`, so resume, clear, and compaction do not repeat the notice inside one
+   session. Decided 2026-10-03.

@@ -344,9 +344,10 @@ The digest is over the block body as written. It tells two things apart:
 
 The SessionStart hook reads the begin marker in each target and compares the digest with
 the shipped text for the recorded options. When stale and not declined, it shows the user
-one line naming the file and `/recode:rules`. It writes nothing. Whether a SessionStart
-hook's message reaches the user as a notice, not just the model's context, is spike
-M0.4; if not, the notice moves to setup's diagnostics.
+one line naming the file and `/recode:rules`. It writes nothing. The line is the hook's
+`systemMessage`, which Claude Code shows on screen at startup (spike M0.4, in
+docs/decisions.md). The hook matches `startup` only, so resume, clear, and compaction do
+not repeat it.
 
 ### Local overrides
 

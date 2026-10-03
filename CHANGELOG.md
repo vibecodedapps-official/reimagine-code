@@ -24,3 +24,12 @@ repos' own changelogs are kept under `docs/history/`.
   script call together and the Write failed on a file left by a stopped run, the script
   sent that earlier task. The prompt hook now deletes the session's request file, so the
   script refuses instead.
+- Added `/recode:rules`, which adds, updates, or removes one marked block of house rules in
+  the Claude `CLAUDE.md` and the Codex `AGENTS.md`. Each change is shown as a diff and made
+  only when the user agrees to that file, after a backup. The rules come from forge-ops at
+  commit 948ce5f.
+- Added a session start notice for when the house rules block is older than the plugin's.
+- `/recode:setup` now lists the old plugins this suite replaces, with the command that
+  removes each. It runs none of them.
+- Added the Concise Plain output style, `recode:Concise Plain`, and the same writing rules
+  for claude.ai and ChatGPT in `chat/instructions.md`.
