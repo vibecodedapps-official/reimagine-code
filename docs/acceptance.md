@@ -51,6 +51,61 @@ name a plugin are rerun under the new names and recorded here.
    output ends with `claude plugin uninstall codex-lite@vibecodedapps-codex-lite`, and
    nothing is uninstalled. Covers R16 and R46. Rerun when the style or the old-plugin
    list changes. Run 2026-10-03; see the record.
+6. **Loop install and its dependency.** Setup: a scratch profile with this
+   repository's catalog added and neither plugin installed. Command: `claude plugin
+   install recode-loop@reimagine-code`, then `claude plugin disable
+   recode@reimagine-code`, then `claude plugin uninstall recode-loop@reimagine-code`.
+   Expected: the install also installs `recode`; the disable is refused, naming
+   `recode-loop`; the uninstall reports `recode` as no longer needed, for `claude plugin
+   prune`. Covers R4 with the real plugins; spike M0.1 covered the update order. Rerun
+   when the loop's `dependencies` change. Run 2026-10-03; see the record.
+7. **Loop plan runs on a local remote.** Setup: scratch git repositories, each with
+   `math.mjs`, `test.mjs`, a `package.json` whose `test` script passes, and a local bare
+   `origin`; one also holds `.ccl.json` with `{"checks":["npm test"]}`. Command:
+   `/recode-loop:plan "<a one-function change>" --effort low`, in headless sessions:
+   with `--no-codex`; in the repository with `.ccl.json`; with `codex` absent from
+   `PATH`; with the `codex` option set to false, three times; with the option never
+   set; and with it set to true. Expected: each run calls `recode-loop:recode-loop` with
+   the invocation block. The `.ccl.json` run ends `blocked` before writing anything and
+   says to rename the file. The others end `plan-only` with the plan and a report headed
+   `# recode run report` under `.recode/<run-id>/`, and `.recode/` in
+   `.git/info/exclude`. With `--no-codex`, `codex` absent, or the option false, no Codex
+   call is made, each Codex role runs on its Claude fallback, and the report says why.
+   With the option unset or true, the block says `no-codex: false` and Codex is called.
+   Covers R17, R20, R21, R23, and part of R22. Rerun when a loop command, the option, or
+   Step 0 changes. Run 2026-10-03; see the record.
+8. **Loop runs to the end on a local remote.** Setup: as item 7, without `.ccl.json`.
+   Command: `/recode-loop:run "<the same change>" --no-codex --effort low`, in separate
+   repositories: with `--no-publish` and a committed `.recode.json` of
+   `{"commit": true}`; with `--no-publish` alone; after `git update-index
+   --skip-worktree` on an edited file; with `--confirm-plan`, answering no; with
+   `--continue` naming a branch on the remote; and with `--repo` naming a second such
+   repository. Also `/recode-loop:plan` with the committed `.recode.json`. Expected: the
+   plan run ends `plan-only` with nothing under `specs/recode/` and a clean tree; the
+   `--no-publish` runs and the runs on a local remote end `prepared` with no commit,
+   nothing under `specs/recode/`, and the report giving the commit and push commands;
+   the `--no-publish` run writes no `handoff.md` or `cca-manifest.json` and says why;
+   the skip-worktree run works in `<parent>/<checkout>-recode-<run-id>` and names its
+   removal; the unanswered plan ends `plan-only`; the `--continue` run works on that
+   branch; the `--repo` run changes both repositories. Covers ccl items 16, 65, 72, and
+   172 under the new names, and the local parts of R22. Rerun when Step 0, Step 7, or an
+   artifact path changes. Run 2026-10-03; see the record.
+9. **Loop runs that publish.** Setup: a throwaway GitHub repository with issue #1, a
+   one-line bug, and a passing `npm test`; a second one on the same host for the
+   multi-repo run; Codex logged in. Command: `/recode-loop:run #1 --effort low`; then
+   ccl items 4, 75, and 114 under the new names, and a `--continue` run on a branch with
+   an open PR. Expected: Codex implements and Claude publishes a PR that closes #1;
+   with `"commit": true` the snapshot lands in `specs/recode/<run-id>/`; each item's own
+   result. Covers the rest of R22 and R25. Rerun when Step 7 changes. Not yet run.
+10. **ccl items under the new names.** The list was drawn 2026-10-03 at the start of M4
+    from `docs/history/claude-codex-loop/acceptance.md`: of its 174 items, 58 name a
+    renamed string, 35 of them only through bridge calls. The items rerun hinge on a
+    renamed path or a removed gate: 1 (in item 7), 16, 65, 72, and 172 (in item 8), and
+    4, 75, and 114 (in item 9). Item 66 tested the skill-listing retry that R24 removed;
+    item 7's runs check what is left of it, that `run.md` records the availability check.
+    Expected: each item's own result with `/ccl:` read as `/recode-loop:`, `.ccl` as
+    `.recode`, and `specs/ccl` as `specs/recode`. Rerun when that file's own conditions
+    say. Items 1, 16, 65, 72, and 172 run 2026-10-03; see the record.
 
 ## Record of runs
 
@@ -166,3 +221,73 @@ appeared beside them.
   equaled its original.
 - **Not run.** A Codex session quoting a rule from its `AGENTS.md`, because the scratch
   Codex home has no login. The Windows parts: the `windows` option and its default.
+
+### 2026-10-03: M4, recode-loop 0.1.0
+
+macOS 27.0, Claude Code 2.1.288, codex-cli 0.159.2, Node 26.4.0. The scratch profile
+was `~/.cache/recode-acceptance/`, in auto mode, with a Codex home that has no login.
+`recode-loop` was installed from the GitHub marketplace at `feat/loop`: commit f01a1f4
+first, then 1b657af and 8cc36de for the option fixes below. Each repository was a
+scratch git repository under `/tmp` with a local bare `origin`, so every run saw host
+`other`. Commands ran as headless `claude -p` sessions, each reply sent with `--resume`.
+No run had a permission denial.
+
+- **Always-on cost.** `claude plugin details` reported about 497 tokens for the loop,
+  under ccl 0.10.0's 510 measured in the same profile, after the description trim in
+  `docs/decisions.md` Part 4 item 3.
+- **Item 6 passed.** Installing `recode-loop` printed "+ 1 dependency: recode".
+  `claude plugin disable recode@reimagine-code` was refused: "recode is still required
+  by recode-loop". Uninstalling the loop printed "1 auto-installed dependency no longer
+  needed: recode. Run `claude plugin prune` to remove." Uninstalling also cleared the
+  saved option, as spike M0.2 found.
+- **Item 7, at f01a1f4.** Every run called the Skill tool with
+  `recode-loop:recode-loop` and the invocation block. With `--no-codex`, the run ended
+  `plan-only` with `plan.md`, `run.md`, `inputs.md`, and a `report.md` headed
+  `# recode run report` under `.recode/<run-id>/`, `.recode/` appended to
+  `.git/info/exclude`, and the swap reported as "Codex `gpt-6.1-sol` -> Agent `opus`,
+  reason `--no-codex`". The repository holding `.ccl.json` ended `blocked` at Step 0.1 in
+  3 seconds: "rename `.ccl.json` to `.recode.json` and run the same command again", with
+  nothing created. With `codex` absent from `PATH`, the swap reason was "`codex
+  --version`: command not found". No run file named `ccl` or `codex-lite` except to
+  record that no `.ccl.json` existed.
+- **Defect, fixed.** With the option saved as false, the skill text read "That option
+  reads `false`", yet `run.md` recorded "Codex availability: available (codex-cli
+  0.159.2); --no-codex not set", and the run called `recode:ask` twice. Fixed in
+  1b657af and 8cc36de; see `docs/decisions.md` Part 4 item 2.
+- **Item 7, at 1b657af.** With the option unset, the block said `no-codex: false` and the
+  run called `recode:ask`. With it false, three runs at once each sent
+  `no-codex: true`, made no Codex call, and named the option in the report. With it
+  true, the block said `no-codex: true` and `run.md` recorded "`--no-codex` set (plugin
+  option `codex` = true, flag decides)": a second defect, from the wording.
+- **Item 7 passed, at 8cc36de.** In fresh repositories, all eight runs ended
+  `plan-only` and sent the right value. With the option unset, twice, and set to true,
+  three times at once, the block said `no-codex: false` and each run called
+  `recode:ask` twice, which failed with 401 on the scratch Codex home and swapped to
+  `opus`. With it false, three times at once, the block said `no-codex: true`, no run
+  called Codex, and each report named the option as the reason. The option was left
+  set to true.
+- **`/config`.** Typing `codex` in `/config` showed a "Use Codex" row for `recode-loop`
+  with the value `true`. The install message names `/plugin configure
+  recode-loop@reimagine-code`, the command the loop's README gives.
+- **Item 8 passed, at f01a1f4, with `--no-codex --effort low`.** The plan run with a
+  committed `{"commit": true}` ended `plan-only`, with a clean tree and no `specs/`.
+  The `--no-publish` run with that config ended `prepared`, on a new local branch with
+  `math.mjs` and `test.mjs` modified, no new commit, no `specs/`, the commit and push
+  commands in the report, and "Handoff: not written" with "no commit from this run".
+  The `--no-publish` run without it ended the same way, wrote no `handoff.md` or
+  `cca-manifest.json`, and reported "Audit: not suggested". The audit plugin was not
+  installed, so the report said `/cca:handoff` needs it, rather than that it can write
+  one after a commit. With `notes.txt` flagged skip-worktree and edited, the run worked
+  in `/private/tmp/recode-accept/m4/c72-recode-<run-id>`, left the checkout on `main`
+  with the flag in place, ran Step 5 with two Opus reviewers, and reported "Worktree:
+  <path> (kept; remove with `git worktree remove <path>`)". With `--confirm-plan`, the
+  run asked for approval; after "no" it ended `plan-only` with no branch, and the report
+  recorded the question, the reply, and the wait. With `--continue feat-sub`, Step 0.2
+  asked to switch from `main`; after "yes" it worked on `feat-sub` from
+  `origin/feat-sub`, ended `prepared`, and reported "Continued: yes, feat-sub. No PR was
+  read or commented on (host other)". With `--repo` naming a second repository, both
+  were changed on one new branch by two Sonnet subagents, and the report listed both
+  with their base commits.
+- **Not run.** Item 9 and the ccl items in it, which need a throwaway GitHub repository:
+  a run with Codex implementing, publishing, CI, `"commit": true` committing to
+  `specs/recode/<run-id>/`, and the PR comment of a continued branch.

@@ -110,3 +110,35 @@ Run on macOS with Claude Code 2.1.284 from the native installer, and 2.1.283 fro
    step but `status`, 50 of 50 pairs kept both. A lock older than a minute is taken
    over. Per-target state files would also work, but they change the files every test
    and the hook read. Observed on a run of 2026-10-03.
+
+## Part 4: M4 loop, 2026-10-03
+
+Run on macOS with Claude Code 2.1.288 and Codex CLI 0.159.2, in the scratch profile
+`~/.cache/recode-acceptance/`, with `recode-loop` installed from this repository's
+catalog at `feat/loop`.
+
+1. **An option that was never set stays a placeholder.** With the `codex` option never
+   set, the skill text kept the literal `${user_config.codex}`: the manifest's
+   `default: true` was not put in its place. A saved value was. So the loop treats only
+   the exact text `false` as off, and anything else, the placeholder included, as on.
+   Observed on a run of 2026-10-03.
+2. **The commands apply the `codex` option while parsing flags.** In a plan run with
+   the option saved as false, the skill text read "That option reads `false`", yet Step
+   0.6 recorded "Codex availability: available (codex-cli 0.159.2); --no-codex not set"
+   and called Codex. The skill trusts the invocation block's `no-codex` field. A first
+   fix, 1b657af, stated in step 3 that `no-codex` is `true` when the option is off,
+   next to "The option reads: `true`"; a run with the option true then also sent
+   `no-codex: true`. In 8cc36de the option sits in step 1 with the flags, as one rule:
+   when it is exactly `false`, handle the arguments as if they included `--no-codex`.
+   The skill keeps its own sentence, so the report names the option as the reason. The
+   block keeps its shape, so R17 holds. Lint check 16 fails if a command stops reading
+   the option. At 8cc36de, eight runs sent the right value: two with the option unset
+   and three with it true sent `no-codex: false` and called Codex, and three with it
+   false sent `no-codex: true`, made no Codex call, and named the option in the report.
+   Observed on runs of 2026-10-03.
+3. **The command descriptions lost their "or types" clauses.** In the scratch profile,
+   `claude plugin details` put the loop at about 532 tokens always on, over the 510
+   that ccl 0.10.0 measured in the same profile (R8). Dropping "or types
+   /recode-loop:run" and "or types /recode-loop:plan", and shortening the skill's
+   description, brought it to about 497. A typed slash command runs without matching
+   its description, so the clauses only cost tokens. Decided 2026-10-03.
