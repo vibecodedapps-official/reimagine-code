@@ -23,3 +23,26 @@ jobs:
           node-version: 22
       - run: npm run lint
       - run: npm test
+
+  validate:
+    name: validate manifests
+    runs-on: ubuntu-latest
+    env:
+      # Pinned so a new Claude Code release cannot change the result without a commit here.
+      CLAUDE_CODE_VERSION: 2.1.284
+      DISABLE_AUTOUPDATER: "1"
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+      - run: npm install --global "@anthropic-ai/claude-code@${CLAUDE_CODE_VERSION}"
+      - name: claude plugin validate --strict
+        shell: bash
+        run: |
+          set -euo pipefail
+          claude --version
+          claude plugin validate --strict .
+          for manifest in plugins/*/.claude-plugin/plugin.json; do
+            claude plugin validate --strict "${manifest%/.claude-plugin/plugin.json}"
+          done
