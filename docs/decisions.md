@@ -151,4 +151,6 @@ catalog at `feat/loop`.
    the plan, so that risk is absent there; the required checks come from branch
    protection alone, and the run records why. Any other failure of that read still
    blocks. On a public repository the read succeeds, so nothing changes there. Chosen
-   2026-10-03 by the author over keeping ccl's behavior for 0.2.0.
+   2026-10-03 by the author over keeping ccl's behavior for 0.2.0. At b1ccbee the same
+   four runs on the same private repositories each ended `done` with CI green, and each
+   report named the 403. Observed on runs of 2026-10-03.

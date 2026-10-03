@@ -96,8 +96,8 @@ name a plugin are rerun under the new names and recorded here.
    ccl items 4, 75, and 114 under the new names, and a `--continue` run on a branch with
    an open PR. Expected: Codex implements and Claude publishes a PR that closes #1;
    with `"commit": true` the snapshot lands in `specs/recode/<run-id>/`; each item's own
-   result. Covers the rest of R22 and R25. Rerun when Step 7 changes. Run 2026-10-03 up
-   to the CI watch; see the record.
+   result. Covers the rest of R22 and R25. Rerun when Step 7 or the CI watch changes. Run
+   2026-10-03; see the record.
 10. **ccl items under the new names.** The list was drawn 2026-10-03 at the start of M4
     from `docs/history/claude-codex-loop/acceptance.md`: of its 174 items, 58 name a
     renamed string, 35 of them only through bridge calls. The items rerun hinge on a
@@ -106,8 +106,7 @@ name a plugin are rerun under the new names and recorded here.
     item 7's runs check what is left of it, that `run.md` records the availability check.
     Expected: each item's own result with `/ccl:` read as `/recode-loop:`, `.ccl` as
     `.recode`, and `specs/ccl` as `specs/recode`. Rerun when that file's own conditions
-    say. Items 1, 16, 65, 72, and 172 run 2026-10-03, and 4, 75, and 114 up to the CI
-    watch; see the record.
+    say. Items 1, 4, 16, 65, 72, 75, 114, and 172 run 2026-10-03; see the record.
 
 ## Record of runs
 
@@ -323,5 +322,20 @@ No run had a permission denial.
     the second with `--cwd`, and reviewed both, the second with `--cwd`; the second
     body was written to `pr-body-recode-accept-b.md` in the primary's run directory. The
     report suggested `/cca:audit` with the manifest path.
-- **Not reached.** `done`, the CI watch past the rules read, the issue status comments,
-  and the PR report comments.
+- **Defect, fixed.** The rules read is refused on a private repository without GitHub
+  Pro, and the CI watch blocked on it like any failed read. Fixed in b1ccbee; see
+  `docs/decisions.md` Part 4 item 4.
+- **Item 9 passed, at b1ccbee.** The same four runs, on new issues 9 to 12 in `a` and 3
+  in `b`, in fresh clones, all ended `done` with CI green. Each report's CI line named
+  the 403 and said no rulesets apply. Each issue got a comment starting "Status from the
+  recode run", and each PR that holds a snapshot got the report as a comment starting
+  `# recode run report`. The Codex run (PR 14) was low tier with no swaps. The
+  `--no-codex` run (PR 13) was again medium. The continued run worked in
+  `<parent>/r3-recode-2026-10-03-11`, posted to PR 5 with `--body-file` set to
+  `/private/tmp/recode-accept/m4/gh/r3/.recode/2026-10-03-11/pr-body.md`, then posted
+  the report there. The two-repo run opened PR 15 in `a` and PR 4 in `b`, with the
+  snapshot and the report comment on the primary's PR only, and suggested `/cca:audit`
+  for its two bundles; the single-repo runs did not, being within cca's low tier. Every
+  run wrote `handoff.md` and `cca-manifest.json`, and `handoff.sh check` printed
+  `handoff: ok`. The copied Codex login was deleted afterward. The repositories, their
+  open PRs, and the two worktrees were kept.
