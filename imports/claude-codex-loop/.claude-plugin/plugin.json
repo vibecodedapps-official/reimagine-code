@@ -1,0 +1,10 @@
+{
+  "name": "ccl",
+  "version": "0.10.0",
+  "description": "Run a tiered plan, review, implement, review, publish loop for one unit of work, with Claude orchestrating, Codex implementing, and Codex and Claude reviewing.",
+  "license": "Apache-2.0",
+  "author": {
+    "name": "vibecodedapps.net"
+  },
+  "repository": "https://github.com/vibecodedapps-official/claude-codex-loop"
+}
