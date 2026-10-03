@@ -2,7 +2,7 @@
 // Repository checks with no dependencies. Exits 1 listing every failure.
 import { spawnSync } from "node:child_process";
 import { existsSync, readdirSync, readFileSync } from "node:fs";
-import { join, relative, sep } from "node:path";
+import { basename, join, relative, sep } from "node:path";
 import { fileURLToPath } from "node:url";
 import { isDeepStrictEqual } from "node:util";
 
@@ -26,6 +26,15 @@ const walk = (dir, skip = () => false) => {
   });
 };
 
+// The plugins this repository ships, one row each; every directory under plugins/ must have one.
+// catalogs: the catalogs that list it. family: versioned in lockstep with the suite version in package.json.
+// budgets: the only runtime modules the plugin may hold, in groups, each with its line limit.
+const PLUGINS = [
+  { dir: "plugins/recode", catalogs: ["claude"], family: true, budgets: [{ files: ["scripts/codex.mjs", "scripts/recode.mjs"], max: 700 }] },
+];
+// Old names a shipped file may still contain, by repository-relative path: the migration literals of R7.
+const OLD_NAME_LITERALS = {};
+
 // 1. Syntax of every module.
 const modules = ["plugins", "tests", "tools"].flatMap((d) => walk(join(root, d))).filter((p) => p.endsWith(".mjs"));
 for (const p of modules) {
@@ -33,30 +42,61 @@ for (const p of modules) {
   if (r.status !== 0) fail(`${rel(p)}: node --check failed\n${(r.stderr || r.error?.message || "").trim()}`);
 }
 
-// 2. Runtime budget: exactly the two scripts, 700 lines together (counted as wc -l does).
-const runtime = ["plugins/recode/scripts/codex.mjs", "plugins/recode/scripts/recode.mjs"];
-const extra = modules.map(rel).filter((p) => p.startsWith("plugins/") && !runtime.includes(p));
-if (extra.length) fail(`runtime modules other than the two scripts: ${extra.join(", ")}`);
-let lines = 0;
-for (const p of runtime) {
-  const s = read(p);
-  if (s !== null) lines += s.split("\n").length - 1;
+// 2. Runtime budgets: a plugin holds only the modules its row lists, and each group stays within its limit (counted as wc -l does).
+const listed = PLUGINS.flatMap((pl) => pl.budgets.flatMap((b) => b.files.map((f) => `${pl.dir}/${f}`)));
+const extra = modules.map(rel).filter((p) => p.startsWith("plugins/") && !listed.includes(p));
+if (extra.length) fail(`runtime modules no plugin budget lists: ${extra.join(", ")}`);
+const usage = [];
+for (const pl of PLUGINS) {
+  for (const b of pl.budgets) {
+    let lines = 0;
+    for (const f of b.files) {
+      const s = read(`${pl.dir}/${f}`);
+      if (s !== null) lines += s.split("\n").length - 1;
+    }
+    const name = b.files.map((f) => basename(f)).join(" + ");
+    if (lines > b.max) fail(`${pl.dir}: ${name} total ${lines} lines, budget is ${b.max}`);
+    usage.push(`${name} ${lines}/${b.max}`);
+  }
 }
-if (lines > 700) fail(`runtime scripts total ${lines} lines, budget is 700`);
 
-// 3. Versions agree, and the README install block names this marketplace and plugin.
+// 3. The Claude catalog lists exactly the Claude plugins above, from sources that exist; each entry agrees with its manifest;
+// the suite's plugins share the suite version; and the root README install block names the marketplace and every plugin.
 const pkg = json("package.json");
-const plugin = json("plugins/recode/.claude-plugin/plugin.json");
 const market = json(".claude-plugin/marketplace.json");
-const entry = market?.plugins?.find((p) => p.name === plugin?.name);
-if (plugin && market && !entry) fail(`marketplace.json has no plugin named ${plugin.name}`);
-if (pkg && plugin && entry && !(pkg.version === plugin.version && plugin.version === entry.version)) {
-  fail(`versions differ: package.json ${pkg.version}, plugin.json ${plugin.version}, marketplace.json ${entry.version}`);
+const dirs = readdirSync(join(root, "plugins"), { withFileTypes: true }).filter((d) => d.isDirectory()).map((d) => `plugins/${d.name}`);
+for (const d of dirs) if (!PLUGINS.some((pl) => pl.dir === d)) fail(`${d}: no row in PLUGINS in tools/lint.mjs`);
+const claude = PLUGINS.filter((pl) => pl.catalogs.includes("claude"));
+const manifests = new Map(claude.map((pl) => [pl.dir, json(`${pl.dir}/.claude-plugin/plugin.json`)]));
+if (market) {
+  if (market.name !== "reimagine-code") fail(`.claude-plugin/marketplace.json: name must be reimagine-code, not ${market.name}`);
+  if (!market.metadata?.description) fail(".claude-plugin/marketplace.json: metadata.description is missing, and claude plugin validate --strict requires it");
+  if (market.metadata?.version !== pkg?.version) fail(`.claude-plugin/marketplace.json: metadata.version ${market.metadata?.version} differs from the suite version ${pkg?.version}`);
+  const entries = market.plugins ?? [];
+  for (const e of entries) {
+    const src = String(e.source ?? "").replace(/^\.\//, "");
+    if (!existsSync(join(root, src))) { fail(`.claude-plugin/marketplace.json: ${e.name}: source ${e.source} does not exist`); continue; }
+    if (!manifests.has(src)) { fail(`.claude-plugin/marketplace.json: ${e.name}: source ${e.source} is not a Claude plugin in PLUGINS`); continue; }
+    const m = manifests.get(src);
+    if (m && (e.name !== m.name || e.version !== m.version)) {
+      fail(`.claude-plugin/marketplace.json: entry ${e.name} ${e.version} differs from ${src} manifest ${m.name} ${m.version}`);
+    }
+  }
+  for (const pl of claude) {
+    if (!entries.some((e) => String(e.source ?? "").replace(/^\.\//, "") === pl.dir)) fail(`.claude-plugin/marketplace.json: no entry for ${pl.dir}`);
+  }
 }
+for (const pl of PLUGINS.filter((p) => p.family)) {
+  const v = manifests.get(pl.dir)?.version;
+  if (pkg && v !== undefined && v !== pkg.version) fail(`${pl.dir}: version ${v} differs from the suite version ${pkg.version} in package.json`);
+}
+const repos = [...new Set([...manifests.values()].filter(Boolean).map((m) => String(m.repository ?? "")))];
+if (repos.length > 1) fail(`Claude manifests name different repositories: ${repos.join(", ")}`);
 const readme = read("README.md");
-if (readme !== null && plugin && market) {
-  const repo = String(plugin.repository ?? "").replace(/^https:\/\/github\.com\//, "").replace(/\.git$/, "");
-  for (const line of [`/plugin marketplace add ${repo}`, `/plugin install ${plugin.name}@${market.name}`]) {
+if (readme !== null && market && repos.length === 1) {
+  const repo = repos[0].replace(/^https:\/\/github\.com\//, "").replace(/\.git$/, "");
+  const want = [`/plugin marketplace add ${repo}`, ...(market.plugins ?? []).map((e) => `/plugin install ${e.name}@${market.name}`)];
+  for (const line of want) {
     if (!readme.split("\n").some((l) => l.trim() === line)) fail(`README.md install block lacks the line: ${line}`);
   }
 }
@@ -125,8 +165,42 @@ for (const name of ["ask", "review", "implement", "do"]) {
   else if (!step2.includes(stop)) fail(`plugins/recode/commands/${name}.md: step 2 lacks the sentence: ${stop}`);
 }
 
+// 9. Shipped files are ASCII (R6).
+const shipped = walk(join(root, "plugins"), (p) => p.endsWith(".DS_Store"));
+for (const p of shipped) {
+  const buf = readFileSync(p);
+  const at = buf.findIndex((b) => b > 0x7f);
+  if (at >= 0) fail(`${rel(p)}:${buf.subarray(0, at).toString("latin1").split("\n").length}: non-ASCII byte`);
+}
+
+// 10. No shipped file names a source plugin or its marketplace (R7), apart from the migration literals listed for it.
+const oldNames = [/codex[-_]lite/i, /\bccl\b/i, /vibecodedapps-claude-codex-loop/i];
+for (const p of shipped) {
+  const allowed = OLD_NAME_LITERALS[rel(p)] ?? [];
+  readFileSync(p, "utf8").split("\n").forEach((l, i) => {
+    const rest = allowed.reduce((s, lit) => s.split(lit).join(""), l);
+    const hit = oldNames.find((re) => re.test(rest));
+    if (hit) fail(`${rel(p)}:${i + 1}: old name /${hit.source}/: ${l.trim()}`);
+  });
+}
+
+// 11. Each plugin directory holds an Apache-2.0 LICENSE, because an installed plugin holds only its own directory (R5).
+for (const pl of PLUGINS) {
+  const p = join(root, pl.dir, "LICENSE");
+  const s = existsSync(p) ? readFileSync(p, "utf8") : "";
+  if (!/Apache License\s+Version 2\.0, January 2004/.test(s)) fail(`${pl.dir}/LICENSE: missing or not the Apache-2.0 license`);
+}
+
+// 12. Scripts and docs keep LF line endings on Windows checkouts, where a CRLF hook script fails (R54).
+const attrs = read(".gitattributes");
+if (attrs !== null) {
+  for (const line of ["*.sh text eol=lf", "*.mjs text eol=lf", "*.md text eol=lf"]) {
+    if (!attrs.split(/\r?\n/).some((l) => l.trim() === line)) fail(`.gitattributes lacks the line: ${line}`);
+  }
+}
+
 if (failures.length) {
   console.error(`lint: ${failures.length} failure(s)\n${failures.map((f) => `- ${f}`).join("\n")}`);
   process.exit(1);
 }
-console.log(`lint: ok (${modules.length} modules checked, runtime ${lines}/700 lines)`);
+console.log(`lint: ok (${modules.length} modules checked; runtime ${usage.join(", ")} lines)`);
