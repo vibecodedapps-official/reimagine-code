@@ -102,3 +102,11 @@ Run on macOS with Claude Code 2.1.284 from the native installer, and 2.1.283 fro
 3. **The session notice runs on startup only.** The `SessionStart` entry matches
    `startup`, so resume, clear, and compaction do not repeat the notice inside one
    session. Decided 2026-10-03.
+4. **Rules steps take turns through a lock directory.** In acceptance, Claude sent
+   `apply claude` and `apply codex` in one message, so both ran at once. In a sandbox,
+   pairs started together lost one target's update in 16 of 20 runs: its plan entry
+   stayed, and its `created` and `options` entries were missing, so removal would have
+   kept a file the command created. With a `rules.lock` directory held around every
+   step but `status`, 50 of 50 pairs kept both. A lock older than a minute is taken
+   over. Per-target state files would also work, but they change the files every test
+   and the hook read. Observed on a run of 2026-10-03.

@@ -334,6 +334,8 @@ The digest is over the block body as written. It tells two things apart:
   retried once, then reported with the backup's path.
 - The script plans and applies in two calls. The apply call refuses if the target
   changed since the plan, so a diff the user approved is the diff that is written.
+  Every call but `status` holds a lock directory in the data directory while it reads
+  and writes the plan and state files, because Claude may run two applies at once.
 - `--remove` deletes the block and the bytes its `join` names, and nothing else. When
   the command created the file and nothing else is in it, the file is deleted. Install
   then remove gives back the original bytes.

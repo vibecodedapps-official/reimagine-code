@@ -2,8 +2,8 @@
 // through CLAUDE_CONFIG_DIR, CODEX_HOME and home, so no test reads or writes the real ~/.claude or ~/.codex.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { spawnSync } from 'node:child_process';
-import { existsSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, rmSync, writeFileSync } from 'node:fs';
+import { spawn, spawnSync } from 'node:child_process';
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, rmSync, utimesSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -180,7 +180,7 @@ const LATER = new Date('2026-10-03T12:00:01Z');
 const SHIPPED = loadTexts();
 
 function sandbox(fn, { codex = true } = {}) {
-  return () => {
+  return async () => {
     const root = mkdtempSync(join(tmpdir(), 'recode-rules-'));
     const s = { root, claudeDir: join(root, 'claude'), codexDir: join(root, 'codex'), data: join(root, 'data'), home: join(root, 'home') };
     s.claude = join(s.claudeDir, 'CLAUDE.md');
@@ -190,7 +190,7 @@ function sandbox(fn, { codex = true } = {}) {
     if (codex) mkdirSync(s.codexDir);
     s.run = (verb, rest = [], { now = AT, platform = 'linux' } = {}) => main([verb, s.data, ...rest], { env: s.env, platform, now, home: s.home });
     s.state = () => JSON.parse(readFileSync(join(s.data, 'rules-state.json'), 'utf8'));
-    try { fn(s); } finally { rmSync(root, { recursive: true, force: true }); }
+    try { return await fn(s); } finally { rmSync(root, { recursive: true, force: true }); }
   };
 }
 const bytes = (path) => readFileSync(path, 'latin1');
@@ -331,7 +331,7 @@ test('R42: a created file that the user added to is kept on remove, holding only
   assert.equal(bytes(s.claude), 'mine\n');
 }));
 
-test('R40, R42: install then remove leaves each fixture file equal to its original bytes', () => {
+test('R40, R42: install then remove leaves each fixture file equal to its original bytes', async () => {
   const fixtures = {
     'join none, an empty file': '',
     'join blank, LF': '# Mine\n\nKeep this.\n',
@@ -341,7 +341,7 @@ test('R40, R42: install then remove leaves each fixture file equal to its origin
     'BOM and a non-UTF-8 byte': `${BOM}# Mine ${FF}\n`,
   };
   for (const [label, original] of Object.entries(fixtures)) {
-    sandbox((s) => {
+    await sandbox((s) => {
       put(s.claude, original);
       put(s.codex, original);
       s.run('plan');
@@ -380,6 +380,41 @@ test('R44: an @ import in the Claude file is noted and left as it is', sandbox((
   assert.ok(out.includes('note: line 1: @~/shared/rules.md imports a file that may hold the same rules; it is left as it is'));
   s.run('apply', ['claude']);
   assert.ok(bytes(s.claude).startsWith('@~/shared/rules.md\nmine\n\n<!-- recode:house-rules begin'));
+}));
+
+test('R41, R42: two applies started at once both land in the state and plan files', sandbox(async (s) => {
+  // Claude sends the two apply calls in one message, so the processes run side by side.
+  const env = { ...process.env, ...s.env, HOME: s.home, USERPROFILE: s.home };
+  const apply = (target) => new Promise((done) => spawn(process.execPath, [SCRIPT, 'apply', s.data, target], { env }).on('close', done));
+  for (let i = 0; i < 10; i++) {
+    rmSync(s.claude, { force: true });
+    rmSync(s.codex, { force: true });
+    rmSync(s.data, { recursive: true, force: true });
+    s.run('plan');
+    assert.deepEqual(await Promise.all([apply('claude'), apply('codex')]), [0, 0]);
+    assert.deepEqual(JSON.parse(readFileSync(join(s.data, 'rules-plan.json'), 'utf8')), {}, `pair ${i}`);
+    assert.deepEqual(s.state().created, { claude: true, codex: true }, `pair ${i}`);
+    assert.deepEqual(s.state().options, { claude: ['core'], codex: ['core'] }, `pair ${i}`);
+    assert.deepEqual(readdirSync(s.data).sort(), ['rules-plan.json', 'rules-state.json'], `pair ${i}`);
+  }
+}));
+
+test('a step waits while another holds the lock, and takes over a lock left by a run that died', sandbox(async (s) => {
+  const env = { ...process.env, ...s.env, HOME: s.home, USERPROFILE: s.home };
+  const lock = join(s.data, 'rules.lock');
+  mkdirSync(lock, { recursive: true });
+  const started = Date.now();
+  const plan = new Promise((done) => spawn(process.execPath, [SCRIPT, 'plan', s.data], { env }).on('close', done));
+  await new Promise((r) => setTimeout(r, 600));
+  assert.equal(existsSync(join(s.data, 'rules-plan.json')), false);
+  rmSync(lock, { recursive: true });
+  assert.equal(await plan, 0);
+  assert.ok(Date.now() - started >= 600);
+  assert.equal(existsSync(join(s.data, 'rules-plan.json')), true);
+  mkdirSync(lock);
+  utimesSync(lock, new Date('2026-10-03T11:00:00Z'), new Date('2026-10-03T11:00:00Z'));
+  assert.deepEqual(s.run('apply', ['claude']), [`recode: wrote ${s.claude}`]);
+  assert.equal(existsSync(lock), false);
 }));
 
 test('the script prints a refusal on stdout and exits 1, and a status exits 0', sandbox((s) => {

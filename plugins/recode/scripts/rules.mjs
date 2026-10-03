@@ -3,7 +3,7 @@
 // user's Claude CLAUDE.md and Codex AGENTS.md. Everything above main() is pure: it takes file text, options and rule texts.
 // Files are read and written as latin1, so every byte outside the block, a BOM or a stray non-UTF-8 byte included, survives.
 import { createHash } from 'node:crypto';
-import { constants, copyFileSync, existsSync, mkdirSync, readFileSync, renameSync, rmSync, writeFileSync } from 'node:fs';
+import { constants, copyFileSync, existsSync, mkdirSync, readFileSync, renameSync, rmSync, statSync, writeFileSync } from 'node:fs';
 import { homedir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
@@ -165,6 +165,23 @@ const readJson = (path) => { try { return JSON.parse(readFileSync(path, 'utf8'))
 export const loadState = (dataDir) => ({ options: {}, created: {}, declined: {}, ...readJson(join(dataDir, STATE_FILE)) });
 const save = (dataDir, file, value) => { mkdirSync(dataDir, { recursive: true }); writeAtomic(join(dataDir, file), `${JSON.stringify(value, null, 2)}\n`); };
 const stamp = (now) => now.toISOString().replace(/\D/g, '').slice(0, 14);
+const sleep = (ms) => Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, ms);
+
+// Each step but status reads, changes and writes the shared plan and state files, and Claude may run two applies at
+// once, so steps take turns through a lock directory. A lock older than a minute is from a run that died.
+function locked(dataDir, fn) {
+  const lock = join(dataDir, 'rules.lock');
+  mkdirSync(dataDir, { recursive: true });
+  for (let tries = 0; ; tries++) {
+    try { mkdirSync(lock); break; } catch (e) {
+      if (e.code !== 'EEXIST') throw e;
+      try { if (Date.now() - statSync(lock).mtimeMs > 60_000) { rmSync(lock, { recursive: true, force: true }); continue; } } catch {}
+      if (tries >= 200) refuse(`another /recode:rules step holds ${lock}; nothing was written; run /recode:rules again`);
+      sleep(50);
+    }
+  }
+  try { return fn(); } finally { rmSync(lock, { recursive: true, force: true }); }
+}
 
 // Writes beside the target, then renames over it. On Windows a rename that fails, as when another process holds the
 // file, is retried once after a short wait.
@@ -173,7 +190,7 @@ function writeAtomic(path, text, backup) {
   writeFileSync(tmp, text, 'latin1');
   try { renameSync(tmp, path); } catch (e) {
     if (process.platform === 'win32') {
-      Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, 500);
+      sleep(500);
       try { renameSync(tmp, path); return; } catch {}
     }
     rmSync(tmp, { force: true });
@@ -197,6 +214,11 @@ export function main(argv, { env = process.env, platform = process.platform, now
   const [verb, dataDir, ...rest] = argv;
   if (!['status', 'plan', 'remove', 'apply', 'decline'].includes(verb)) refuse(`unknown command ${verb}; use status, plan, remove, apply or decline`);
   if (!dataDir) refuse('the data directory argument is missing');
+  const step = () => run(verb, dataDir, rest, { env, platform, now, home });
+  return verb === 'status' ? step() : locked(dataDir, step);
+}
+
+function run(verb, dataDir, rest, { env, platform, now, home }) {
   const all = targets(env, home);
   const state = loadState(dataDir);
   if (verb === 'apply' || verb === 'decline') {
