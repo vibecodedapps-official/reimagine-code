@@ -300,7 +300,7 @@ file only when you agree to that file.
   Edit the rules by moving lines below the end marker: a block edited by hand is reported
   and left as it is.
 - **Backups.** Before a change to an existing file, it is copied to
-  `<file>.recode-backup-<YYYYMMDDHHMMSS>`. If the file changed after the diff was shown,
+  `<file>.recode-backup-<YYYYMMDDHHMMSS>`, the time in UTC. If the file changed after the diff was shown,
   nothing is written and the command asks you to run it again.
 - **Removing.** `/recode:rules --remove` takes the block out, with the empty lines it
   added in front. A file the command created, holding nothing else, is deleted.

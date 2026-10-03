@@ -156,7 +156,7 @@ test('R42: remove takes the block and the bytes of its join, for each join value
 });
 
 test('R42: install then remove gives back the original bytes for LF, CRLF, BOM and no final newline', () => {
-  for (const original of ['', 'mine\n', 'mine', 'one\r\ntwo\r\n', `${BOM}mine\n`, `${BOM}mine`]) {
+  for (const original of ['', 'mine\n', 'mine', 'one\r\ntwo\r\n', 'one\r\ntwo', `${BOM}mine\n`, `${BOM}mine`]) {
     const installed = plan(original).after;
     assert.equal(plan(installed, { remove: true }).after, original, JSON.stringify(original));
   }
@@ -337,6 +337,7 @@ test('R40, R42: install then remove leaves each fixture file equal to its origin
     'join blank, LF': '# Mine\n\nKeep this.\n',
     'join newline, no final newline': '# Mine\n\nKeep this.',
     CRLF: '# Mine\r\n\r\nKeep this.\r\n',
+    'CRLF, no final newline': '# Mine\r\n\r\nKeep this.',
     'BOM and a non-UTF-8 byte': `${BOM}# Mine ${FF}\n`,
   };
   for (const [label, original] of Object.entries(fixtures)) {
@@ -348,7 +349,7 @@ test('R40, R42: install then remove leaves each fixture file equal to its origin
       s.run('apply', ['codex']);
       const installed = bytes(s.claude);
       assert.ok(installed.startsWith(original), label);
-      if (label === 'CRLF') assert.equal(installed.replace(/\r\n/g, '').includes('\n'), false, 'the block uses CRLF');
+      if (label.startsWith('CRLF')) assert.equal(installed.replace(/\r\n/g, '').includes('\n'), false, 'the block uses CRLF');
       else assert.equal(installed.includes('\r'), false, label);
       s.run('remove', [], { now: LATER });
       s.run('apply', ['claude'], { now: LATER });

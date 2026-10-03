@@ -16,7 +16,8 @@ const END = '<!-- recode:house-rules end -->';
 const block = (options, digest, body) => `<!-- recode:house-rules begin version=0.0.1 options=${options} join=none digest=${digest} -->\n${body}${END}\n`;
 const NONE = { options: {}, created: {}, declined: {} };
 
-// Shaped like `claude plugin list --json` from Claude Code 2.1.284.
+// The fields `claude plugin list --json` printed on Claude Code 2.1.284, less its paths and dates. A disabled plugin is
+// still installed, so it is listed.
 const CLAUDE_LIST = JSON.stringify([
   { id: 'codex-lite@vibecodedapps-codex-lite', version: '0.9.0', scope: 'user', enabled: true },
   { id: 'cca@vibecodedapps-claude-codex-audit', version: '0.3.0', scope: 'user', enabled: true },
