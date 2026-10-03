@@ -184,8 +184,8 @@ test('setup from the home directory reports the toolchain and says the probe tar
   assert.deepEqual(calls(s), [['--version'], ['login', 'status']]);
 }));
 
-test('setup: a --version that ignores SIGTERM gives a refusal naming it within 10 s of the deadline', spawning, withScratch((s) => {
-  const r = cli(s, ['setup', s.data], { cwd: s.plain, env: { FAKE_CODEX: 'version-ignores-sigterm', RECODE_TIMEOUT_MS: '500' } });
+test('setup: a --version that ignores SIGINT and SIGTERM gives a refusal naming it within 10 s of the deadline', spawning, withScratch((s) => {
+  const r = cli(s, ['setup', s.data], { cwd: s.plain, env: { FAKE_CODEX: 'version-ignores-signals', RECODE_TIMEOUT_MS: '500' } });
   assert.match(r.stdout, /^codex: recode: codex --version did not finish within 0.5 s and was stopped\nlogin: Logged in/);
   assert.equal(r.status, 1);
   assert.equal(r.ms < 10_500, true, `${r.ms} ms`);
@@ -263,19 +263,30 @@ test('ask --timeout wins over RECODE_TIMEOUT_MS for the turn', spawning, withScr
   assert.equal(await dead(pids(s)[0]), true);
 }));
 
-test('a child that ignores SIGTERM is killed by the escalation, within 10 s of the deadline', spawning, withScratch(async (s) => {
-  const r = run(s, 'ask', { request: 'q', env: { FAKE_CODEX: 'ignores-sigterm', RECODE_TIMEOUT_MS: '1000' } });
+test('a child that ignores SIGINT and SIGTERM is killed by the escalation, within 10 s of the deadline', spawning, withScratch(async (s) => {
+  const r = run(s, 'ask', { request: 'q', env: { FAKE_CODEX: 'ignores-signals', RECODE_TIMEOUT_MS: '1000' } });
   assert.equal(r.status, 1);
   assert.match(r.stdout, /recode: the run failed: timed out after 1 s; its process group was stopped\n/);
   assert.equal(r.ms < 11_000, true, `${r.ms} ms`);
   assert.equal(await dead(pids(s)[0]), true);
 }));
 
-test('a timed-out run whose own child ignores SIGTERM has that child killed too', spawning, withScratch(async (s) => {
+test('a timed-out run whose own child ignores SIGINT and SIGTERM has that child killed too', spawning, withScratch(async (s) => {
   const r = run(s, 'ask', { request: 'q', env: { FAKE_CODEX: 'hang-stubborn-child', RECODE_TIMEOUT_MS: '1000' } });
   assert.equal(r.status, 1);
   assert.match(r.stdout, /recode: the run failed: timed out after 1 s; its process group was stopped\n/);
   assert.equal(await dead(pids(s)[0]), true);
+}));
+
+test('a timed-out run stops a command Codex runs in its own process group, so it writes nothing after the result', spawning, withScratch(async (s) => {
+  const late = join(s.root, 'late.txt');
+  const r = run(s, 'implement', { request: '--timeout 1\nslow task', env: { FAKE_CODEX: 'hang-detached-command', FAKE_CODEX_LATE: late } });
+  assert.equal(r.status, 1);
+  assert.match(r.stdout, /recode: the run failed: timed out after 1 s; its process group was stopped\n/);
+  assert.match(r.stdout, /\nstatus: timeout\n$/);
+  assert.equal(await dead(pids(s)[0]), true);
+  await new Promise((done) => setTimeout(done, 1000));
+  assert.equal(existsSync(late), false);
 }));
 
 test('a background process left by a successful run is stopped before the result is printed', spawning, withScratch(async (s) => {

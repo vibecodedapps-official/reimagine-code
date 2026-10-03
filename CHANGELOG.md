@@ -16,3 +16,7 @@ repos' own changelogs are kept under `docs/history/`.
   prefix `/recode:`, the script `recode.mjs`, the message prefix `recode: `, and the
   test-only variables `RECODE_*` are renamed. The plugin data directory becomes
   `~/.claude/plugins/data/recode-reimagine-code/`. Behavior is otherwise unchanged.
+- Fixed a timed-out run leaving Codex's shell commands running, so they could change files
+  after the result was printed. Codex 0.159.2 runs each command in its own process group,
+  which the timeout's SIGTERM missed. The timeout now sends SIGINT, and Codex stops its
+  commands before it exits.
