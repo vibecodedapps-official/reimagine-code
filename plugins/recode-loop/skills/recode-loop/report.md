@@ -21,23 +21,23 @@ Every run ends in exactly one terminal state, writes the report, and prints it.
   yet. The printed report names the preflight item that failed and the fix. Run id and
   branch may be "not allocated".
 - From Step 0.5 on, with `"commit": false` (the default), write the report to
-  `.ccl/<run-id>/report.md`.
+  `.recode/<run-id>/report.md`.
 - With `"commit": true`, Step 7.1 copies the plan and a provisional report with state
-  `publishing` to `specs/ccl/<run-id>/` and commits them. That snapshot is never modified
+  `publishing` to `specs/recode/<run-id>/` and commits them. That snapshot is never modified
   after its commit. Write
-  the terminal report to `.ccl/<run-id>/report.md`, which is always git-ignored. Later
+  the terminal report to `.recode/<run-id>/report.md`, which is always git-ignored. Later
   updates go only to the printed report and to a PR comment.
 - Never overwrite an existing file this run did not write.
 
 ## Template
 
 ```
-# ccl run report
+# recode run report
 
 - Run id: <yyyy-mm-dd-inputs, or "not allocated">
 - Terminal state: <done | plan-only | prepared | blocked | stopped>
 - Host: <github | other (hostname)>
-- Run budget: <minutes> (<flag | .ccl.json | tier default | session instruction at hh:mm>)
+- Run budget: <minutes> (<flag | .recode.json | tier default | session instruction at hh:mm>)
 - Base commit: <sha, or "not resolved">
 - Branch: <name, or "none created">; with several repositories, each repository's branch
   and whether it is new or continued, and each repository switched in Step 0.2 with its
@@ -165,7 +165,7 @@ non-blocking and anything out of scope. No issues were opened.
 - For `prepared`, no publication happened; give the publish commands.
 - For `blocked` and `stopped`, no publication happens after the state is reached. Report
   what was already pushed and link it.
-- `Handoff:` is the absolute path of `.ccl/<run-id>/handoff.md` when `handoff.md` in this
+- `Handoff:` is the absolute path of `.recode/<run-id>/handoff.md` when `handoff.md` in this
   skill's base directory had the run write it, with the path of `cca-manifest.json` beside
   it. Otherwise it says "not written" and why: "no commit from this run" for a run that
   never reached a commit at Step 7.1, and, when the run left changes and cca is

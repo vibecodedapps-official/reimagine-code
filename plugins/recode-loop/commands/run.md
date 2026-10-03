@@ -1,10 +1,10 @@
 ---
-description: "Run the tiered plan, review, implement, review, publish loop for one unit of work, from issues, a handoff file, or a description. Use when the user asks to run the ccl loop, or types /ccl:run. Inputs are issue URLs or #n numbers of this repo, file paths, and a quoted description. Flags are --effort low|medium|high|xhigh|max, --plan-only, --confirm-plan, --no-codex, --no-publish, --branch <name>, --continue <branch>, --run-budget <minutes>, and --repo <path>[@<branch>]. Pull request references are rejected. To only plan, use /ccl:plan."
+description: "Run the tiered plan, review, implement, review, publish loop for one unit of work, from issues, a handoff file, or a description. Use when the user asks to run the recode loop, or types /recode-loop:run. Inputs are issue URLs or #n numbers of this repo, file paths, and a quoted description. Flags are --effort low|medium|high|xhigh|max, --plan-only, --confirm-plan, --no-codex, --no-publish, --branch <name>, --continue <branch>, --run-budget <minutes>, and --repo <path>[@<branch>]. Pull request references are rejected. To only plan, use /recode-loop:plan."
 argument-hint: '<#n | issue URL | file path | "description">... [--effort low|medium|high|xhigh|max] [--plan-only] [--confirm-plan] [--no-codex] [--no-publish] [--branch <name>] [--continue <branch>] [--run-budget <minutes>] [--repo <path>[@<branch>]]...'
 allowed-tools: Bash(git status:*), Bash(git rev-parse:*), Bash(git remote:*), Bash(gh repo view:*), Bash(gh issue view:*), Bash(gh pr view:*), Bash(git ls-remote *), Bash(git check-ref-format *), Bash(git -C * remote -v), Bash(git -C * rev-parse *), Read, Skill
 ---
 
-You are a thin forwarder for the ccl orchestrator. Do the steps below in order.
+You are a thin forwarder for the recode-loop orchestrator. Do the steps below in order.
 
 1. Parse the arguments shown between the markers below. They are what the user typed after the command. Split them into inputs and flags with these rules.
 
@@ -54,4 +54,4 @@ flags:
   repos: <path>[@<branch>][, ...] | none
 ```
 
-4. Invoke the Skill tool with skill `ccl:ccl` and that same block as the args. Then follow the skill from Step 0. Do not interpret the request, plan, or act on it yourself, and write no file: the skill records the invocation in its own first step.
+4. Invoke the Skill tool with skill `recode-loop:recode-loop` and that same block as the args. Then follow the skill from Step 0. Do not interpret the request, plan, or act on it yourself, and write no file: the skill records the invocation in its own first step.
