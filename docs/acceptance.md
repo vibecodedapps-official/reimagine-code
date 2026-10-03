@@ -62,18 +62,18 @@ name a plugin are rerun under the new names and recorded here.
 7. **Loop plan runs on a local remote.** Setup: scratch git repositories, each with
    `math.mjs`, `test.mjs`, a `package.json` whose `test` script passes, and a local bare
    `origin`; one also holds `.ccl.json` with `{"checks":["npm test"]}`. Command:
-   `/recode-loop:plan "<a one-function change>" --effort low`, in headless sessions:
-   with `--no-codex`; in the repository with `.ccl.json`; with `codex` absent from
-   `PATH`; with the `codex` option set to false, three times; with the option never
-   set; and with it set to true. Expected: each run calls `recode-loop:recode-loop` with
-   the invocation block. The `.ccl.json` run ends `blocked` before writing anything and
-   says to rename the file. The others end `plan-only` with the plan and a report headed
-   `# recode run report` under `.recode/<run-id>/`, and `.recode/` in
-   `.git/info/exclude`. With `--no-codex`, `codex` absent, or the option false, no Codex
-   call is made, each Codex role runs on its Claude fallback, and the report says why.
-   With the option unset or true, the block says `no-codex: false` and Codex is called.
-   Covers R17, R20, R21, R23, and part of R22. Rerun when a loop command, the option, or
-   Step 0 changes. Run 2026-10-03; see the record.
+   `/recode-loop:plan "<a one-function change>" --effort low`, in headless sessions: with
+   `--no-codex`; in the repository with `.ccl.json`; with `codex` absent from `PATH`;
+   with the `codex` option set to false, never set, and set to true. Expected: each run
+   calls `recode-loop:recode-loop` with the invocation block. The `.ccl.json` run ends
+   `blocked` before writing anything and says to rename the file. The others end
+   `plan-only` with the plan and a report headed `# recode run report` under
+   `.recode/<run-id>/`, and `.recode/` in `.git/info/exclude`. With `--no-codex`, `codex`
+   absent, or the option false, no Codex call is made, each Codex role runs on its Claude
+   fallback, and the report says why. With the option unset or true, the block says
+   `no-codex: false` and Codex is called. Covers R17, R20, R21, R23, and part of R22.
+   Rerun when a loop command, the option, or Step 0 changes. Run 2026-10-03; see the
+   record.
 8. **Loop runs to the end on a local remote.** Setup: as item 7, without `.ccl.json`.
    Command: `/recode-loop:run "<the same change>" --no-codex --effort low`, in separate
    repositories: with `--no-publish` and a committed `.recode.json` of
@@ -86,7 +86,7 @@ name a plugin are rerun under the new names and recorded here.
    nothing under `specs/recode/`, and the report giving the commit and push commands;
    the `--no-publish` run writes no `handoff.md` or `cca-manifest.json` and says why;
    the skip-worktree run works in `<parent>/<checkout>-recode-<run-id>` and names its
-   removal; the unanswered plan ends `plan-only`; the `--continue` run works on that
+   removal; the declined plan ends `plan-only`; the `--continue` run works on that
    branch; the `--repo` run changes both repositories. Covers ccl items 16, 65, 72, and
    172 under the new names, and the local parts of R22. Rerun when Step 0, Step 7, or an
    artifact path changes. Run 2026-10-03; see the record.
@@ -269,7 +269,7 @@ No run had a permission denial.
 - **`/config`.** Typing `codex` in `/config` showed a "Use Codex" row for `recode-loop`
   with the value `true`. The install message names `/plugin configure
   recode-loop@reimagine-code`, the command the loop's README gives.
-- **Item 8 passed, at f01a1f4, with `--no-codex --effort low`.** The plan run with a
+- **Item 8 passed, at 1b657af, with `--no-codex --effort low`.** The plan run with a
   committed `{"commit": true}` ended `plan-only`, with a clean tree and no `specs/`.
   The `--no-publish` run with that config ended `prepared`, on a new local branch with
   `math.mjs` and `test.mjs` modified, no new commit, no `specs/`, the commit and push
