@@ -111,10 +111,10 @@ for (const [name, want] of Object.entries(hidden)) {
   if (has !== want) fail(`plugins/recode/commands/${name}.md: disable-model-invocation must be ${want ? "set" : "absent"}`);
 }
 
-// 5. The plugin's one hook: UserPromptSubmit, run in exec form as node <plugin root>/scripts/recode.mjs hook.
+// 5. The plugin's one hook: UserPromptSubmit, run in exec form as node <plugin root>/scripts/recode.mjs hook <plugin data>.
 const hooks = json("plugins/recode/hooks/hooks.json");
 if (hooks) {
-  const want = { type: "command", command: "node", args: ["${CLAUDE_PLUGIN_ROOT}/scripts/recode.mjs", "hook"] };
+  const want = { type: "command", command: "node", args: ["${CLAUDE_PLUGIN_ROOT}/scripts/recode.mjs", "hook", "${CLAUDE_PLUGIN_DATA}"] };
   const got = hooks.hooks?.UserPromptSubmit?.flatMap((g) => g.hooks ?? []);
   if (Object.keys(hooks.hooks ?? {}).join() !== "UserPromptSubmit" || got?.length !== 1 || !isDeepStrictEqual(got[0], want)) {
     fail(`plugins/recode/hooks/hooks.json must declare exactly one UserPromptSubmit hook: ${JSON.stringify(want)}`);

@@ -289,6 +289,11 @@ an absolute path is not a command and gets the note. A prompt that does not
 mention Codex gets nothing. The note is guidance: Claude usually follows it, but it does not
 stop Claude from running Codex some other way.
 
+On every prompt the hook also deletes this session's request file, if one is left from a run
+that stopped before the script ran. Claude sometimes sends the Write and the script call
+together; if that Write failed on a leftover file, the script would otherwise send the earlier
+task to Codex. With the file gone, the script refuses with "no request file" instead.
+
 ## Permissions
 
 In auto mode, `ask` and `review` run with no approvals, whether you type the command or ask in

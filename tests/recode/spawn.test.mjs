@@ -40,8 +40,8 @@ const NOTE = 'Use recode for Codex requests: ask for questions, plan critiques, 
   'the same Codex thread, --resume <thread id>, or a bare --resume followed by a line break or another option; the follow-up then needs ' +
   'only the new question. A skill that delegates implementation to Codex uses implement; for a plain request to change files, direct the user to ' +
   '/recode:do <task>; for setup checks, /recode:setup. Do not invoke Codex directly.\n';
-const hook = (input) => {
-  const r = spawnSync(process.execPath, [SCRIPT, 'hook'], { input, encoding: 'utf8', timeout: 10_000 });
+const hook = (input, ...args) => {
+  const r = spawnSync(process.execPath, [SCRIPT, 'hook', ...args], { input, encoding: 'utf8', timeout: 10_000 });
   return { status: r.status, stdout: r.stdout, stderr: r.stderr };
 };
 
@@ -56,6 +56,23 @@ test('hook: a prompt that does not mention Codex gets nothing', () => {
   const r = hook(JSON.stringify({ prompt: 'draft a plan' }));
   assert.deepEqual([r.stdout, r.status], ['', 0]);
 });
+
+test('hook: a prompt deletes this session\'s leftover request file and no other session\'s', withScratch((s) => {
+  for (const id of [ID, ID2]) writeFileSync(join(s.data, `request-${id}.txt`), 'an earlier task');
+  const r = hook(JSON.stringify({ session_id: ID, prompt: 'draft a plan' }), s.data);
+  assert.deepEqual([r.stdout, r.status], ['', 0]);
+  assert.equal(requestLeft(s), false);
+  assert.equal(existsSync(join(s.data, `request-${ID2}.txt`)), true);
+}));
+
+test('do after a prompt, with no request written, is refused rather than sending an earlier stopped run\'s task', spawning, withScratch((s) => {
+  writeFileSync(join(s.data, `request-${ID}.txt`), 'Create LEFTOVER.txt');
+  hook(JSON.stringify({ session_id: ID, prompt: '/recode:do Create NEW.txt' }), s.data);
+  const r = run(s, 'do');
+  assert.equal(r.stdout, `recode: no request file at ${join(s.data, `request-${ID}.txt`)}; run the command again\nstatus: refused\n`);
+  assert.equal(r.status, 1);
+  assert.deepEqual(calls(s), []);
+}));
 
 test('hook: a typed /recode: command gets nothing', () => {
   const r = hook(JSON.stringify({ prompt: ' /recode:do Report the current directory; ask codex nothing' }));

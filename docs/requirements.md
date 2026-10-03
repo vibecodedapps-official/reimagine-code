@@ -80,7 +80,8 @@ requirement below changes it. The audit plugin is not part of v0.1.0.
 11. **Prefix.** Bridge messages start with `recode: `. Check: test.
 12. **Hook.** The UserPromptSubmit hook prints its routing note only for a prompt that
     matches `/codex/i` and does not start with a slash command, and names the `recode:`
-    commands. Check: test.
+    commands. On every prompt it deletes the session's request file, so a run whose
+    Write failed on a leftover is refused instead of sending the earlier task. Check: test.
 13. **Data directory.** Scripts receive the data directory as an argument from the
     command text or the hook's `args`, and never read it from the environment. Depends
     on spike M0.4 for the hook. Check: test; lint.

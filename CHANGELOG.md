@@ -20,3 +20,7 @@ repos' own changelogs are kept under `docs/history/`.
   after the result was printed. Codex 0.159.2 runs each command in its own process group,
   which the timeout's SIGTERM missed. The timeout now sends SIGINT, and Codex stops its
   commands before it exits.
+- Fixed a stopped run's request reaching Codex. When Claude sent the request Write and the
+  script call together and the Write failed on a file left by a stopped run, the script
+  sent that earlier task. The prompt hook now deletes the session's request file, so the
+  script refuses instead.
