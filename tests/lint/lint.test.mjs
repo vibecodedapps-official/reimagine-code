@@ -169,6 +169,8 @@ test('lint allows the old config name only in the loop skill that checks for it'
 test('lint rejects a loop command that does not read the codex option', () => fails(
   (d) => {
     const p = join(d, 'plugins/recode-loop/commands/plan.md');
-    writeFileSync(p, readFileSync(p, 'utf8').replace('The option reads: `${user_config.codex}`. ', ''));
+    const s = readFileSync(p, 'utf8');
+    assert.ok(s.includes('`${user_config.codex}`'), 'plan.md lacks the option');
+    writeFileSync(p, s.replace('`${user_config.codex}`', '`true`'));
   },
   'plugins/recode-loop/commands/plan.md: must read the codex option as `${user_config.codex}`'));
