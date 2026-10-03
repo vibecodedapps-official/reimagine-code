@@ -30,3 +30,4 @@ It is mid-migration from four source repos toward v0.1.0.
 - docs/implementation-plan-v0.1.0.md: the milestones and their checks. Read before starting or finishing a milestone.
 - docs/decisions.md: decisions with their evidence. Read before reversing a design choice.
 - docs/rename-map.md: every file move and string rename from the source repos. Read before a move or rename commit.
+- docs/acceptance.md: the hand-run acceptance items and the record of runs. Read before running, adding, or recording an acceptance check.
