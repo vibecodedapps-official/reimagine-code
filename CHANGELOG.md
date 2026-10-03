@@ -45,6 +45,9 @@ repos' own changelogs are kept under `docs/history/`.
 - Removed the retry for a Codex skill missing from the session's skill list. A fresh
   session lists a dependency's skills, so a failed call follows the usual fallback.
 - Added the `codex` option. Set to false, every run behaves as `--no-codex`.
+- Fixed: on a private repository without GitHub Pro, every run ended `blocked` at the CI
+  watch, because GitHub refuses the branch rules read there. That refusal now means no
+  rulesets apply, and the required checks come from branch protection alone.
 
 #### Breaking
 

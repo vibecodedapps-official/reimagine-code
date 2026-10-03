@@ -142,3 +142,13 @@ catalog at `feat/loop`.
    /recode-loop:run" and "or types /recode-loop:plan", and shortening the skill's
    description, brought it to about 497. A typed slash command runs without matching
    its description, so the clauses only cost tokens. Decided 2026-10-03.
+4. **A rules read refused for the plan means no rulesets apply.** On the private
+   throwaway repositories, `gh api repos/<owner>/<repo>/rules/branches/main` returned
+   HTTP 403, "Upgrade to GitHub Pro or make this repository public to enable this
+   feature.", so all four publishing runs ended `blocked` with CI green. ccl decision 12
+   blocks on a failed read so that a run never reports done while GitHub blocks the
+   merge. GitHub enforces no rulesets on a repository where it refuses that read for
+   the plan, so that risk is absent there; the required checks come from branch
+   protection alone, and the run records why. Any other failure of that read still
+   blocks. On a public repository the read succeeds, so nothing changes there. Chosen
+   2026-10-03 by the author over keeping ccl's behavior for 0.2.0.

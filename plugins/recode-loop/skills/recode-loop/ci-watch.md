@@ -6,7 +6,11 @@ read, which workflows apply, what passes, and how to poll. Item 5, CI repair, st
 
    1. Read these with `gh`, all readable with read access. If any read fails, CI cannot be
       verified: end in `blocked`, naming the failed read. Never treat a failed read as "nothing
-      is required".
+      is required". The one exception is the rules read below: when it returns HTTP 403 with
+      a message asking to upgrade to GitHub Pro or to make the repository public, GitHub
+      offers no rulesets for this repository, so none apply. Record that answer in `run.md`
+      and the report, take the required checks from branch protection alone, and expect no
+      required workflows. Any other failure of the rules read still blocks.
       - Required checks: `gh api repos/{owner}/{repo}/branches/<base> --jq .protection` gives
         `required_status_checks` (`contexts`, and `checks` with `app_id`). `<base>` is the
         base branch the run recorded for the PR: the default branch for a PR this run
