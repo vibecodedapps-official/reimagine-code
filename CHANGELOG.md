@@ -9,6 +9,8 @@ repos' own changelogs are kept under `docs/history/`.
 
 - Started the reimagine-code suite and imported the histories of codex-lite-cc,
   claude-codex-loop, codex-code-review, and repo-docs, unchanged, under `imports/`.
+- Added the Codex catalog, `.agents/plugins/marketplace.json`, which lists `recode` and
+  `repo-docs`. The Claude catalog lists `recode`, `recode-loop`, and `repo-docs`.
 
 ### recode
 
@@ -61,3 +63,16 @@ The loop's files in your repositories take the new name, and the old ones are no
 - Worktrees are `<checkout>-recode-<run-id>`, not `<checkout>-ccl-<run-id>`.
 - Reports start `# recode run report`, and the PR status comment starts
   `Status from the recode run`.
+
+### recode (Codex)
+
+- Moved codex-code-review-general 0.1.0 into the suite as the Codex plugin `recode`
+  0.1.0. The five `general-code-review*` skills are unchanged. Install it as
+  `recode@reimagine-code`, after removing `codex-code-review-general@codex-code-review`.
+- Dropped the verbatim `codex-code-review` plugin and its upstream sync scripts. The
+  NOTICE now names the upstream commit the skills were adapted from.
+
+### repo-docs
+
+- Moved repo-docs 0.1.1 into the suite as 0.1.2, with no change in behavior. On both
+  hosts it installs as `repo-docs@reimagine-code`.

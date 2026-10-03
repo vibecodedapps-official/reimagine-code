@@ -21,9 +21,22 @@ In Claude Code:
 /plugin marketplace add vibecodedapps-official/reimagine-code
 /plugin install recode@reimagine-code
 /plugin install recode-loop@reimagine-code
+/plugin install repo-docs@reimagine-code
 ```
 
 Installing `recode-loop` also installs `recode`, which it calls.
+
+In Codex:
+
+```
+codex plugin marketplace add vibecodedapps-official/reimagine-code
+codex plugin add recode@reimagine-code
+codex plugin add repo-docs@reimagine-code
+```
+
+On Codex, `recode` is the code review skills, a different plugin from the Claude Code
+bridge of the same name. Codex runs the repo-docs hook only after you trust it in
+`/hooks`.
 
 The design is in [docs/architecture.md](docs/architecture.md),
 [docs/requirements.md](docs/requirements.md), and the
@@ -39,6 +52,6 @@ npm run lint
 ```
 
 CI runs both on Ubuntu, macOS, and Windows, then `claude plugin validate --strict` on
-the catalog and on each plugin directory.
+the Claude catalog and on each Claude plugin directory.
 
 Licensed under Apache-2.0. See [LICENSE](LICENSE) and [NOTICE](NOTICE).
