@@ -1,13 +1,10 @@
-codex-code-review
+recode for Codex, part of reimagine-code
 Copyright 2026 vibecodedapps.net
 
-This repository redistributes, unmodified, the code-review skills from
-OpenAI Codex (https://github.com/openai/codex), path .codex/skills, licensed
-under the Apache License, Version 2.0. The pinned upstream commit is recorded
-in upstream.lock.
-
-The skills under plugins/codex-code-review-general are modified derivatives of
-those same upstream files. Each modified file carries a notice saying so.
+The skills in this directory are modified derivatives of the code-review skills
+from OpenAI Codex (https://github.com/openai/codex), path .codex/skills, at commit
+f53f5a6fed662bd6f352d08066925c871a061182, licensed under the Apache License,
+Version 2.0. Each modified file carries a notice saying so.
 
 The upstream NOTICE file reads:
 
