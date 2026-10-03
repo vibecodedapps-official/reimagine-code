@@ -96,7 +96,8 @@ name a plugin are rerun under the new names and recorded here.
    ccl items 4, 75, and 114 under the new names, and a `--continue` run on a branch with
    an open PR. Expected: Codex implements and Claude publishes a PR that closes #1;
    with `"commit": true` the snapshot lands in `specs/recode/<run-id>/`; each item's own
-   result. Covers the rest of R22 and R25. Rerun when Step 7 changes. Not yet run.
+   result. Covers the rest of R22 and R25. Rerun when Step 7 changes. Run 2026-10-03 up
+   to the CI watch; see the record.
 10. **ccl items under the new names.** The list was drawn 2026-10-03 at the start of M4
     from `docs/history/claude-codex-loop/acceptance.md`: of its 174 items, 58 name a
     renamed string, 35 of them only through bridge calls. The items rerun hinge on a
@@ -105,7 +106,8 @@ name a plugin are rerun under the new names and recorded here.
     item 7's runs check what is left of it, that `run.md` records the availability check.
     Expected: each item's own result with `/ccl:` read as `/recode-loop:`, `.ccl` as
     `.recode`, and `specs/ccl` as `specs/recode`. Rerun when that file's own conditions
-    say. Items 1, 16, 65, 72, and 172 run 2026-10-03; see the record.
+    say. Items 1, 16, 65, 72, and 172 run 2026-10-03, and 4, 75, and 114 up to the CI
+    watch; see the record.
 
 ## Record of runs
 
@@ -288,6 +290,38 @@ No run had a permission denial.
   read or commented on (host other)". With `--repo` naming a second repository, both
   were changed on one new branch by two Sonnet subagents, and the report listed both
   with their base commits.
-- **Not run.** Item 9 and the ccl items in it, which need a throwaway GitHub repository:
-  a run with Codex implementing, publishing, CI, `"commit": true` committing to
-  `specs/recode/<run-id>/`, and the PR comment of a continued branch.
+- **Item 9, at 8cc36de: every run ended `blocked` at the CI watch.** Setup: private
+  repositories `vibecodedapps-dev/recode-accept-a` and `recode-accept-b`, created for
+  this run, each with four one-line bugs in `math.mjs`, a test of `add` only, a committed
+  `.recode.json` of `{"commit": true}`, and a workflow running `npm test` on pushes to
+  `main` and on PRs; an issue per run; PR 5 opened by hand on branch `t114`. The scratch
+  Codex home held a copy of the author's Codex login, and cca 0.5.1 was installed from
+  its marketplace. All four runs started at once, each in its own clone. Each pushed,
+  opened or updated its PR, saw the `test` check pass, and then stopped on `gh api
+  repos/vibecodedapps-dev/recode-accept-a/rules/branches/main`, which returned "Upgrade
+  to GitHub Pro or make this repository public to enable this feature." (HTTP 403).
+  `ci-watch.md` item 1 ends the run in `blocked` on any failed read, so no run posted
+  its issue status comment or its PR report comment, and none reached `done`.
+  - `/recode-loop:run #1 --effort low`: Codex reviewed the plan, Codex implemented in one
+    round, and Codex and `code-review low` reviewed the diff, with no swaps. Commit
+    3e01518 held the fix and `specs/recode/2026-10-03-1/plan.md` and `report.md`; PR 7
+    said `Closes #1`. `handoff.md` and `cca-manifest.json` were written and passed
+    cca's check.
+  - ccl item 4, `/recode-loop:run #2 --no-codex`: Opus took each Codex review and a
+    Sonnet subagent implemented; PR 6 said `Closes #2` and held the snapshot. The tier
+    came out medium, not the low the item expects: the estimate rule in `tiers.md` lists
+    "one issue with tests" under medium, text the rename did not change.
+  - ccl item 114, `/recode-loop:run #3 --no-codex --continue t114`, detached at
+    `origin/t114` with an edited skip-worktree file: the run worked in
+    `<parent>/a3-recode-2026-10-03-3`, pushed the fix and the snapshot to `t114`, and
+    posted its comment on PR 5 with `gh pr comment 5 --body-file` set to the absolute
+    path `/private/tmp/recode-accept/m4/gh/a3/.recode/2026-10-03-3/pr-body.md`.
+  - ccl item 75, `/recode-loop:run #4 <URL of recode-accept-b issue 1> --repo <its
+    checkout> --effort medium`: one branch name in both repositories; PR 8 in `a` and PR
+    2 in `b`, each saying `Closes` for its own issue and `Refs` for the other's, under a
+    "Related pull requests" section linking the sibling; Codex implemented both slices,
+    the second with `--cwd`, and reviewed both, the second with `--cwd`; the second
+    body was written to `pr-body-recode-accept-b.md` in the primary's run directory. The
+    report suggested `/cca:audit` with the manifest path.
+- **Not reached.** `done`, the CI watch past the rules read, the issue status comments,
+  and the PR report comments.
