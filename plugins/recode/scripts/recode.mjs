@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 // Entry: node recode.mjs <review|ask|do|implement> <dataDir> <sessionId>, or setup <dataDir>. Prints one result, exits 0 or 1.
-// Or node recode.mjs hook, the UserPromptSubmit hook: reads the event on stdin, prints a routing note or nothing, exits 0.
+// Or node recode.mjs hook <dataDir>, the UserPromptSubmit hook: reads the event on stdin, deletes the session's request file, prints a routing note or nothing, exits 0.
 // The data directory arrives as an argument: inside the Bash tool the environment can carry another plugin's value.
 import { spawn } from 'node:child_process';
 import { existsSync, mkdtempSync, readFileSync, realpathSync, renameSync, rmSync, statSync, writeFileSync } from 'node:fs';
@@ -371,12 +371,14 @@ const ROUTING = 'Use recode for Codex requests: ask for questions, plan critique
 // itself: a slash, a command name, then a space or the end. A prompt starting with an absolute path (/Users/... or /tmp/x:)
 // is not a command and keeps the note. Missing or malformed input prints nothing: a hook must never block or fail a prompt.
 async function hook() {
-  let prompt;
+  let prompt, id;
   try {
     const chunks = [];
     for await (const c of process.stdin) chunks.push(c);
-    prompt = JSON.parse(Buffer.concat(chunks).toString('utf8')).prompt;
+    ({ prompt, session_id: id } = JSON.parse(Buffer.concat(chunks).toString('utf8')));
   } catch { return; }
+  // Runs start after a prompt, so a request file here is a stopped run's: deleted, a script call batched with a failed Write finds none.
+  if (process.argv[3] && validateRequestId(id)) try { rmSync(join(process.argv[3], `request-${id}.txt`), { force: true }); } catch {}
   if (typeof prompt === 'string' && /codex/i.test(prompt) && !/^\s*\/[\w:-]+(?:\s|$)/.test(prompt)) process.stdout.write(`${ROUTING}\n`);
 }
 

@@ -137,9 +137,12 @@ Behavior carries over from codex-lite 0.9.0 unchanged except for names.
   `args` is checked in spike M0.4. The directory becomes
   `~/.claude/plugins/data/recode-reimagine-code/`. It survives updates and is deleted on
   uninstall (verified, docs).
-- **UserPromptSubmit hook.** Unchanged. It prints a routing note only when the prompt
-  matches `/codex/i` and does not start with a slash command, and it reads no state. So
-  it adds nothing to a Claude-only user's prompts and needs no recorded mode.
+- **UserPromptSubmit hook.** It prints a routing note only when the prompt matches
+  `/codex/i` and does not start with a slash command. It also deletes the session's
+  request file, which at a prompt can only be left from a stopped run, so a script call
+  that Claude batched with a failed Write is refused rather than sending the earlier task
+  (found in the M2 acceptance run, 2026-10-03). It reads no other state, so it adds nothing
+  to a Claude-only user's prompts and needs no recorded mode.
 - **SessionStart hook.** New. `suite.mjs` prints one line to the user when a house rules
   block is stale (see below) and nothing otherwise. Claude Code has no install or update
   hook; a SessionStart check is the documented pattern (verified, docs).
