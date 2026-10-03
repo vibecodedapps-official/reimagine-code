@@ -20,23 +20,25 @@ never blocks the commit, and it does not run on a commit made outside a session.
 
 ## Install
 
-This repository is its own plugin marketplace for Claude Code and Codex.
+repo-docs is part of the reimagine-code suite, whose repository is a plugin marketplace
+for Claude Code and Codex.
 
 Claude Code, inside a session:
 
 ```
-/plugin marketplace add vibecodedapps-official/repo-docs
-/plugin install repo-docs@repo-docs
+/plugin marketplace add vibecodedapps-official/reimagine-code
+/plugin install repo-docs@reimagine-code
 ```
 
 Codex:
 
 ```
-codex plugin marketplace add vibecodedapps-official/repo-docs
-codex plugin add repo-docs@repo-docs
+codex plugin marketplace add vibecodedapps-official/reimagine-code
+codex plugin add repo-docs@reimagine-code
 ```
 
 Codex runs a plugin hook only after you trust it. Run `/hooks` in a session to trust it.
+On Windows the hook needs Git for Windows, whose Git Bash runs it in Claude Code.
 
 ## License
 

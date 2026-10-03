@@ -8,20 +8,18 @@ It is mid-migration from four source repos toward v0.1.0.
 
 - `npm test`: every `tests/**/*.test.mjs`.
 - `npm run lint`: the repository checks in `tools/lint.mjs`.
-- `claude plugin validate --strict .`, then the same on each `plugins/<name>`: the
-  manifest checks CI runs.
+- `claude plugin validate --strict .`, then the same on each `plugins/<name>` that has a
+  `.claude-plugin/plugin.json`: the manifest checks CI runs.
 
 ## Hard constraints
 
-- Files under `imports/` are unchanged imports of the source repos. Do not edit them;
-  each moves out in its own milestone, in a commit that only moves files.
 - Moves and string renames never share a commit.
 - A plugin directory under `plugins/` holds only what a user installs. Tests, lint,
   release tools, and design docs stay outside `plugins/`.
 - Shipped files are ASCII.
 - Commits are `type(scope): subject`, lowercase, with a body that says why.
-- Put a bare `@token` in commit subjects and PR text in backticks, so GitHub does not
-  link it to an account.
+- Put a bare `@token` in commit subjects, PR text, and release notes in backticks, so
+  GitHub does not link it to an account.
 
 ## Spokes
 
@@ -31,3 +29,8 @@ It is mid-migration from four source repos toward v0.1.0.
 - docs/decisions.md: decisions with their evidence. Read before reversing a design choice.
 - docs/rename-map.md: every file move and string rename from the source repos. Read before a move or rename commit.
 - docs/acceptance.md: the hand-run acceptance items and the record of runs. Read before running, adding, or recording an acceptance check.
+- plugins/repo-docs/AGENTS.md: the repo-docs plugin's commands, release steps, and hard constraints. Read before editing under plugins/repo-docs/.
+- plugins/repo-docs/skills/repo-docs/SKILL.md: the skill itself, with the principle, the hub and spoke model, what each platform loads, the four hub sections, and the two modes. Read before changing any file under plugins/repo-docs/skills/.
+- plugins/repo-docs/skills/repo-docs/references/spokes.md: the pointer grammar, adapter policy, judgment checks, maintain-mode safeguards, and modes and severity. Read before writing or reviewing skill content.
+- plugins/repo-docs/skills/repo-docs/references/placement.md: the placement rule. Read before editing it or deciding where a piece of skill content belongs.
+- plugins/repo-docs/skills/repo-docs/references/platforms.md: each platform fact the skill relies on, with its source and the date it was checked. Read before relying on or changing a platform behavior, or when a platform changes.
