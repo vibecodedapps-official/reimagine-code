@@ -1,4 +1,4 @@
-# codex-lite-cc
+# reimagine-code
 
 A small Claude Code plugin that hands a task to the Codex CLI, runs it once, and prints what
 it said. Five commands, one entry script, one prompt hook, no daemon, no background jobs of its own.
@@ -6,8 +6,8 @@ it said. Five commands, one entry script, one prompt hook, no daemon, no backgro
 ## Install
 
 ```
-/plugin marketplace add vibecodedapps-official/codex-lite-cc
-/plugin install codex-lite@vibecodedapps-codex-lite
+/plugin marketplace add vibecodedapps-official/reimagine-code
+/plugin install recode@reimagine-code
 ```
 
 Installs track `main`. Every merge to `main` bumps the version.
@@ -32,7 +32,7 @@ Installs track `main`. Every merge to `main` bumps the version.
   Use `"elevated"` instead if you have admin rights and have accepted Codex's one-time
   elevated sandbox setup. Without this setting, Codex's sandbox denies every write and every
   command, even inside the working directory. `do` and `implement` refuse to run, and `ask` and `review`
-  run with a warning. `/codex-lite:setup` reports the value it found. The plugin also reads
+  run with a warning. `/recode:setup` reports the value it found. The plugin also reads
   `windows.sandbox = "..."` at the top level of the file and `windows = { sandbox = "..." }`.
 
 ## Commands
@@ -46,11 +46,11 @@ every run and probe, because `--ignore-user-config` would otherwise drop it.
 
 | Command | Runs | Sandbox |
 | --- | --- | --- |
-| `/codex-lite:ask [--model <name>] [--resume <thread id>] [--timeout <seconds>] <question>`, or `--resume` alone on the first line and the question below it | `codex exec <flags> -`, or `codex exec resume <thread id> <flags> -` with `--resume`, plus `--model <name>` if given, the question on stdin | `read-only` |
-| `/codex-lite:review [--base <ref>] [--model <name>] [--timeout <seconds>]` | `codex exec review <flags>` with `--uncommitted`, or `--base <ref>` (the net difference from the merge base of `<ref>` and `HEAD` to the working tree, tracked files only), plus `--model <name>` if given | `read-only` |
-| `/codex-lite:do <task>` | `codex exec <flags> -`, the task on stdin | `workspace-write` |
-| `/codex-lite:implement [--model <name>] [--timeout <seconds>] [--cwd <absolute path>] <task>`, with `--cwd` last and alone on its line, the task below it | as `do`, plus `--model <name>` if given, run in `--cwd` if given | `workspace-write` |
-| `/codex-lite:setup` | `codex --version`, `codex login status`, and the sandbox probe; on Windows it also reports the Codex sandbox mode | `workspace-write`, probe only |
+| `/recode:ask [--model <name>] [--resume <thread id>] [--timeout <seconds>] <question>`, or `--resume` alone on the first line and the question below it | `codex exec <flags> -`, or `codex exec resume <thread id> <flags> -` with `--resume`, plus `--model <name>` if given, the question on stdin | `read-only` |
+| `/recode:review [--base <ref>] [--model <name>] [--timeout <seconds>]` | `codex exec review <flags>` with `--uncommitted`, or `--base <ref>` (the net difference from the merge base of `<ref>` and `HEAD` to the working tree, tracked files only), plus `--model <name>` if given | `read-only` |
+| `/recode:do <task>` | `codex exec <flags> -`, the task on stdin | `workspace-write` |
+| `/recode:implement [--model <name>] [--timeout <seconds>] [--cwd <absolute path>] <task>`, with `--cwd` last and alone on its line, the task below it | as `do`, plus `--model <name>` if given, run in `--cwd` if given | `workspace-write` |
+| `/recode:setup` | `codex --version`, `codex login status`, and the sandbox probe; on Windows it also reports the Codex sandbox mode | `workspace-write`, probe only |
 
 `ask` and `review` are visible to Claude, so a request in plain words such as "dispatch Codex
 to review this" or "ask Codex whether ..." invokes them. The request is then what Claude
@@ -64,7 +64,7 @@ answer, the output is the whole reply.
 `implement` is visible to Claude too, but only for a change that a skill you invoked delegates
 to Codex as one of its steps. A request typed in plain words, even one that names Codex, is
 not a delegation: asked to have Codex change files, Claude tells you to type
-`/codex-lite:do <task>`.
+`/recode:do <task>`.
 `do` and `setup` are hidden from Claude and run only when you type the command.
 
 This is a tradeoff. Before `implement`, no Codex write happened unless you typed a command. Now
@@ -119,7 +119,7 @@ starts a new thread, and a `--resume` in the text is part of the task. The task 
 after the options; an empty task is refused. For example:
 
 ```
-/codex-lite:implement --timeout 900 --cwd /work/my repo-wt
+/recode:implement --timeout 900 --cwd /work/my repo-wt
 Add a subtract function to math.mjs, with a test.
 ```
 
@@ -140,7 +140,7 @@ could not be read; a crash of the plugin itself, before or after the turn, is `f
 review found nothing. The exit code is 0 for `ok` and 1 otherwise. A result with no `status:`
 line was cut off, by the Bash tool's timeout or a kill, and is incomplete. The plugin does not
 tell model, login or sandbox failures apart: Codex reports them as prose, which the
-`codex-lite: the run failed:` line carries. `setup` prints no status line.
+`recode: the run failed:` line carries. `setup` prints no status line.
 
 `ask` and `review` run from the top of the repository, whatever directory the shell is in; `do` and `implement` run from the shell's directory, or from `--cwd` for `implement`, which bounds where they can write; `review` runs from the top of the repository holding its `--cwd`, if given. `ask` and
 `review` also print a line saying the sandbox has no network. `do` and `implement` also print `HEAD` before
@@ -167,7 +167,7 @@ claiming the host cannot sandbox.
 The probe proves confinement, not capability. A host can confine writes correctly and still
 be unable to run any command inside the sandbox, and then Codex may report work it could not
 do. `ask` and `review` do not probe; their `read-only` mode is requested, not verified. If a
-result looks wrong, run `/codex-lite:setup`.
+result looks wrong, run `/recode:setup`.
 
 ## Limits and known behaviour
 
@@ -180,7 +180,7 @@ result looks wrong, run `/codex-lite:setup`.
 - `do` and `implement` have no network. They cannot install packages, fetch dependencies or call an API.
 - `ask` and `review` have no network either, so Codex cannot read an issue, a pull request or a
   web page, and the commands forward a request unchanged without fetching anything. A typed
-  `/codex-lite:ask Evaluate issue #12` sends `#12` to Codex as it is. Fetch it before you run
+  `/recode:ask Evaluate issue #12` sends `#12` to Codex as it is. Fetch it before you run
   `ask`, and save it under a directory the repository already ignores, so
   `review --uncommitted` does not review it as a change. Check the directory with
   `git check-ignore`, then, if `.scratch/` is ignored, run
@@ -239,11 +239,11 @@ thread id instead; a word that is not a valid id (one with a `;` or a `?`, for e
 refused before Codex runs. For example:
 
 ```
-/codex-lite:ask --resume <thread id> What about the second objection?
+/recode:ask --resume <thread id> What about the second objection?
 ```
 
 ```
-/codex-lite:ask --resume
+/recode:ask --resume
 What about the second objection?
 ```
 
@@ -281,7 +281,7 @@ case, the hook adds a short routing note to Claude's context: use `ask` for ques
 critiques, `review` only for diffs, put options before the question in any order (a model
 choice as `--model <name>`, and for a follow-up in the same Codex thread `--resume <thread id>`
 or a bare `--resume` followed by a line break or another option), send file changes to
-`/codex-lite:do`, except that a skill which delegates implementation to Codex uses
+`/recode:do`, except that a skill which delegates implementation to Codex uses
 `implement`, and do not run Codex directly. A prompt that starts with a slash command
 (a slash and a command name, then a space or the end) gets no note, whichever plugin the
 command belongs to, because a typed command already routes itself; a prompt that starts with
@@ -304,7 +304,7 @@ invoked on its own, writing the request file (it is under `~/.claude`, which Cla
 treats as sensitive), and running the script when Claude invoked the command. When you type
 the command, the script call is pre-approved by the command file.
 
-`/codex-lite:setup` prints allow rules for default mode as JSON strings, ready to paste into
+`/recode:setup` prints allow rules for default mode as JSON strings, ready to paste into
 `permissions.allow`; it adds none itself. The Bash rule names the installed version's path,
 so update it after each release. It has no `*` in the path, because Claude Code's `*` would
 also match another plugin's directory or a path through `..`. On Windows the path uses
@@ -339,17 +339,17 @@ modes are skipped. The Windows-only tests cover how the plugin finds Codex on `P
 
 Test-only environment variables, read once at startup:
 
-- `CODEX_LITE_CODEX_BIN`: path to the Codex executable.
-- `CODEX_LITE_TIMEOUT_MS`: replaces the sixty-minute run limit and the thirty-second limit on
+- `RECODE_CODEX_BIN`: path to the Codex executable.
+- `RECODE_TIMEOUT_MS`: replaces the sixty-minute run limit and the thirty-second limit on
   every other process. An `ask`, `review` or `implement` `--timeout` still wins for the Codex turn.
-- `CODEX_LITE_PROBE_TARGET`: the file the sandbox probe tries to write outside the working
-  directory. Defaults to `~/.codex-lite-sandbox-probe-<pid>`, one file per run.
+- `RECODE_PROBE_TARGET`: the file the sandbox probe tries to write outside the working
+  directory. Defaults to `~/.recode-sandbox-probe-<pid>`, one file per run.
 
 To try a change by hand, start Claude Code from a scratch git repository with the working
 tree loaded as a plugin:
 
 ```
-claude --plugin-dir /path/to/codex-lite-cc/plugins/codex-lite
+claude --plugin-dir /path/to/reimagine-code/plugins/recode
 ```
 
 `docs/acceptance.md` lists the checks that need a live session or the real Codex CLI, and when to run them.

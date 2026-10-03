@@ -30,16 +30,16 @@ test('ask with a leading --model passes it to Codex and sends only the question'
 
 test('ask with a model and no question is refused before Codex starts', spawning, withScratch((s) => {
   const r = run(s, 'ask', { request: '--model gpt-5\n' });
-  assert.equal(r.stdout, 'codex-lite: the request is empty; nothing was sent to Codex\nstatus: refused\n');
+  assert.equal(r.stdout, 'recode: the request is empty; nothing was sent to Codex\nstatus: refused\n');
   assert.equal(r.status, 1);
   assert.deepEqual(calls(s), []);
 }));
 
-const NOTE = 'Use codex-lite for Codex requests: ask for questions, plan critiques, and second opinions; review only for working-tree or ' +
+const NOTE = 'Use recode for Codex requests: ask for questions, plan critiques, and second opinions; review only for working-tree or ' +
   'base-ref diffs. Put options before the question, in any order: an explicit model choice as --model <name>, and for a follow-up in ' +
   'the same Codex thread, --resume <thread id>, or a bare --resume followed by a line break or another option; the follow-up then needs ' +
   'only the new question. A skill that delegates implementation to Codex uses implement; for a plain request to change files, direct the user to ' +
-  '/codex-lite:do <task>; for setup checks, /codex-lite:setup. Do not invoke Codex directly.\n';
+  '/recode:do <task>; for setup checks, /recode:setup. Do not invoke Codex directly.\n';
 const hook = (input) => {
   const r = spawnSync(process.execPath, [SCRIPT, 'hook'], { input, encoding: 'utf8', timeout: 10_000 });
   return { status: r.status, stdout: r.stdout, stderr: r.stderr };
@@ -57,8 +57,8 @@ test('hook: a prompt that does not mention Codex gets nothing', () => {
   assert.deepEqual([r.stdout, r.status], ['', 0]);
 });
 
-test('hook: a typed /codex-lite: command gets nothing', () => {
-  const r = hook(JSON.stringify({ prompt: ' /codex-lite:do Report the current directory; ask codex nothing' }));
+test('hook: a typed /recode: command gets nothing', () => {
+  const r = hook(JSON.stringify({ prompt: ' /recode:do Report the current directory; ask codex nothing' }));
   assert.deepEqual([r.stdout, r.status], ['', 0]);
 });
 
@@ -89,7 +89,7 @@ test('hook: missing or malformed input prints nothing and exits 0', () => {
 test('the same complete stream followed by exit 1 is a failure that prints Codex stderr', spawning, withScratch((s) => {
   const r = run(s, 'ask', { request: 'q', env: { FAKE_CODEX: 'exit1' } });
   assert.equal(r.status, 1);
-  assert.match(r.stdout, /\n\ncodex-lite: the run failed: codex exited with status 1\nfake failure on stderr\n\n/);
+  assert.match(r.stdout, /\n\nrecode: the run failed: codex exited with status 1\nfake failure on stderr\n\n/);
   assert.doesNotMatch(r.stdout, /fake answer/);
   assert.match(r.stdout, /\nthread \S+\nResume: .*\nstatus: failed\n$/);
 }));
@@ -97,28 +97,28 @@ test('the same complete stream followed by exit 1 is a failure that prints Codex
 test('a message with no turn.completed and exit 0 is a failure', spawning, withScratch((s) => {
   const r = run(s, 'ask', { request: 'q', env: { FAKE_CODEX: 'no-turn' } });
   assert.equal(r.status, 1);
-  assert.match(r.stdout, /codex-lite: the run failed: no turn.completed event arrived\n/);
+  assert.match(r.stdout, /recode: the run failed: no turn.completed event arrived\n/);
   assert.match(r.stdout, /\nstatus: failed\n$/);
 }));
 
 test('turn.completed with no agent_message and exit 0 is a failure', spawning, withScratch((s) => {
   const r = run(s, 'ask', { request: 'q', env: { FAKE_CODEX: 'no-message' } });
   assert.equal(r.status, 1);
-  assert.match(r.stdout, /codex-lite: the run failed: no final message arrived\n/);
+  assert.match(r.stdout, /recode: the run failed: no final message arrived\n/);
   assert.match(r.stdout, /\nstatus: failed\n$/);
 }));
 
 test('a child that exits on stderr before reading a 1 MB stdin is a failure, with no resume line and no request left', spawning, withScratch((s) => {
   const r = run(s, 'ask', { request: 'x'.repeat(1 << 20), env: { FAKE_CODEX: 'stderr-early' } });
   assert.equal(r.status, 1);
-  assert.match(r.stdout, /codex-lite: the run failed: codex exited with status 1; no turn.completed event arrived; no final message arrived\n/);
+  assert.match(r.stdout, /recode: the run failed: codex exited with status 1; no turn.completed event arrived; no final message arrived\n/);
   assert.match(r.stdout, /\nNot inside a trusted directory and --skip-git-repo-check was not specified.\n/);
   assert.doesNotMatch(r.stdout, /Resume:|thread /);
   assert.equal(requestLeft(s), false);
 }));
 
 test('a 1 MB request against a child that writes 1 MB before reading does not deadlock', spawning, withScratch((s) => {
-  const r = run(s, 'ask', { request: 'y'.repeat(1 << 20), env: { FAKE_CODEX: 'floods-stdout', CODEX_LITE_TIMEOUT_MS: '20000' } });
+  const r = run(s, 'ask', { request: 'y'.repeat(1 << 20), env: { FAKE_CODEX: 'floods-stdout', RECODE_TIMEOUT_MS: '20000' } });
   assert.equal(r.status, 0);
   assert.equal(stdin(s).length, 1048576);
   assert.match(r.stdout, /\n\nfake answer\n\n/);
@@ -134,17 +134,17 @@ const refusesDo = (setup, pattern) => withScratch((s) => {
 });
 
 test('do refuses when the probe target cannot be written without a sandbox', spawning, refusesDo(
-  (s) => ({ CODEX_LITE_PROBE_TARGET: join(s.root, 'missing', 'probe') }),
-  /^codex-lite: do was not run: reachability check failed: .*\(ENOENT\)/));
+  (s) => ({ RECODE_PROBE_TARGET: join(s.root, 'missing', 'probe') }),
+  /^recode: do was not run: reachability check failed: .*\(ENOENT\)/));
 
 test('do refuses when a sandboxed write inside the working directory fails', spawning, refusesDo(
-  () => ({ FAKE_CODEX: 'sandbox-broken' }), /^codex-lite: do was not run: positive control failed: .* gave exit 71, file not created;/));
+  () => ({ FAKE_CODEX: 'sandbox-broken' }), /^recode: do was not run: positive control failed: .* gave exit 71, file not created;/));
 
 test('do refuses when a sandboxed write outside the workspace lands', spawning, refusesDo(
-  () => ({ FAKE_CODEX: 'sandbox-open' }), /^codex-lite: do was not run: negative control failed: .* gave exit 0, file created;/));
+  () => ({ FAKE_CODEX: 'sandbox-open' }), /^recode: do was not run: negative control failed: .* gave exit 0, file created;/));
 
 test('do refuses from the home directory, saying the probe target is unusable rather than blaming the host', spawning, refusesDo(
-  (s) => ({ HOME: s.repo }), /^codex-lite: do was not run: the probe target .* is inside this working directory .* This says nothing about whether the host can sandbox\nstatus: refused\n$/));
+  (s) => ({ HOME: s.repo }), /^recode: do was not run: the probe target .* is inside this working directory .* This says nothing about whether the host can sandbox\nstatus: refused\n$/));
 
 test('setup: version, login and both probe rows, and the printed allow rules', spawning, withScratch((s) => {
   const r = cli(s, ['setup', s.data], { cwd: s.plain });
@@ -152,12 +152,12 @@ test('setup: version, login and both probe rows, and the printed allow rules', s
   assert.deepEqual(version, ['--version']);
   assert.deepEqual(login, ['login', 'status']);
   assert.deepEqual(positive.slice(0, -1), SANDBOX);
-  assert.equal(positive.at(-1).startsWith(`${s.plain}/.codex-lite-probe-`), true);
+  assert.equal(positive.at(-1).startsWith(`${s.plain}/.recode-probe-`), true);
   assert.deepEqual(negative, [...SANDBOX, s.target]);
   assert.equal(r.stdout, 'codex: codex-cli 0.155.1\nlogin: Logged in using ChatGPT\n' +
     'sandbox: workspace-write proven: an inside write landed and an outside write was denied (EPERM)\n\n' +
     'Allow rules for this plugin, as JSON strings. setup adds neither; to use them, paste them into the permissions.allow array in your Claude Code settings:\n' +
-    `  "Edit(/${s.data}/**)",\n  "Bash(node \\"${dirname(dirname(SCRIPT))}/scripts/codex-lite.mjs\\" *)"\n` +
+    `  "Edit(/${s.data}/**)",\n  "Bash(node \\"${dirname(dirname(SCRIPT))}/scripts/recode.mjs\\" *)"\n` +
     'The Bash rule names the installed version\'s path, so it changes with every release.\n');
   assert.equal(r.status, 0);
   assert.deepEqual(readdirSync(s.plain), []);
@@ -165,16 +165,16 @@ test('setup: version, login and both probe rows, and the printed allow rules', s
 
 test('by default each run probes its own file in the home directory', spawning, withScratch((s) => {
   const home = join(s.root, 'outside');
-  cli(s, ['setup', s.data], { cwd: s.plain, env: { HOME: home, CODEX_LITE_PROBE_TARGET: '' } });
-  assert.match(calls(s)[3].at(-1), new RegExp(`^${home}/\\.codex-lite-sandbox-probe-\\d+$`));
+  cli(s, ['setup', s.data], { cwd: s.plain, env: { HOME: home, RECODE_PROBE_TARGET: '' } });
+  assert.match(calls(s)[3].at(-1), new RegExp(`^${home}/\\.recode-sandbox-probe-\\d+$`));
 }));
 
 test('setup prints the Bash rule for the script path as invoked, even through a symlinked plugin root', spawning, withScratch((s) => {
   const link = join(s.root, 'plugin-link');
   symlinkSync(dirname(dirname(SCRIPT)), link);
-  const r = spawnSync(process.execPath, [join(link, 'scripts', 'codex-lite.mjs'), 'setup', s.data],
-    { cwd: s.plain, encoding: 'utf8', env: { ...process.env, CODEX_LITE_CODEX_BIN: FAKE, CODEX_LITE_PROBE_TARGET: s.target } });
-  assert.match(r.stdout, new RegExp(`\\n  "Bash\\(node \\\\"${link}/scripts/codex-lite\\.mjs\\\\" \\*\\)"\\n`));
+  const r = spawnSync(process.execPath, [join(link, 'scripts', 'recode.mjs'), 'setup', s.data],
+    { cwd: s.plain, encoding: 'utf8', env: { ...process.env, RECODE_CODEX_BIN: FAKE, RECODE_PROBE_TARGET: s.target } });
+  assert.match(r.stdout, new RegExp(`\\n  "Bash\\(node \\\\"${link}/scripts/recode\\.mjs\\\\" \\*\\)"\\n`));
 }));
 
 test('setup from the home directory reports the toolchain and says the probe target is unusable from here', spawning, withScratch((s) => {
@@ -185,17 +185,17 @@ test('setup from the home directory reports the toolchain and says the probe tar
 }));
 
 test('setup: a --version that ignores SIGTERM gives a refusal naming it within 10 s of the deadline', spawning, withScratch((s) => {
-  const r = cli(s, ['setup', s.data], { cwd: s.plain, env: { FAKE_CODEX: 'version-ignores-sigterm', CODEX_LITE_TIMEOUT_MS: '500' } });
-  assert.match(r.stdout, /^codex: codex-lite: codex --version did not finish within 0.5 s and was stopped\nlogin: Logged in/);
+  const r = cli(s, ['setup', s.data], { cwd: s.plain, env: { FAKE_CODEX: 'version-ignores-sigterm', RECODE_TIMEOUT_MS: '500' } });
+  assert.match(r.stdout, /^codex: recode: codex --version did not finish within 0.5 s and was stopped\nlogin: Logged in/);
   assert.equal(r.status, 1);
   assert.equal(r.ms < 10_500, true, `${r.ms} ms`);
   assert.equal(alive(pids(s)[0]), false);
 }));
 
 test('a run past its deadline has its whole process group killed, grandchild included', spawning, withScratch(async (s) => {
-  const r = run(s, 'ask', { request: 'q', env: { FAKE_CODEX: 'hang', CODEX_LITE_TIMEOUT_MS: '1000' } });
+  const r = run(s, 'ask', { request: 'q', env: { FAKE_CODEX: 'hang', RECODE_TIMEOUT_MS: '1000' } });
   assert.equal(r.status, 1);
-  assert.match(r.stdout, /\n\ncodex-lite: the run failed: timed out after 1 s; its process group was stopped\n/);
+  assert.match(r.stdout, /\n\nrecode: the run failed: timed out after 1 s; its process group was stopped\n/);
   assert.match(r.stdout, /\nstatus: timeout\n$/);
   assert.equal(await dead(pids(s)[0]), true);
 }));
@@ -205,7 +205,7 @@ test('ask --timeout 1 with no environment override ends the turn after 1 s, and 
   assert.equal(r.status, 1);
   assert.deepEqual(calls(s), [ASK]);
   assert.equal(r.stdout.split('\n')[0], 'requested: codex exec --json --ignore-user-config -c approval_policy="never" -c sandbox_mode="read-only" -');
-  assert.match(r.stdout, /\n\ncodex-lite: the run failed: timed out after 1 s; its process group was stopped\n/);
+  assert.match(r.stdout, /\n\nrecode: the run failed: timed out after 1 s; its process group was stopped\n/);
   assert.match(r.stdout, /\nstatus: timeout\n$/);
   assert.equal(await dead(pids(s)[0]), true);
 }));
@@ -214,14 +214,14 @@ test('implement --timeout 1 ends the turn after 1 s as status: timeout, and the 
   const r = run(s, 'implement', { request: '--timeout 1\nslow task', env: { FAKE_CODEX: 'hang' } });
   assert.equal(r.status, 1);
   assert.deepEqual(calls(s).at(-1), ['exec', '--json', '--ignore-user-config', '-c', 'approval_policy="never"', '-c', 'sandbox_mode="workspace-write"', '-']);
-  assert.match(r.stdout, /\n\ncodex-lite: the run failed: timed out after 1 s; its process group was stopped\n/);
+  assert.match(r.stdout, /\n\nrecode: the run failed: timed out after 1 s; its process group was stopped\n/);
   assert.match(r.stdout, /\nstatus: timeout\n$/);
   assert.equal(await dead(pids(s).at(-1)), true);
 }));
 
 test('implement with --cwd outside a repository is refused with Codex never started', spawning, withScratch((s) => {
   const r = run(s, 'implement', { request: `--cwd ${s.plain}\ngo` });
-  assert.match(r.stdout, /^codex-lite: not inside a git repository, so nothing was run \(fatal: not a git repository/);
+  assert.match(r.stdout, /^recode: not inside a git repository, so nothing was run \(fatal: not a git repository/);
   assert.match(r.stdout, /\nstatus: refused\n$/);
   assert.equal(r.status, 1);
   assert.deepEqual(calls(s), []);
@@ -229,9 +229,9 @@ test('implement with --cwd outside a repository is refused with Codex never star
 
 test('implement with a relative --cwd, a repeated option or an empty task is refused before Codex starts', spawning, withScratch((s) => {
   const refused = (request) => run(s, 'implement', { request }).stdout;
-  assert.equal(refused('--cwd rel\ngo'), 'codex-lite: implement arguments refused: --cwd "rel" is empty or not an absolute path; refused\nstatus: refused\n');
-  assert.equal(refused('--timeout 5 --timeout 6\ngo'), 'codex-lite: implement arguments refused: --timeout given more than once; refused\nstatus: refused\n');
-  assert.equal(refused(`--cwd ${s.repo}\n`), 'codex-lite: the request is empty; nothing was sent to Codex\nstatus: refused\n');
+  assert.equal(refused('--cwd rel\ngo'), 'recode: implement arguments refused: --cwd "rel" is empty or not an absolute path; refused\nstatus: refused\n');
+  assert.equal(refused('--timeout 5 --timeout 6\ngo'), 'recode: implement arguments refused: --timeout given more than once; refused\nstatus: refused\n');
+  assert.equal(refused(`--cwd ${s.repo}\n`), 'recode: the request is empty; nothing was sent to Codex\nstatus: refused\n');
   assert.deepEqual(calls(s), []);
 }));
 
@@ -241,7 +241,7 @@ test('review --timeout 1 with no environment override ends the turn after 1 s, a
   assert.equal(r.status, 1);
   assert.equal(r.stdout.split('\n')[0],
     'requested: codex exec review --json --ignore-user-config -c approval_policy="never" -c sandbox_mode="read-only" --uncommitted');
-  assert.match(r.stdout, /\n\ncodex-lite: the run failed: timed out after 1 s; its process group was stopped\n/);
+  assert.match(r.stdout, /\n\nrecode: the run failed: timed out after 1 s; its process group was stopped\n/);
   assert.match(r.stdout, /\nstatus: timeout\n$/);
   assert.equal(await dead(pids(s)[0]), true);
 }));
@@ -254,27 +254,27 @@ test('ask --timeout 5 against a fast Codex succeeds', spawning, withScratch((s) 
   assert.match(r.stdout, /\n\nfake answer\n\n.*\nstatus: ok\n$/s);
 }));
 
-test('ask --timeout wins over CODEX_LITE_TIMEOUT_MS for the turn', spawning, withScratch(async (s) => {
-  const r = run(s, 'ask', { request: '--timeout 1 q', env: { FAKE_CODEX: 'hang', CODEX_LITE_TIMEOUT_MS: '20000' } });
+test('ask --timeout wins over RECODE_TIMEOUT_MS for the turn', spawning, withScratch(async (s) => {
+  const r = run(s, 'ask', { request: '--timeout 1 q', env: { FAKE_CODEX: 'hang', RECODE_TIMEOUT_MS: '20000' } });
   assert.equal(r.status, 1);
-  assert.match(r.stdout, /\n\ncodex-lite: the run failed: timed out after 1 s; its process group was stopped\n/);
+  assert.match(r.stdout, /\n\nrecode: the run failed: timed out after 1 s; its process group was stopped\n/);
   assert.match(r.stdout, /\nstatus: timeout\n$/);
   assert.equal(r.ms < 15_000, true, `${r.ms} ms`);
   assert.equal(await dead(pids(s)[0]), true);
 }));
 
 test('a child that ignores SIGTERM is killed by the escalation, within 10 s of the deadline', spawning, withScratch(async (s) => {
-  const r = run(s, 'ask', { request: 'q', env: { FAKE_CODEX: 'ignores-sigterm', CODEX_LITE_TIMEOUT_MS: '1000' } });
+  const r = run(s, 'ask', { request: 'q', env: { FAKE_CODEX: 'ignores-sigterm', RECODE_TIMEOUT_MS: '1000' } });
   assert.equal(r.status, 1);
-  assert.match(r.stdout, /codex-lite: the run failed: timed out after 1 s; its process group was stopped\n/);
+  assert.match(r.stdout, /recode: the run failed: timed out after 1 s; its process group was stopped\n/);
   assert.equal(r.ms < 11_000, true, `${r.ms} ms`);
   assert.equal(await dead(pids(s)[0]), true);
 }));
 
 test('a timed-out run whose own child ignores SIGTERM has that child killed too', spawning, withScratch(async (s) => {
-  const r = run(s, 'ask', { request: 'q', env: { FAKE_CODEX: 'hang-stubborn-child', CODEX_LITE_TIMEOUT_MS: '1000' } });
+  const r = run(s, 'ask', { request: 'q', env: { FAKE_CODEX: 'hang-stubborn-child', RECODE_TIMEOUT_MS: '1000' } });
   assert.equal(r.status, 1);
-  assert.match(r.stdout, /codex-lite: the run failed: timed out after 1 s; its process group was stopped\n/);
+  assert.match(r.stdout, /recode: the run failed: timed out after 1 s; its process group was stopped\n/);
   assert.equal(await dead(pids(s)[0]), true);
 }));
 
@@ -287,7 +287,7 @@ test('a background process left by a successful run is stopped before the result
 test('an error Codex reports only in the JSON stream is printed with the failure', spawning, withScratch((s) => {
   const r = run(s, 'ask', { request: 'q', env: { FAKE_CODEX: 'turn-failed' } });
   assert.equal(r.status, 1);
-  assert.match(r.stdout, /\n\ncodex-lite: the run failed: codex exited with status 1; no turn.completed event arrived; no final message arrived; codex reported: usage limit reached\n/);
+  assert.match(r.stdout, /\n\nrecode: the run failed: codex exited with status 1; no turn.completed event arrived; no final message arrived; codex reported: usage limit reached\n/);
 }));
 
 test('a child that exits 0 while its own child holds stdout renders within the drain bound', spawning, withScratch(async (s) => {
@@ -301,23 +301,23 @@ test('a child that exits 0 while its own child holds stdout renders within the d
 
 test('a child that exits 0 just before the deadline, while its own child holds stdout, is not a timeout', spawning, withScratch(async (s) => {
   try {
-    const r = run(s, 'ask', { request: 'q', env: { FAKE_CODEX: 'holds-stdout', CODEX_LITE_TIMEOUT_MS: '1000' } });
+    const r = run(s, 'ask', { request: 'q', env: { FAKE_CODEX: 'holds-stdout', RECODE_TIMEOUT_MS: '1000' } });
     assert.equal(r.status, 0, r.stdout);
     assert.match(r.stdout, /\n\nfake answer\n\n/);
   } finally { for (const pid of pids(s)) try { process.kill(pid, 'SIGKILL'); } catch {} }
 }));
 
 test('a Codex that cannot be started is a failure for ask and a refusal naming the command for setup', spawning, withScratch((s) => {
-  const env = { CODEX_LITE_CODEX_BIN: join(s.root, 'no-such-codex') };
+  const env = { RECODE_CODEX_BIN: join(s.root, 'no-such-codex') };
   const r = run(s, 'ask', { request: 'q', env });
-  assert.match(r.stdout, /\n\ncodex-lite: the run failed: could not start codex: spawn \S+no-such-codex ENOENT\n\nstatus: failed\n$/);
+  assert.match(r.stdout, /\n\nrecode: the run failed: could not start codex: spawn \S+no-such-codex ENOENT\n\nstatus: failed\n$/);
   assert.equal(r.status, 1);
   assert.equal(requestLeft(s), false);
   const d = run(s, 'do', { request: 'go', env });
-  assert.match(d.stdout, /^codex-lite: do was not run: could not start codex sandbox \(positive control\): spawn \S+no-such-codex ENOENT\nstatus: refused\n$/);
+  assert.match(d.stdout, /^recode: do was not run: could not start codex sandbox \(positive control\): spawn \S+no-such-codex ENOENT\nstatus: refused\n$/);
   assert.equal(d.status, 1);
   const setup = cli(s, ['setup', s.data], { cwd: s.plain, env });
-  assert.match(setup.stdout, /^codex: codex-lite: could not start codex --version: spawn \S+no-such-codex ENOENT\nlogin: codex-lite: could not start codex login status: /);
+  assert.match(setup.stdout, /^codex: recode: could not start codex --version: spawn \S+no-such-codex ENOENT\nlogin: recode: could not start codex login status: /);
   assert.equal(setup.status, 1);
 }));
 
@@ -327,7 +327,7 @@ test('setup, the hook and an unknown command print no status line', spawning, wi
   assert.doesNotMatch(setup.stdout, /status:/);
   assert.equal(hook(JSON.stringify({ prompt: 'ask codex' })).stdout, NOTE);
   const unknown = cli(s, ['nope', s.data, ID]);
-  assert.equal(unknown.stdout, 'codex-lite: unknown command "nope"; expected review, ask, do, implement or setup\n');
+  assert.equal(unknown.stdout, 'recode: unknown command "nope"; expected review, ask, do, implement or setup\n');
   assert.equal(unknown.status, 1);
 }));
 
@@ -335,7 +335,7 @@ test('a session id carrying a command substitution is refused with nothing opene
   const planted = join(s.data, 'request-$(id)aaaa.txt');
   writeFileSync(planted, 'q');
   const r = cli(s, ['ask', s.data, '$(id)aaaa']);
-  assert.equal(r.stdout, 'codex-lite: the session id is missing or malformed, so no request file was opened\nstatus: refused\n');
+  assert.equal(r.stdout, 'recode: the session id is missing or malformed, so no request file was opened\nstatus: refused\n');
   assert.equal(r.status, 1);
   assert.equal(existsSync(planted), true);
   assert.deepEqual(calls(s), []);
@@ -344,14 +344,14 @@ test('a session id carrying a command substitution is refused with nothing opene
 test('an unexpected error before the turn ends with status: failed, not refused', spawning, withScratch((s) => {
   mkdirSync(join(s.data, `request-${ID}.txt`));
   const r = run(s, 'ask');
-  assert.match(r.stdout, /^codex-lite: unexpected error: .*\nstatus: failed\n$/s);
+  assert.match(r.stdout, /^recode: unexpected error: .*\nstatus: failed\n$/s);
   assert.equal(r.status, 1);
   assert.deepEqual(calls(s), []);
 }));
 
 test('a relative data directory is refused', spawning, withScratch((s) => {
   const r = cli(s, ['ask', 'data', ID]);
-  assert.equal(r.stdout, 'codex-lite: the plugin data directory must be an absolute path, not "data"\nstatus: refused\n');
+  assert.equal(r.stdout, 'recode: the plugin data directory must be an absolute path, not "data"\nstatus: refused\n');
   assert.equal(r.status, 1);
 }));
 
@@ -360,7 +360,7 @@ test('a request file older than ten minutes is refused and deleted', spawning, w
   const old = new Date(Date.now() - 11 * 60_000);
   utimesSync(join(s.data, `request-${ID}.txt`), old, old);
   const r = run(s, 'ask');
-  assert.equal(r.stdout, 'codex-lite: the request file is 11 minutes old, so it was treated as abandoned and deleted; run the command again\nstatus: refused\n');
+  assert.equal(r.stdout, 'recode: the request file is 11 minutes old, so it was treated as abandoned and deleted; run the command again\nstatus: refused\n');
   assert.equal(r.status, 1);
   assert.equal(requestLeft(s), false);
   assert.deepEqual(calls(s), []);
@@ -369,7 +369,7 @@ test('a request file older than ten minutes is refused and deleted', spawning, w
 test('a missing request file is refused, for review as well as ask', spawning, withScratch((s) => {
   for (const command of ['ask', 'review']) {
     const r = run(s, command);
-    assert.equal(r.stdout, `codex-lite: no request file at ${join(s.data, `request-${ID}.txt`)}; run the command again\nstatus: refused\n`);
+    assert.equal(r.stdout, `recode: no request file at ${join(s.data, `request-${ID}.txt`)}; run the command again\nstatus: refused\n`);
     assert.equal(r.status, 1);
   }
   assert.deepEqual(calls(s), []);
@@ -377,7 +377,7 @@ test('a missing request file is refused, for review as well as ask', spawning, w
 
 test('a whitespace-only request is refused and deleted', spawning, withScratch((s) => {
   const r = run(s, 'do', { request: ' \n\t\n', cwd: s.plain });
-  assert.equal(r.stdout, 'codex-lite: the request is empty; nothing was sent to Codex\nstatus: refused\n');
+  assert.equal(r.stdout, 'recode: the request is empty; nothing was sent to Codex\nstatus: refused\n');
   assert.equal(r.status, 1);
   assert.equal(requestLeft(s), false);
   assert.deepEqual(calls(s), []);
@@ -418,7 +418,7 @@ test('a bare --resume with trailing whitespace on its line still resumes the sav
 
 test('a bare --resume with no saved thread id is refused before Codex starts, and the request file is deleted', spawning, withScratch((s) => {
   const r = run(s, 'ask', { request: '--resume\nthe follow-up question\n' });
-  assert.equal(r.stdout, 'codex-lite: ask arguments refused: --resume with no id, and no earlier Codex thread is saved for this Claude ' +
+  assert.equal(r.stdout, 'recode: ask arguments refused: --resume with no id, and no earlier Codex thread is saved for this Claude ' +
     'session; pass --resume <thread id>\nstatus: refused\n');
   assert.equal(r.status, 1);
   assert.deepEqual(calls(s), []);
@@ -427,7 +427,7 @@ test('a bare --resume with no saved thread id is refused before Codex starts, an
 
 test('a malformed --resume id is refused before Codex starts', spawning, withScratch((s) => {
   const r = run(s, 'ask', { request: '--resume bad;id q' });
-  assert.equal(r.stdout, 'codex-lite: ask arguments refused: --resume id "bad;id" is malformed; refused\nstatus: refused\n');
+  assert.equal(r.stdout, 'recode: ask arguments refused: --resume id "bad;id" is malformed; refused\nstatus: refused\n');
   assert.equal(r.status, 1);
   assert.deepEqual(calls(s), []);
 }));
@@ -484,7 +484,7 @@ test('a resumed run that fails leaves the saved thread id unchanged', spawning, 
   const r = run(s, 'ask', { request: `--resume ${THREAD} q\n`, env: { FAKE_CODEX: 'exit1' } });
   assert.deepEqual(calls(s), [ASK_RESUME(THREAD)]);
   assert.equal(r.status, 1);
-  assert.match(r.stdout, /codex-lite: the run failed: codex exited with status 1\n/);
+  assert.match(r.stdout, /recode: the run failed: codex exited with status 1\n/);
   assert.equal(savedThread(s), `${THREAD2}\n`);
 }));
 
@@ -501,7 +501,7 @@ test('a saved-thread path that is a directory is refused, naming the file, befor
   const file = threadFile(s);
   mkdirSync(file);
   const r = run(s, 'ask', { request: '--resume\nq\n' });
-  assert.equal(r.stdout, `codex-lite: ask arguments refused: could not read the saved thread in ${file}: EISDIR\nstatus: refused\n`);
+  assert.equal(r.stdout, `recode: ask arguments refused: could not read the saved thread in ${file}: EISDIR\nstatus: refused\n`);
   assert.equal(r.status, 1);
   assert.deepEqual(calls(s), []);
 }));
@@ -510,7 +510,7 @@ test('a saved thread file holding a malformed id is refused, naming the file, be
   const file = threadFile(s);
   writeFileSync(file, 'bad;id\n');
   const r = run(s, 'ask', { request: '--resume\nq\n' });
-  assert.equal(r.stdout, `codex-lite: ask arguments refused: could not read the saved thread in ${file}: it does not hold a thread id\nstatus: refused\n`);
+  assert.equal(r.stdout, `recode: ask arguments refused: could not read the saved thread in ${file}: it does not hold a thread id\nstatus: refused\n`);
   assert.equal(r.status, 1);
   assert.deepEqual(calls(s), []);
 }));

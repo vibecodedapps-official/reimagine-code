@@ -1,5 +1,5 @@
 // Pure half: inputs to argv arrays, bytes to a result. No filesystem, spawn, clock or environment (node:path only tests a string's shape).
-// Errors and refusal reasons here carry no "codex-lite:" prefix; the entry script adds it once.
+// Errors and refusal reasons here carry no "recode:" prefix; the entry script adds it once.
 import { StringDecoder } from 'node:string_decoder';
 import { isAbsolute } from 'node:path';
 import { parseArgs } from 'node:util';
@@ -30,7 +30,7 @@ const plain = (name, v) => {
 
 // A Codex thread id, as printed in thread.started and accepted by exec resume: letters, digits and hyphens, and
 // (unlike plain()) never leading with "-", so it cannot be read as an option. validThreadId is shared by resumeLine,
-// parseAskArgs, buildArgv/check, and the saved-thread-file read and save in codex-lite.mjs.
+// parseAskArgs, buildArgv/check, and the saved-thread-file read and save in recode.mjs.
 const THREAD_ID = /^[A-Za-z0-9-]+$/;
 export const validThreadId = (v) => typeof v === 'string' && THREAD_ID.test(v) && !v.startsWith('-');
 const checkId = (v) => { if (!validThreadId(v)) throw new Error(`--resume id ${JSON.stringify(v)} is malformed; refused`); return v; };

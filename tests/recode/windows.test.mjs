@@ -31,7 +31,7 @@ function npmPrefix(s, { platformPackage = true } = {}) {
 // PATH holds only the given directory. Windows spells the variable Path, and a second spelling would be ambiguous.
 const setup = (s, dir) => {
   const key = Object.keys(process.env).find((k) => k.toUpperCase() === 'PATH') ?? 'PATH';
-  return cli(s, ['setup', s.data], { cwd: s.plain, env: { CODEX_LITE_CODEX_BIN: '', [key]: dir } }).stdout.split('\n')[0];
+  return cli(s, ['setup', s.data], { cwd: s.plain, env: { RECODE_CODEX_BIN: '', [key]: dir } }).stdout.split('\n')[0];
 };
 
 test('an npm install on PATH runs the codex.exe inside its platform package', windows, withScratch((s) => {
@@ -40,7 +40,7 @@ test('an npm install on PATH runs the codex.exe inside its platform package', wi
 
 test('an npm install whose platform package is missing is refused, naming the binary it looked for', windows, withScratch((s) => {
   const prefix = npmPrefix(s, { platformPackage: false });
-  assert.equal(setup(s, prefix), `codex: codex-lite: the npm install of Codex in ${prefix} has no ` +
+  assert.equal(setup(s, prefix), `codex: recode: the npm install of Codex in ${prefix} has no ` +
     `${join(prefix, 'node_modules', '@openai', 'codex', 'vendor', TARGET, 'bin', 'codex.exe')}; reinstall it with npm install -g @openai/codex`);
 }));
 
@@ -48,7 +48,7 @@ test('a codex.cmd that is not an npm install is refused', windows, withScratch((
   const dir = join(s.root, 'other');
   mkdirSync(dir);
   writeFileSync(join(dir, 'codex.cmd'), '@ECHO off\r\n');
-  assert.equal(setup(s, dir), `codex: codex-lite: the codex.cmd in ${dir} is not an npm install of Codex ` +
+  assert.equal(setup(s, dir), `codex: recode: the codex.cmd in ${dir} is not an npm install of Codex ` +
     `(no ${join(dir, 'node_modules', '@openai', 'codex', 'bin', 'codex.js')}); pnpm, bun and other installers are not supported; ` +
     'install Codex with npm install -g @openai/codex, or the standalone Codex for Windows');
 }));
@@ -58,26 +58,26 @@ const unset = (file) => `Codex's Windows sandbox mode is not set in ${file}, and
   'command; add a [windows] table with sandbox = "unelevated" there, or "elevated" if you have admin rights';
 
 test('setup reports the Windows sandbox mode from $CODEX_HOME/config.toml, or that it is not set', windows, withScratch((s) => {
-  const row = (env) => cli(s, ['setup', s.data], { cwd: s.plain, env: { CODEX_LITE_CODEX_BIN: process.execPath, ...env } }).stdout.split('\n')[1];
+  const row = (env) => cli(s, ['setup', s.data], { cwd: s.plain, env: { RECODE_CODEX_BIN: process.execPath, ...env } }).stdout.split('\n')[1];
   writeFileSync(join(s.data, 'config.toml'), '[windows]\r\nsandbox = "elevated"\r\n');
   assert.equal(row({ CODEX_HOME: s.data }), `windows sandbox: elevated, from ${join(s.data, 'config.toml')}`);
   assert.equal(row({ CODEX_HOME: s.plain }), `windows sandbox: ${unset(join(s.plain, 'config.toml'))}`);
 }));
 
 test('do refuses before running Codex when the Windows sandbox mode is not set', windows, withScratch((s) => {
-  const r = run(s, 'do', { request: 'go', env: { CODEX_LITE_CODEX_BIN: process.execPath, CODEX_HOME: s.plain } });
-  assert.equal(r.stdout, `codex-lite: do was not run: ${unset(join(s.plain, 'config.toml'))}\nstatus: refused\n`);
+  const r = run(s, 'do', { request: 'go', env: { RECODE_CODEX_BIN: process.execPath, CODEX_HOME: s.plain } });
+  assert.equal(r.stdout, `recode: do was not run: ${unset(join(s.plain, 'config.toml'))}\nstatus: refused\n`);
   assert.equal(r.status, 1);
 }));
 
 test('ask runs without the Windows sandbox mode but warns', windows, withScratch((s) => {
-  const r = run(s, 'ask', { request: 'q', env: { CODEX_LITE_CODEX_BIN: process.execPath, CODEX_HOME: s.plain } });
-  assert.equal(r.stdout.split('\n')[2], `codex-lite: warning: ${unset(join(s.plain, 'config.toml'))}`);
+  const r = run(s, 'ask', { request: 'q', env: { RECODE_CODEX_BIN: process.execPath, CODEX_HOME: s.plain } });
+  assert.equal(r.stdout.split('\n')[2], `recode: warning: ${unset(join(s.plain, 'config.toml'))}`);
 }));
 
 test('a configured Windows sandbox mode reaches the Codex command line', windows, withScratch((s) => {
   writeFileSync(join(s.data, 'config.toml'), '[windows]\nsandbox = "elevated"\n');
-  const r = run(s, 'ask', { request: 'q', env: { CODEX_LITE_CODEX_BIN: process.execPath, CODEX_HOME: s.data } });
+  const r = run(s, 'ask', { request: 'q', env: { RECODE_CODEX_BIN: process.execPath, CODEX_HOME: s.data } });
   assert.equal(r.stdout.split('\n')[0], 'requested: codex exec --json --ignore-user-config -c approval_policy="never" ' +
     '-c sandbox_mode="read-only" -c windows.sandbox="elevated" -');
 }));
@@ -85,7 +85,7 @@ test('a configured Windows sandbox mode reaches the Codex command line', windows
 test('do passes a configured Windows sandbox mode to both probe controls and runs', windows, withScratch((s) => {
   writeFileSync(join(s.data, 'config.toml'), '[windows]\nsandbox = "elevated"\n');
   const shim = pathToFileURL(fileURLToPath(new URL('./fixtures/node-as-codex.mjs', import.meta.url))).href;
-  const r = run(s, 'do', { request: 'go', env: { CODEX_LITE_CODEX_BIN: process.execPath, CODEX_HOME: s.data, NODE_OPTIONS: `--import "${shim}"` } });
+  const r = run(s, 'do', { request: 'go', env: { RECODE_CODEX_BIN: process.execPath, CODEX_HOME: s.data, NODE_OPTIONS: `--import "${shim}"` } });
   const [positive, negative] = calls(s);
   const probe = [...SANDBOX.slice(0, 5), '-c', 'windows.sandbox="elevated"', ...SANDBOX.slice(5)];
   assert.deepEqual(positive.slice(0, -1), probe);
@@ -96,14 +96,14 @@ test('do passes a configured Windows sandbox mode to both probe controls and run
 
 // Claude Code writes the plugin root into the command with forward slashes, so the rule must use them to match.
 test('setup prints the Bash rule with a forward-slash plugin root on Windows', windows, withScratch((s) => {
-  const r = cli(s, ['setup', s.data], { cwd: s.plain, env: { CODEX_LITE_CODEX_BIN: process.execPath, CODEX_HOME: s.data } });
+  const r = cli(s, ['setup', s.data], { cwd: s.plain, env: { RECODE_CODEX_BIN: process.execPath, CODEX_HOME: s.data } });
   const rule = r.stdout.split('\n').find((l) => l.startsWith('  "Bash('));
-  assert.match(rule, /^  "Bash\(node \\"[A-Za-z]:\/[^\\"]*\/plugins\/codex-lite\/scripts\/codex-lite\.mjs\\" \*\)"$/);
+  assert.match(rule, /^  "Bash\(node \\"[A-Za-z]:\/[^\\"]*\/plugins\/recode\/scripts\/recode\.mjs\\" \*\)"$/);
 }));
 
 test('setup does not run the sandbox probe when the Codex config cannot be read', windows, withScratch((s) => {
   mkdirSync(join(s.data, 'config.toml'));
-  const r = cli(s, ['setup', s.data], { cwd: s.plain, env: { CODEX_LITE_CODEX_BIN: process.execPath, CODEX_HOME: s.data } });
-  assert.match(r.stdout, /\nwindows sandbox: codex-lite: could not read .*config\.toml: EISDIR/);
+  const r = cli(s, ['setup', s.data], { cwd: s.plain, env: { RECODE_CODEX_BIN: process.execPath, CODEX_HOME: s.data } });
+  assert.match(r.stdout, /\nwindows sandbox: recode: could not read .*config\.toml: EISDIR/);
   assert.match(r.stdout, /\nsandbox: not tested until the windows sandbox row passes\n/);
 }));

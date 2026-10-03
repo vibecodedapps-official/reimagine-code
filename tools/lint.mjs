@@ -34,7 +34,7 @@ for (const p of modules) {
 }
 
 // 2. Runtime budget: exactly the two scripts, 700 lines together (counted as wc -l does).
-const runtime = ["plugins/codex-lite/scripts/codex.mjs", "plugins/codex-lite/scripts/codex-lite.mjs"];
+const runtime = ["plugins/recode/scripts/codex.mjs", "plugins/recode/scripts/recode.mjs"];
 const extra = modules.map(rel).filter((p) => p.startsWith("plugins/") && !runtime.includes(p));
 if (extra.length) fail(`runtime modules other than the two scripts: ${extra.join(", ")}`);
 let lines = 0;
@@ -46,7 +46,7 @@ if (lines > 700) fail(`runtime scripts total ${lines} lines, budget is 700`);
 
 // 3. Versions agree, and the README install block names this marketplace and plugin.
 const pkg = json("package.json");
-const plugin = json("plugins/codex-lite/.claude-plugin/plugin.json");
+const plugin = json("plugins/recode/.claude-plugin/plugin.json");
 const market = json(".claude-plugin/marketplace.json");
 const entry = market?.plugins?.find((p) => p.name === plugin?.name);
 if (plugin && market && !entry) fail(`marketplace.json has no plugin named ${plugin.name}`);
@@ -64,20 +64,20 @@ if (readme !== null && plugin && market) {
 // 4. Only do and setup are hidden from the model; ask, review and implement must stay visible so a plain-words request, or a skill's delegation, can reach them.
 const hidden = { ask: false, review: false, implement: false, do: true, setup: true };
 for (const [name, want] of Object.entries(hidden)) {
-  const s = read(`plugins/codex-lite/commands/${name}.md`);
+  const s = read(`plugins/recode/commands/${name}.md`);
   if (s === null) continue;
   const front = s.split(/\r?\n---\r?\n/)[0];
   const has = /^disable-model-invocation:\s*true\s*$/m.test(front);
-  if (has !== want) fail(`plugins/codex-lite/commands/${name}.md: disable-model-invocation must be ${want ? "set" : "absent"}`);
+  if (has !== want) fail(`plugins/recode/commands/${name}.md: disable-model-invocation must be ${want ? "set" : "absent"}`);
 }
 
-// 5. The plugin's one hook: UserPromptSubmit, run in exec form as node <plugin root>/scripts/codex-lite.mjs hook.
-const hooks = json("plugins/codex-lite/hooks/hooks.json");
+// 5. The plugin's one hook: UserPromptSubmit, run in exec form as node <plugin root>/scripts/recode.mjs hook.
+const hooks = json("plugins/recode/hooks/hooks.json");
 if (hooks) {
-  const want = { type: "command", command: "node", args: ["${CLAUDE_PLUGIN_ROOT}/scripts/codex-lite.mjs", "hook"] };
+  const want = { type: "command", command: "node", args: ["${CLAUDE_PLUGIN_ROOT}/scripts/recode.mjs", "hook"] };
   const got = hooks.hooks?.UserPromptSubmit?.flatMap((g) => g.hooks ?? []);
   if (Object.keys(hooks.hooks ?? {}).join() !== "UserPromptSubmit" || got?.length !== 1 || !isDeepStrictEqual(got[0], want)) {
-    fail(`plugins/codex-lite/hooks/hooks.json must declare exactly one UserPromptSubmit hook: ${JSON.stringify(want)}`);
+    fail(`plugins/recode/hooks/hooks.json must declare exactly one UserPromptSubmit hook: ${JSON.stringify(want)}`);
   }
 }
 
@@ -101,28 +101,28 @@ if (stems.length) {
 const endTurn = "that output is your whole reply: add nothing after it, run no other command, and end your turn.";
 const resume = "If you invoked this command as one step of a larger request, such as a plan to converge or findings to address, continue with that request's remaining steps after the output, using Codex's answer as input.";
 const step4 = ["ask", "review", "implement"].map((name) => {
-  const s = read(`plugins/codex-lite/commands/${name}.md`);
+  const s = read(`plugins/recode/commands/${name}.md`);
   if (s === null) return null;
   // Step 4 runs from its "4. " line to the next blank line, joined, so a wrapped step still matches.
   const text = s.match(/^4\. .*(?:\r?\n(?!\s*\r?$).*)*/m)?.[0].replace(/\s*\r?\n\s*/g, " ") ?? "";
   for (const want of [endTurn, resume]) {
-    if (!text.includes(want)) fail(`plugins/codex-lite/commands/${name}.md: step 4 lacks the sentence: ${want}`);
+    if (!text.includes(want)) fail(`plugins/recode/commands/${name}.md: step 4 lacks the sentence: ${want}`);
   }
   return text;
 });
-if (step4.every((t) => t !== null) && !step4.every((t) => t === step4[0])) fail("plugins/codex-lite/commands/ask.md, review.md and implement.md: step 4 differs between the files");
+if (step4.every((t) => t !== null) && !step4.every((t) => t === step4[0])) fail("plugins/recode/commands/ask.md, review.md and implement.md: step 4 differs between the files");
 
 // 8. ask, review, implement and do write the request file first and read it only after a failed Write: the script deletes the file after
 // every run, so a read-first step fails on almost every call. Any other failed Write stops the command: running the script
 // then would send a leftover request file, possibly an earlier task, to Codex.
 const stop = "If the Write failed for any other reason, or the second Write fails, stop: report the failure and do not run step 3.";
 for (const name of ["ask", "review", "implement", "do"]) {
-  const s = read(`plugins/codex-lite/commands/${name}.md`);
+  const s = read(`plugins/recode/commands/${name}.md`);
   if (s === null) continue;
-  if (!/^1\. With the Write tool, /m.test(s)) fail(`plugins/codex-lite/commands/${name}.md: step 1 must be the Write of the request file`);
+  if (!/^1\. With the Write tool, /m.test(s)) fail(`plugins/recode/commands/${name}.md: step 1 must be the Write of the request file`);
   const step2 = s.match(/^2\. If that Write failed .*$/m)?.[0] ?? "";
-  if (!step2) fail(`plugins/codex-lite/commands/${name}.md: step 2 must be the Read after a failed Write`);
-  else if (!step2.includes(stop)) fail(`plugins/codex-lite/commands/${name}.md: step 2 lacks the sentence: ${stop}`);
+  if (!step2) fail(`plugins/recode/commands/${name}.md: step 2 must be the Read after a failed Write`);
+  else if (!step2.includes(stop)) fail(`plugins/recode/commands/${name}.md: step 2 lacks the sentence: ${stop}`);
 }
 
 if (failures.length) {

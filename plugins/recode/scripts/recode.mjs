@@ -1,6 +1,6 @@
 #!/usr/bin/env node
-// Entry: node codex-lite.mjs <review|ask|do|implement> <dataDir> <sessionId>, or setup <dataDir>. Prints one result, exits 0 or 1.
-// Or node codex-lite.mjs hook, the UserPromptSubmit hook: reads the event on stdin, prints a routing note or nothing, exits 0.
+// Entry: node recode.mjs <review|ask|do|implement> <dataDir> <sessionId>, or setup <dataDir>. Prints one result, exits 0 or 1.
+// Or node recode.mjs hook, the UserPromptSubmit hook: reads the event on stdin, prints a routing note or nothing, exits 0.
 // The data directory arrives as an argument: inside the Bash tool the environment can carry another plugin's value.
 import { spawn } from 'node:child_process';
 import { existsSync, mkdtempSync, readFileSync, realpathSync, renameSync, rmSync, statSync, writeFileSync } from 'node:fs';
@@ -11,12 +11,12 @@ import { NPM_WIN32, WINDOWS_SANDBOXES, buildArgv, decideProbe, parseAskArgs, par
   validThreadId, windowsSandboxSetting } from './codex.mjs';
 
 const started = Date.now();
-// Test-only seams, read once. CODEX_LITE_TIMEOUT_MS replaces both deadlines below; an ask, review or implement --timeout wins for the turn.
-const { CODEX_LITE_CODEX_BIN, CODEX_LITE_TIMEOUT_MS, CODEX_LITE_PROBE_TARGET } = process.env;
-const override = Number(CODEX_LITE_TIMEOUT_MS) > 0 ? Number(CODEX_LITE_TIMEOUT_MS) : null;
+// Test-only seams, read once. RECODE_TIMEOUT_MS replaces both deadlines below; an ask, review or implement --timeout wins for the turn.
+const { RECODE_CODEX_BIN, RECODE_TIMEOUT_MS, RECODE_PROBE_TARGET } = process.env;
+const override = Number(RECODE_TIMEOUT_MS) > 0 ? Number(RECODE_TIMEOUT_MS) : null;
 const TURN_MS = override ?? 60 * 60_000;
 const LOCAL_MS = override ?? 30_000;
-const PROBE_TARGET = CODEX_LITE_PROBE_TARGET || join(homedir(), `.codex-lite-sandbox-probe-${process.pid}`);
+const PROBE_TARGET = RECODE_PROBE_TARGET || join(homedir(), `.recode-sandbox-probe-${process.pid}`);
 const STALE_MS = 10 * 60_000;
 const TREE_LINES = 50;
 const POSIX = process.platform !== 'win32';
@@ -96,7 +96,7 @@ const git = (args, cwd) => local(`git ${args.join(' ')}`, 'git', args, cwd);
 // on PATH wins; else the first codex.cmd must be an npm install, and its binary is found the way bin/codex.js finds it.
 // Running the binary rather than bin/codex.js keeps a timeout's kill on Codex itself, not on a node wrapper.
 function resolveCodex() {
-  if (CODEX_LITE_CODEX_BIN) return CODEX_LITE_CODEX_BIN;
+  if (RECODE_CODEX_BIN) return RECODE_CODEX_BIN;
   if (POSIX) return 'codex';
   const dirs = (process.env.PATH ?? '').split(delimiter).map((d) => d.replace(/^"(.*)"$/, '$1')).filter(Boolean);
   const exe = dirs.map((d) => join(d, 'codex.exe')).find((p) => existsSync(p));
@@ -185,7 +185,7 @@ async function probe(codex, cwd, windowsSandbox) {
   try { writeFileSync(PROBE_TARGET, 'x'); rmSync(PROBE_TARGET); } catch (e) { return decideProbe({ reachability: { ok: false, code: e.code } }); }
   let dir;
   try {
-    try { dir = mkdtempSync(join(cwd, '.codex-lite-probe-')); } catch (e) {
+    try { dir = mkdtempSync(join(cwd, '.recode-probe-')); } catch (e) {
       return { pass: false, reason: `the positive control could not create its temp directory under ${cwd} (${e.code}), so the sandbox ` +
         'cannot be tested from here. This says nothing about whether the host can sandbox' };
     }
@@ -282,14 +282,14 @@ async function main() {
   const why = failures(r, turnMs);
   if (r.timedOut) status = 'timeout';
   out.push(requestedLine(argv), `cwd: ${cwd}`);
-  if (win.problem) out.push(`codex-lite: warning: ${win.problem}`);
+  if (win.problem) out.push(`recode: warning: ${win.problem}`);
   if (!writes) out.push('network: none in the read-only sandbox; Codex cannot fetch issues, pull requests or pages');
   if (writes) out.push('sandbox: workspace-write proven on this host before the run; the system temp directory stays writable');
-  out.push('', ...(why.length ? [`codex-lite: the run failed: ${why.join('; ')}`, ...(r.stderr ? [r.stderr.replace(/\n$/, '')] : [])] : [r.finalMessage]), '');
+  out.push('', ...(why.length ? [`recode: the run failed: ${why.join('; ')}`, ...(r.stderr ? [r.stderr.replace(/\n$/, '')] : [])] : [r.finalMessage]), '');
   if (writes) {
     try { out.push(...await treeFooter(cwd, before)); } catch (e) {
       if (!(e instanceof Refusal)) throw e;
-      out.push(`codex-lite: ${e.message}`);
+      out.push(`recode: ${e.message}`);
       why.push(e.message);
     }
   }
@@ -300,7 +300,7 @@ async function main() {
   if (why.length === 0 && validThreadId(r.threadId)) {
     const file = threadFile(dataDir, id);
     try { writeFileSync(`${file}.tmp`, `${r.threadId}\n`); renameSync(`${file}.tmp`, file); } catch (e) {
-      out.push(`codex-lite: warning: could not save the thread id to ${file}: ${e.message}`);
+      out.push(`recode: warning: could not save the thread id to ${file}: ${e.message}`);
     }
   }
   if (why.length === 0) status = 'ok';
@@ -319,7 +319,7 @@ async function setup(dataDir) {
     } catch (e) {
       if (!(e instanceof Refusal)) throw e;
       ok = false;
-      out.push(`${label}: codex-lite: ${e.message}`);
+      out.push(`${label}: recode: ${e.message}`);
     }
   };
   const said = (r) => (r.stdout + r.stderr).trim() || `(no output, exit ${r.code})`;
@@ -354,18 +354,18 @@ async function setup(dataDir) {
   // slashes, on Windows too, while Node resolves argv[1] with backslashes. It names the version directory: a * in the
   // path would also match a sibling directory or a .. path.
   const root = POSIX ? dirname(dirname(process.argv[1])) : dirname(dirname(process.argv[1])).replaceAll('\\', '/');
-  const rules = [`Edit(/${abs}/**)`, `Bash(node "${root}/scripts/codex-lite.mjs" *)`];
+  const rules = [`Edit(/${abs}/**)`, `Bash(node "${root}/scripts/recode.mjs" *)`];
   out.push('', 'Allow rules for this plugin, as JSON strings. setup adds neither; to use them, paste them into the permissions.allow ' +
     'array in your Claude Code settings:', ...rules.map((r, i) => `  ${JSON.stringify(r)}${i < rules.length - 1 ? ',' : ''}`),
   'The Bash rule names the installed version\'s path, so it changes with every release.');
   return ok;
 }
 
-const ROUTING = 'Use codex-lite for Codex requests: ask for questions, plan critiques, and second opinions; review only for working-tree or ' +
+const ROUTING = 'Use recode for Codex requests: ask for questions, plan critiques, and second opinions; review only for working-tree or ' +
   'base-ref diffs. Put options before the question, in any order: an explicit model choice as --model <name>, and for a follow-up in ' +
   'the same Codex thread, --resume <thread id>, or a bare --resume followed by a line break or another option; the follow-up then needs ' +
   'only the new question. A skill that delegates implementation to Codex uses implement; for a plain request to change files, direct the user to ' +
-  '/codex-lite:do <task>; for setup checks, /codex-lite:setup. Do not invoke Codex directly.';
+  '/recode:do <task>; for setup checks, /recode:setup. Do not invoke Codex directly.';
 
 // Plain stdout from a UserPromptSubmit hook becomes context for Claude. A typed slash command, of any plugin, already routes
 // itself: a slash, a command name, then a space or the end. A prompt starting with an absolute path (/Users/... or /tmp/x:)
@@ -380,9 +380,9 @@ async function hook() {
   if (typeof prompt === 'string' && /codex/i.test(prompt) && !/^\s*\/[\w:-]+(?:\s|$)/.test(prompt)) process.stdout.write(`${ROUTING}\n`);
 }
 
-if (process.argv[2] === 'hook') hook().catch((e) => process.stderr.write(`codex-lite: hook error: ${e?.stack ?? e}\n`));
+if (process.argv[2] === 'hook') hook().catch((e) => process.stderr.write(`recode: hook error: ${e?.stack ?? e}\n`));
 else main().then((ok) => { process.exitCode = ok ? 0 : 1; }, (e) => {
-  out.push(e instanceof Refusal ? `codex-lite: ${e.message}` : `codex-lite: unexpected error: ${e?.stack ?? e}`);
+  out.push(e instanceof Refusal ? `recode: ${e.message}` : `recode: unexpected error: ${e?.stack ?? e}`);
   if (!(e instanceof Refusal) && status) status = 'failed'; // a crash is not a deliberate stop, whichever phase it was in
   process.exitCode = 1;
 }).finally(() => process.stdout.write(`${[...out, ...(status ? [`status: ${status}`] : [])].join('\n')}\n`));
