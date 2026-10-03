@@ -165,3 +165,10 @@ test('lint rejects a loop lookup of the installed recode', () => fails(
 test('lint allows the old config name only in the loop skill that checks for it', () => fails(
   (d) => appendFileSync(join(d, 'plugins/recode-loop/README.md'), 'Rename .ccl.json to .recode.json.\n'),
   'plugins/recode-loop/README.md:', 'old name /\\bccl\\b/'));
+
+test('lint rejects a loop command that does not read the codex option', () => fails(
+  (d) => {
+    const p = join(d, 'plugins/recode-loop/commands/plan.md');
+    writeFileSync(p, readFileSync(p, 'utf8').replace('The option reads: `${user_config.codex}`. ', ''));
+  },
+  'plugins/recode-loop/commands/plan.md: must read the codex option as `${user_config.codex}`'));

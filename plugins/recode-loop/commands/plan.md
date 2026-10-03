@@ -33,7 +33,7 @@ You are a thin forwarder for the recode-loop orchestrator, in plan-only mode. Do
 
    Run no other command, write no file, and do not load the skill when you reject.
 
-3. State the parsed invocation to the user as this block, with every flag at its effective value. List each input on its own line, as `issue <#n or URL>`, `file <path>`, or `text "<description>"`.
+3. State the parsed invocation to the user as this block, with every flag at its effective value. `no-codex` is `true` when `--no-codex` is given, and also when the plugin option `codex` is off. The option reads: `${user_config.codex}`. Only the exact value `false` means off; any other text there, including the placeholder left when the option was never set, leaves `no-codex` to the flag alone. List each input on its own line, as `issue <#n or URL>`, `file <path>`, or `text "<description>"`.
 
 ```
 mode: plan-only

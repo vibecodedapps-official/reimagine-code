@@ -236,6 +236,12 @@ for (const p of shipped.filter((f) => rel(f).startsWith("plugins/recode-loop/"))
   });
 }
 
+// 16. Each loop command applies the codex plugin option to its no-codex flag (R21).
+for (const f of ["run", "plan"].map((n) => `plugins/recode-loop/commands/${n}.md`)) {
+  const text = read(f);
+  if (text !== null && !text.includes("`${user_config.codex}`")) fail(`${f}: must read the codex option as \`\${user_config.codex}\``);
+}
+
 if (failures.length) {
   console.error(`lint: ${failures.length} failure(s)\n${failures.map((f) => `- ${f}`).join("\n")}`);
   process.exit(1);
