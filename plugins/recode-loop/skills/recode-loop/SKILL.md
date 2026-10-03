@@ -1,6 +1,6 @@
 ---
 name: recode-loop
-description: The orchestrator for the recode-loop plugin. It is loaded by /recode-loop:run and /recode-loop:plan and runs a tiered plan, review, implement, review, publish loop for one unit of work. Do not trigger this skill in any other way, and do not load it for general questions about planning or review.
+description: The orchestrator loaded by /recode-loop:run and /recode-loop:plan. It runs a tiered plan, review, implement, review, publish loop for one unit of work. Do not trigger this skill in any other way, and do not load it for general questions about planning or review.
 user-invocable: false
 allowed-tools:
   - Bash(git status *)
