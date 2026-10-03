@@ -1,0 +1,32 @@
+{
+  "name": "codex-code-review",
+  "interface": {
+    "displayName": "Codex Code Review"
+  },
+  "plugins": [
+    {
+      "name": "codex-code-review",
+      "source": {
+        "source": "local",
+        "path": "./plugins/codex-code-review"
+      },
+      "policy": {
+        "installation": "AVAILABLE",
+        "authentication": "ON_INSTALL"
+      },
+      "category": "Productivity"
+    },
+    {
+      "name": "codex-code-review-general",
+      "source": {
+        "source": "local",
+        "path": "./plugins/codex-code-review-general"
+      },
+      "policy": {
+        "installation": "AVAILABLE",
+        "authentication": "ON_INSTALL"
+      },
+      "category": "Productivity"
+    }
+  ]
+}

@@ -1,0 +1,17 @@
+{
+  "$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
+  "name": "codex-code-review",
+  "version": "0.1.0",
+  "description": "The code-review skills from the openai/codex repository, packaged as a plugin.",
+  "author": {
+    "name": "vibecodedapps.net",
+    "url": "https://vibecodedapps.net"
+  },
+  "repository": "https://github.com/vibecodedapps-official/codex-code-review",
+  "license": "Apache-2.0",
+  "keywords": [
+    "codex",
+    "code-review",
+    "skills"
+  ]
+}
