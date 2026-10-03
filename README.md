@@ -1,0 +1,20 @@
+# reimagine-code
+
+A suite of plugins for Claude Code and Codex, published from one repository as a Claude
+Code marketplace and a Codex marketplace, both named `reimagine-code`.
+
+- `recode`: on Claude Code, hand a question, a review, or an edit to the Codex CLI, plus
+  setup and optional house rules. On Codex, general code review skills.
+- `recode-loop`: on Claude Code, a plan, review, implement, review, publish loop for one
+  unit of work.
+- `repo-docs`: keeps a repository's agent instruction files correct, on both hosts.
+
+Status: in development toward v0.1.0. Nothing is released yet, and the install commands
+will appear here when it is. Until then, use the source plugins: codex-lite-cc,
+claude-codex-loop, codex-code-review, and repo-docs.
+
+The design is in [docs/architecture.md](docs/architecture.md),
+[docs/requirements.md](docs/requirements.md), and the
+[implementation plan](docs/implementation-plan-v0.1.0.md).
+
+Licensed under Apache-2.0. See [LICENSE](LICENSE) and [NOTICE](NOTICE).
