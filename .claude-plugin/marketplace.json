@@ -3,12 +3,16 @@
   "owner": {
     "name": "vibecodedapps.net"
   },
+  "metadata": {
+    "description": "Claude Code and Codex plugins that work together: a Codex bridge, a plan-and-run loop, code review skills, and repo instruction docs.",
+    "version": "0.1.0"
+  },
   "plugins": [
     {
       "name": "recode",
       "source": "./plugins/recode",
       "description": "Hand a task to the Codex CLI, run it once, and print what it said.",
-      "version": "0.9.0"
+      "version": "0.1.0"
     }
   ]
 }
