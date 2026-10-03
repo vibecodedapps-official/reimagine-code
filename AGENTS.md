@@ -6,8 +6,10 @@ It is mid-migration from four source repos toward v0.1.0.
 
 ## Commands
 
-No build, test, or lint command exists yet; `npm test` and `npm run lint` arrive with the
-bridge in milestone M2 of the implementation plan.
+- `npm test`: every `tests/**/*.test.mjs`.
+- `npm run lint`: the repository checks in `tools/lint.mjs`.
+- `claude plugin validate --strict .`, then the same on each `plugins/<name>`: the
+  manifest checks CI runs.
 
 ## Hard constraints
 

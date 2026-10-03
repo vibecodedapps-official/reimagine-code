@@ -1,4 +1,4 @@
-# reimagine-code
+# recode
 
 A small Claude Code plugin that hands a task to the Codex CLI, runs it once, and prints what
 it said. Five commands, one entry script, one prompt hook, no daemon, no background jobs of its own.
@@ -10,7 +10,7 @@ it said. Five commands, one entry script, one prompt hook, no daemon, no backgro
 /plugin install recode@reimagine-code
 ```
 
-Installs track `main`. Every merge to `main` bumps the version.
+Installs track `main`. A change to the plugin reaches `main` only with a higher version.
 
 ## Requirements
 
@@ -296,7 +296,7 @@ plain words. This was seen on 2026-09-26 on Claude Code 2.1.280 in headless auto
 "dispatch codex to review my changes against main" and "ask codex what math.mjs exports".
 
 In auto mode, by inference from that observation for `ask` and `review`, `implement` invoked by a
-skill is not gated either; nobody has yet observed it, and item 19 of `docs/acceptance.md` is where
+skill is not gated either; nobody has yet observed it, and the repository's `docs/acceptance.md` is where
 it gets recorded. See the tradeoff under "Commands".
 
 In default mode, Claude Code asks before each step it does not trust: running a command Claude
@@ -328,6 +328,8 @@ alone. It does not cover every way to start Codex: an absolute path to the execu
 
 ## Development
 
+From the root of the reimagine-code repository:
+
 ```
 npm test
 npm run lint
@@ -352,8 +354,9 @@ tree loaded as a plugin:
 claude --plugin-dir /path/to/reimagine-code/plugins/recode
 ```
 
-`docs/acceptance.md` lists the checks that need a live session or the real Codex CLI, and when to run them.
+The repository's `docs/acceptance.md` lists the checks that need a live session or the real Codex CLI, and when to run them.
 
 ## License
 
-Apache 2.0. See [LICENSE](LICENSE) and [NOTICE](NOTICE).
+Apache 2.0. See [LICENSE](LICENSE), and the NOTICE file at the root of the reimagine-code
+repository.
