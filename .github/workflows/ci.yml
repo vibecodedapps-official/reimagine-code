@@ -29,7 +29,8 @@ jobs:
     runs-on: ubuntu-latest
     env:
       # Pinned so a new Claude Code release cannot change the result without a commit here.
-      CLAUDE_CODE_VERSION: 2.1.284
+      # Pick a release at least seven days old, so a bad release has time to be pulled.
+      CLAUDE_CODE_VERSION: 2.1.283
       DISABLE_AUTOUPDATER: "1"
     steps:
       - uses: actions/checkout@v7
