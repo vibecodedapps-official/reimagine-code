@@ -213,9 +213,10 @@ Behavior carries over from ccl 0.10.0 except as listed.
   2.1.269). False makes every run behave as `--no-codex`.
   This replaces the handoff's mode file in plugin data: the host already stores,
   displays, and edits the value. The per-run `--no-codex` still works; there is no
-  per-run override back to Codex in v0.1.0. If spike M0.2 shows `${user_config.codex}` is
-  not substituted into command text, the option moves to 0.2.0 and the flag is the only
-  switch.
+  per-run override back to Codex in v0.1.0. Spike M0.2 showed `${user_config.codex}` is
+  substituted into command text, but an option never set stays the literal placeholder.
+  The run and plan commands read it while parsing flags: only `false` adds `--no-codex`
+  (`docs/decisions.md` Part 4 items 1 and 2).
 - **State names.** Renamed with the plugin:
 
   | Was | Becomes |

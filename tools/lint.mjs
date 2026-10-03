@@ -33,10 +33,12 @@ const PLUGINS = [
   { dir: "plugins/recode", catalogs: ["claude"], family: true, budgets: [
     { files: ["scripts/codex.mjs", "scripts/recode.mjs"], max: 700 }, { files: ["scripts/rules.mjs"], max: 400 }, { files: ["scripts/suite.mjs"], max: 200 },
   ] },
+  { dir: "plugins/recode-loop", catalogs: ["claude"], family: true, budgets: [] },
 ];
 // Old names a shipped file may still contain, by repository-relative path: the migration literals of R7.
 const OLD_NAME_LITERALS = {
   "plugins/recode/scripts/suite.mjs": ["codex-lite@vibecodedapps-codex-lite", "ccl@vibecodedapps-claude-codex-loop"],
+  "plugins/recode-loop/skills/recode-loop/SKILL.md": [".ccl.json"],
 };
 
 // 1. Syntax of every module.
@@ -212,6 +214,32 @@ else {
   const block = fences.length === 2 ? chat.split(/\r?\n/).slice(fences[0] + 1, fences[1]).map((l) => `${l}\n`).join("") : null;
   if (block === null) fail(`plugins/recode/chat/instructions.md: must hold exactly one fenced block, found ${fences.length} fence lines`);
   else if (block.length > 5000) fail(`plugins/recode/chat/instructions.md: the block is ${block.length} characters, over ChatGPT's 5,000`);
+}
+
+// 14. recode-loop depends on recode with the range >=<floor> <1.0.0, its floor at or below the suite version (R18).
+const loopManifest = json("plugins/recode-loop/.claude-plugin/plugin.json");
+if (loopManifest && pkg) {
+  const deps = Array.isArray(loopManifest.dependencies) ? loopManifest.dependencies : [];
+  const range = deps.find((d) => d?.name === "recode")?.version;
+  const floor = typeof range === "string" ? range.match(/^>=(\d+)\.(\d+)\.(\d+) <1\.0\.0$/)?.slice(1).map(Number) : null;
+  const suite = String(pkg.version).split(".").map(Number);
+  const above = floor && (floor[0] - suite[0] || floor[1] - suite[1] || floor[2] - suite[2]) > 0;
+  if (!floor || above) fail(`plugins/recode-loop/.claude-plugin/plugin.json: dependencies must hold { "name": "recode", "version": ">=<floor> <1.0.0" } with the floor at or below ${pkg.version}; found ${JSON.stringify(range ?? null)}`);
+}
+
+// 15. No loop text reads the bridge's installed version or compares it to the old gates, 0.8.0 and 0.9.0: the dependency range covers both (R19).
+const gates = [/\b0\.[89]\.0\b/, /\brecode@/];
+for (const p of shipped.filter((f) => rel(f).startsWith("plugins/recode-loop/"))) {
+  readFileSync(p, "utf8").split("\n").forEach((l, i) => {
+    const hit = gates.find((re) => re.test(l));
+    if (hit) fail(`${rel(p)}:${i + 1}: bridge version gate /${hit.source}/: ${l.trim()}`);
+  });
+}
+
+// 16. Each loop command applies the codex plugin option to its no-codex flag (R21).
+for (const f of ["run", "plan"].map((n) => `plugins/recode-loop/commands/${n}.md`)) {
+  const text = read(f);
+  if (text !== null && !text.includes("`${user_config.codex}`")) fail(`${f}: must read the codex option as \`\${user_config.codex}\``);
 }
 
 if (failures.length) {

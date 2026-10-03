@@ -13,6 +13,12 @@
       "source": "./plugins/recode",
       "description": "Hand a task to the Codex CLI, run it once, and print what it said. Also keeps a block of house rules in your CLAUDE.md and AGENTS.md.",
       "version": "0.1.0"
+    },
+    {
+      "name": "recode-loop",
+      "source": "./plugins/recode-loop",
+      "description": "Run a tiered plan, review, implement, review, publish loop for one unit of work, with Claude orchestrating, Codex implementing, and Codex and Claude reviewing.",
+      "version": "0.1.0"
     }
   ]
 }

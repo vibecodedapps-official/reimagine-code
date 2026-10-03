@@ -1,6 +1,6 @@
-# claude-codex-loop
+# recode-loop
 
-`ccl` is a Claude Code plugin that runs a tiered plan, review, implement, review,
+`recode-loop` is a Claude Code plugin that runs a tiered plan, review, implement, review,
 publish loop for one unit of work. Claude orchestrates and reviews. Codex gives a second
 opinion and implements the slices. Claude subagents implement a slice at high, xhigh,
 and max when the criteria say so, and when Codex is unavailable. You type one command
@@ -47,21 +47,11 @@ directory exists prints the report and writes nothing.
   and ends in `prepared` with a handoff to the host's own tooling. A GitHub Enterprise
   checkout therefore needs a `gh` login for that host to be treated as GitHub. Only
   GitHub is supported for publishing.
-- Optional but preferred: the Codex CLI and the `codex-lite` plugin, version 0.8.0 or
-  later. All Codex calls go through `/codex-lite:ask`, `/codex-lite:review`, and
-  `/codex-lite:implement`. Codex needs a git repository as its working directory and has
-  no network access. An older `codex-lite` is treated as unavailable. With version 0.9.0
-  or later, an additional repository in Multi-repo mode is reviewed with `review --cwd`;
-  below it the patch rule applies.
-
-  [`codex-lite`](https://github.com/vibecodedapps-official/codex-lite-cc) is a small
-  Claude Code plugin that hands a task to the Codex CLI in a fixed sandbox and prints the
-  result. Install it in Claude Code:
-
-  ```
-  /plugin marketplace add vibecodedapps-official/codex-lite-cc
-  /plugin install codex-lite@vibecodedapps-codex-lite
-  ```
+- Optional but preferred: the Codex CLI, logged in. All Codex calls go through
+  `/recode:ask`, `/recode:review`, and `/recode:implement`, from the `recode` plugin,
+  which hands a task to the Codex CLI in a fixed sandbox and prints the result. `recode`
+  installs with this plugin as a dependency. Codex needs a git repository as its working
+  directory and has no network access.
 
 - The built-in `/code-review` skill, for every run that reaches the final review. It is
   the second final reviewer beside Codex at every tier. A run that needs it and cannot
@@ -69,36 +59,42 @@ directory exists prints the report and writes nothing.
 
 Without Codex, use `--no-codex`. The loop then uses Claude subagents in place of the Codex
 reviewers and Sonnet subagents in place of the Codex implementers, and names every swap
-in the report. `--no-codex` does not remove the `/code-review` pass.
+in the report. `--no-codex` does not remove the `/code-review` pass. To leave Codex out of
+every run, set the plugin's `codex` option to false with
+`/plugin configure recode-loop@reimagine-code`; each run then behaves as `--no-codex`.
 
 ## Install
 
-The repo is its own marketplace. In Claude Code:
+The reimagine-code repository is the marketplace. In Claude Code:
 
 ```
-/plugin marketplace add vibecodedapps-official/claude-codex-loop
-/plugin install ccl@vibecodedapps-claude-codex-loop
+/plugin marketplace add vibecodedapps-official/reimagine-code
+/plugin install recode-loop@reimagine-code
 ```
 
-To try a local clone without installing it:
+Installing the loop also installs `recode`. Claude Code keeps `recode` inside the version
+range the loop declares, and refuses to disable it while the loop is enabled.
+
+To try a local clone without installing it, load both plugins, because the loop calls
+`recode`:
 
 ```
-git clone https://github.com/vibecodedapps-official/claude-codex-loop.git
-claude --plugin-dir <path-to-clone>
+git clone https://github.com/vibecodedapps-official/reimagine-code.git
+claude --plugin-dir <path-to-clone>/plugins/recode --plugin-dir <path-to-clone>/plugins/recode-loop
 ```
 
 ## Commands
 
 ```
-/ccl:run <inputs...> [--effort low|medium|high|xhigh|max] [--plan-only] [--confirm-plan]
+/recode-loop:run <inputs...> [--effort low|medium|high|xhigh|max] [--plan-only] [--confirm-plan]
          [--no-codex] [--no-publish] [--branch <name>] [--continue <branch>]
          [--run-budget <minutes>] [--repo <path>[@<branch>]]...
-/ccl:plan <inputs...> [--effort low|medium|high|xhigh|max] [--no-codex] [--branch <name>]
+/recode-loop:plan <inputs...> [--effort low|medium|high|xhigh|max] [--no-codex] [--branch <name>]
           [--continue <branch>] [--run-budget <minutes>] [--repo <path>[@<branch>]]...
 ```
 
-`/ccl:plan` is `/ccl:run --plan-only`. Both run build mode and share one skill. The
-plugin name is `ccl`, so the commands do not collide with the built-in `/loop`.
+`/recode-loop:plan` is `/recode-loop:run --plan-only`. Both run build mode and share one skill. The
+plugin name is `recode-loop`, so the commands do not collide with the built-in `/loop`.
 
 ### Inputs
 
@@ -118,7 +114,7 @@ request, and any pull request URL, is rejected before setup. To continue a pull 
 branch, pass `--continue <branch>`. A token that names an existing file is a file input.
 The remaining text, joined, is one ad-hoc description.
 
-Inputs are persisted under `.ccl/` and sent to Codex. Before the run starts, the inputs
+Inputs are persisted under `.recode/` and sent to Codex. Before the run starts, the inputs
 are scanned for credentials: a key such as `password`, `secret`, `token`, or `api_key`
 with a value, an AWS access key id, a PEM header, or a block under a credentials heading.
 A match prompts a keep-or-drop question. `keep` writes them to `inputs.md` and forwards
@@ -135,13 +131,13 @@ common shapes, not a guarantee.
   lower a task below the risk floor.
 - `--plan-only`: stop after the plan is final, at every tier, and print it. Nothing
   after the plan runs and the working tree is not changed.
-- `--confirm-plan` (`/ccl:run` only, rejected with `--plan-only`): pause once the plan is
+- `--confirm-plan` (`/recode-loop:run` only, rejected with `--plan-only`): pause once the plan is
   final and reverified, and ask you to approve it. A yes continues. A described change
   gets another plan review round, and then the question is asked again. Any other reply
   ends the run in `plan-only`. The wait does not count against the run budget. The run is
   attended.
 - `--no-codex`: use the Claude fallbacks even if Codex is installed.
-- `--no-publish` (`/ccl:run` only): withhold Step 7. The run ends in `prepared`. With
+- `--no-publish` (`/recode-loop:run` only): withhold Step 7. The run ends in `prepared`. With
   `--continue`, an incomplete pull request list, or closed, merged, or several open pull
   requests on the branch are recorded in the report instead of failing preflight.
 - `--run-budget <minutes>`: the run budget for this run, a positive integer.
@@ -179,7 +175,7 @@ common shapes, not a guarantee.
   `stopped`. A divergent local branch, a dirty tree, and a branch checked out in another
   worktree still fail preflight. The previous `HEAD` is recorded in `run.md` and the
   report lists the switch; the run does not switch back. The branch must not be the
-  default branch, because the run would push to it. With `/ccl:plan` or `--plan-only`, a
+  default branch, because the run would push to it. With `/recode-loop:plan` or `--plan-only`, a
   differing local branch, a branch checked out elsewhere, and the pull request cases are
   recorded in the report instead of failing, and the switch still applies, because the
   plan must read the branch's code. A plan-only run on a differing local branch, which
@@ -220,14 +216,13 @@ agents read them directly. In this mode:
   a name stem, and takes `yes` for the single suggestions plus one `<path>@<branch>` or
   `<path>@new` line for each other repository. Each chosen branch is checked against its
   remote, and any other reply ends the run in `stopped`. Artifacts live only in the
-  primary's `.ccl/<run-id>/`. No slice spans repositories. Every `gh` call for an
+  primary's `.recode/<run-id>/`. No slice spans repositories. Every `gh` call for an
   additional repository is run from that checkout or targeted with `-R <owner>/<repo>`
   where the subcommand accepts it (`gh api` does not; its endpoint is spelled out), and
   every `git` call with `git -C <path>`.
-- Codex `review` covers the primary. With codex-lite 0.9.0 or later, each additional
-  repository with a diff is reviewed with `codex-lite:review --cwd <absolute path>` in
-  its own thread, and its follow-ups resume that thread. Below 0.9.0 it is reviewed through
-  `codex-lite:ask` with a patch file. `/code-review` covers the primary, and a
+- Codex `review` covers the primary. Each additional repository with a diff is reviewed
+  with `recode:review --cwd <absolute path>` in its own thread, and its follow-ups resume
+  that thread. `/code-review` covers the primary, and a
   Claude Opus subagent fills the Claude slot for each additional repository with a
   diff. That substitute is recorded and is not a swap. A Codex implementer call for a
   slice in an additional repository passes that checkout as `--cwd`.
@@ -236,11 +231,11 @@ agents read them directly. In this mode:
   issue's own repository. Every other PR of the run cites it as `Refs <owner>/<repo>#n`.
   `done` needs every PR green. A `blocked` in any repository stops publication in all,
   except that a PR already opened still gets its sibling links filled in. Each
-  repository's PR body is `.ccl/<run-id>/pr-body-<slug>.md` in the primary, and every
+  repository's PR body is `.recode/<run-id>/pr-body-<slug>.md` in the primary, and every
   `gh` body call for an additional repository gets its absolute path.
-- The primary's `.ccl.json` governs `commit` and `timeouts`. Each repository's own
+- The primary's `.recode.json` governs `commit` and `timeouts`. Each repository's own
   `checks` list is read for that repository.
-- With `"commit": true`, the `specs/ccl/<run-id>/` snapshot is committed in the first
+- With `"commit": true`, the `specs/recode/<run-id>/` snapshot is committed in the first
   repository, the primary first and then the `--repo` order, that has a diff. A
   repository with no diff never receives it and gets no PR.
 - A primary whose status and index are clean but which has skip-worktree or
@@ -255,14 +250,16 @@ agents read them directly. In this mode:
   says otherwise, and is `new` otherwise. Repositories may continue different branch
   names.
 
-## Repo config: `.ccl.json`
+## Repo config: `.recode.json`
 
-Place `.ccl.json` at the repo root. Every field is optional. A malformed file ends the
-run in `blocked` before anything is written.
+Place `.recode.json` at the repo root. Every field is optional. A malformed file ends the
+run in `blocked` before anything is written. So does the file under its old name from
+before the plugin was renamed, with no `.recode.json` beside it; the report says to
+rename it.
 
 | Field | Default | Meaning |
 |---|---|---|
-| `commit` | `false` | Either way the run works in `.ccl/<run-id>/`, which is git-ignored. When `true`, the plan and a provisional report are also copied to `specs/ccl/<run-id>/` and committed on the work branch at publish. |
+| `commit` | `false` | Either way the run works in `.recode/<run-id>/`, which is git-ignored. When `true`, the plan and a provisional report are also copied to `specs/recode/<run-id>/` and committed on the work branch at publish. |
 | `checks` | discovered | List of commands to run as the repo's checks. The listed commands run first. Checks discovered from package scripts, `Makefile`, `pyproject`, and CI workflow jobs are added, and duplicates are dropped. |
 | `timeouts` | see below | Time budgets in minutes. |
 
@@ -275,7 +272,7 @@ tier, and the tier default replaces it then; a rise to high after implementation
 to the high default. An explicit instruction from you in the
 session that names a new budget replaces it from that point. The report names the budget
 in force and its source. The `run` budget bounds the whole run from Step 0 to the
-terminal state, less each Step 3.5 wait. The `codex` value is passed to codex-lite in
+terminal state, less each Step 3.5 wait. The `codex` value is passed to recode in
 seconds, which accepts 1 to 3600, so a value above 60 minutes is capped at 60. That cap is
 for Codex reviewer calls. A Codex implementer call gets the smaller of the `subagent`
 value and the remaining run budget, capped at 3600 seconds, and the run log records the
@@ -389,18 +386,18 @@ Every run ends in exactly one state.
 
 ## Artifacts
 
-With `"commit": false`, each run writes to `.ccl/<run-id>/` in the repo root:
+With `"commit": false`, each run writes to `.recode/<run-id>/` in the repo root:
 `inputs.md`, `plan.md`, `run.md` (the run log), `report.md`, and `diff.patch` when a
 follow-up review round, a CI repair round, or a worktree run's diff review needed it.
 In Multi-repo mode there is one `diff-<slug>.patch` and one `pr-body-<slug>.md` per
-additional repository. `.ccl/` is added to `.git/info/exclude`, not to a committed
+additional repository. `.recode/` is added to `.git/info/exclude`, not to a committed
 `.gitignore`.
 
-With `"commit": true`, the run still works entirely in `.ccl/<run-id>/`. At publish, the
-plan and a provisional report are copied to `specs/ccl/<run-id>/` and committed on the
-work branch before the push. Nothing is written under `specs/ccl/` earlier, so a run
+With `"commit": true`, the run still works entirely in `.recode/<run-id>/`. At publish, the
+plan and a provisional report are copied to `specs/recode/<run-id>/` and committed on the
+work branch before the push. Nothing is written under `specs/recode/` earlier, so a run
 that ends before publish leaves the tree clean. The terminal report is written to
-`.ccl/<run-id>/report.md`. The run id is `<yyyy-mm-dd>-<inputs>`, with a
+`.recode/<run-id>/report.md`. The run id is `<yyyy-mm-dd>-<inputs>`, with a
 numeric suffix when the id already exists.
 
 A failure before the run directory exists prints the report and writes nothing.
@@ -411,9 +408,9 @@ A run that made a commit of its own at Step 7.1 also writes `handoff.md` and
 ## Pairing with cca
 
 The `cca` plugin audits work after it is built. Pairing requires cca 0.2.0 or later;
-with an older cca, ccl writes the files by the same shapes and skips cca's check. When a
+with an older cca, recode-loop writes the files by the same shapes and skips cca's check. When a
 run has at least one commit of its own from Step 7.1, in any terminal state, it writes two
-files to `.ccl/<run-id>/`:
+files to `.recode/<run-id>/`:
 
 - `handoff.md`: a typed record of the run, with its bundles (one per repository), its
   tickets, the decisions taken and who made them, and the items the run deferred. It is
@@ -422,7 +419,7 @@ files to `.ccl/<run-id>/`:
 - `cca-manifest.json`: each bundle's repository path, its PR or its branch and base, and
   the handoff's path, so one `/cca:audit` call covers every repository.
 
-A run with no commit of its own writes neither, and the report says why. ccl never
+A run with no commit of its own writes neither, and the report says why. recode-loop never
 commits to make a handoff possible. After you commit, `/cca:handoff` in the session can
 write one, with cca 0.2.0 or later.
 
@@ -442,11 +439,11 @@ fields, Step 0.5 now reads each issue's assignees and milestone.
 
 ## Permission mode and unattended runs
 
-Default permission mode prompts at every Codex call, because codex-lite writes a request
+Default permission mode prompts at every Codex call, because recode writes a request
 file that Claude Code asks about. The branch, commit, push, PR, and comment actions
 also prompt unless you have allowed them. Before any other preflight action, the loop
 prints either "this run will prompt at:" with the list, or "this run is unattended". The
-statement covers the default-branch fetch, the writes under `.ccl/` and to
+statement covers the default-branch fetch, the writes under `.recode/` and to
 `.git/info/exclude`, and the repo's checks.
 
 A worktree run (a clean tree whose skip-worktree files differ from `HEAD`) also
@@ -472,10 +469,12 @@ For an unattended run, use auto mode, or use `--no-codex` and add allow rules fo
 
 ## Why the rules are what they are
 
-`docs/decisions.md` records the reason for each rule, and the failure that taught it
-where one is recorded. `docs/acceptance.md` lists the hand-run checks that are the
-plugin's only test surface in 0.1.0.
+In the reimagine-code repository, `docs/history/claude-codex-loop/decisions.md` records
+the reason for each rule, and the failure that taught it where one is recorded, up to the
+rename. `docs/decisions.md` records the suite's later decisions, and `docs/acceptance.md`
+lists the hand-run checks that are the plugin's only test surface.
 
 ## License
 
-Apache-2.0. See `LICENSE` and `NOTICE`.
+Apache-2.0. See [LICENSE](LICENSE), and the NOTICE file at the root of the reimagine-code
+repository.

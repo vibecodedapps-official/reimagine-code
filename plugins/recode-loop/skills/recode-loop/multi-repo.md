@@ -19,7 +19,7 @@ names, for each repository, and leaves the rest of that step as written.
   checkout must be given as a full URL.
 - Worktree: the Step 0.3 worktree exception is not available. A primary with a clean status
   and skip-worktree or assume-unchanged files that differ from HEAD ends in `blocked`, and
-  the report says so. This keeps Step 5's `codex-lite:review` and `code-review` of the
+  the report says so. This keeps Step 5's `recode:review` and `code-review` of the
   primary correct.
   Step 0.3's flagged-file check runs per repository. An additional repository whose
   skip-worktree or assume-unchanged files differ from `HEAD` does not block: the run
@@ -31,22 +31,23 @@ names, for each repository, and leaves the rest of that step as written.
   local checks pass on it. If the plan needs to change one, the run ends in `blocked` at
   Step 2 naming the path. Implementer prompts for that repository name the paths as off
   limits.
-- Commit snapshot: with `"commit": true`, the `specs/ccl/<run-id>/` snapshot is committed in
+- Commit snapshot: with `"commit": true`, the `specs/recode/<run-id>/` snapshot is committed in
   the first repository, the primary first and then the `--repo` order, that has a diff. A
   repository with no diff never receives it and gets no PR.
-- `.ccl.json`: the primary's governs `commit` and `timeouts`. Each repository's own `checks`
-  list is read for that repository's Step 3.7.3 and Step 6.
+- `.recode.json`: the primary's governs `commit` and `timeouts`. Each repository's own `checks`
+  list is read for that repository's Step 3.7.3 and Step 6. A repository that holds the
+  config under its name from before the rename blocks the run, as Step 0 item 1 says.
 - `gh` and `git` targets: every `gh` call for an additional repository (PR create and edit,
   checks, CI reads under Step 7.3.1, and issue comments) runs inside one Bash call as `cd
   <path> && ...`, or with `-R <owner>/<repo>` where the subcommand accepts it. `gh api` does
   not accept `-R`: run it from the checkout, or spell the endpoint out as
   `repos/<owner>/<repo>/...` instead of `repos/{owner}/{repo}/...`. Every `git` call for it
   runs as `git -C <path>`.
-- PR body files: each repository's body is written to `.ccl/<run-id>/pr-body-<slug>.md` in
+- PR body files: each repository's body is written to `.recode/<run-id>/pr-body-<slug>.md` in
   the primary (the primary's own may stay `pr-body.md`). Every `--body-file` for an
   additional repository, in `gh pr create`, `gh pr edit`, and the continued-PR `gh pr
   comment`, is an absolute path, because the call runs inside that repository's checkout,
-  where `.ccl/<run-id>/` does not exist.
+  where `.recode/<run-id>/` does not exist.
 - Step 0.1: read the instruction files and ask-first rules in every repository and union
   them. The permission statement lists each repository's push and PR.
 - Steps 0.2 to 0.4 run per repository. Record a base commit and a planning snapshot for
@@ -64,8 +65,8 @@ names, for each repository, and leaves the rest of that step as written.
   requirement and the consented switch. A `new` repository creates its branch in Step
   3.7.2 under the naming rule, with the collision check. Branch names may differ
   between repositories. Each repository's state is recorded in `run.md`.
-- Ignoring `.ccl/`: write the exclude in every repository. Artifacts live only in the
-  primary's `.ccl/<run-id>/`, with a section per repository in `inputs.md` and `run.md`.
+- Ignoring `.recode/`: write the exclude in every repository. Artifacts live only in the
+  primary's `.recode/<run-id>/`, with a section per repository in `inputs.md` and `run.md`.
 - Input guard: an issue may belong to any listed repository. Compare the issue URL's owner
   and repo with `git -C <path> remote -v` of each listed repository, and record which one.
 - Step 0.5: fetch each issue from its owning repository with `gh issue view <n> -R
@@ -82,37 +83,29 @@ names, for each repository, and leaves the rest of that step as written.
 - Step 5.2: review only repositories that have a diff from their base commit (`git -C <path>
   diff <base> --stat`, after `git -C <path> add -N` of new files). A repository with an
   empty diff is skipped and named in `run.md`.
-  - Codex: write `.ccl/<run-id>/diff-<slug>.patch` from `git -C <path> diff <base>` for
+  - Codex: write `.recode/<run-id>/diff-<slug>.patch` from `git -C <path> diff <base>` for
     every additional repository with a diff, in both cases below, because the fallback
     subagent and the Claude substitute read it. When the primary has a diff, review it
-    with `codex-lite:review --base <primary base>`.
+    with `recode:review --base <primary base>`.
     - After a `drop` answer, the Reviewer contract item 5 diff scan runs before each
-      native `codex-lite:review` call, the primary's and each `--cwd` one, over `git -C
+      native `recode:review` call, the primary's and each `--cwd` one, over `git -C
       <path> diff <base>` of that repository, after the `add -N` of new files. On a match
-      that repository is reviewed through `codex-lite:ask` with its patch file
+      that repository is reviewed through `recode:ask` with its patch file
       (`diff.patch` or `diff-<slug>.patch`), the matched values replaced by `<redacted:
       key>`, in a fresh thread that becomes that repository's thread (for the primary,
-      the stage's thread), recorded in `run.md`; its follow-ups resume that thread. Below
-      0.9.0 the additional repositories already go through `codex-lite:ask` with a
-      patch, and only the replacement applies to them. Every patch file written after
-      `drop` carries the same replacements.
-    - With codex-lite 0.9.0 or later, as recorded in Step 0.6: review each additional
-      repository with a diff by `codex-lite:review --base <its base> --model <id>
-      --timeout <s>` on the first line and `--cwd <absolute path of that repository>` on
-      the second, resolved as the Step 4 implementer rule does, a fresh thread
-      per repository. `run.md` records a thread id per repository. A Step 5.4 follow-up
-      for that repository resumes that repository's thread with `codex-lite:ask --resume
+      the stage's thread), recorded in `run.md`; its follow-ups resume that thread. Every
+      patch file written after `drop` carries the same replacements.
+    - Review each additional repository with a diff by `recode:review --base <its base>
+      --model <id> --timeout <s>` on the first line and `--cwd <absolute path of that
+      repository>` on the second, resolved as the Step 4 implementer rule does, a fresh
+      thread per repository. `run.md` records a thread id per repository. A Step 5.4 follow-up
+      for that repository resumes that repository's thread with `recode:ask --resume
       <its thread>`, naming `diff-<slug>.patch`, never another repository's thread.
-    - Below 0.9.0, codex-lite reviews only the session's checkout. The primary's review
-      thread becomes the stage's thread. When no primary review happened, the first
-      additional repository's patch review starts the stage's thread, as a fresh
-      `codex-lite:ask` thread. Every later additional repository resumes it with
-      `codex-lite:ask --resume <stage thread>`, naming its patch file.
   - Under `--no-codex` or after a swap, the stage's fallback subagent (Codex availability
     item 3) is given every repository's patch file, `diff.patch` for the primary and
     `diff-<slug>.patch` for each additional repository, instead of reading `git diff
     <base-commit>` itself. Before the first fallback review, write the primary's diff to
-    `.ccl/<run-id>/diff.patch`, after `git add -N` of new files. Step 5.4 and CI repair
+    `.recode/<run-id>/diff.patch`, after `git add -N` of new files. Step 5.4 and CI repair
     (Step 7.3.5) continue that same subagent with SendMessage.
   - Claude, at every tier: the `code-review` pass covers the primary when it has a diff,
     as the Claude review contract says. For each additional repository with a diff, the
@@ -137,11 +130,10 @@ names, for each repository, and leaves the rest of that step as written.
   The exception covers only PRs this run opened; a continued PR whose comment was not
   yet posted gets none. Editing the body of this run's own PR is inside the approval
   scope and publishes nothing new.
-- Step 7.3.5: a CI repair review for an additional repository uses the Step 5.2 rule for
-  the recorded codex-lite version. With 0.9.0 or later, Codex resumes that repository's
-  own thread through `codex-lite:ask --resume`, naming `diff-<slug>.patch`, never another
-  repository's thread. Below 0.9.0, it uses the stage thread with the patch, never
-  `codex-lite:review`. The repository's Claude subagent is continued in both cases.
+- Step 7.3.5: a CI repair review for an additional repository follows the Step 5.2 rule:
+  Codex resumes that repository's own thread through `recode:ask --resume`, naming
+  `diff-<slug>.patch`, never another repository's thread. The repository's Claude
+  subagent is continued too.
 - Closing references: an issue is closed only by the PR in its own repository (`Closes #n`).
   Every other PR of the run cites it as `Refs <owner>/<repo>#n`. The issue status comment
   names the PR in the issue's repository first, then the siblings.
@@ -166,7 +158,7 @@ reply, do these in order, across all adopted repositories, not one repository at
    `HEAD` check, with the consented switch when `HEAD` is not at the new base or the
    local branch is behind it; revise
    the snapshot note Step 0.5 wrote to `run.md`. Step 1.3 verifies against the new base.
-7. Step 0.4 snapshot for each, and the `.ccl/` exclude for each.
+7. Step 0.4 snapshot for each, and the `.recode/` exclude for each.
 8. The sections for each repository in `inputs.md` and `run.md`. Record "Multi-repo mode
    adopted at Step 1.2 by reply" in `run.md`.
 

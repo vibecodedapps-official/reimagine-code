@@ -20,7 +20,10 @@ In Claude Code:
 ```
 /plugin marketplace add vibecodedapps-official/reimagine-code
 /plugin install recode@reimagine-code
+/plugin install recode-loop@reimagine-code
 ```
+
+Installing `recode-loop` also installs `recode`, which it calls.
 
 The design is in [docs/architecture.md](docs/architecture.md),
 [docs/requirements.md](docs/requirements.md), and the
