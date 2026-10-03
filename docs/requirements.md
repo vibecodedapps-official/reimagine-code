@@ -63,9 +63,9 @@ requirement below changes it. The audit plugin is not part of v0.1.0.
    setup's old-plugin report (R16) and `.ccl.json` in the loop's orphaned-config check
    (R23). The audit plugin's names (`cca`, `/cca:audit`, `cca-manifest.json`) are
    allowed in `recode-loop`. Files under `docs/history/` are exempt. Check: lint.
-8. **Always-on cost.** Measured with `claude plugin details`, `recode` costs at most
-   1,300 tokens always on: codex-lite 0.9.0's 1,220 plus about 40 for the `rules`
-   command, which costs that much even with model invocation off. `recode-loop` costs
+8. **Always-on cost.** Measured with `claude plugin details` in a logged-in profile,
+   `recode` costs at most 1,300 tokens always on: codex-lite 0.9.0's 1,220 plus about 40
+   for the `rules` command, which costs that much even with model invocation off. `recode-loop` costs
    at most ccl 0.10.0's 510. Check: acceptance at release.
 
 ## Bridge: recode on Claude Code

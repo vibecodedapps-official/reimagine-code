@@ -27,6 +27,30 @@ name a plugin are rerun under the new names and recorded here.
    Item 15, the Windows install, runs on the Windows work machine with R53. List drawn
    2026-10-03 at the start of M2. Expected: each item's own result. Rerun when that
    file's own conditions say. Run 2026-10-03; see the record.
+3. **House rules in a scratch profile.** Setup: scratch `CLAUDE_CONFIG_DIR` whose
+   `CLAUDE.md` holds text of its own, scratch `CODEX_HOME` holding an `AGENTS.md`, and
+   `recode` installed from this repository's catalog. Command: `/recode:rules`, choose
+   the options, and accept each target; start a new session and ask it to quote a rule
+   from the block; then `/recode:rules --remove` and accept each target. Repeat with no
+   Codex home. Expected: each target's diff is shown and asked about separately; the new
+   session quotes the rule; after removal each file equals its backup byte for byte; with
+   no Codex home the Codex target is reported as skipped and no directory is created.
+   Covers R33, R38, R41, and R42. Rerun when `rules.mjs`, the rules command, or a rules
+   file changes. Run 2026-10-03; see the record.
+4. **Staleness notice and decline.** Setup: as item 3, with this block after the text
+   of `CLAUDE.md` and an empty line, whose digest matches its body: begin line
+   `<!-- recode:house-rules begin version=0.0.1 options=core join=blank digest=6d3e610aaf815551 -->`,
+   then the line `old rules`, then `<!-- recode:house-rules end -->`. Command: start an
+   interactive session; then `/recode:rules` and decline the Claude change; then start
+   another session. Expected: the first session shows one line naming the file and
+   `/recode:rules`; after the decline the next session shows nothing. Covers R43 and
+   R45. Rerun when `suite.mjs` or the hooks change. Run 2026-10-03; see the record.
+5. **Output style and old plugins.** Setup: as item 3, with `codex-lite` also installed
+   from its old marketplace. Command: `/output-style`, then `/recode:setup`. Expected: the
+   picker lists `recode:Concise Plain`, and replies follow it once chosen; setup's
+   output ends with `claude plugin uninstall codex-lite@vibecodedapps-codex-lite`, and
+   nothing is uninstalled. Covers R16 and R46. Rerun when the style or the old-plugin
+   list changes. Run 2026-10-03; see the record.
 
 ## Record of runs
 
@@ -87,3 +111,58 @@ profile opens first-run onboarding and a login screen.
 - **Observed, not judged:** a timed-out `ask` saves no thread, so a bare `--resume` right
   after it is refused. In one default-mode run Claude ran the Bash step after a failed
   Write; the script refused with "no request file", so nothing reached Codex.
+
+### 2026-10-03: M3, recode 0.1.0
+
+macOS 27.0, Claude Code 2.1.288 (the native install updated itself after M2),
+codex-cli 0.159.2, Node 26.4.0. The scratch profile was `~/.cache/recode-acceptance/`,
+now past onboarding, in auto mode. Its `CODEX_HOME` is a copy of the Codex config with
+no login. recode was installed from the GitHub marketplace at `feat/house-rules`, commit
+32867ba, and was byte for byte the branch's `plugins/recode/`. Commands ran as headless
+`claude -p` sessions, each answer sent with `--resume`. The interactive sessions ran in
+a pseudo-terminal, and their screen text was saved. The real `~/.claude/CLAUDE.md` and
+`~/.codex/AGENTS.md` had the same sha256 after the runs as before, and no backup
+appeared beside them.
+
+- **Always-on cost.** `claude plugin details` in the scratch profile reported about
+  1,256 tokens, with `rules` at about 50, and R8 allows 1,300. In an empty profile with
+  no login, the same version reported about 985. The estimate depends on the profile,
+  probably on the model, so R8 is measured in a logged-in profile.
+- **Item 3 passed.** The scratch `CLAUDE.md` held a heading and a marker line, and the
+  Codex `AGENTS.md` held two lines. `/recode:rules` ran `status`, then asked for options,
+  offering `core` and `writing`. After `core,writing` it ran `plan`, showed both diffs
+  verbatim, and asked about each file separately. After "yes" to both, each file was
+  written, with a backup named `.recode-backup-20261003152710`, in UTC. A new session
+  answered the marker, and quoted "Before adding a dependency, once per package, with
+  the reason." and the first line of the Tests section. `/recode:rules --remove`, with
+  "yes" to both, left each file equal to its original and to its first backup (`cmp`).
+  With no `CLAUDE.md` and `CODEX_HOME` set to a missing directory, status showed
+  `codex: skipped`. The plan said "there is no Codex home at ..., so nothing is written
+  there". Applying created `CLAUDE.md` with `join=none` and recorded it as created.
+  Removal printed "removed ..., which /recode:rules had created and which held nothing
+  else", and the file was gone. The missing Codex home was never created.
+- **Item 4 passed.** With the stale block planted, an interactive session showed, at
+  startup, "SessionStart:startup says: recode: the house rules in
+  /Users/joe/.cache/recode-acceptance/claude/CLAUDE.md are older than this plugin's; run
+  /recode:rules to update them". `/recode:rules` planned the Claude block as `stale`,
+  without asking for options, because the block records them. After "no" to both
+  targets, the state recorded both declines. The next interactive session reached its
+  prompt with no notice. The installed hook, run by hand, printed nothing and exited 0.
+- **Item 5 passed.** `/output-style` listed `recode:Concise Plain` with its description.
+  A session with that style set reported `output_style` `recode:Concise Plain` in its
+  init event, and answered in two plain sentences. With codex-lite 0.9.0 installed from
+  its old marketplace, `/recode:setup` ran its two commands. Its block ended with
+  `claude plugin uninstall codex-lite@vibecodedapps-codex-lite` and
+  `codex plugin remove codex-code-review-general@codex-code-review`, from the copied
+  Codex config. Both plugins were still installed afterward. codex-lite was then
+  removed from the scratch profile.
+- **Defect, fixed.** Claude sent `apply claude` and `apply codex` in one message in
+  every run, so they ran at once. These runs came out right, but in a sandbox 16 of 20
+  such pairs lost one target's update. Fixed in aad54df with a lock; see decision 4 of
+  Part 3 in docs/decisions.md.
+- **Item 3, rerun at aad54df.** Reinstalled from the branch, `core`, then "yes" to
+  both: Claude again sent both applies in one message, the state recorded both
+  targets' options, and the plan file was empty. `--remove`, "yes" to both: each file
+  equaled its original.
+- **Not run.** A Codex session quoting a rule from its `AGENTS.md`, because the scratch
+  Codex home has no login. The Windows parts: the `windows` option and its default.

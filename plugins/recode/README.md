@@ -1,7 +1,9 @@
 # recode
 
 A small Claude Code plugin that hands a task to the Codex CLI, runs it once, and prints what
-it said. Five commands, one entry script, one prompt hook, no daemon, no background jobs of its own.
+it said. It also keeps a set of house rules in your Claude and Codex instruction files, and
+ships the Concise Plain output style. Six commands, a prompt hook and a session hook, no
+daemon, no background jobs of its own.
 
 ## Install
 
@@ -50,7 +52,9 @@ every run and probe, because `--ignore-user-config` would otherwise drop it.
 | `/recode:review [--base <ref>] [--model <name>] [--timeout <seconds>]` | `codex exec review <flags>` with `--uncommitted`, or `--base <ref>` (the net difference from the merge base of `<ref>` and `HEAD` to the working tree, tracked files only), plus `--model <name>` if given | `read-only` |
 | `/recode:do <task>` | `codex exec <flags> -`, the task on stdin | `workspace-write` |
 | `/recode:implement [--model <name>] [--timeout <seconds>] [--cwd <absolute path>] <task>`, with `--cwd` last and alone on its line, the task below it | as `do`, plus `--model <name>` if given, run in `--cwd` if given | `workspace-write` |
-| `/recode:setup` | `codex --version`, `codex login status`, and the sandbox probe; on Windows it also reports the Codex sandbox mode | `workspace-write`, probe only |
+| `/recode:setup` | `codex --version`, `codex login status`, and the sandbox probe; on Windows it also reports the Codex sandbox mode. Then it lists the old plugins this suite replaces | `workspace-write`, probe only |
+
+`/recode:rules` runs no Codex; see [House rules](#house-rules).
 
 `ask` and `review` are visible to Claude, so a request in plain words such as "dispatch Codex
 to review this" or "ask Codex whether ..." invokes them. The request is then what Claude
@@ -65,7 +69,7 @@ answer, the output is the whole reply.
 to Codex as one of its steps. A request typed in plain words, even one that names Codex, is
 not a delegation: asked to have Codex change files, Claude tells you to type
 `/recode:do <task>`.
-`do` and `setup` are hidden from Claude and run only when you type the command.
+`do`, `setup` and `rules` are hidden from Claude and run only when you type the command.
 
 This is a tradeoff. Before `implement`, no Codex write happened unless you typed a command. Now
 a skill can start a write turn, so writes are no longer gated on a typed command. In default
@@ -274,9 +278,47 @@ names; after an `implement` run with `--cwd`, that is the `--cwd` directory. On 
 Moving a Claude Code session into Codex is out of scope. Codex has its own importer for
 sessions from other agents; use that.
 
+## House rules
+
+`/recode:rules` adds one marked block of rules to your Claude `CLAUDE.md` and your Codex
+`AGENTS.md`, and keeps it up to date. Before each change it shows a diff, and it changes a
+file only when you agree to that file.
+
+- **Files.** `CLAUDE.md` in `$CLAUDE_CONFIG_DIR`, else `~/.claude`, created if missing.
+  `AGENTS.md` in `$CODEX_HOME`, else `~/.codex`. With no Codex home the Codex file is
+  skipped, and nothing is created there. With an `AGENTS.override.md` in the Codex home,
+  Codex reads that file instead, so the Codex file is left alone. No settings file is touched.
+- **Options.** `core` is the rules themselves, on by default. `windows` adds the Windows
+  shell rules; it is offered only on Windows and is on by default there. `writing` adds
+  Codex's Writing section to the Codex file; in Claude Code the same rules come from the
+  output style. The first run asks which to use, and later runs keep that choice.
+  `/recode:rules --options core,writing` changes it.
+- **The block.** It starts with
+  `<!-- recode:house-rules begin version=... options=... join=... digest=... -->` and ends
+  with `<!-- recode:house-rules end -->`. Your text outside it is kept byte for byte,
+  including line endings, a byte order mark, and whether the file ends with a newline.
+  Edit the rules by moving lines below the end marker: a block edited by hand is reported
+  and left as it is.
+- **Backups.** Before a change to an existing file, it is copied to
+  `<file>.recode-backup-<YYYYMMDDHHMMSS>`, the time in UTC. If the file changed after the diff was shown,
+  nothing is written and the command asks you to run it again.
+- **Removing.** `/recode:rules --remove` takes the block out, with the empty lines it
+  added in front. A file the command created, holding nothing else, is deleted.
+- **Declining.** Saying no to a change is recorded, so the session notice stays quiet for
+  that text. Typing `/recode:rules` offers it again.
+- **Imports.** An `@` import line in `CLAUDE.md` may pull in the same rules. The command
+  names it and leaves it alone.
+
+When a plugin update changes the rules, a new session shows one line naming the file and
+`/recode:rules`. A version change that leaves the rules as they were shows nothing.
+
+The output style is selected with `/output-style` as `recode:Concise Plain`. The same
+writing rules for claude.ai and ChatGPT are in [chat/instructions.md](chat/instructions.md).
+Nothing installs them: paste the block into each app's settings.
+
 ## Hooks
 
-The plugin adds one `UserPromptSubmit` hook. When a prompt you send mentions Codex, in any
+The plugin adds a `UserPromptSubmit` hook and a `SessionStart` hook. When a prompt you send mentions Codex, in any
 case, the hook adds a short routing note to Claude's context: use `ask` for questions and plan
 critiques, `review` only for diffs, put options before the question in any order (a model
 choice as `--model <name>`, and for a follow-up in the same Codex thread `--resume <thread id>`
@@ -293,6 +335,11 @@ On every prompt the hook also deletes this session's request file, if one is lef
 that stopped before the script ran. Claude sometimes sends the Write and the script call
 together; if that Write failed on a leftover file, the script would otherwise send the earlier
 task to Codex. With the file gone, the script refuses with "no request file" instead.
+
+The `SessionStart` hook runs when a session starts, not on resume or clear. It reads the
+house rules block in each file and prints the notice described under
+[House rules](#house-rules) when the rules are out of date and you have not declined them.
+It writes nothing, and on any error it prints nothing.
 
 ## Permissions
 
@@ -341,6 +388,8 @@ npm run lint
 ```
 
 No dependencies. The tests run against a fake Codex executable and scratch git repositories.
+The house rules tests run on temporary directories set through `CLAUDE_CONFIG_DIR`,
+`CODEX_HOME` and `HOME`, never on your own files.
 CI runs on Linux, macOS and Windows. On Windows CI the tests that start the fake Codex, start a POSIX shell, or rely on POSIX file
 modes are skipped. The Windows-only tests cover how the plugin finds Codex on `PATH`, not what it does with it.
 

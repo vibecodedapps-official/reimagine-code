@@ -30,10 +30,14 @@ const walk = (dir, skip = () => false) => {
 // catalogs: the catalogs that list it. family: versioned in lockstep with the suite version in package.json.
 // budgets: the only runtime modules the plugin may hold, in groups, each with its line limit.
 const PLUGINS = [
-  { dir: "plugins/recode", catalogs: ["claude"], family: true, budgets: [{ files: ["scripts/codex.mjs", "scripts/recode.mjs"], max: 700 }] },
+  { dir: "plugins/recode", catalogs: ["claude"], family: true, budgets: [
+    { files: ["scripts/codex.mjs", "scripts/recode.mjs"], max: 700 }, { files: ["scripts/rules.mjs"], max: 400 }, { files: ["scripts/suite.mjs"], max: 200 },
+  ] },
 ];
 // Old names a shipped file may still contain, by repository-relative path: the migration literals of R7.
-const OLD_NAME_LITERALS = {};
+const OLD_NAME_LITERALS = {
+  "plugins/recode/scripts/suite.mjs": ["codex-lite@vibecodedapps-codex-lite", "ccl@vibecodedapps-claude-codex-loop"],
+};
 
 // 1. Syntax of every module.
 const modules = ["plugins", "tests", "tools"].flatMap((d) => walk(join(root, d))).filter((p) => p.endsWith(".mjs"));
@@ -101,8 +105,8 @@ if (readme !== null && market && repos.length === 1) {
   }
 }
 
-// 4. Only do and setup are hidden from the model; ask, review and implement must stay visible so a plain-words request, or a skill's delegation, can reach them.
-const hidden = { ask: false, review: false, implement: false, do: true, setup: true };
+// 4. Only do, setup and rules are hidden from the model; ask, review and implement must stay visible so a plain-words request, or a skill's delegation, can reach them.
+const hidden = { ask: false, review: false, implement: false, do: true, setup: true, rules: true };
 for (const [name, want] of Object.entries(hidden)) {
   const s = read(`plugins/recode/commands/${name}.md`);
   if (s === null) continue;
@@ -111,14 +115,15 @@ for (const [name, want] of Object.entries(hidden)) {
   if (has !== want) fail(`plugins/recode/commands/${name}.md: disable-model-invocation must be ${want ? "set" : "absent"}`);
 }
 
-// 5. The plugin's one hook: UserPromptSubmit, run in exec form as node <plugin root>/scripts/recode.mjs hook <plugin data>.
+// 5. The plugin's two hooks, each run once in exec form with the data directory as an argument: UserPromptSubmit as
+// node <plugin root>/scripts/recode.mjs hook, and SessionStart, at startup only, as node <plugin root>/scripts/suite.mjs session-start.
 const hooks = json("plugins/recode/hooks/hooks.json");
 if (hooks) {
-  const want = { type: "command", command: "node", args: ["${CLAUDE_PLUGIN_ROOT}/scripts/recode.mjs", "hook", "${CLAUDE_PLUGIN_DATA}"] };
-  const got = hooks.hooks?.UserPromptSubmit?.flatMap((g) => g.hooks ?? []);
-  if (Object.keys(hooks.hooks ?? {}).join() !== "UserPromptSubmit" || got?.length !== 1 || !isDeepStrictEqual(got[0], want)) {
-    fail(`plugins/recode/hooks/hooks.json must declare exactly one UserPromptSubmit hook: ${JSON.stringify(want)}`);
-  }
+  const want = {
+    UserPromptSubmit: [{ hooks: [{ type: "command", command: "node", args: ["${CLAUDE_PLUGIN_ROOT}/scripts/recode.mjs", "hook", "${CLAUDE_PLUGIN_DATA}"] }] }],
+    SessionStart: [{ matcher: "startup", hooks: [{ type: "command", command: "node", args: ["${CLAUDE_PLUGIN_ROOT}/scripts/suite.mjs", "session-start", "${CLAUDE_PLUGIN_DATA}"] }] }],
+  };
+  if (!isDeepStrictEqual(hooks.hooks, want)) fail(`plugins/recode/hooks/hooks.json must declare exactly these hooks: ${JSON.stringify(want)}`);
 }
 
 // 6. No file names a docs/*.md file listed in .git/info/exclude, or cites a numbered entry of one ("<name> 12").
@@ -197,6 +202,16 @@ if (attrs !== null) {
   for (const line of ["*.sh text eol=lf", "*.mjs text eol=lf", "*.md text eol=lf"]) {
     if (!attrs.split(/\r?\n/).some((l) => l.trim() === line)) fail(`.gitattributes lacks the line: ${line}`);
   }
+}
+
+// 13. The chat instructions hold one fenced block that fits ChatGPT's 5,000-character cap, counted as the file's header says (R47).
+const chat = read("plugins/recode/chat/instructions.md");
+if (chat === null) fail("plugins/recode/chat/instructions.md: missing");
+else {
+  const fences = chat.split(/\r?\n/).map((l, i) => (l === "```" ? i : -1)).filter((i) => i >= 0);
+  const block = fences.length === 2 ? chat.split(/\r?\n/).slice(fences[0] + 1, fences[1]).map((l) => `${l}\n`).join("") : null;
+  if (block === null) fail(`plugins/recode/chat/instructions.md: must hold exactly one fenced block, found ${fences.length} fence lines`);
+  else if (block.length > 5000) fail(`plugins/recode/chat/instructions.md: the block is ${block.length} characters, over ChatGPT's 5,000`);
 }
 
 if (failures.length) {

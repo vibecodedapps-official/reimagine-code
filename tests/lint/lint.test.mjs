@@ -112,3 +112,32 @@ test('lint rejects a plugin directory with no LICENSE', () => fails(
 test('lint rejects a .gitattributes that drops an LF rule', () => fails(
   (d) => dropLine(d, '.gitattributes', '*.sh text eol=lf'),
   '.gitattributes lacks the line: *.sh text eol=lf'));
+
+test('lint rejects rules.mjs over its 400-line budget', () => fails(
+  (d) => appendFileSync(join(d, 'plugins/recode/scripts/rules.mjs'), '\n'.repeat(400)),
+  'plugins/recode: rules.mjs total ', ' lines, budget is 400'));
+
+test('lint rejects a rules command the model can invoke', () => fails(
+  (d) => dropLine(d, 'plugins/recode/commands/rules.md', 'disable-model-invocation: true'),
+  'plugins/recode/commands/rules.md: disable-model-invocation must be set'));
+
+test('lint rejects hooks without the SessionStart notice', () => fails(
+  (d) => editJson(d, 'plugins/recode/hooks/hooks.json', (j) => { delete j.hooks.SessionStart; }),
+  'plugins/recode/hooks/hooks.json must declare exactly these hooks'));
+
+test('lint rejects missing chat instructions', () => fails(
+  (d) => rmSync(join(d, 'plugins/recode/chat/instructions.md')),
+  'plugins/recode/chat/instructions.md: missing'));
+
+test('lint rejects chat instructions with a second fenced block', () => fails(
+  (d) => appendFileSync(join(d, 'plugins/recode/chat/instructions.md'), '\n```\nmore\n```\n'),
+  'plugins/recode/chat/instructions.md: must hold exactly one fenced block, found 4 fence lines'));
+
+test('lint rejects a chat block over 5,000 characters', () => fails(
+  (d) => {
+    const p = join(d, 'plugins/recode/chat/instructions.md');
+    const s = readFileSync(p, 'utf8');
+    const close = s.lastIndexOf('\n```');
+    writeFileSync(p, `${s.slice(0, close)}\n${'x'.repeat(2000)}${s.slice(close)}`);
+  },
+  'plugins/recode/chat/instructions.md: the block is ', ", over ChatGPT's 5,000"));
