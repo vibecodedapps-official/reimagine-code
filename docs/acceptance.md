@@ -156,5 +156,13 @@ appeared beside them.
   `codex plugin remove codex-code-review-general@codex-code-review`, from the copied
   Codex config. Both plugins were still installed afterward. codex-lite was then
   removed from the scratch profile.
+- **Defect, fixed.** Claude sent `apply claude` and `apply codex` in one message in
+  every run, so they ran at once. These runs came out right, but in a sandbox 16 of 20
+  such pairs lost one target's update. Fixed in aad54df with a lock; see decision 4 of
+  Part 3 in docs/decisions.md.
+- **Item 3, rerun at aad54df.** Reinstalled from the branch, `core`, then "yes" to
+  both: Claude again sent both applies in one message, the state recorded both
+  targets' options, and the plan file was empty. `--remove`, "yes" to both: each file
+  equaled its original.
 - **Not run.** A Codex session quoting a rule from its `AGENTS.md`, because the scratch
   Codex home has no login. The Windows parts: the `windows` option and its default.
