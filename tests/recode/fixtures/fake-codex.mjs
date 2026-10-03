@@ -30,10 +30,10 @@ const readStdin = (then) => {
   });
 };
 const sleeper = (stdio) => spawn(process.execPath, ['-e', 'setTimeout(() => {}, 60000)'], { stdio });
-const stubborn = () => spawn(process.execPath, ['-e', "process.on('SIGTERM', () => {}); setTimeout(() => {}, 60000)"], { stdio: 'ignore' });
+const stubborn = () => spawn(process.execPath, ['-e', "for (const s of ['SIGINT', 'SIGTERM']) process.on(s, () => {}); setTimeout(() => {}, 60000)"], { stdio: 'ignore' });
 
 if (argv[0] === '--version') {
-  if (mode === 'version-ignores-sigterm') { process.on('SIGTERM', () => {}); pid(process.pid); idle(); } else console.log('codex-cli 0.155.1');
+  if (mode === 'version-ignores-signals') { for (const s of ['SIGINT', 'SIGTERM']) process.on(s, () => {}); pid(process.pid); idle(); } else console.log('codex-cli 0.155.1');
 } else if (argv[0] === 'login') {
   console.log('Logged in using ChatGPT');
 } else if (argv[0] === 'sandbox') {
@@ -60,11 +60,11 @@ if (argv[0] === '--version') {
   pid(child.pid);
   idle();
 } else if (mode === 'hang-stubborn-child') {
-  // The fake itself dies on SIGTERM; its child does not.
+  // The fake itself dies on SIGINT or SIGTERM; its child does not.
   pid(stubborn().pid);
   idle();
 } else if (mode === 'leaves-stubborn-child') {
-  // A good run that leaves a background process behind. The delay lets the child install its SIGTERM handler.
+  // A good run that leaves a background process behind. The delay lets the child install its signal handlers.
   const child = stubborn();
   child.unref();
   pid(child.pid);
@@ -73,8 +73,16 @@ if (argv[0] === '--version') {
   // Shape from the Codex non-interactive documentation; never observed on codex-cli 0.155.1.
   process.stdout.write(lines([started, { type: 'turn.failed', error: { message: 'usage limit reached' } }]));
   process.exitCode = 1;
-} else if (mode === 'ignores-sigterm') {
-  process.on('SIGTERM', () => {});
+} else if (mode === 'hang-detached-command') {
+  // As codex-cli 0.159.2 does: the shell command runs in its own process group, and Codex stops it on SIGINT but not on
+  // SIGTERM, which kills Codex at once. The command writes $FAKE_CODEX_LATE after 2.5 s unless it is stopped.
+  const late = spawn(process.execPath, ['-e', `setTimeout(() => require('fs').writeFileSync(${JSON.stringify(process.env.FAKE_CODEX_LATE)}, 'late'), 2500)`],
+    { detached: true, stdio: 'ignore' });
+  pid(late.pid);
+  process.on('SIGINT', () => { try { process.kill(-late.pid, 'SIGKILL'); } catch {} process.exit(1); });
+  idle();
+} else if (mode === 'ignores-signals') {
+  for (const s of ['SIGINT', 'SIGTERM']) process.on(s, () => {});
   pid(process.pid);
   idle();
 } else if (mode === 'holds-stdout') {

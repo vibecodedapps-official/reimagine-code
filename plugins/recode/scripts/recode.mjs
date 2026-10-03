@@ -71,7 +71,7 @@ function run(file, args, { ms, cwd, input, onStdout }) {
     later(ms, () => {
       if (child.exitCode !== null || child.signalCode !== null) return; // exited, and draining: not a timeout
       res.timedOut = true;
-      kill('SIGTERM');
+      kill('SIGINT'); // Codex stops the commands it runs in their own process groups on SIGINT; SIGTERM kills it and leaves them
       later(5000, () => kill('SIGKILL'));
       later(10_000, finish);
     });
