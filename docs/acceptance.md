@@ -108,6 +108,57 @@ name a plugin are rerun under the new names and recorded here.
     `.recode`, and `specs/ccl` as `specs/recode`. Rerun when that file's own conditions
     say. Items 1, 4, 16, 65, 72, 75, 114, and 172 run 2026-10-03; see the record.
 
+11. **Codex catalog and install.** Setup: a new scratch `CODEX_HOME` holding a
+    `config.toml` with only the model, effort, sandbox, and approval settings, and a
+    Codex login. Command: `codex plugin marketplace add
+    vibecodedapps-official/reimagine-code`, with `--ref <branch>` before the branch is
+    merged; `codex plugin list`; `codex plugin add recode@reimagine-code`; `codex plugin
+    add repo-docs@reimagine-code`. Expected: the `reimagine-code` marketplace lists
+    exactly `recode` and `repo-docs`, from `plugins/recode-codex` and `plugins/repo-docs`,
+    and they install at 0.1.0 and 0.1.2. Covers R2. Rerun when the Codex catalog or a
+    Codex manifest changes. Run 2026-10-03; see the record.
+12. **Code review on Codex.** Setup: as item 11, in a scratch git repository with
+    `math.mjs`, `test.mjs`, and a `package.json` whose `test` script passes, then an
+    uncommitted change that renames an export, gives `add` a third argument with a
+    default, and adds an untested function. Command: `codex exec --json -s read-only "Run
+    the general-code-review skill on the uncommitted changes in this repository." <
+    /dev/null`. Expected: a review with findings; under `$CODEX_HOME/sessions`, the main
+    session reads `general-code-review/SKILL.md` and its subagent sessions read each of
+    `general-code-review-breaking-changes`, `-change-size`, `-context`, and `-testing`
+    from the installed plugin. Covers R29. Rerun when a skill changes. Run 2026-10-03;
+    see the record.
+13. **repo-docs on Codex.** Setup: as item 11, in a scratch git repository whose
+    `AGENTS.md` index points to `docs/style.md`, which exists, and `docs/missing.md`,
+    which does not. Command: `codex exec --json -s read-only "Use repo-docs to audit this
+    repository's instructions." < /dev/null`; then `codex` in that repository, choosing
+    "Review hooks" at the "Hooks need review" prompt and pressing `t` to trust all; then
+    `codex exec --json -s danger-full-access "Append the line 'Prefer plain words.' to
+    docs/style.md, then run exactly: git commit -am 'docs: extend the style guide'" <
+    /dev/null`. Expected: the audit reads the skill from the installed 0.1.2 and reports
+    the missing spoke as an error; `config.toml` gains a `trusted_hash` for the hook; the
+    commit goes ahead and its session file holds the hook's message starting "repo-docs:
+    this command commits". Without `< /dev/null`, `codex exec` waits for input and never
+    starts. Covers R30 on Codex. Rerun when the skill or the hook changes. Run
+    2026-10-03; see the record.
+14. **repo-docs on Claude Code.** Setup: a scratch profile with this repository's
+    catalog added and `repo-docs` installed; a copy of item 13's repository before its
+    commit. Command: `claude -p "Use repo-docs to audit this repository's
+    instructions."`, then `claude -p` with item 13's commit request, each with
+    `--output-format stream-json --verbose`. Expected: the audit calls the Skill tool with
+    `repo-docs:repo-docs` and reports the missing spoke as an error; the commit goes
+    ahead, and the session transcript under the profile's `projects/` holds a
+    `hook_additional_context` attachment for that Bash call, starting "repo-docs: this
+    command commits". The stream output does not show hook context. Covers R30 on Claude
+    Code. Rerun when the skill or the hook changes. Run 2026-10-03; see the record.
+15. **repo-docs on this repository.** Setup: as item 14. Command: `claude -p "Use
+    repo-docs to audit this repository's instructions. This is a read-only audit: change
+    no file."` at this repository's root. Expected: no errors, and `git status`
+    unchanged. The audit's session check needs a session that loads `AGENTS.md`: with
+    `CLAUDE_CONFIG_DIR` set elsewhere, `~/.claude/CLAUDE.md` loads as a project file for
+    a repository under the home directory, and `AGENTS.md` does not, so that check is
+    made in the author's own profile. Covers R31. Rerun when the hub, a file under
+    `plugins/repo-docs/`, or the skill changes. Run 2026-10-03; see the record.
+
 ## Record of runs
 
 Each entry gives the date, the machine, the Claude Code, Codex, and Node versions, the
@@ -339,3 +390,62 @@ No run had a permission denial.
   run wrote `handoff.md` and `cca-manifest.json`, and `handoff.sh check` printed
   `handoff: ok`. The copied Codex login was deleted afterward. The repositories, their
   open PRs, and the two worktrees were kept.
+
+### 2026-10-03: M5, recode for Codex 0.1.0 and repo-docs 0.1.2
+
+macOS 27.0, Claude Code 2.1.288, codex-cli 0.159.2, Node 26.4.0. Codex ran with a new
+`CODEX_HOME` at `~/.cache/recode-acceptance/codex-m5`, holding a copy of the author's
+Codex login that was deleted after the runs. Claude Code ran in the M4 scratch profile, in
+auto mode. Both hosts installed from this repository's catalogs at
+`feat/codex-and-repo-docs`, commit e85d09e. Repositories were scratch git repositories
+under `/tmp/recode-accept/m5/`.
+
+- **Item 11 passed.** `codex plugin marketplace add vibecodedapps-official/reimagine-code
+  --ref feat/codex-and-repo-docs` added `reimagine-code` from
+  `.agents/plugins/marketplace.json`. `codex plugin list` showed exactly
+  `recode@reimagine-code` and `repo-docs@reimagine-code` under it, from
+  `plugins/recode-codex` and `plugins/repo-docs`. Both installed and enabled, at 0.1.0
+  and 0.1.2.
+- **Item 12 passed.** The change renamed `mul` to `multiply`, gave `add` a third
+  argument `c = 0`, and added `div`. The review gave three findings: P1, restore the
+  `mul` export, since `npm test` fails; P2, keep two-argument `add` behavior, since
+  `add(1n, 2n)` now throws; P2, test the new behavior. It reported no change-size or
+  context findings and changed no file. The main session read
+  `general-code-review/SKILL.md` and spawned five subagents, which read
+  `general-code-review-context`, `-change-size`, `-testing`, and `-breaking-changes`,
+  the last in two of them, all from the installed 0.1.0.
+- **Item 13 passed.** The audit read `SKILL.md` and `references/spokes.md` from the
+  installed 0.1.2 and reported "Error: AGENTS.md:16 points to `docs/missing.md`, which
+  does not exist", with a finding that `npm test` runs `true`. It changed no file. The
+  first try, without `< /dev/null`, printed "Reading additional input from stdin..." and
+  waited until stopped. In the TUI, "Hooks need review" offered "Review hooks", "Trust
+  all", and "Continue without trusting"; choosing the first and pressing `t` wrote
+  `[hooks.state."repo-docs@reimagine-code:hooks/hooks.json:pre_tool_use:0:0"]` with a
+  `trusted_hash` to `config.toml`. The commit run then made commit 448b93e, and its
+  session file held a developer message starting "repo-docs: this command commits, and
+  the commit goes ahead." `--dangerously-bypass-hook-trust` was not used.
+- **Item 14 passed.** In a copy of item 13's repository at its first commit, the audit
+  called the Skill tool with `repo-docs:repo-docs`, read `references/spokes.md` from
+  0.1.2, and reported the missing `docs/missing.md` as its one error, with the same
+  `npm test` finding. Its session loaded that repository's `AGENTS.md` as project
+  instructions. The commit run made commit fcbb18f. Its transcript holds a `hook_success`
+  for `PreToolUse:Bash` with the hook's JSON, and a `hook_additional_context` attachment
+  with the hook's text, both for the commit's Bash call. The reply said a hook asked for
+  an audit and reported the audit it ran after the commit.
+- **Item 15 passed, with the session check from the author's profile.** The audit
+  reported no errors: all 11 pointers well formed and present, no carriage returns, and
+  no adapters. It ran `npm test` and `npm run lint`, both exit 0, and the three hook
+  cases in `plugins/repo-docs/AGENTS.md`, and it changed no file: `git status` showed
+  only the untracked `.claude/` that was there before. Its session check failed, because
+  that session loaded `~/.claude/CLAUDE.md` as a project file and not `AGENTS.md`. With
+  `CLAUDE_CONFIG_DIR` pointing at the scratch profile, `~/.claude/CLAUDE.md` is no
+  longer the user file; for a repository under the home directory it is a
+  `.claude/CLAUDE.md` above the working directory, and repo-docs' own rule then says
+  only `CLAUDE.md` files load. Item 14's audit, under `/tmp`, loaded its `AGENTS.md`. A
+  session in the author's own profile at this repository's root, the same day, loaded
+  `~/.claude/CLAUDE.md` as user instructions and `AGENTS.md` as project instructions.
+  The audit's two findings were not acted on: the pointers to the repo-docs skill files
+  could sit in `plugins/repo-docs/AGENTS.md` (see `docs/decisions.md` Part 5 item 1),
+  and `docs/architecture.md`, `docs/rename-map.md`, and this file are long.
+- **Not run.** The hook on Windows from a path with a space (R53), and installing from
+  the published repository (R3), which waits for M6.
