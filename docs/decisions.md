@@ -55,9 +55,12 @@ project; Codex used a scratch `CODEX_HOME`.
 8. **The scratch marketplace needed a description.** `claude plugin validate --strict`
    on a catalog without `metadata.description` failed on that warning alone, so the
    suite catalog carries one. Observed on a run of 2026-10-03.
-9. **M0.7 is not yet run.** A scratch `CLAUDE_CONFIG_DIR` reported "Not logged in", so the
-   test needs one interactive login. It gates R33 and the scratch-profile acceptance
-   items from M2 on, not M1.
+9. **M0.7 A scratch config directory loads its own CLAUDE.md.** A first attempt found the
+   scratch `CLAUDE_CONFIG_DIR` "Not logged in", so the run waited for one interactive
+   login. Then, with a marker rule in that directory's `CLAUDE.md`, a headless session
+   in an empty directory replied with the marker, and a control session in the real
+   profile replied that it had none. So R33 stands, and acceptance runs in a scratch
+   profile. Observed on Claude Code 2.1.284 on a run of 2026-10-03.
 
 ## Part 2: M2 bridge, 2026-10-03
 
