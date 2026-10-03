@@ -55,6 +55,30 @@ project; Codex used a scratch `CODEX_HOME`.
 8. **The scratch marketplace needed a description.** `claude plugin validate --strict`
    on a catalog without `metadata.description` failed on that warning alone, so the
    suite catalog carries one. Observed on a run of 2026-10-03.
-9. **M0.7 is not yet run.** A scratch `CLAUDE_CONFIG_DIR` reported "Not logged in", so the
-   test needs one interactive login. It gates R33 and the scratch-profile acceptance
-   items from M2 on, not M1.
+9. **M0.7 A scratch config directory loads its own CLAUDE.md.** A first attempt found the
+   scratch `CLAUDE_CONFIG_DIR` "Not logged in", so the run waited for one interactive
+   login. Then, with a marker rule in that directory's `CLAUDE.md`, a headless session
+   in an empty directory replied with the marker, and a control session in the real
+   profile replied that it had none. So R33 stands, and acceptance runs in a scratch
+   profile. Observed on Claude Code 2.1.284 on a run of 2026-10-03.
+
+## Part 2: M2 bridge, 2026-10-03
+
+Run on macOS with Claude Code 2.1.284 from the native installer, and 2.1.283 from npm.
+
+1. **Each plugin manifest names an author.** `claude plugin validate --strict` on the
+   recode manifest failed on one warning: "author: No author information provided".
+   The catalog run failed on the same warning through its entry. recode's manifest now
+   names vibecodedapps.net, as the other source manifests already do. Observed on a run
+   of 2026-10-03, on both versions.
+2. **CI pins Claude Code 2.1.283, not 2.1.284.** The pin is a release at least seven
+   days old, so a bad release has time to be pulled; 2.1.284 was published on
+   2026-09-28. Installed from npm into a scratch prefix, 2.1.283 passed strict
+   validation on the root and on `plugins/recode`, and failed on a copy with no author.
+   The npm package needs its install script to place the native binary. Without it,
+   `claude` exits with "claude native binary not installed". The npm bundled with Node
+   22, which CI uses, runs install scripts by default. Observed on a run of 2026-10-03.
+3. **The LICENSE rule checks for Apache-2.0 text, not a copy of the root file.**
+   codex-code-review's LICENSE reads "Copyright 2025 OpenAI", so `plugins/recode-codex/`
+   keeps that copy in M5. The loop's and repo-docs' copies differ from the root one
+   only in whitespace. No incident is recorded.

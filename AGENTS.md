@@ -6,8 +6,10 @@ It is mid-migration from four source repos toward v0.1.0.
 
 ## Commands
 
-No build, test, or lint command exists yet; `npm test` and `npm run lint` arrive with the
-bridge in milestone M2 of the implementation plan.
+- `npm test`: every `tests/**/*.test.mjs`.
+- `npm run lint`: the repository checks in `tools/lint.mjs`.
+- `claude plugin validate --strict .`, then the same on each `plugins/<name>`: the
+  manifest checks CI runs.
 
 ## Hard constraints
 
@@ -28,3 +30,4 @@ bridge in milestone M2 of the implementation plan.
 - docs/implementation-plan-v0.1.0.md: the milestones and their checks. Read before starting or finishing a milestone.
 - docs/decisions.md: decisions with their evidence. Read before reversing a design choice.
 - docs/rename-map.md: every file move and string rename from the source repos. Read before a move or rename commit.
+- docs/acceptance.md: the hand-run acceptance items and the record of runs. Read before running, adding, or recording an acceptance check.

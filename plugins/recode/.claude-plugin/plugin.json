@@ -1,0 +1,10 @@
+{
+  "name": "recode",
+  "version": "0.1.0",
+  "description": "Hand a task to the Codex CLI, run it once, and print what it said.",
+  "author": {
+    "name": "vibecodedapps.net"
+  },
+  "license": "Apache-2.0",
+  "repository": "https://github.com/vibecodedapps-official/reimagine-code"
+}
