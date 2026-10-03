@@ -141,3 +141,27 @@ test('lint rejects a chat block over 5,000 characters', () => fails(
     writeFileSync(p, `${s.slice(0, close)}\n${'x'.repeat(2000)}${s.slice(close)}`);
   },
   'plugins/recode/chat/instructions.md: the block is ', ", over ChatGPT's 5,000"));
+
+test('lint rejects a loop dependency range with a caret', () => fails(
+  (d) => editJson(d, 'plugins/recode-loop/.claude-plugin/plugin.json', (j) => { j.dependencies = [{ name: 'recode', version: '^0.1.0' }]; }),
+  'plugins/recode-loop/.claude-plugin/plugin.json: dependencies must hold', 'found "^0.1.0"'));
+
+test('lint rejects a loop dependency floor above the suite version', () => fails(
+  (d) => editJson(d, 'plugins/recode-loop/.claude-plugin/plugin.json', (j) => { j.dependencies = [{ name: 'recode', version: '>=0.2.0 <1.0.0' }]; }),
+  'with the floor at or below 0.1.0; found ">=0.2.0 <1.0.0"'));
+
+test('lint rejects a loop with no recode dependency', () => fails(
+  (d) => editJson(d, 'plugins/recode-loop/.claude-plugin/plugin.json', (j) => { delete j.dependencies; }),
+  'plugins/recode-loop/.claude-plugin/plugin.json: dependencies must hold', 'found null'));
+
+test('lint rejects a bridge version gate in the loop', () => fails(
+  (d) => appendFileSync(join(d, 'plugins/recode-loop/skills/recode-loop/tiers.md'), 'Codex needs recode 0.9.0 or later.\n'),
+  'plugins/recode-loop/skills/recode-loop/tiers.md:', 'bridge version gate /\\b0\\.[89]\\.0\\b/'));
+
+test('lint rejects a loop lookup of the installed recode', () => fails(
+  (d) => appendFileSync(join(d, 'plugins/recode-loop/skills/recode-loop/SKILL.md'), 'Take the entry whose id starts with recode@.\n'),
+  'plugins/recode-loop/skills/recode-loop/SKILL.md:', 'bridge version gate /\\brecode@/'));
+
+test('lint allows the old config name only in the loop skill that checks for it', () => fails(
+  (d) => appendFileSync(join(d, 'plugins/recode-loop/README.md'), 'Rename .ccl.json to .recode.json.\n'),
+  'plugins/recode-loop/README.md:', 'old name /\\bccl\\b/'));
