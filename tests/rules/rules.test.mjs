@@ -423,6 +423,8 @@ test('the script prints a refusal on stdout and exits 1, and a status exits 0', 
   assert.equal(bad.stdout, 'recode: unknown command bogus; use status, plan, remove, apply or decline\n');
   assert.equal(bad.status, 1);
   const ok = spawnSync(process.execPath, [SCRIPT, 'status', s.data], { env, encoding: 'utf8' });
-  assert.equal(ok.stdout.split('\n')[0], `claude: absent ${s.claude} options=core (default)`);
+  // The spawned script runs on the real platform, where Windows adds its option to the default (R35).
+  const defaults = process.platform === 'win32' ? 'core,windows' : 'core';
+  assert.equal(ok.stdout.split('\n')[0], `claude: absent ${s.claude} options=${defaults} (default)`);
   assert.equal(ok.status, 0);
 }));
