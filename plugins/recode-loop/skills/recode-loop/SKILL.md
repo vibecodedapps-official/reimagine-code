@@ -428,12 +428,10 @@ above 60 minutes is passed as 3600, and the cap and the value passed are recorde
    (Step 0.3), `recode:review` reviews the session's checkout, not the worktree, so every
    diff review goes through `recode:ask` with a patch file as item 4 describes, in a
    fresh `recode:ask` thread that becomes the stage's thread. In Multi-repo mode it
-   reviews the primary only, unless Step 0.6 recorded recode 0.9.0 or later: then each
-   additional repository with a diff is reviewed with `recode:review --base <its base
-   commit> --model <id> --timeout <s>` on the first line and `--cwd <absolute path of
-   that repository>` on the second, since recode refuses a relative path,
-   in a fresh thread per repository. Below 0.9.0, the patch rule of `multi-repo.md`
-   applies. Details are in `multi-repo.md`.
+   reviews the primary, and each additional repository with a diff is reviewed with
+   `recode:review --base <its base commit> --model <id> --timeout <s>` on the first line
+   and `--cwd <absolute path of that repository>` on the second, since recode refuses a
+   relative path, in a fresh thread per repository. Details are in `multi-repo.md`.
 4. A diff review follow-up goes through `recode:ask` with `--resume <thread id>`, the same
    `--model`, `--timeout`, and a request that names `.recode/<run-id>/diff.patch`. Refresh the
    file first: mark new files with `git add -N`, then run `git diff <base-commit>` into the
@@ -521,13 +519,14 @@ slot beside the Codex slot in Step 5, not a fallback, and nothing replaces it.
 
 ### Codex availability and fallback
 
-1. Codex is available when `codex --version` succeeds, the installed recode version is
-   0.8.0 or later, and `--no-codex` is not set. Read that version with `claude plugin list
-   --json`. The session's skill list is not consulted. A version below 0.8.0, or one that
-   cannot be read, counts as Codex unavailable; the reason is recorded in `run.md` and named
-   in the report. Step 0.6 records the version it read in `run.md`.
-   Login and model problems surface on the first call as `failed`. You cannot run
-   `/recode:setup`.
+1. Codex is available when `codex --version` succeeds, `--no-codex` is not set, and the
+   plugin option `codex` does not turn it off. That option reads `${user_config.codex}`:
+   only the exact value `false` turns Codex off for the run, as `--no-codex` does, and any
+   other text there, including the placeholder left when the option was never set, leaves
+   it on. The `recode` plugin is a dependency of this one, so the host keeps it installed
+   in a supported version and no version check is made. When Codex is unavailable, the
+   reason is recorded in `run.md` and named in the report. Login and model problems
+   surface on the first call as `failed`. You cannot run `/recode:setup`.
 2. Choose each stage's reviewer, and each Codex slice's implementer, when it starts, from
    the availability recorded in Step 0.6 and the failures recorded since. Use the roles
    table in `tiers.md` for the default and the fallback of each stage.
@@ -547,14 +546,6 @@ slot beside the Codex slot in Step 5, not a fallback, and nothing replaces it.
    unchanged by `--no-codex` or by any Codex failure, and still runs in every Step 5 round.
 5. Write every swap to `run.md` with its reason. Each one appears in the report.
 6. If no reviewer is available for a required stage, end in `blocked`.
-7. A Skill tool call for `recode:ask`, `recode:review`, or `recode:implement`
-   that errors because the skill is not listed in the session counts as a `failed` call
-   under the Reviewer contract: retry once with the same arguments, then swap the stage to
-   the Claude fallback and record the swap with the reason "skill not listed in session".
-   For `recode:implement` the fallback is `sonnet` for that slice. A not-listed error
-   means Codex never ran, so no tree check is needed before the retry. Also record Codex
-   as unavailable for the rest of the run, so later stages swap at once instead of
-   repeating the two failed calls.
 
 ### Blocking
 
@@ -679,11 +670,14 @@ handling item 3 says. The printed report says which preflight item failed and wh
 it. Step 0 creates nothing except artifacts.
 
 1. Read the user's and the repo's instruction files, and `.recode.json`. Record every
-   ask-first rule. A malformed `.recode.json` stops the run in `blocked`. Once the permission
-   mode has dropped a parallel call in this session, issue Step 0's commands one at a time
-   (Approval scope, carve-out 6). Then scan every file input and the description for a
-   credential shape, before the permission statement is printed, and hold the result in
-   memory. The shape is any of: a line whose key, case-insensitive, is `password`,
+   ask-first rule. A malformed `.recode.json` stops the run in `blocked`. So does a
+   `.ccl.json` at the repo root with no `.recode.json` beside it: that is the config's
+   name from before the plugin was renamed, and ignoring it would drop its `checks` and
+   `timeouts`. The report says to rename the file to `.recode.json` and run again. Once
+   the permission mode has dropped a parallel call in this session, issue Step 0's
+   commands one at a time (Approval scope, carve-out 6). Then scan every file input and
+   the description for a credential shape, before the permission statement is printed,
+   and hold the result in memory. The shape is any of: a line whose key, case-insensitive, is `password`,
    `passwd`, `secret`, `token`, `api_key`, `apikey`, `client_secret`, `private_key`, or
    `connection_string`, in `key: value`, `"key": "value"`, or `key=value` form with a
    non-empty value; a fenced or `{ ... }` block under a heading that contains `cred`,
@@ -696,7 +690,7 @@ it. Step 0 creates nothing except artifacts.
       instruction file's ask-first rule will prompt for it: fetching the default branch,
       the consented `git switch` or fast-forward of Step 0.2, writing `.git/info/exclude`
       and the artifacts under `.recode/`, the Codex availability
-      commands of item 6 (`codex --version`, `claude plugin list --json`), running the repo's
+      command of item 6 (`codex --version`), running the repo's
       checks, branch creation, commit, push, opening the PR, the comment on the continued
       PR (with `continue`), issue comments, the PR report comment, the CI watch's `gh`
       calls, each Codex call if Codex is used, subagents, and any
@@ -863,11 +857,9 @@ it. Step 0 creates nothing except artifacts.
    decision, and each repository's previous `HEAD` when Step 0.2 switched or detached
    it. With `drop`, write `inputs.md` and every later artifact with
    each credential value replaced by `<redacted: key>`.
-6. Check Codex availability as described in Mechanics, including the recode version of
-   0.8.0 or later. Record the result and any reason, and the recode version actually
-   found, not only that it passed, so `multi-repo.md` can gate on 0.9.0. Apply
-   `--no-codex`. When Codex is unavailable, or `--no-codex` is set, implementers fall back
-   to `sonnet` (Step 4.2).
+6. Check Codex availability as described in Mechanics. Record the result and any reason.
+   Apply `--no-codex` and the `codex` plugin option. When Codex is unavailable, or
+   `--no-codex` is set, implementers fall back to `sonnet` (Step 4.2).
 7. Record in `run.md` every prompt that occurred in items 1 to 6 and its outcome. If item 6
    found Codex unavailable, say that the Codex prompts no longer apply. A prompt that was not
    predicted in 0.1 makes the run attended, and the report says so. A question that Step
@@ -1112,9 +1104,7 @@ If the run is plan-only, stop here at every tier. Print the plan. It is already 
       with the same prompt and the current diff: the slice's effective model becomes
       `sonnet`; log the error and the swap in `run.md`, and name it in the report as an
       implementer swap. The swap holds for that slice only: the next Codex slice tries
-      Codex again, unless Step 0.6 recorded it unavailable, `--no-codex` is set, or Codex
-      availability item 7 recorded it unavailable for the rest of the run. A skill that
-      is not listed follows Codex availability item 7.
+      Codex again, unless Step 0.6 recorded it unavailable or `--no-codex` is set.
 3. Review each slice's diff against the plan and its acceptance criteria (`git diff
    <base-commit> -- <slice files>`, new files marked with `git add -N`). Run each of the
    slice's checks that needs the network yourself, since Codex has no network; a failure

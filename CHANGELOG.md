@@ -33,3 +33,28 @@ repos' own changelogs are kept under `docs/history/`.
   removes each. It runs none of them.
 - Added the Concise Plain output style, `recode:Concise Plain`, and the same writing rules
   for claude.ai and ChatGPT in `chat/instructions.md`.
+
+### recode-loop
+
+- Moved ccl 0.10.0 into the suite as `recode-loop` 0.1.0. The commands become
+  `/recode-loop:run` and `/recode-loop:plan`, with the same inputs and flags, and they
+  call the bridge as `recode:ask`, `recode:review`, and `recode:implement`.
+- Installing the loop installs `recode`, at any version from 0.1.0 up to, not including,
+  1.0.0. The checks for codex-lite 0.8.0 and 0.9.0 are gone, and an additional repository
+  in Multi-repo mode is always reviewed with `recode:review --cwd`.
+- Removed the retry for a Codex skill missing from the session's skill list. A fresh
+  session lists a dependency's skills, so a failed call follows the usual fallback.
+- Added the `codex` option. Set to false, every run behaves as `--no-codex`.
+
+#### Breaking
+
+The loop's files in your repositories take the new name, and the old ones are not read:
+
+- The run directory `.ccl/<run-id>/` becomes `.recode/<run-id>/`, and the loop adds
+  `.recode/` to `.git/info/exclude`. An old `.ccl/` line there can be deleted.
+- The repo config `.ccl.json` becomes `.recode.json`. A repo with `.ccl.json` and no
+  `.recode.json` ends the run in `blocked` with a message to rename the file.
+- Committed snapshots go to `specs/recode/<run-id>/`, not `specs/ccl/<run-id>/`.
+- Worktrees are `<checkout>-recode-<run-id>`, not `<checkout>-ccl-<run-id>`.
+- Reports start `# recode run report`, and the PR status comment starts
+  `Status from the recode run`.

@@ -47,21 +47,11 @@ directory exists prints the report and writes nothing.
   and ends in `prepared` with a handoff to the host's own tooling. A GitHub Enterprise
   checkout therefore needs a `gh` login for that host to be treated as GitHub. Only
   GitHub is supported for publishing.
-- Optional but preferred: the Codex CLI and the `recode` plugin, version 0.8.0 or
-  later. All Codex calls go through `/recode:ask`, `/recode:review`, and
-  `/recode:implement`. Codex needs a git repository as its working directory and has
-  no network access. An older `recode` is treated as unavailable. With version 0.9.0
-  or later, an additional repository in Multi-repo mode is reviewed with `review --cwd`;
-  below it the patch rule applies.
-
-  [`recode`](https://github.com/vibecodedapps-official/reimagine-code) is a small
-  Claude Code plugin that hands a task to the Codex CLI in a fixed sandbox and prints the
-  result. Install it in Claude Code:
-
-  ```
-  /plugin marketplace add vibecodedapps-official/reimagine-code
-  /plugin install recode@reimagine-code
-  ```
+- Optional but preferred: the Codex CLI, logged in. All Codex calls go through
+  `/recode:ask`, `/recode:review`, and `/recode:implement`, from the `recode` plugin,
+  which hands a task to the Codex CLI in a fixed sandbox and prints the result. `recode`
+  installs with this plugin as a dependency. Codex needs a git repository as its working
+  directory and has no network access.
 
 - The built-in `/code-review` skill, for every run that reaches the final review. It is
   the second final reviewer beside Codex at every tier. A run that needs it and cannot
@@ -69,22 +59,28 @@ directory exists prints the report and writes nothing.
 
 Without Codex, use `--no-codex`. The loop then uses Claude subagents in place of the Codex
 reviewers and Sonnet subagents in place of the Codex implementers, and names every swap
-in the report. `--no-codex` does not remove the `/code-review` pass.
+in the report. `--no-codex` does not remove the `/code-review` pass. To leave Codex out of
+every run, set the plugin's `codex` option to false with
+`/plugin configure recode-loop@reimagine-code`; each run then behaves as `--no-codex`.
 
 ## Install
 
-The repo is its own marketplace. In Claude Code:
+The reimagine-code repository is the marketplace. In Claude Code:
 
 ```
 /plugin marketplace add vibecodedapps-official/reimagine-code
 /plugin install recode-loop@reimagine-code
 ```
 
-To try a local clone without installing it:
+Installing the loop also installs `recode`. Claude Code keeps `recode` inside the version
+range the loop declares, and refuses to disable it while the loop is enabled.
+
+To try a local clone without installing it, load both plugins, because the loop calls
+`recode`:
 
 ```
 git clone https://github.com/vibecodedapps-official/reimagine-code.git
-claude --plugin-dir <path-to-clone>
+claude --plugin-dir <path-to-clone>/plugins/recode --plugin-dir <path-to-clone>/plugins/recode-loop
 ```
 
 ## Commands
@@ -224,10 +220,9 @@ agents read them directly. In this mode:
   additional repository is run from that checkout or targeted with `-R <owner>/<repo>`
   where the subcommand accepts it (`gh api` does not; its endpoint is spelled out), and
   every `git` call with `git -C <path>`.
-- Codex `review` covers the primary. With recode 0.9.0 or later, each additional
-  repository with a diff is reviewed with `recode:review --cwd <absolute path>` in
-  its own thread, and its follow-ups resume that thread. Below 0.9.0 it is reviewed through
-  `recode:ask` with a patch file. `/code-review` covers the primary, and a
+- Codex `review` covers the primary. Each additional repository with a diff is reviewed
+  with `recode:review --cwd <absolute path>` in its own thread, and its follow-ups resume
+  that thread. `/code-review` covers the primary, and a
   Claude Opus subagent fills the Claude slot for each additional repository with a
   diff. That substitute is recorded and is not a swap. A Codex implementer call for a
   slice in an additional repository passes that checkout as `--cwd`.
@@ -258,7 +253,9 @@ agents read them directly. In this mode:
 ## Repo config: `.recode.json`
 
 Place `.recode.json` at the repo root. Every field is optional. A malformed file ends the
-run in `blocked` before anything is written.
+run in `blocked` before anything is written. So does the file under its old name from
+before the plugin was renamed, with no `.recode.json` beside it; the report says to
+rename it.
 
 | Field | Default | Meaning |
 |---|---|---|
@@ -472,10 +469,12 @@ For an unattended run, use auto mode, or use `--no-codex` and add allow rules fo
 
 ## Why the rules are what they are
 
-`docs/decisions.md` records the reason for each rule, and the failure that taught it
-where one is recorded. `docs/acceptance.md` lists the hand-run checks that are the
-plugin's only test surface in 0.1.0.
+In the reimagine-code repository, `docs/history/claude-codex-loop/decisions.md` records
+the reason for each rule, and the failure that taught it where one is recorded, up to the
+rename. `docs/decisions.md` records the suite's later decisions, and `docs/acceptance.md`
+lists the hand-run checks that are the plugin's only test surface.
 
 ## License
 
-Apache-2.0. See `LICENSE` and `NOTICE`.
+Apache-2.0. See [LICENSE](LICENSE), and the NOTICE file at the root of the reimagine-code
+repository.

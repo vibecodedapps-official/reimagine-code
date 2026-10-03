@@ -35,7 +35,8 @@ names, for each repository, and leaves the rest of that step as written.
   the first repository, the primary first and then the `--repo` order, that has a diff. A
   repository with no diff never receives it and gets no PR.
 - `.recode.json`: the primary's governs `commit` and `timeouts`. Each repository's own `checks`
-  list is read for that repository's Step 3.7.3 and Step 6.
+  list is read for that repository's Step 3.7.3 and Step 6. A repository that holds the
+  config under its name from before the rename blocks the run, as Step 0 item 1 says.
 - `gh` and `git` targets: every `gh` call for an additional repository (PR create and edit,
   checks, CI reads under Step 7.3.1, and issue comments) runs inside one Bash call as `cd
   <path> && ...`, or with `-R <owner>/<repo>` where the subcommand accepts it. `gh api` does
@@ -92,22 +93,14 @@ names, for each repository, and leaves the rest of that step as written.
       that repository is reviewed through `recode:ask` with its patch file
       (`diff.patch` or `diff-<slug>.patch`), the matched values replaced by `<redacted:
       key>`, in a fresh thread that becomes that repository's thread (for the primary,
-      the stage's thread), recorded in `run.md`; its follow-ups resume that thread. Below
-      0.9.0 the additional repositories already go through `recode:ask` with a
-      patch, and only the replacement applies to them. Every patch file written after
-      `drop` carries the same replacements.
-    - With recode 0.9.0 or later, as recorded in Step 0.6: review each additional
-      repository with a diff by `recode:review --base <its base> --model <id>
-      --timeout <s>` on the first line and `--cwd <absolute path of that repository>` on
-      the second, resolved as the Step 4 implementer rule does, a fresh thread
-      per repository. `run.md` records a thread id per repository. A Step 5.4 follow-up
+      the stage's thread), recorded in `run.md`; its follow-ups resume that thread. Every
+      patch file written after `drop` carries the same replacements.
+    - Review each additional repository with a diff by `recode:review --base <its base>
+      --model <id> --timeout <s>` on the first line and `--cwd <absolute path of that
+      repository>` on the second, resolved as the Step 4 implementer rule does, a fresh
+      thread per repository. `run.md` records a thread id per repository. A Step 5.4 follow-up
       for that repository resumes that repository's thread with `recode:ask --resume
       <its thread>`, naming `diff-<slug>.patch`, never another repository's thread.
-    - Below 0.9.0, recode reviews only the session's checkout. The primary's review
-      thread becomes the stage's thread. When no primary review happened, the first
-      additional repository's patch review starts the stage's thread, as a fresh
-      `recode:ask` thread. Every later additional repository resumes it with
-      `recode:ask --resume <stage thread>`, naming its patch file.
   - Under `--no-codex` or after a swap, the stage's fallback subagent (Codex availability
     item 3) is given every repository's patch file, `diff.patch` for the primary and
     `diff-<slug>.patch` for each additional repository, instead of reading `git diff
@@ -137,11 +130,10 @@ names, for each repository, and leaves the rest of that step as written.
   The exception covers only PRs this run opened; a continued PR whose comment was not
   yet posted gets none. Editing the body of this run's own PR is inside the approval
   scope and publishes nothing new.
-- Step 7.3.5: a CI repair review for an additional repository uses the Step 5.2 rule for
-  the recorded recode version. With 0.9.0 or later, Codex resumes that repository's
-  own thread through `recode:ask --resume`, naming `diff-<slug>.patch`, never another
-  repository's thread. Below 0.9.0, it uses the stage thread with the patch, never
-  `recode:review`. The repository's Claude subagent is continued in both cases.
+- Step 7.3.5: a CI repair review for an additional repository follows the Step 5.2 rule:
+  Codex resumes that repository's own thread through `recode:ask --resume`, naming
+  `diff-<slug>.patch`, never another repository's thread. The repository's Claude
+  subagent is continued too.
 - Closing references: an issue is closed only by the PR in its own repository (`Closes #n`).
   Every other PR of the run cites it as `Refs <owner>/<repo>#n`. The issue status comment
   names the PR in the issue's repository first, then the siblings.
