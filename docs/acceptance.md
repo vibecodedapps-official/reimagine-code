@@ -37,7 +37,7 @@ name a plugin are rerun under the new names and recorded here.
    session quotes the rule; after removal each file equals its backup byte for byte; with
    no Codex home the Codex target is reported as skipped and no directory is created.
    Covers R33, R38, R41, and R42. Rerun when `rules.mjs`, the rules command, or a rules
-   file changes. Run 2026-10-03; see the record.
+   file changes. Run 2026-10-03, and 2026-10-04 for 0.1.3; see the records.
 4. **Staleness notice and decline.** Setup: as item 3, with this block after the text
    of `CLAUDE.md` and an empty line, whose digest matches its body: begin line
    `<!-- recode:house-rules begin version=0.0.1 options=core join=blank digest=6d3e610aaf815551 -->`,
@@ -727,3 +727,44 @@ work machine and reported here.
   uninstalled it printed the line again. So Claude Code repeats the notice for the
   orphaned `recode` after any uninstall; `repo-docs` declares no dependency.
 - The settings were restored and the copy of the Codex login was deleted afterward.
+
+### 2026-10-04: recode 0.1.3, the rules synced to forge-ops
+
+macOS 27.0, Claude Code 2.1.288, Node 26.4.0. recode was installed in the M4 profile
+from a local catalog: the branch commit 526139d exported with `git archive`, and the
+installed plugin matched the branch's `plugins/recode/` byte for byte (`diff -r`). The
+Codex home was a new scratch directory. The real `~/.claude/CLAUDE.md` and
+`~/.codex/AGENTS.md` had the same sha256 after the runs as before. Afterward the profile
+got back its own `CLAUDE.md` and the GitHub catalog at 0.1.2.
+
+- **The rebuild.** The shipped Windows part, an empty line, and `core.md` equal forge-ops
+  `claude/CLAUDE.md` at 9faabda, and the Codex parts equal its `codex/AGENTS.md` (`cmp`).
+- **An old block is reported.** In a scratch home, a block written with the 0.1.2 rules
+  got no session start notice. After the sync, the notice named both files, `status`
+  said `stale` for both, and a plan and apply made both `current` and kept the text
+  above the block.
+- **Item 3 passed for 0.1.3.** The scratch `CLAUDE.md` held a heading and a marker
+  line, and the Codex `AGENTS.md` held two lines. Headless `/recode:rules` asked for
+  options, offering `core` and `writing`. After `core,writing` it showed both diffs,
+  each with the two new rules, and asked about each file separately. After "yes" to
+  both, each file got a 0.1.3 block, with a backup. A new session gave the marker and
+  quoted both new rules word for word, in one turn and without reading a file.
+  `/recode:rules --remove`, with "yes" to both, left each file equal to its original and
+  to its first backup (`cmp`). The repeat with no `CLAUDE.md` and a missing Codex home
+  was run through `rules.mjs` directly, because that path reads no rule text the sync
+  changed: the Codex target was skipped, `CLAUDE.md` was created with `join=none` and
+  then removed as created, and the Codex home was never made.
+- **Found: `rules.mjs` and `suite.mjs` do nothing when their path goes through a
+  symlink.** The first try used the export under `/tmp`, which on macOS is a symlink to
+  `/private/tmp`. `/recode:rules` stopped, because `rules.mjs status` printed nothing
+  and exited 0. Run from the `/tmp` path, `rules.mjs status` and `suite.mjs old-plugins`
+  each printed 0 bytes with exit 0. From the `/private/tmp` path, the same commands
+  printed their reports. Both scripts run `main()` only when `import.meta.url`, which
+  Node resolves through symlinks, equals the unresolved `process.argv[1]`. `recode.mjs`
+  has no such check and ran from both paths. So with a symlink anywhere in the plugin's
+  path, the rules command, the session start notice, and setup's old-plugin list fail
+  silently. A linked `~/.claude` should do the same; that is reasoned from the check,
+  not run. Present since 0.1.0. Fixed in 0.1.3: both scripts compare with the resolved
+  path. A test for each script, run through a linked folder, failed before the fix
+  with empty output and passes after it, and the `/tmp` commands above then printed
+  their reports.

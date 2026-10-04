@@ -3,7 +3,7 @@
 // user's Claude CLAUDE.md and Codex AGENTS.md. Everything above main() is pure: it takes file text, options and rule texts.
 // Files are read and written as latin1, so every byte outside the block, a BOM or a stray non-UTF-8 byte included, survives.
 import { createHash } from 'node:crypto';
-import { constants, copyFileSync, existsSync, mkdirSync, readFileSync, renameSync, rmSync, statSync, writeFileSync } from 'node:fs';
+import { constants, copyFileSync, existsSync, mkdirSync, readFileSync, realpathSync, renameSync, rmSync, statSync, writeFileSync } from 'node:fs';
 import { homedir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
@@ -286,7 +286,8 @@ function run(verb, dataDir, rest, { env, platform, now, home }) {
   return out.slice(0, -1);
 }
 
-if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
+// Node resolves the entry point through symlinks, so compare with the resolved path.
+if (process.argv[1] && import.meta.url === pathToFileURL(realpathSync(process.argv[1])).href) {
   try {
     process.stdout.write(`${main(process.argv.slice(2)).join('\n')}\n`);
   } catch (e) {

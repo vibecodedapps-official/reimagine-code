@@ -3,7 +3,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { spawn, spawnSync } from 'node:child_process';
-import { existsSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, rmSync, utimesSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, rmSync, symlinkSync, unlinkSync, utimesSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -245,7 +245,7 @@ test('R35, R46: the writing option adds the shipped Writing section to the Codex
   assert.equal(codexBody, `${SHIPPED['core.md']}\n${SHIPPED['writing-codex.md']}${END}\n`);
   assert.equal(bytes(s.claude).split('\n').slice(1).join('\n'), `${SHIPPED['core.md']}${END}\n`);
   assert.match(bytes(s.codex).split('\n')[0],
-    /^<!-- recode:house-rules begin version=0\.1\.2 options=core,writing join=none digest=[0-9a-f]{16} -->$/);
+    /^<!-- recode:house-rules begin version=0\.1\.3 options=core,writing join=none digest=[0-9a-f]{16} -->$/);
 }));
 
 test('R37: plan writes nothing for current, edited and malformed targets', sandbox((s) => {
@@ -293,7 +293,7 @@ test('R41: an existing file is backed up with the time in its name, and no tempo
     [`recode: wrote ${s.claude}; the earlier content is in ${s.claude}.recode-backup-20261003120000`]);
   assert.deepEqual(readdirSync(s.claudeDir).sort(), ['CLAUDE.md', 'CLAUDE.md.recode-backup-20261003120000']);
   assert.equal(bytes(`${s.claude}.recode-backup-20261003120000`), 'mine\n');
-  assert.ok(bytes(s.claude).startsWith('mine\n\n<!-- recode:house-rules begin version=0.1.2 options=core join=blank digest='));
+  assert.ok(bytes(s.claude).startsWith('mine\n\n<!-- recode:house-rules begin version=0.1.3 options=core join=blank digest='));
   assert.deepEqual(s.state().created, {});
   assert.deepEqual(readdirSync(s.data).sort(), ['rules-plan.json', 'rules-state.json']);
 }));
@@ -427,4 +427,19 @@ test('the script prints a refusal on stdout and exits 1, and a status exits 0', 
   const defaults = process.platform === 'win32' ? 'core,windows' : 'core';
   assert.equal(ok.stdout.split('\n')[0], `claude: absent ${s.claude} options=${defaults} (default)`);
   assert.equal(ok.status, 0);
+}));
+
+test('the script runs when its path goes through a symlink, as under a linked ~/.claude', sandbox((s) => {
+  // A junction on Windows, which needs no extra rights; the type is ignored elsewhere.
+  const linked = join(s.root, 'linked');
+  symlinkSync(join(SCRIPT, '..', '..'), linked, 'junction');
+  try {
+    const env = { ...process.env, ...s.env, HOME: s.home, USERPROFILE: s.home };
+    const r = spawnSync(process.execPath, [join(linked, 'scripts', 'rules.mjs'), 'status', s.data], { env, encoding: 'utf8' });
+    const defaults = process.platform === 'win32' ? 'core,windows' : 'core';
+    assert.equal(r.stdout.split('\n')[0], `claude: absent ${s.claude} options=${defaults} (default)`);
+    assert.equal(r.status, 0);
+  } finally {
+    unlinkSync(linked);
+  }
 }));

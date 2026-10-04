@@ -3,7 +3,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
-import { existsSync, mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, mkdtempSync, rmSync, symlinkSync, unlinkSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -116,6 +116,22 @@ test('R45: session-start prints the notice for a stale block, writes nothing, an
     { systemMessage: `recode: the house rules in ${s.claude} are older than this plugin's; run /recode:rules to update them` });
   assert.equal(r.status, 0);
   assert.equal(existsSync(s.data), false);
+}));
+
+test('R45: session-start runs when its path goes through a symlink, as under a linked ~/.claude', sandbox((s) => {
+  // A junction on Windows, which needs no extra rights; the type is ignored elsewhere.
+  const linked = join(s.root, 'linked');
+  symlinkSync(join(SCRIPT, '..', '..'), linked, 'junction');
+  try {
+    writeFileSync(s.claude, `mine\n\n${block('core', '6d3e610aaf815551', 'old rules\n').replace('join=none', 'join=blank')}`);
+    const r = spawnSync(process.execPath, [join(linked, 'scripts', 'suite.mjs'), 'session-start', s.data],
+      { env: { ...process.env, ...s.env, HOME: s.home, USERPROFILE: s.home }, encoding: 'utf8' });
+    assert.deepEqual(JSON.parse(r.stdout),
+      { systemMessage: `recode: the house rules in ${s.claude} are older than this plugin's; run /recode:rules to update them` });
+    assert.equal(r.status, 0);
+  } finally {
+    unlinkSync(linked);
+  }
 }));
 
 test('R43, R45: session-start is quiet with no block, and quiet when the state file cannot be read', sandbox((s) => {

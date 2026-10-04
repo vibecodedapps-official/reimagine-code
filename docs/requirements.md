@@ -169,7 +169,8 @@ requirement below changes it. The audit plugin is not part of v0.1.0.
 34. **Content.** The core text is the ask-first line plus the Working, Code, Tests, Done,
     and Ask first sections of forge-ops `claude/CLAUDE.md` at its `main` when M3 starts,
     byte for byte, with that commit recorded. Check: review at import; afterwards this
-    repository is the source.
+    repository is the source. recode 0.1.3 synced it to forge-ops 9faabda on 2026-10-04;
+    `docs/decisions.md` Part 9.
 35. **Options.** `core` is on by default. `windows` is offered only when the command runs
     on Windows and is on by default there. `writing` is off by default. On a rerun the
     recorded options are kept unless the user asks to change them. Check: test.
