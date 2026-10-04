@@ -15,11 +15,12 @@ name a plugin are rerun under the new names and recorded here.
    `recode` installed from this repository's catalog, and a scratch git repository.
    Command: `/recode:setup`, then `/recode:ask` with a short question, then
    `/recode:implement` from a test skill that asks for a one-line edit. Expected: setup
-   reports the Codex version and login, and allow rules that name the
-   `recode-reimagine-code` data directory and the installed `recode` path; ask prints
-   Codex's answer; implement edits the scratch repository and its footer shows the
-   change. Covers R9 and R15. Rerun when a bridge command, the setup report, or the data
-   directory changes. Run 2026-10-03; see the record.
+   reports the Codex version and login, and an allow rule that names the installed
+   `recode` path (before 0.1.2, also an Edit rule for the `recode-reimagine-code` data
+   directory); ask prints Codex's answer; implement edits the scratch repository and its
+   footer shows the change. Covers R9 and R15. Rerun when a bridge command, the setup
+   report, or the data directory changes. Run 2026-10-03, setup rerun 2026-10-04; see the
+   record.
 2. **codex-lite items under the new names.** Setup: as each item says, in scratch
    profiles. Command: items 1, 5, 8, 11, 12, 16, 17, 18, and 19 of
    `docs/history/codex-lite-cc/acceptance.md`, the items that name the plugin or its
@@ -634,3 +635,28 @@ runs were made by a session on the work machine and reported here.
   `settings.json` and the control from `--settings`; the different wording of the two
   refusals points to the sensitive-file check, not the rule source. Every refused run
   exited 0, so each was judged by the tool's message and whether the file existed.
+
+### 2026-10-04: recode 0.1.2, setup's Edit rule
+
+macOS 27.0, Claude Code 2.1.288, codex-cli 0.159.2, Node 26.4.0. The scratch profiles
+were `claude` and `codex-m6`, with recode 0.1.1 installed from GitHub, in a scratch git
+repository. Each run changed only `permissions.allow` in the scratch `settings.json`,
+and the settings were restored afterward.
+
+- **Auto mode, with setup's Edit rule.** With only that rule, the request file's Write
+  failed with "The server-side auto mode classifier gave no verdict (it skipped this
+  action)" in 3 of 3 runs of `/recode:ask`: two headless, one interactive. With no rule,
+  3 of 3 passed: two headless, and one interactive that printed 111 and `status: ok`.
+- **Auto mode, with setup's Bash rule.** With only that rule, 3 of 3 headless runs
+  passed: two typed asks, which printed 123 and 126 with `status: ok`, and one in plain
+  words, which Claude routed to `recode:ask` and which answered 141.
+- **Default mode, with a hook.** A PreToolUse hook that returned `allow` for the request
+  file ran, and the Write was still refused as "a sensitive file".
+- **Control.** In headless default mode, a Write to a folder that is not sensitive was
+  refused with no rule ("but you haven't granted it yet") and created the file with a
+  matching Edit rule.
+- **Item 1, setup only, rerun with 0.1.2 from its branch.** The script was run directly
+  with `node`, with a scratch `CODEX_HOME`: Codex 0.159.2, the ChatGPT login,
+  `workspace-write` proven, and one allow rule, the Bash rule naming the script's path.
+  It wrote no file. The copy of the Codex login was deleted afterward. Auto mode without
+  the Edit rule is not yet confirmed on Windows.

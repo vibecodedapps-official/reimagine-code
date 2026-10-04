@@ -147,7 +147,8 @@ Behavior carries over from codex-lite 0.9.0 unchanged except for names.
   block is stale (see below) and nothing otherwise. Claude Code has no install or update
   hook; a SessionStart check is the documented pattern (verified, docs).
 - **Setup.** Keeps today's diagnostics: Codex version, login, Windows sandbox mode, the
-  write probe, and the allow rules to paste. Adds one section from `suite.mjs`: old
+  write probe, and the allow rule to paste, for the bridge script only since 0.1.2
+  (2026-10-04, `docs/decisions.md` Part 8). Adds one section from `suite.mjs`: old
   plugins found installed, with the uninstall command for each, never run. It records
   nothing.
 - **Output style.** `output-styles/concise-plain.md`, made from forge-ops
@@ -481,8 +482,9 @@ there so the block stays identical to what ships.
 - `rules.mjs` touches only the two targets, their backups, and its data directory. It
   makes no network call and spawns nothing. `suite.mjs` reads the targets and the Codex
   `config.toml`, runs `claude plugin list --json`, and writes nothing.
-- The allow rules setup prints change with the data directory path. Setup prints the new
-  ones; the old rules stop matching.
+- The allow rules setup printed in 0.1.0 and 0.1.1 changed with the data directory path,
+  so the old rules stop matching. Since 0.1.2 setup prints only the Bash rule, which
+  names the installed version's path.
 - Uninstalling `recode` cannot remove the block, because there is no uninstall hook. The
   README says to run `/recode:rules --remove` first.
 

@@ -92,7 +92,8 @@ requirement below changes it. The audit plugin is not part of v0.1.0.
 
 15. **Diagnostics.** `/recode:setup` keeps the codex-lite 0.9.0 report: Codex version,
     login, Windows sandbox mode, the write probe, and the allow rules for the new data
-    directory. It writes no file. Check: test; acceptance.
+    directory. It writes no file. Check: test; acceptance. Since recode 0.1.2
+    (2026-10-04), setup prints only the Bash rule; `docs/decisions.md` Part 8 says why.
 16. **Old plugins.** Setup lists any installed `codex-lite`, `ccl`, or `repo-docs` from
     their old Claude marketplaces, and any enabled `codex-code-review-general`,
     `codex-code-review`, or `repo-docs` from an old marketplace in the Codex
