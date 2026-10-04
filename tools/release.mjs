@@ -51,9 +51,12 @@ for (const [file, change, lines] of edits) {
   const before = readFileSync(join(root, file), "utf8");
   const want = JSON.parse(before);
   change(want);
+  // A Windows checkout may hold the JSON files with CRLF endings; a rewrite keeps the file's ending.
+  const eol = before.includes("\r\n") ? "\r\n" : "\n";
+  const canonical = (j) => `${JSON.stringify(j, null, 2)}\n`.replace(/\n/g, eol);
   let after;
   if (lines) after = lines.reduce((s, [re, to]) => s.replace(re, to), before);
-  else if (before === `${JSON.stringify(JSON.parse(before), null, 2)}\n`) after = `${JSON.stringify(want, null, 2)}\n`;
+  else if (before === canonical(JSON.parse(before))) after = canonical(want);
   if (after === undefined || !isDeepStrictEqual(JSON.parse(after), want)) {
     console.error(`release: ${file}: cannot set the version without changing anything else; no file was written`);
     process.exit(1);

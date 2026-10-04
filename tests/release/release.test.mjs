@@ -101,3 +101,12 @@ test('release raises a plugin changed since its tag, so lint passes again', () =
   assert.equal(r.status, 0, r.out);
   assert.deepEqual([versions(d).loop, versions(d).range], ['0.1.1', '>=0.1.0 <1.0.0']);
 }));
+
+test('release keeps CRLF line endings, as in a Windows checkout', () => inCopy((d) => {
+  const files = ['.claude-plugin/marketplace.json', 'plugins/repo-docs/.claude-plugin/plugin.json', 'plugins/repo-docs/.codex-plugin/plugin.json'];
+  for (const f of files) writeFileSync(join(d, f), readFileSync(join(d, f), 'utf8').replace(/\n/g, '\r\n'));
+  const r = release(d, 'repo-docs', '0.1.3');
+  assert.equal(r.status, 0, r.out);
+  assert.deepEqual([versions(d).docsClaude, versions(d).docsCodex, versions(d).entries['repo-docs']], ['0.1.3', '0.1.3', '0.1.3']);
+  for (const f of files) assert.ok(!/[^\r]\n/.test(readFileSync(join(d, f), 'utf8')), `${f} has a bare LF`);
+}));
