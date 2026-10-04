@@ -1,7 +1,7 @@
 // Each case copies the repository to a temporary directory, breaks one thing, and checks that lint reports it.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { spawnSync } from 'node:child_process';
+import { execFileSync, spawnSync } from 'node:child_process';
 import { appendFileSync, cpSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
@@ -221,3 +221,43 @@ test('lint rejects a review skill without its provenance comment', () => fails(
     writeFileSync(p, s.split('\n').filter((l) => !l.startsWith('<!-- Modified. Adapted from openai/codex ')).join('\n'));
   },
   'plugins/recode-codex/skills/general-code-review-testing/SKILL.md: lacks its provenance comment'));
+
+test('lint rejects a changelog without a dated heading for the suite version', () => fails(
+  (d) => {
+    const p = join(d, 'CHANGELOG.md');
+    const s = readFileSync(p, 'utf8');
+    assert.match(s, /^## 0\.1\.0 - \d{4}-\d{2}-\d{2}$/m, 'the changelog lacks the heading');
+    writeFileSync(p, s.replace(/^## 0\.1\.0 - \d{4}-\d{2}-\d{2}$/m, '## Unreleased'));
+  },
+  'CHANGELOG.md: no heading "## 0.1.0 - <YYYY-MM-DD>" for the suite version'));
+
+// The copy becomes a git repository with one commit, tagged as each named release.
+const git = (cwd, ...args) => execFileSync('git', ['-c', 'user.email=t@example.com', '-c', 'user.name=t', '-c', 'commit.gpgsign=false', '-c', 'tag.gpgsign=false', ...args],
+  { cwd, encoding: 'utf8' });
+const tagged = (d, ...tags) => {
+  git(d, 'init', '-q', '-b', 'main');
+  git(d, 'add', '-A');
+  git(d, 'commit', '-q', '-m', 'release');
+  for (const t of tags) git(d, 'tag', t);
+};
+
+test('lint passes on a tagged copy with no change since its tags', () => {
+  const r = lint((d) => tagged(d, 'recode--v0.1.0', 'recode-loop--v0.1.0', 'repo-docs--v0.1.2'));
+  assert.equal(r.status, 0, r.out);
+});
+
+test('lint rejects a change to a tagged plugin that keeps its version', () => fails(
+  (d) => { tagged(d, 'recode--v0.1.0'); appendFileSync(join(d, 'plugins/recode/README.md'), 'More.\n'); },
+  'plugins/recode: changed since recode--v0.1.0, so its version must be above 0.1.0; found 0.1.0'));
+
+test('lint holds the codex recode to the bridge tag', () => fails(
+  (d) => { tagged(d, 'recode--v0.1.0'); appendFileSync(join(d, 'plugins/recode-codex/README.md'), 'More.\n'); },
+  'plugins/recode-codex: changed since recode--v0.1.0, so its version must be above 0.1.0; found 0.1.0'));
+
+test('lint compares a change with the highest tag by number', () => fails(
+  (d) => { tagged(d, 'repo-docs--v0.1.9', 'repo-docs--v0.1.10'); appendFileSync(join(d, 'plugins/repo-docs/README.md'), 'More.\n'); },
+  'plugins/repo-docs: changed since repo-docs--v0.1.10, so its version must be above 0.1.10; found 0.1.2'));
+
+test('lint rejects a shallow clone, which may lack the tags', () => fails(
+  (d) => { tagged(d); writeFileSync(join(d, '.git', 'shallow'), git(d, 'rev-parse', 'HEAD')); },
+  'R49: this clone is shallow, so release tags may be missing'));

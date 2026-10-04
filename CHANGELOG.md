@@ -3,21 +3,23 @@
 One changelog for the suite. Each release has a subsection per component. The source
 repos' own changelogs are kept under `docs/history/`.
 
-## Unreleased
+## 0.1.0 - 2026-10-03
 
 ### Suite
 
-- Started the reimagine-code suite and imported the histories of codex-lite-cc,
-  claude-codex-loop, codex-code-review, and repo-docs, unchanged, under `imports/`.
-- Added the Codex catalog, `.agents/plugins/marketplace.json`, which lists `recode` and
-  `repo-docs`. The Claude catalog lists `recode`, `recode-loop`, and `repo-docs`.
+- First release. The suite joins codex-lite-cc, claude-codex-loop, codex-code-review,
+  and repo-docs in one repository, with their git histories. Every renamed command,
+  path, and data directory is listed under Breaking below.
+- Two catalogs, both named `reimagine-code`. The Claude catalog lists `recode`,
+  `recode-loop`, and `repo-docs`. The Codex catalog, `.agents/plugins/marketplace.json`,
+  lists `recode` and `repo-docs`.
+- Each Claude plugin is tagged `<plugin>--v<version>`. `main` is the release ref, so a
+  Codex user who needs to hold back can add the marketplace at a tag.
 
 ### recode
 
-- Moved codex-lite 0.9.0 into the suite as `recode` 0.1.0. The plugin, the command
-  prefix `/recode:`, the script `recode.mjs`, the message prefix `recode: `, and the
-  test-only variables `RECODE_*` are renamed. The plugin data directory becomes
-  `~/.claude/plugins/data/recode-reimagine-code/`. Behavior is otherwise unchanged.
+- Moved codex-lite 0.9.0 into the suite as `recode` 0.1.0. Apart from the renames under
+  Breaking and the changes below, behavior is unchanged.
 - Fixed a timed-out run leaving Codex's shell commands running, so they could change files
   after the result was printed. Codex 0.159.2 runs each command in its own process group,
   which the timeout's SIGTERM missed. The timeout now sends SIGINT, and Codex stops its
@@ -51,19 +53,6 @@ repos' own changelogs are kept under `docs/history/`.
   watch, because GitHub refuses the branch rules read there. That refusal now means no
   rulesets apply, and the required checks come from branch protection alone.
 
-#### Breaking
-
-The loop's files in your repositories take the new name, and the old ones are not read:
-
-- The run directory `.ccl/<run-id>/` becomes `.recode/<run-id>/`, and the loop adds
-  `.recode/` to `.git/info/exclude`. An old `.ccl/` line there can be deleted.
-- The repo config `.ccl.json` becomes `.recode.json`. A repo with `.ccl.json` and no
-  `.recode.json` ends the run in `blocked` with a message to rename the file.
-- Committed snapshots go to `specs/recode/<run-id>/`, not `specs/ccl/<run-id>/`.
-- Worktrees are `<checkout>-recode-<run-id>`, not `<checkout>-ccl-<run-id>`.
-- Reports start `# recode run report`, and the PR status comment starts
-  `Status from the recode run`.
-
 ### recode (Codex)
 
 - Moved codex-code-review-general 0.1.0 into the suite as the Codex plugin `recode`
@@ -76,3 +65,39 @@ The loop's files in your repositories take the new name, and the old ones are no
 
 - Moved repo-docs 0.1.1 into the suite as 0.1.2, with no change in behavior. On both
   hosts it installs as `repo-docs@reimagine-code`.
+
+### Breaking
+
+Nothing reads the old names.
+
+- **Plugins.**
+  - `codex-lite@vibecodedapps-codex-lite` is now `recode@reimagine-code`.
+  - `ccl@vibecodedapps-claude-codex-loop` is now `recode-loop@reimagine-code`.
+  - On Codex, `codex-code-review-general@codex-code-review` is now
+    `recode@reimagine-code`, with the config table `[plugins."recode@reimagine-code"]`.
+  - `repo-docs@repo-docs` is now `repo-docs@reimagine-code` on both hosts.
+  - `/recode:setup` lists the old plugins it finds, with the command that removes each.
+- **Commands.**
+  - `/codex-lite:ask`, `review`, `implement`, `do`, and `setup` are now `/recode:ask`
+    and so on, and a Skill call to `codex-lite:<name>` is now `recode:<name>`.
+  - `/ccl:run` and `/ccl:plan` are now `/recode-loop:run` and `/recode-loop:plan`.
+- **Bridge paths.**
+  - The script `scripts/codex-lite.mjs` is now `scripts/recode.mjs`, and its messages
+    start `recode: `.
+  - The data directory `~/.claude/plugins/data/codex-lite-vibecodedapps-codex-lite/` is
+    now `~/.claude/plugins/data/recode-reimagine-code/`. The allow rules that
+    `/recode:setup` prints name the new paths. Rules naming the old ones can be deleted.
+  - The sandbox probe's temporary names start `.recode-probe-` and
+    `.recode-sandbox-probe-`, not `.codex-lite-probe-` and `.codex-lite-sandbox-probe-`.
+  - The test-only variables `CODEX_LITE_CODEX_BIN`, `CODEX_LITE_TIMEOUT_MS`, and
+    `CODEX_LITE_PROBE_TARGET` are now `RECODE_CODEX_BIN`, `RECODE_TIMEOUT_MS`, and
+    `RECODE_PROBE_TARGET`.
+- **Loop paths in your repositories.**
+  - The run directory `.ccl/<run-id>/` is now `.recode/<run-id>/`, and the loop adds
+    `.recode/` to `.git/info/exclude`. An old `.ccl/` line there can be deleted.
+  - The repo config `.ccl.json` is now `.recode.json`. A repo with `.ccl.json` and no
+    `.recode.json` ends the run in `blocked` with a message to rename the file.
+  - Committed snapshots go to `specs/recode/<run-id>/`, not `specs/ccl/<run-id>/`.
+  - Worktrees are `<checkout>-recode-<run-id>`, not `<checkout>-ccl-<run-id>`.
+  - Reports start `# recode run report`, and the PR status comment starts
+    `Status from the recode run`.

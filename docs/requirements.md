@@ -227,9 +227,9 @@ requirement below changes it. The audit plugin is not part of v0.1.0.
     component. The source repos' changelogs move to `docs/history/`. Check: lint for the
     heading; review.
 51. **Floors.** The README states as supported only the oldest Claude Code and Codex CLI
-    versions the acceptance ran on, and Node 22 or later. It may name 2.1.139 as the
-    documented feature floor without promising it. Check: review against the
-    acceptance record.
+    versions the acceptance ran on, and Node 22 or later. It may say that Claude Code
+    before 2.1.269 lacks features the suite uses, without promising that 2.1.269 works.
+    Check: review against the acceptance record.
 
 ## Quality
 
