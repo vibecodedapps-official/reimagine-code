@@ -1,9 +1,9 @@
 #!/bin/sh
-# build.sh <name>: build the fixture <name> (solo, solo-dirty, full, tokens, or patterns)
-# in a new temp directory and print the absolute path of its manifest on stdout, nothing
-# else.
+# build.sh <name>: build the fixture <name> (solo, solo-dirty, full, tokens, patterns, or
+# ground-truth) in a new temp directory and print the absolute path of its manifest on
+# stdout, nothing else.
 #
-# Usage: sh tests/fixture/build.sh solo | solo-dirty | full | tokens | patterns
+# Usage: sh tests/fixture/build.sh solo | solo-dirty | full | tokens | patterns | ground-truth
 #
 # Every expected outcome is listed as a literal in tests/fixture/expected.md. Git runs
 # with fixed identity, fixed commit dates, no global or system config, no signing, and
@@ -13,14 +13,15 @@ set -eu
 
 name=${1:-}
 case $name in
-solo | solo-dirty | full | tokens | patterns) ;;
+solo | solo-dirty | full | tokens | patterns | ground-truth) ;;
 *)
-	echo "build.sh: unknown fixture '$name'; expected solo, solo-dirty, full, tokens, or patterns" >&2
+	echo "build.sh: unknown fixture '$name'; expected solo, solo-dirty, full, tokens, patterns, or ground-truth" >&2
 	exit 2
 	;;
 esac
 
-lib=$(cd "$(dirname "$0")/lib" && pwd)
+here=$(cd "$(dirname "$0")" && pwd)
+lib=$here/lib
 T=$(mktemp -d)
 if command -v cygpath >/dev/null 2>&1; then
 	T=$(cygpath -m "$T")
@@ -63,6 +64,15 @@ commit() {
 	commit_index "$1" "$2"
 }
 
+# commit_at <dir> <date> <message>: stage everything, then commit at <date> (YYYY-MM-DD, 10:00 UTC).
+commit_at() {
+	g -C "$T/$1" add -A
+	GIT_AUTHOR_DATE="$2 10:00:00 +0000"
+	GIT_COMMITTER_DATE=$GIT_AUTHOR_DATE
+	export GIT_AUTHOR_DATE GIT_COMMITTER_DATE
+	g -C "$T/$1" commit -q -m "$3"
+}
+
 # put <path>: write stdin to <path> under the fixture directory.
 put() {
 	mkdir -p "$(dirname "$T/$1")"
@@ -71,6 +81,9 @@ put() {
 
 full=0
 [ "$name" = full ] && full=1
+if [ "$name" = ground-truth ]; then
+	. "$here/ground-truth.sh"
+fi
 
 # ---------------------------------------------------------------------------
 # app: src/users.sh in parts, so each branch writes its own version.
@@ -1356,6 +1369,12 @@ patterns)
 	build_patterns
 	write_patterns_exports
 	write_patterns_manifest
+	;;
+ground-truth)
+	build_ground_truth
+	write_ground_truth_exports
+	write_ground_truth_session
+	write_ground_truth_manifest
 	;;
 *)
 	build_app

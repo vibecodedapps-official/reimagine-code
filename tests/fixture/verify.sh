@@ -4,10 +4,10 @@
 #
 # Usage: m=$(sh tests/fixture/build.sh solo) && sh tests/fixture/verify.sh "$m" solo
 #
-# name is solo, solo-dirty, full, tokens, or patterns. Without it, the name comes from the
-# fixture directory: manifest-groups.json means full; otherwise an app checkout on
-# scratch-branch means solo-dirty; otherwise solo. tokens and patterns are never detected:
-# pass the name.
+# name is solo, solo-dirty, full, tokens, patterns, or ground-truth. Without it, the name
+# comes from the fixture directory: manifest-groups.json means full; otherwise an app
+# checkout on scratch-branch means solo-dirty; otherwise solo. tokens, patterns, and
+# ground-truth are never detected: pass the name.
 #
 # Expected values are literals copied from expected.md; change them only together with
 # expected.md and build.sh, with the reason in the commit body.
@@ -40,7 +40,7 @@ if [ -z "$name" ]; then
 	fi
 fi
 case $name in
-solo | solo-dirty | full | tokens | patterns) ;;
+solo | solo-dirty | full | tokens | patterns | ground-truth) ;;
 *)
 	echo "verify: unknown fixture '$name'"
 	exit 2
@@ -205,6 +205,443 @@ if [ "$name" = patterns ]; then
 	cp "$tmp/p20new/data/users.csv" "$tmp/p20new.once"
 	(cd "$tmp/p20new" && sh migrations/001_create_users.sh && sh migrations/002_add_last_login.sh)
 	cmp -s "$tmp/p20new.once" "$tmp/p20new/data/users.csv" || fail "P20: a rerun of 001 and 002 changed data/users.csv on a fresh install"
+
+	finish
+	exit 0
+fi
+
+# ground-truth: the branches, commits, exports, and manifest, then one behavior check per
+# planted case, each run in a temp clone of svc so the fixture repo never changes.
+if [ "$name" = ground-truth ]; then
+	A=$F/svc
+	# The svc scripts read these; a caller's value, such as ENV for interactive shells,
+	# would change their results.
+	unset APP_TENANT DATA_DIR DATES DB_ACCOUNT DB_HOST DB_NAME ENV FETCH_STATUS_FIELD \
+		FUNCTIONS_FILE IMPORTED RECORDS RECORDS_FILE RELATIONS SCHEMA_FILE SETTINGS_CACHE \
+		TARGETS VIA_A VIA_B
+	mb=08081290881379bc6b7cfcd97a951b602513cf07
+	init=68541c48ed0e097c448180e9405c6a5b57b2a788
+	tmp=$(mktemp -d)
+	trap 'rm -rf "$tmp"' EXIT
+
+	# lines: join the lines of stdin with '|', so a failure prints one line.
+	lines() {
+		tr -d '\r' | tr '\n' '|' | sed 's/|$//'
+	}
+
+	# heads <label prefix>: the five branch heads of svc.
+	heads() {
+		for bh in feature:2a88b28b4d9e9c6d028964eb5864dda8624327a7 \
+			main:a1dfff3c10661eda96738aa5cc949fd35deabf78 \
+			gt-11-lookup:f142c6e594cbb9fc9dc2da3a24b9b295fa61ef1b \
+			target:54368f2585210328bd9a5360fe0aa3d1681a0027 \
+			stacked:4aa559a282f955bff0b698214260a2e8770c51dc; do
+			same "$1${bh%%:*} head" "${bh#*:}" "$(rev "$A" "refs/heads/${bh%%:*}")"
+		done
+	}
+	heads "svc "
+
+	# Every commit of the Commits table, with its subject.
+	git -C "$A" log --all --format='%H %s' > "$tmp/commits" 2>/dev/null
+	while IFS= read -r c; do
+		grep -qxF "$c" "$tmp/commits" || fail "commit not found: $c"
+	done <<-'EOF'
+		68541c48ed0e097c448180e9405c6a5b57b2a788 initial records import service
+		19bb7943d81f5a6395ddd0e0ffe9e3080427ed4e schemas: describe the study fields
+		ad42be4cb6a8e96b6e362b73a20d92e9a239b047 GT-14: list the records with a status
+		90179b16ccd54e549f6075596cde8bb8e0f0e1d7 GT-14: add the update date to fetch_row
+		b5bcfd802719df31dadadbd0dbfed34aea94bdb4 steps: print the status first in fetch_row
+		b4cb796c71cc3ebaf11b211d57244592af62e833 GT-0: stop requiring items on orders
+		120f2bf261e9140e1cc81c57e07b1780236ee6b9 migrations: make the records key (id, type)
+		08081290881379bc6b7cfcd97a951b602513cf07 docs: describe the commands
+		741a5e76fc60d8e37209bd437e03430a36665e88 GT-1: add the contract import endpoint
+		face5b6264f805300d4ede99ba1295f2d5df39b0 GT-13: rename the rank function script
+		0ed4041b6ca3f60b25248d27dc7ee42997b3128b GT-7: waive the flag error in bulk imports
+		c50227fffaad9ba71359be4fbe893119c900aab2 GT-2: skip ineligible targets in related links
+		265206be0fa2f799264f2ca91429fb99ccdd7641 GT-3: use the category reference in the person and org schemas
+		a9997c92a63e2ac01020cc6266e14701d8dd9844 GT-4: write source_id when a site is created
+		732d4ba45e409dc7b8557f6a270fe6703cf4dc81 rank function: skip rows without a score
+		06afe9d377b8dafffbe6f9b8821439f44a448c22 GT-5: make items optional for invoices
+		0671734d45718043c434b3e25ab358dba3804743 GT-8: update the sql functions
+		a1dfff3c10661eda96738aa5cc949fd35deabf78 validator: prefix messages with the field path
+		f142c6e594cbb9fc9dc2da3a24b9b295fa61ef1b GT-11: ignore deleted rows in the lookup function
+		542a0d68a247ea82311e2ae11a41ab621785d7c5 GT-6: follow the tenant settings in bulk imports
+		7dacf80a10d149729f8cfac6d360a9e60695a3c7 GT-10: add the office columns to the records key migration
+		c0522a3bcf59db79eaf358b9708dfd4c14d7dc74 GT-12: match hrn ignoring case in the lookup function
+		222dc8c4b80cffe3f30d03a212e6ddd67178596a GT-13: skip rows without a score in the rank function
+		d2cb15c1d3c6ad4b94bbaef8bd6c60a63752a12e GT-13: rename the audit function script
+		77c261626555d680acd1f914954af7943424d5cc GT-14: list the records with a status
+		54368f2585210328bd9a5360fe0aa3d1681a0027 GT-14: add the update date to fetch_row
+		44f026393f3b97e89d61faba0745ec199210276a GT-9: add the dates scenario
+		fcee9fd478c918392e2943ab76db544e5b5abc2a GT-9: add the read and status steps
+		3ca386280c2a6a4130f5b6e43a1363d2b605819d GT-9: add the report scenarios
+		4a321695576df33adfa0efd81b1ae2c1947cbe98 GT-9: add the record fetch step
+		4aa559a282f955bff0b698214260a2e8770c51dc GT-14: add the fetch scenarios
+		2a88b28b4d9e9c6d028964eb5864dda8624327a7 GT-9: add the hrn lookup scenario
+	EOF
+
+	same "svc merge-base of main and feature" $mb "$(git -C "$A" merge-base main feature 2>/dev/null)"
+	same "svc merge-base of target and stacked" $init "$(git -C "$A" merge-base target stacked 2>/dev/null)"
+	same "svc commits on main since the merge-base" \
+		"a1dfff3c10661eda96738aa5cc949fd35deabf78 732d4ba45e409dc7b8557f6a270fe6703cf4dc81" \
+		"$(git -C "$A" log --format=%H "$mb..main" 2>/dev/null | tr '\n' ' ' | sed 's/ $//')"
+	same "svc commits in target..stacked" \
+		"4aa559a282f955bff0b698214260a2e8770c51dc 90179b16ccd54e549f6075596cde8bb8e0f0e1d7 ad42be4cb6a8e96b6e362b73a20d92e9a239b047" \
+		"$(git -C "$A" log --format=%H target..stacked 2>/dev/null | tr '\n' ' ' | sed 's/ $//')"
+	renames=$(git -C "$A" diff -M --name-status main...feature 2>/dev/null | grep '^R' | tr '\t' ' ' | lines)
+	same "svc renames in main...feature" \
+		"R067 migrations/003_records_pk.sh migrations/003_records_pk_and_columns.sh|R061 migrations/f_audit_ops8.sh migrations/f_audit_gt13.sh|R073 migrations/f_lookup_ops7.sh migrations/f_lookup_gt12.sh|R081 migrations/f_rank_ops9.sh migrations/f_rank_gt13.sh" \
+		"$renames"
+	renames11=$(git -C "$A" diff -M --name-status main...gt-11-lookup 2>/dev/null | tr '\t' ' ' | lines)
+	same "svc renames in main...gt-11-lookup" "R072 migrations/f_lookup_ops7.sh migrations/f_lookup_gt11.sh" "$renames11"
+	same "svc diff stat main...feature" "32 files changed, 266 insertions(+), 19 deletions(-)" \
+		"$(git -C "$A" diff -M --shortstat main...feature 2>/dev/null | sed 's/^ //')"
+	same "svc diff stat target...stacked" "3 files changed, 30 insertions(+), 2 deletions(-)" \
+		"$(git -C "$A" diff --shortstat target...stacked 2>/dev/null | sed 's/^ //')"
+	same "svc checkout branch" feature "$(git -C "$A" rev-parse --abbrev-ref HEAD 2>/dev/null)"
+	same "svc status" "" "$(git -C "$A" status --porcelain 2>/dev/null | lines)"
+
+	# Exports, manifest, and the PR exports' key lines.
+	same "exports" "GT-0.md GT-1.md GT-10.md GT-12.md GT-13.md GT-14.md GT-2.md GT-3.md GT-4.md GT-5.md GT-6.md GT-7.md GT-8.md GT-9.md PR-1.md PR-2.md" \
+		"$(cd "$F/exports" 2>/dev/null && ls | LC_ALL=C sort | tr '\n' ' ' | sed 's/ $//')"
+	for id in GT-0 GT-1 GT-2 GT-3 GT-4 GT-5 GT-6 GT-7 GT-8 GT-9 GT-10 GT-12 GT-13 GT-14 PR-1 PR-2; do
+		same "export $id id" "id: $id" "$(grep '^id:' "$F/exports/$id.md" 2>/dev/null)"
+	done
+	same "export GT-0 state" "state: Done" "$(grep '^state:' "$F/exports/GT-0.md" 2>/dev/null)"
+	case $(cat "$F/exports/GT-2.md" 2>/dev/null | tr '\n' ' ' | tr -s ' ') in
+	*'The importer then imports a record linked to such a target, without that link, instead of rejecting the record.'*) ;;
+	*) fail "GT-2 export does not say the importer then imports a record without the dropped link" ;;
+	esac
+	mf=$(tr -d ' \t\r\n' < "$F/manifest.json")
+	same "manifest.json bundle 1" \
+		'{"repo":"./svc","pr":"file:./exports/PR-1.md","branch":"feature","base":"main","run_once":["migrations/*.sh"],"tickets":["file:./exports/GT-1.md","file:./exports/GT-2.md","file:./exports/GT-3.md","file:./exports/GT-4.md","file:./exports/GT-5.md","file:./exports/GT-6.md","file:./exports/GT-7.md","file:./exports/GT-8.md","file:./exports/GT-9.md","file:./exports/GT-10.md","file:./exports/GT-12.md","file:./exports/GT-13.md"]}' \
+		"$(printf '%s\n' "$mf" | sed -n 's/.*"bundles":\[\({[^}]*}\),.*/\1/p')"
+	same "manifest.json bundle 2, the last" \
+		'{"repo":"./svc","pr":"file:./exports/PR-2.md","branch":"stacked","base":"target","tickets":["file:./exports/GT-14.md"]}' \
+		"$(printf '%s\n' "$mf" | sed -n 's/.*"bundles":\[{[^}]*},\({[^}]*}\)\],.*/\1/p')"
+	same "manifest.json groups on ./svc" "import-api records bulk-rules sql harness migrations stacked" \
+		"$(printf '%s\n' "$mf" | tr '{' '\n' | sed -n 's/^"name":"\([^"]*\)","repo":"\.\/svc".*/\1/p' | tr '\n' ' ' | sed 's/ $//')"
+	same "manifest.json claims lines" 1 "$(grep -cF '"claims": ["./session-summary.md"]' "$F/manifest.json")"
+	pr1=$(cat "$F/exports/PR-1.md" 2>/dev/null | tr '\n' ' ' | tr -s ' ')
+	for s in 'items are optional for invoices, so invoices now match orders (GT-0).' \
+		'If the settings cache cannot be read, the import fails closed and rolls back.' \
+		'Related: PR-3 (branch gt-11-lookup), open against main, changes the lookup function for GT-11.' \
+		'build 1.4.0-17' \
+		'001_create_schema.sh 002_records_columns.sh 003_records_pk.sh f_audit_ops8.sh f_lookup_ops7.sh f_rank_gt13.sh' \
+		'Host=localhost;Database=svc;Username=svc_writer;Password=********'; do
+		case $pr1 in
+		*"$s"*) ;;
+		*) fail "PR-1 export has no '$s'" ;;
+		esac
+	done
+	same "PR-1 threads (file, line, date)" "migrations/f_rank_gt13.sh 1 2026-08-20|tests/connection.sh 6 2026-09-13" \
+		"$(sed -n 's/^ *- file: //p; s/^ *line: //p; s/^ *date: //p' "$F/exports/PR-1.md" 2>/dev/null | paste -d ' ' - - - | lines)"
+	case $(cat "$F/exports/PR-2.md" 2>/dev/null) in
+	*'Built on GT-14 (target).'*) ;;
+	*) fail "PR-2 export has no 'Built on GT-14 (target).'" ;;
+	esac
+
+	# Behavior, in temp clones.
+	gm() {
+		git -c user.name=fixture -c user.email=fixture@example.invalid \
+			-c commit.gpgsign=false -c core.autocrlf=false "$@"
+	}
+	# clone <dir> <rev>: a clone of svc in $tmp/<dir>, checked out at <rev>, detached.
+	clone() {
+		gm clone -q -n -c core.autocrlf=false "$A" "$tmp/$1" 2>/dev/null &&
+			gm -C "$tmp/$1" checkout -q --detach "$2" 2>/dev/null
+	}
+	# run <dir> <command>...: run a command in $tmp/<dir>; set rc to its exit code and out
+	# to its output and errors, lines joined with '|'.
+	run() {
+		out=$(cd "$tmp/$1" && shift && "$@" 2>&1)
+		rc=$?
+		out=$(printf '%s\n' "$out" | lines)
+	}
+	# has <line>: succeed when the last run printed this line.
+	has() {
+		case "|$out|" in *"|$1|"*) return 0 ;; esac
+		return 1
+	}
+	# says <text>: succeed when the last run's output contains this text.
+	says() {
+		case $out in *"$1"*) return 0 ;; esac
+		return 1
+	}
+	# linenos <text> <file>: the numbers of the lines of <file> at the head that contain <text>.
+	linenos() {
+		grep -nF -e "$1" "$tmp/head/$2" 2>/dev/null | cut -d: -f1 | tr '\n' ' ' | sed 's/ $//'
+	}
+	clone head origin/feature || fail "a clone of svc at feature failed"
+
+	# S1: the feature filters the direct arm of related_links only.
+	run head sh -c '. ./src/links.sh && related_links K2'
+	same "S1: related_links K2" K2,X9 "$out"
+	run head sh src/importer.sh import K2
+	[ "$rc" -eq 1 ] && [ "$out" = "rejected K2" ] ||
+		fail "S1: importer.sh import K2 does not print 'rejected K2' and exit 1 (exit $rc, output '$out')"
+	run head sh src/sweep.sh
+	same "S1: sweep.sh output" "dropped K3,X2" "$out"
+	run head sh src/importer.sh import K3
+	[ "$rc" -eq 0 ] && [ "$out" = "imported K3" ] ||
+		fail "S1: importer.sh import K3 does not print 'imported K3' and exit 0 (exit $rc, output '$out')"
+
+	# S2: import_contract has no import guard.
+	run head env IMPORTED="$tmp/s2.csv" sh src/handlers.sh import_contract viewer k1
+	[ "$rc" -eq 0 ] && [ "$(cat "$tmp/s2.csv" 2>/dev/null)" = contract,k1 ] ||
+		fail "S2: import_contract viewer k1 does not exit 0 and write contract,k1 (exit $rc, output '$out')"
+	run head env IMPORTED="$tmp/s2.csv" sh src/handlers.sh import_document viewer k1
+	[ "$rc" -eq 1 ] && [ "$out" = "forbidden: role viewer may not import" ] ||
+		fail "S2: import_document viewer k1 does not exit 1 with 'forbidden: role viewer may not import' (exit $rc, output '$out')"
+
+	# S3: site.json keeps the string category; study.json keeps 19bb794's trailing comma.
+	same "S3: schemas/study.json line 7" '    "category": {"type": "string"},' \
+		"$(sed -n 7p "$tmp/head/schemas/study.json" 2>/dev/null | lines)"
+	same "S3: schemas/site.json line 6" '"category": {"type": "string"}' \
+		"$(sed -n 's/^ *//; 6p' "$tmp/head/schemas/site.json" 2>/dev/null | lines)"
+	for s in person org; do
+		grep '"category"' "$tmp/head/schemas/$s.json" 2>/dev/null | grep -qF '"$ref"' ||
+			fail "S3: the category of schemas/$s.json is not a reference"
+	done
+	if command -v jq >/dev/null 2>&1; then
+		run head jq empty schemas/study.json
+		[ "$rc" -ne 0 ] && says 'parse error' ||
+			fail "S3: jq empty schemas/study.json does not fail with a parse error (exit $rc, output '$out')"
+		run head jq -c .properties.category schemas/site.json
+		same "S3: site.json category by jq" '{"type":"string"}' "$out"
+	fi
+
+	# S4: an update without source_id empties a site's and keeps a person's.
+	mkdir "$tmp/s4" && : > "$tmp/s4/site.csv" && : > "$tmp/s4/person.csv"
+	for t in site person; do
+		run head env DATA_DIR="$tmp/s4" sh src/upsert.sh "upsert_$t" 9 N src-9
+		run head env DATA_DIR="$tmp/s4" sh src/upsert.sh "upsert_$t" 9 N ''
+	done
+	same "S4: site row after an update without source_id" 9,N, "$(lines < "$tmp/s4/site.csv")"
+	same "S4: person row after an update without source_id" 9,N,src-9 "$(lines < "$tmp/s4/person.csv")"
+	run head sh tests/test_upsert_site.sh
+	[ "$rc" -eq 0 ] || fail "S4: tests/test_upsert_site.sh fails at the head (exit $rc, output '$out')"
+
+	# S5: the code no longer requires items for invoices; both invoice specs still do.
+	run head sh src/validate.sh invoice id customer
+	same "S5: validate.sh invoice id customer" valid "$out"
+	for s in spec/invoices.yml spec/public/invoices.yml; do
+		same "S5: '- items' lines in $s" 1 "$(grep -cF -e '- items' "$tmp/head/$s" 2>/dev/null)"
+	done
+	for s in spec/orders.yml spec/public/orders.yml; do
+		same "S5: '- items' lines in $s" 0 "$(grep -cF -e '- items' "$tmp/head/$s" 2>/dev/null)"
+	done
+	# An unknown kind exits 2 with the message on stderr and nothing on stdout.
+	out=$(cd "$tmp/head" && sh src/validate.sh unknown id customer 2>"$tmp/s5.err")
+	rc=$?
+	err=$(lines < "$tmp/s5.err")
+	[ "$rc" -eq 2 ] && [ -z "$out" ] && [ "$err" = "unknown kind unknown" ] ||
+		fail "S5: validate.sh unknown id customer does not exit 2 with 'unknown kind unknown' on stderr (exit $rc, stdout '$(printf '%s\n' "$out" | lines)', stderr '$err')"
+
+	# T1: the waiver drops the bare flag message at the head; after main's a1dfff3 the
+	# message has the field path, the waiver drops nothing, and both tests still pass.
+	printf 'id=7\nname=Edsger\n' > "$tmp/t1.record"
+	run head sh -c 'sh src/validator.sh validate "$1" | sh src/waiver.sh' t1 "$tmp/t1.record"
+	same "T1: errors after the waiver at the head" "" "$out"
+	for t in tests/test_waiver.sh tests/scenario_bulk.sh; do
+		run head sh "$t"
+		[ "$rc" -eq 0 ] || fail "T1: $t fails at the head (exit $rc, output '$out')"
+	done
+	if clone t1 origin/feature && gm -C "$tmp/t1" merge -q --no-ff --no-edit origin/main >/dev/null 2>&1; then
+		run t1 sh -c 'sh src/validator.sh validate "$1" | sh src/waiver.sh' t1 "$tmp/t1.record"
+		same "T1: errors after the waiver after the merge of main" "record.flag: flag is required" "$out"
+		for t in tests/test_waiver.sh tests/scenario_bulk.sh; do
+			run t1 sh "$t"
+			[ "$rc" -eq 0 ] || fail "T1: $t fails after the merge of main (exit $rc, output '$out')"
+		done
+	else
+		fail "T1: the merge of main into a clone of feature does not exit 0"
+	fi
+
+	# T2: the contract test passes with the merge-base trigger too, and no script outside
+	# tests/ reads SQL.
+	run head sh tests/test_sql_contract.sh
+	[ "$rc" -eq 0 ] || fail "T2: tests/test_sql_contract.sh fails at the head (exit $rc, output '$out')"
+	mkdir "$tmp/t2" && cp -R "$tmp/head/sql" "$tmp/head/tests" "$tmp/t2/" &&
+		git -C "$tmp/head" show "$mb:sql/trg_reread_json.sql" > "$tmp/t2/sql/trg_reread_json.sql" 2>/dev/null
+	run t2 sh tests/test_sql_contract.sh
+	[ "$rc" -eq 0 ] ||
+		fail "T2: tests/test_sql_contract.sh fails with sql/trg_reread_json.sql from the merge-base (exit $rc, output '$out')"
+	run head sh -c "git ls-files '*.sh' | grep -v '^tests/' | xargs grep -lF -e psql -e .sql /dev/null"
+	same "T2: scripts outside tests/ that mention psql or .sql" "" "$out"
+
+	# T3: with record 1's updated date wrong, scenario_dates.sh stops at the first assertion
+	# and the control never runs.
+	mkdir "$tmp/t3" && cp -R "$tmp/head/tests" "$tmp/head/data" "$tmp/t3/" &&
+		awk -F, -v OFS=, '$1 == 1 { $3 = "2026-08-09" } { print }' "$tmp/head/data/dates.csv" > "$tmp/t3/data/dates.csv"
+	run t3 sh tests/scenario_dates.sh
+	[ "$rc" -eq 1 ] && says 'updated date of record 1' && says 2026-08-09 && ! says 'created date of record 1' ||
+		fail "T3: with updated date 2026-08-09, scenario_dates.sh does not exit 1 after the failure of 'updated date of record 1' alone (exit $rc, output '$out')"
+
+	# T4: step_assert_active reads LAST_ROW, which only an earlier scenario in the same
+	# process sets.
+	run head sh tests/run_scenarios.sh scenario_assert_only
+	[ "$rc" -eq 1 ] && has 'run the read step first' ||
+		fail "T4: scenario_assert_only alone does not fail with 'run the read step first' (exit $rc, output '$out')"
+	run head sh tests/run_scenarios.sh scenario_read_active scenario_assert_only
+	[ "$rc" -eq 0 ] ||
+		fail "T4: scenario_assert_only after scenario_read_active fails (exit $rc, output '$out')"
+
+	# T5: scenario_report_read reads as report_reader, a role its skip tag does not name.
+	run head env ENV=qa sh tests/run_scenarios.sh report_read report_audit
+	[ "$rc" -eq 1 ] && has 'accounts file env/qa/accounts.txt has no role report_reader' &&
+		has 'FAIL report_read' && has 'skip scenario_report_audit' ||
+		fail "T5: under ENV=qa report_read does not fail on its accounts file while report_audit is skipped (exit $rc, output '$out')"
+	run head env ENV=dev sh tests/run_scenarios.sh report_read report_audit
+	[ "$rc" -eq 0 ] && ! has 'FAIL report_read' && ! has 'skip scenario_report_audit' ||
+		fail "T5: under ENV=dev report_read and report_audit do not both pass (exit $rc, output '$out')"
+
+	# C1: a missing cache stops the batch; a directory in place of the cache turns every
+	# setting-keyed rule off.
+	printf '4,Edsger,yes,,\n5,Barbara,yes,,\n6,Donald,yes,,\n' > "$tmp/c1.batch"
+	cp "$tmp/head/data/records.csv" "$tmp/c1.csv"
+	run head env RECORDS_FILE="$tmp/c1.csv" SETTINGS_CACHE="$tmp/c1.none" sh src/bulk_import.sh "$tmp/c1.batch"
+	[ "$rc" -eq 1 ] || fail "C1: a batch with no cache file exits $rc, not 1 (output '$out')"
+	cmp -s "$tmp/head/data/records.csv" "$tmp/c1.csv" || fail "C1: a batch with no cache file changed records.csv"
+	[ ! -e "$tmp/c1.csv.stage" ] || fail "C1: a batch with no cache file left its staging file"
+	mkdir "$tmp/c1.cache"
+	run head env RECORDS_FILE="$tmp/c1.csv" SETTINGS_CACHE="$tmp/c1.cache" sh src/bulk_import.sh "$tmp/c1.batch"
+	[ "$rc" -eq 0 ] && [ "$(grep -c -e '^4,Edsger,' -e '^5,Barbara,' -e '^6,Donald,' "$tmp/c1.csv")" = 3 ] ||
+		fail "C1: a batch without offices, with a directory in place of the cache, is not imported (exit $rc, output '$out')"
+
+	# C2: with require_office=no the office_code rule is off at the head; the merge-base,
+	# which turned every rule on, rejects the record.
+	printf 'require_flag=yes\nrequire_office=no\n' > "$tmp/c2.cache"
+	printf '4,Edsger,yes,north,\n' > "$tmp/c2.batch"
+	cp "$tmp/head/data/records.csv" "$tmp/c2.csv"
+	run head env RECORDS_FILE="$tmp/c2.csv" SETTINGS_CACHE="$tmp/c2.cache" sh src/bulk_import.sh "$tmp/c2.batch"
+	[ "$rc" -eq 0 ] && grep -q '^4,Edsger,' "$tmp/c2.csv" ||
+		fail "C2: 4,Edsger,yes,north, is not imported at the head (exit $rc, output '$out')"
+	clone c2 "$mb" && cp "$tmp/c2/data/records.csv" "$tmp/c2mb.csv"
+	run c2 env RECORDS_FILE="$tmp/c2mb.csv" SETTINGS_CACHE="$tmp/c2.cache" sh src/bulk_import.sh "$tmp/c2.batch"
+	[ "$rc" -eq 1 ] && says 'office_code is required' ||
+		fail "C2: at the merge-base 4,Edsger,yes,north, does not exit 1 with 'office_code is required' (exit $rc, output '$out')"
+
+	# C3: step_fetch_record reads the store without APP_TENANT, which returns no rows.
+	run head sh -c '. tests/steps_db.sh && step_fetch_record 1'
+	[ "$rc" -ne 0 ] && [ "$out" = 'expected 1 row, got 0' ] ||
+		fail "C3: step_fetch_record 1 does not fail with 'expected 1 row, got 0' (exit $rc, output '$out')"
+	run head env APP_TENANT=acme sh -c '. tests/steps_db.sh && step_fetch_record 1'
+	[ "$rc" -eq 0 ] && [ "$out" = 'fetched record 1' ] ||
+		fail "C3: with APP_TENANT=acme step_fetch_record 1 does not print 'fetched record 1' (exit $rc, output '$out')"
+
+	# H1: the hrn scenario reads as svc_writer, the account the service writes with.
+	same "H1: svc_writer lines in tests/scenario_hrn_lookup.sh" "3 8" "$(linenos svc_writer tests/scenario_hrn_lookup.sh)"
+	same "H1: svc_writer lines in src/upsert.sh" 7 "$(linenos svc_writer src/upsert.sh)"
+	same "H1: svc_writer lines in env/dev/accounts.txt" 1 "$(linenos svc_writer env/dev/accounts.txt)"
+
+	# H2: step_find_by_hrn doubles quotes and builds the where clause; query_param binds.
+	same "H2: quote doubling lines in tests/steps_db.sh" 59 "$(linenos "''" tests/steps_db.sh)"
+	same "H2: built where clause lines in tests/steps_db.sh" 60 "$(linenos "where hrn = '" tests/steps_db.sh)"
+	sed -n 57,61p "$tmp/head/tests/steps_db.sh" 2>/dev/null | grep -q '^step_find_by_hrn()' ||
+		fail "H2: tests/steps_db.sh lines 57 to 61 do not define step_find_by_hrn"
+	sed -n 25,28p "$tmp/head/tests/steps_db.sh" 2>/dev/null | grep -q '^query_param()' ||
+		fail "H2: tests/steps_db.sh lines 25 to 28 do not define query_param"
+
+	# R1: an install that journaled 003_records_pk.sh runs the renamed script and rebuilds
+	# the key again; an install from before the key change ends with pk: id,type.
+	clone r1 "$mb" && (cd "$tmp/r1" && sh migrate.sh) >/dev/null 2>&1
+	grep -qx 003_records_pk.sh "$tmp/r1/data/applied.txt" 2>/dev/null ||
+		fail "R1: the journal at the merge-base does not hold 003_records_pk.sh"
+	gm -C "$tmp/r1" checkout -q --detach origin/feature 2>/dev/null
+	run r1 sh migrate.sh
+	has 'rebuilt pk' && has 'applied 003_records_pk_and_columns.sh' ||
+		fail "R1: over a journal holding 003_records_pk.sh, migrate.sh at the head does not print 'rebuilt pk' and 'applied 003_records_pk_and_columns.sh' (exit $rc, output '$out')"
+	clone r1old "$init" && (cd "$tmp/r1old" && sh migrate.sh) >/dev/null 2>&1
+	same "R1: key of an install at the initial commit" "pk: id" \
+		"$(grep '^pk:' "$tmp/r1old/data/schema.txt" 2>/dev/null | lines)"
+	gm -C "$tmp/r1old" checkout -q --detach origin/feature 2>/dev/null
+	run r1old sh migrate.sh
+	same "R1: key of that install after migrate.sh at the head" "pk: id,type" \
+		"$(grep '^pk:' "$tmp/r1old/data/schema.txt" 2>/dev/null | lines)"
+
+	# R2: feature and gt-11-lookup each rename f_lookup_ops7.sh, to different names.
+	case "|$renames|" in
+	*"|R073 migrations/f_lookup_ops7.sh migrations/f_lookup_gt12.sh|"*) ;;
+	*) fail "R2: main...feature has no rename R073 of f_lookup_ops7.sh to f_lookup_gt12.sh ('$renames')" ;;
+	esac
+	[ "$renames11" = "R072 migrations/f_lookup_ops7.sh migrations/f_lookup_gt11.sh" ] ||
+		fail "R2: main...gt-11-lookup is not the rename R072 of f_lookup_ops7.sh to f_lookup_gt11.sh ('$renames11')"
+	# Merged in turn into main, the second rename conflicts; with both files kept at their
+	# branch versions, the second script's body is the only lookup definition left.
+	if clone r2 origin/main && gm -C "$tmp/r2" merge -q --no-ff --no-edit origin/gt-11-lookup >/dev/null 2>&1; then
+		gm -C "$tmp/r2" merge -q --no-ff --no-edit origin/feature >/dev/null 2>&1
+		rc=$?
+		unmerged=$(git -C "$tmp/r2" diff --name-only --diff-filter=U 2>/dev/null)
+		[ "$rc" -ne 0 ] && printf '%s\n' "$unmerged" | grep -qx migrations/f_lookup_gt11.sh &&
+			printf '%s\n' "$unmerged" | grep -qx migrations/f_lookup_gt12.sh ||
+			fail "R2: the merge of feature after gt-11-lookup does not stop with migrations/f_lookup_gt11.sh and migrations/f_lookup_gt12.sh unmerged (exit $rc, unmerged '$(printf '%s\n' "$unmerged" | lines)')"
+		if git -C "$tmp/r2" show origin/gt-11-lookup:migrations/f_lookup_gt11.sh > "$tmp/r2/migrations/f_lookup_gt11.sh" 2>/dev/null &&
+			git -C "$tmp/r2" show origin/feature:migrations/f_lookup_gt12.sh > "$tmp/r2/migrations/f_lookup_gt12.sh" 2>/dev/null; then
+			(cd "$tmp/r2" && FUNCTIONS_FILE=$tmp/r2.functions && export FUNCTIONS_FILE &&
+				sh migrations/f_lookup_gt11.sh && sh migrations/f_lookup_gt12.sh) >/dev/null 2>&1
+			same "R2: lookup lines after f_lookup_gt11.sh then f_lookup_gt12.sh" \
+				"lookup: select id from audit where lower(hrn) = lower(?)" \
+				"$(grep '^lookup:' "$tmp/r2.functions" 2>/dev/null | lines)"
+		else
+			fail "R2: migrations/f_lookup_gt11.sh on gt-11-lookup or migrations/f_lookup_gt12.sh on feature is missing"
+		fi
+	else
+		fail "R2: the merge of gt-11-lookup into a clone of main does not exit 0"
+	fi
+
+	# R3: f_rank_gt13.sh got its score guard after the rename was deployed; over the journal
+	# in PR-1's thread, migrate.sh at the head skips it.
+	r3old=$(git -C "$tmp/head" show face5b6264f805300d4ede99ba1295f2d5df39b0:migrations/f_rank_gt13.sh 2>/dev/null)
+	[ -n "$r3old" ] && ! printf '%s\n' "$r3old" | grep -q 'score is not null' ||
+		fail "R3: f_rank_gt13.sh at face5b6 is missing or has 'score is not null'"
+	same "R3: 'score is not null' lines in f_rank_gt13.sh at the head" 1 \
+		"$(grep -c 'score is not null' "$tmp/head/migrations/f_rank_gt13.sh" 2>/dev/null)"
+	clone r3 face5b6264f805300d4ede99ba1295f2d5df39b0 && (cd "$tmp/r3" && sh migrate.sh) >/dev/null 2>&1
+	same "R3: journal of a fresh install at face5b6, as PR-1's thread lists it" \
+		"001_create_schema.sh|002_records_columns.sh|003_records_pk.sh|f_audit_ops8.sh|f_lookup_ops7.sh|f_rank_gt13.sh" \
+		"$(lines < "$tmp/r3/data/applied.txt" 2>/dev/null)"
+	printf '%s\n' 001_create_schema.sh 002_records_columns.sh 003_records_pk.sh f_audit_ops8.sh \
+		f_lookup_ops7.sh f_rank_gt13.sh > "$tmp/r3/data/applied.txt"
+	gm -C "$tmp/r3" checkout -q --detach origin/feature 2>/dev/null
+	run r3 sh migrate.sh
+	[ "$rc" -eq 0 ] && ! says 'defined rank' ||
+		fail "R3: over the journal in PR-1's thread, migrate.sh at the head fails or prints 'defined rank' (exit $rc, output '$out')"
+
+	# B2: d2cb15c renames and edits the audit script in one commit; git follows it.
+	same "B2: rename in d2cb15c" "R061 migrations/f_audit_ops8.sh migrations/f_audit_gt13.sh" \
+		"$(git -C "$tmp/head" show -M --name-status --format= d2cb15c1d3c6ad4b94bbaef8bd6c60a63752a12e 2>/dev/null | tr '\t' ' ' | lines)"
+	same "B2: git log --follow of migrations/f_audit_gt13.sh" "d2cb15c1d3c6ad4b94bbaef8bd6c60a63752a12e $init" \
+		"$(git -C "$tmp/head" log --follow --format=%H HEAD -- migrations/f_audit_gt13.sh 2>/dev/null | tr '\n' ' ' | sed 's/ $//')"
+
+	# B1: stacked sits on the initial commit with target's old GT-14 commits; a merge of
+	# target conflicts in tests/steps.sh, and target's fetch_row breaks both new scenarios.
+	same "B1: files in target...stacked" "tests/scenarios_fetch/by_id.sh tests/scenarios_fetch/by_status.sh tests/steps.sh" \
+		"$(git -C "$A" diff --name-only target...stacked 2>/dev/null | tr '\n' ' ' | sed 's/ $//')"
+	if clone b1 origin/stacked; then
+		same "B1: merge-base of stacked and target" $init "$(git -C "$tmp/b1" merge-base HEAD origin/target 2>/dev/null)"
+		for s in by_id by_status; do
+			run b1 sh "tests/scenarios_fetch/$s.sh"
+			[ "$rc" -eq 0 ] || fail "B1: tests/scenarios_fetch/$s.sh fails at the stacked head (exit $rc, output '$out')"
+		done
+		gm -C "$tmp/b1" merge -q --no-ff --no-edit origin/target >/dev/null 2>&1
+		rc=$?
+		unmerged=$(git -C "$tmp/b1" diff --name-only --diff-filter=U 2>/dev/null | lines)
+		[ "$rc" -ne 0 ] && [ "$unmerged" = tests/steps.sh ] ||
+			fail "B1: the merge of target into stacked does not stop with tests/steps.sh unmerged (exit $rc, unmerged '$unmerged')"
+		gm -C "$tmp/b1" checkout -q --theirs tests/steps.sh 2>/dev/null
+		for s in by_id by_status; do
+			run b1 sh "tests/scenarios_fetch/$s.sh"
+			[ "$rc" -eq 1 ] ||
+				fail "B1: tests/scenarios_fetch/$s.sh with target's tests/steps.sh exits $rc, not 1 (output '$out')"
+		done
+	else
+		fail "B1: a clone of svc at stacked failed"
+	fi
+
+	# Isolation: every check ran in a temp copy, so svc is as built, ignored files included.
+	heads "isolation: svc "
+	same "isolation: svc status" "" "$(git -C "$A" status --porcelain --ignored 2>/dev/null | lines)"
 
 	finish
 	exit 0

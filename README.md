@@ -22,7 +22,8 @@ cca is the pair of [ccl](https://github.com/vibecodedapps-official/claude-codex-
 built, across units.
 
 Built against Claude Code 2.1.284. The static checks, fixture builds, and one budget-0 run
-have passed; no full multi-agent audit has run yet (see `docs/acceptance.md`).
+have passed, and `docs/acceptance.md` records four full multi-agent audit runs on the
+`patterns` and `ground-truth` fixtures, under Claude Code 2.1.287.
 
 ## Requirements
 
@@ -680,9 +681,10 @@ Its checks are:
 
 - `sh tests/lint.sh`: checks the static parts (command and agent frontmatter, no agent
   with Edit or NotebookEdit, every stage file the skill names exists).
-- `sh tests/fixture/build.sh <solo|solo-dirty|full|tokens|patterns>`: builds a
-  throwaway fixture in a temp directory and prints its manifest path. Expected outcomes
-  are listed in `tests/fixture/expected.md`.
+- `sh tests/fixture/build.sh <solo|solo-dirty|full|tokens|patterns|ground-truth>`:
+  builds a throwaway fixture in a temp directory and prints its manifest path. Expected
+  outcomes are listed in `tests/fixture/expected.md`. `ground-truth` plants the 20
+  confirmed review findings of `tests/fixture/ground-truth-cases.md`.
 - `sh tests/fixture/verify.sh <manifest path> [name]`: checks a built fixture against
   the key literals in `tests/fixture/expected.md` and prints one line per mismatch. CI
   runs it after each build.
@@ -702,7 +704,7 @@ Its checks are:
   output and exit status with literals.
 
 CI runs a `checks` job (lint, then a fixture build and verify for `solo`, `solo-dirty`,
-`full`, `tokens`, and `patterns`) and a `scripts` job that runs the readonly, handoff, work-items,
+`full`, `tokens`, `patterns`, and `ground-truth`) and a `scripts` job that runs the readonly, handoff, work-items,
 working-tree, live, memory, and ledger tests on Linux, macOS, and Windows (under Git
 Bash). On Linux the default `awk` is gawk, and a second step runs the awk-using tests
 (handoff, readonly, live, memory, working-tree, and ledger) with mawk first on `PATH` as

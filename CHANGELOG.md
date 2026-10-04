@@ -1,5 +1,14 @@
 # Changelog
 
+## Unreleased
+
+### Added
+
+- The `ground-truth` fixture: 20 confirmed findings from a hand review, de-identified
+  in `tests/fixture/ground-truth-cases.md`, planted in one repo across two bundles, with
+  decoys and checks that show each defect is real (#21). Detection is recorded per audit
+  run in `docs/acceptance.md`.
+
 ## 0.6.0 - 2026-10-03
 
 Widens what an auditor checks: weak tests, producers changed on the base, edits to
