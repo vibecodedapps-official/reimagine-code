@@ -179,9 +179,9 @@ name a plugin are rerun under the new names and recorded here.
     also installs `recode`; setup passes; the ask prints Codex's answer; `codex plugin
     list` shows both Codex plugins. Run from the private repository after tagging, then
     once per host from the public one. Covers R3 and R4. Rerun at each release. Run on
-    macOS and Windows 2026-10-03 for 0.1.0, and on macOS 2026-10-04 for 0.1.1, from the
-    private repository and then the public one; see the records. Not yet run on Windows
-    from the public repository.
+    macOS and Windows 2026-10-03 for 0.1.0, from the private repository. Run
+    2026-10-04 for 0.1.1 on macOS, from the private repository and then the public one,
+    and on Windows from the public one; see the records.
 19. **Windows.** Setup: the Windows 11 work machine with both CLIs from npm, the suite
     installed as in item 18, and a test repository checked out under a path that holds
     a space. Command: `/recode:ask` and `/recode:implement` with a one-line change;
@@ -539,8 +539,9 @@ runs were made by a session on the work machine and reported here.
   `status: ok` in an interactive session in default mode.
 - **Known, not fixed: the ask's request-file Write on Windows.** In headless runs, the
   Write was refused as sensitive in default and acceptEdits modes. In auto mode the
-  classifier gave no verdict, in 4 of 4 runs, one of them interactive. Not tried: the
-  Edit allow rule that `/recode:setup` prints.
+  classifier gave no verdict, in 4 of 4 runs, one of them interactive. Corrected
+  2026-10-04: these runs did try the Edit allow rule that `/recode:setup` prints, and
+  it did not help; see the Windows record of 2026-10-04.
 - **Item 19 passed, after the fixes below.**
   - Implement, called through a test skill, edited `math.mjs`. Codex reported "Shell
     startup failed", the limit of Store PowerShell that the bridge's README describes.
@@ -590,4 +591,46 @@ e0a27de, the merge of PR 8.
   then read `main` at e0a27de. In `claude-m6` the catalog was added again, and the loop
   alone installed with `recode`, both 0.1.1. In `codex-m6` the marketplace was added
   again, and `recode` 0.1.1 installed.
-- **Not yet run.** Item 18 on Windows from the public repository.
+- **Default mode, with setup's Edit rule.** With that rule in the M4 profile's
+  `settings.json`, a headless `/recode:ask` in default mode was refused: "Claude
+  requested permissions to edit
+  /Users/joe/.cache/recode-acceptance/claude/plugins/data/recode-reimagine-code/request-b1ea5887-4167-40d5-9a99-3aebbbb390d0.txt
+  which is a sensitive file." The script, called in the same turn, then refused with
+  "no request file". So on macOS too, the rule does not get the Write past the
+  sensitive-file check. The settings were restored afterward.
+
+### 2026-10-04: M6, Windows, the public repository
+
+Windows 11 Pro 10.0.26200, Claude Code 2.1.283 and codex-cli 0.157.1 from npm, Node
+26.4.0, Git 2.55.0.windows.5. The scratch profiles were `claude-m6` and `codex-m6`. The
+runs were made by a session on the work machine and reported here.
+
+- **Item 18 passed on Windows from the public repository.** Git credentials were turned
+  off with `GIT_CONFIG_NOSYSTEM=1`, `GIT_CONFIG_GLOBAL` set to an empty file,
+  `GIT_TERMINAL_PROMPT=0`, `GCM_INTERACTIVE=never`, and `GH_CONFIG_DIR` set to an empty
+  folder, with `GIT_ASKPASS` and any GitHub token removed. `git config --list` printed
+  nothing, and `git ls-remote` read `main` at 07dc98e and the 0.1.1 tags at e0a27de.
+  - In `claude-m6`, the plugins and the local catalog were removed, and the old plugin
+    cache was moved aside. With the catalog added from GitHub, installing the loop alone
+    printed "(+ 1 dependency: recode)". `recode-loop` 0.1.1, `recode` 0.1.1, and
+    `repo-docs` 0.1.3 installed, each recording commit 07dc98e and a GitHub source.
+    07dc98e is the docs-only merge of PR 9, with no plugin change since e0a27de.
+  - In `codex-m6`, the plugins and the local marketplace were removed, and the
+    marketplace was added from GitHub at 07dc98e. `recode` 0.1.1 and `repo-docs` 0.1.3
+    installed, and `codex plugin list` showed both as enabled.
+  - Headless `/recode:setup` passed in 12 s: codex-cli 0.157.1, the `unelevated`
+    sandbox, the ChatGPT login, `workspace-write` proven, and no old plugins. `codex-m6`
+    was not a new Codex home, so this run did not meet the slow first sandboxed command.
+    The copy of the Codex login was deleted afterward.
+  - The ask was not run from the public install, as on macOS.
+- **The Edit allow rule, tried.** At 03:14 UTC on 2026-10-04 with recode 0.1.0, with
+  setup's rule in `settings.json`, a headless ask in default mode was still refused:
+  "Claude requested permissions to edit ...\request-ce2a146e-....txt which is a
+  sensitive file." With 0.1.1 the same day, a plain Write into that folder got the same
+  refusal with the same rule present. In a control on a folder that is not sensitive,
+  the Write was refused with no rule ("but you haven't granted it yet") and created the
+  file with a rule of the same `//c/...` form. So the rule form matches on Windows, and
+  the sensitive-file check refuses anyway. The two data-folder runs read the rule from
+  `settings.json` and the control from `--settings`; the different wording of the two
+  refusals points to the sensitive-file check, not the rule source. Every refused run
+  exited 0, so each was judged by the tool's message and whether the file existed.
