@@ -22,7 +22,8 @@ cca is the pair of [ccl](https://github.com/vibecodedapps-official/claude-codex-
 built, across units.
 
 Built against Claude Code 2.1.284. The static checks, fixture builds, and one budget-0 run
-have passed; no full multi-agent audit has run yet (see `docs/acceptance.md`).
+have passed, and `docs/acceptance.md` records four full multi-agent audit runs on the
+`patterns` and `ground-truth` fixtures, under Claude Code 2.1.287.
 
 ## Requirements
 
