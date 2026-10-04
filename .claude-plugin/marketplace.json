@@ -7,6 +7,10 @@
     "description": "Claude Code and Codex plugins that work together: a Codex bridge, a plan-and-run loop, code review skills, and repo instruction docs.",
     "version": "0.1.3"
   },
+  "renames": {
+    "recode": "ccx",
+    "recode-loop": "ccx-loop"
+  },
   "plugins": [
     {
       "name": "ccx",

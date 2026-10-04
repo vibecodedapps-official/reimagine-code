@@ -69,6 +69,14 @@ test('lint rejects a catalog metadata.version other than the suite version', () 
   (d) => editJson(d, '.claude-plugin/marketplace.json', (j) => { j.metadata.version = '9.9.9'; }),
   '.claude-plugin/marketplace.json: metadata.version 9.9.9 differs from the suite version'));
 
+test('lint rejects a catalog without the renames map', () => fails(
+  (d) => editJson(d, '.claude-plugin/marketplace.json', (j) => { delete j.renames; }),
+  '.claude-plugin/marketplace.json: renames must be exactly {"recode":"ccx","recode-loop":"ccx-loop"}', 'found null'));
+
+test('lint rejects a renames map that drops the loop', () => fails(
+  (d) => editJson(d, '.claude-plugin/marketplace.json', (j) => { delete j.renames['recode-loop']; }),
+  'found {"recode":"ccx"}'));
+
 test('lint rejects a catalog source that does not exist, and the plugin it no longer lists', () => fails(
   (d) => editJson(d, '.claude-plugin/marketplace.json', (j) => { j.plugins.find((e) => e.name === 'ccx').source = './plugins/nope'; }),
   '.claude-plugin/marketplace.json: ccx: source ./plugins/nope does not exist',

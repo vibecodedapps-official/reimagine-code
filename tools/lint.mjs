@@ -80,6 +80,9 @@ if (market) {
   if (market.name !== "reimagine-code") fail(`.claude-plugin/marketplace.json: name must be reimagine-code, not ${market.name}`);
   if (!market.metadata?.description) fail(".claude-plugin/marketplace.json: metadata.description is missing, and claude plugin validate --strict requires it");
   if (market.metadata?.version !== pkg?.version) fail(`.claude-plugin/marketplace.json: metadata.version ${market.metadata?.version} differs from the suite version ${pkg?.version}`);
+  if (!isDeepStrictEqual(market.renames, { recode: "ccx", "recode-loop": "ccx-loop" })) {
+    fail(`.claude-plugin/marketplace.json: renames must be exactly ${JSON.stringify({ recode: "ccx", "recode-loop": "ccx-loop" })}, which moves 0.1.x installs and settings to the new names; found ${JSON.stringify(market.renames ?? null)}`);
+  }
   const entries = market.plugins ?? [];
   for (const e of entries) {
     const src = String(e.source ?? "").replace(/^\.\//, "");
