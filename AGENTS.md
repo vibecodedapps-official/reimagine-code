@@ -1,7 +1,7 @@
 # AGENTS.md
 
 reimagine-code is one repository that publishes Claude Code and Codex plugins: the
-`recode` bridge, the `recode-loop` loop, the Codex `recode` review skills, and repo-docs.
+`ccx` bridge, the `ccx-loop` loop, the Codex `ccx` review skills, and repo-docs.
 It is mid-migration from four source repos toward v0.1.0.
 
 ## Commands
@@ -27,7 +27,7 @@ It is mid-migration from four source repos toward v0.1.0.
 - docs/architecture.md: the layout, components, house rules, versions, and migration. Read before changing structure, a manifest, or a catalog.
 - docs/implementation-plan-v0.1.0.md: the milestones and their checks. Read before starting or finishing a milestone.
 - docs/decisions.md: decisions with their evidence. Read before reversing a design choice.
-- docs/rename-map.md: every file move and string rename from the source repos. Read before a move or rename commit.
+- docs/rename-map.md: every file move and string rename from the source repos (sections 1 to 4) and from the recode to ccx rename (section 5). Read before a move or rename commit.
 - docs/acceptance.md: the hand-run acceptance items and the record of runs. Read before running, adding, or recording an acceptance check.
 - plugins/repo-docs/AGENTS.md: the repo-docs plugin's commands, release steps, and hard constraints. Read before editing under plugins/repo-docs/.
 - plugins/repo-docs/skills/repo-docs/SKILL.md: the skill itself, with the principle, the hub and spoke model, what each platform loads, the four hub sections, and the two modes. Read before changing any file under plugins/repo-docs/skills/.

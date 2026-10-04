@@ -9,16 +9,16 @@ import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import {
   defaultOptions, diff, imports, inspect, loadTexts, main, parseOptions, planTarget, removeBlock, render, targets,
-} from '../../plugins/recode/scripts/rules.mjs';
+} from '../../plugins/ccx/scripts/rules.mjs';
 
-const SCRIPT = fileURLToPath(new URL('../../plugins/recode/scripts/rules.mjs', import.meta.url));
+const SCRIPT = fileURLToPath(new URL('../../plugins/ccx/scripts/rules.mjs', import.meta.url));
 // The bytes EF BB BF (a UTF-8 byte order mark) and FF (never valid UTF-8), as latin1 reads them.
 const BOM = '\u00ef\u00bb\u00bf';
 const FF = '\u00ff';
 const TEXTS = { 'core.md': 'C1\nC2\n', 'windows-claude.md': 'WC\n', 'windows-codex.md': 'WX\n', 'writing-codex.md': 'WR\n' };
-const END = '<!-- recode:house-rules end -->';
+const END = '<!-- ccx:house-rules end -->';
 const begin = (options, join, digest, version = '0.0.1') =>
-  `<!-- recode:house-rules begin version=${version} options=${options} join=${join} digest=${digest} -->`;
+  `<!-- ccx:house-rules begin version=${version} options=${options} join=${join} digest=${digest} -->`;
 const plan = (text, more = {}) => planTarget({ target: 'claude', text, version: '9.9.9', texts: TEXTS, platform: 'linux', ...more });
 // The current block for core on LF, as this file's fake texts render it.
 const CORE_LF = `${begin('core', 'blank', 'cb477dddc15de845', '9.9.9')}\nC1\nC2\n${END}\n`;
@@ -74,9 +74,9 @@ test('R36, R40: a file without a final newline gets join=newline, a line break a
   assert.equal(plan('mine').after, `mine\n\n${begin('core', 'newline', 'cb477dddc15de845', '9.9.9')}\nC1\nC2\n${END}\n`);
 });
 
-test('R40: a CRLF file gets a CRLF block, with the digest of the body as written', () => {
+test('R40: a CRLF file gets a CRLF block, with the digest of the body in LF', () => {
   assert.equal(plan('mine\r\n').after,
-    `mine\r\n\r\n${begin('core', 'blank', 'd9ccd27017096bcc', '9.9.9')}\r\nC1\r\nC2\r\n${END}\r\n`);
+    `mine\r\n\r\n${begin('core', 'blank', 'cb477dddc15de845', '9.9.9')}\r\nC1\r\nC2\r\n${END}\r\n`);
 });
 
 test('R40: a byte order mark and a byte that is not UTF-8 are kept, as latin1 characters', () => {
@@ -93,10 +93,34 @@ test('R37: absent, current, stale, edited and declined each plan as the table sa
   assert.equal(stale.declined, false);
   assert.deepEqual(plan(`mine\n\n${begin('core', 'blank', 'cb477dddc15de845')}\nC1\nEDIT\n${END}\n`), {
     state: 'edited', after: null, options: ['core'], edits: ['C1\nC2\n', 'C1\nEDIT\n'],
-    note: 'the block was edited by hand; move your lines below the end marker, then run /recode:rules again',
+    note: 'the block was edited by hand; move your lines below the end marker, then run /ccx:rules again',
   });
   assert.equal(plan('mine\n', { declined: ['cb477dddc15de845'] }).declined, true);
   assert.equal(plan(`${begin('core', 'none', 'be1ba97540b68c56')}\nC1\nOLD\n${END}\n`, { declined: ['cb477dddc15de845'] }).declined, true);
+});
+
+test('R37: a block reads the same after its file changes line ending, and a legacy CRLF digest still reads', () => {
+  const lf = `mine\n\n${CORE_LF}`;
+  const crlf = `mine\r\n\r\n${begin('core', 'blank', 'cb477dddc15de845', '9.9.9')}\r\nC1\r\nC2\r\n${END}\r\n`;
+  assert.equal(plan(lf).state, 'current');
+  assert.equal(plan(crlf).state, 'current');
+  assert.equal(plan(crlf.replace(/\r\n/g, '\n')).state, 'current');
+  assert.equal(plan(lf.replace(/\n/g, '\r\n')).state, 'current');
+  // 0.1.3 took the digest over the CRLF body.
+  const legacy = `mine\r\n\r\n${begin('core', 'blank', 'd9ccd27017096bcc')}\r\nC1\r\nC2\r\n${END}\r\n`;
+  assert.equal(plan(legacy).state, 'current');
+  assert.equal(plan(legacy.replace(/\r\n/g, '\n')).state, 'current');
+  const legacyStale = `mine\r\n\r\n${begin('core', 'blank', '38b8fa30cf40c6eb')}\r\nC1\r\nOLD\r\n${END}\r\n`;
+  assert.equal(plan(legacyStale).state, 'stale');
+  assert.equal(plan(legacyStale.replace(/\r\n/g, '\n')).state, 'stale');
+  assert.equal(plan(crlf.replace('C2', 'EDIT')).state, 'edited');
+  assert.equal(plan(crlf.replace('C2', 'EDIT').replace(/\r\n/g, '\n')).state, 'edited');
+});
+
+test('R43: a decline recorded over a CRLF body still matches, and the digest recorded now is the LF one', () => {
+  assert.equal(plan('mine\r\n', { declined: ['d9ccd27017096bcc'] }).declined, true);
+  assert.equal(plan('mine\r\n', { declined: ['cb477dddc15de845'] }).declined, true);
+  assert.equal(plan('mine\r\n').digest, 'cb477dddc15de845');
 });
 
 test('R37: a version change alone, with the same rules, is current', () => {
@@ -110,7 +134,7 @@ test('R37, R40: a stale block in the middle is replaced in place, and the text b
 
 test('R40: a stale CRLF block stays CRLF', () => {
   const p = plan(`mine\r\n\r\n${begin('core', 'blank', '38b8fa30cf40c6eb')}\r\nC1\r\nOLD\r\n${END}\r\n`);
-  assert.equal(p.after, `mine\r\n\r\n${begin('core', 'blank', 'd9ccd27017096bcc', '9.9.9')}\r\nC1\r\nC2\r\n${END}\r\n`);
+  assert.equal(p.after, `mine\r\n\r\n${begin('core', 'blank', 'cb477dddc15de845', '9.9.9')}\r\nC1\r\nC2\r\n${END}\r\n`);
 });
 
 test('R40: an end marker with no final newline is replaced without adding one', () => {
@@ -125,7 +149,7 @@ test('R37: each malformed shape is reported with its line numbers and writes not
     [`a\n${END}\n`, '0 begin and 1 end markers, at lines 2'],
     [`${b}\n${b}\nC1\n${END}\n`, '2 begin and 1 end markers, at lines 1, 2, 4'],
     [`${END}\nC1\n${b}\n`, 'the end marker comes before the begin marker, at lines 1, 3'],
-    ['<!-- recode:house-rules begin version=1 options=core -->\nC1\n' + `${END}\n`, 'the begin marker cannot be read, at lines 1, 3'],
+    ['<!-- ccx:house-rules begin version=1 options=core -->\nC1\n' + `${END}\n`, 'the begin marker cannot be read, at lines 1, 3'],
     [`${begin('core,bogus', 'none', 'cb477dddc15de845')}\nC1\n${END}\n`, 'the begin marker cannot be read, at lines 1, 3'],
   ];
   for (const [text, note] of cases) {
@@ -137,7 +161,7 @@ test('R37: each malformed shape is reported with its line numbers and writes not
 test('inspect finds a CRLF block by its byte offsets', () => {
   const text = `ab\r\n${begin('core', 'none', 'cb477dddc15de845')}\r\nC1\r\n${END}\r\nz`;
   const found = inspect(text);
-  assert.deepEqual(found, { kind: 'block', start: 4, bodyStart: 100, bodyEnd: 104, end: 137, version: '0.0.1', options: ['core'], join: 'none', digest: 'cb477dddc15de845' });
+  assert.deepEqual(found, { kind: 'block', start: 4, bodyStart: 97, bodyEnd: 101, end: 131, version: '0.0.1', options: ['core'], join: 'none', digest: 'cb477dddc15de845', legacy: false });
   assert.equal(text.slice(found.bodyStart, found.bodyEnd), 'C1\r\n');
 });
 
@@ -153,6 +177,38 @@ test('R42: remove takes the block and the bytes of its join, for each join value
   const middle = `top\n\n${b('blank')}below\n`;
   assert.deepEqual(plan(middle, { remove: true }), { state: 'remove', after: 'top\nbelow\n', options: ['core'] });
   assert.deepEqual(plan('mine\n', { remove: true }), { state: 'absent', after: null, note: 'there is no block to remove' });
+});
+
+// A block as 0.1.x wrote it, under the old marker.
+const OLD = (text) => text.replace(/ccx:house-rules/g, 'recode:house-rules');
+
+test('R42: remove takes out a block under the old marker, with the bytes of its join', () => {
+  const old = OLD(`${begin('core', 'blank', 'cb477dddc15de845')}\nC1\nC2\n${END}\n`);
+  assert.equal(old, '<!-- recode:house-rules begin version=0.0.1 options=core join=blank digest=cb477dddc15de845 -->\nC1\nC2\n<!-- recode:house-rules end -->\n');
+  assert.equal(inspect(`mine\n\n${old}`).legacy, true);
+  assert.equal(inspect(CORE_LF).legacy, false);
+  assert.deepEqual(plan(`mine\n\n${old}`, { remove: true }), { state: 'remove', after: 'mine\n', options: ['core'] });
+  assert.equal(plan(`mine\r\n\r\n${old.replace(/\n/g, '\r\n')}`, { remove: true }).after, 'mine\r\n');
+});
+
+test('R37: a current block under the old marker is stale, and its rewrite carries the new marker', () => {
+  const old = OLD(`${begin('core', 'blank', 'cb477dddc15de845')}\nC1\nC2\n${END}\n`);
+  const p = plan(`mine\n\n${old}`);
+  assert.equal(p.state, 'stale');
+  assert.equal(p.after, `mine\n\n${CORE_LF}`);
+  assert.equal(p.digest, 'cb477dddc15de845');
+  assert.equal(plan(`mine\n\n${CORE_LF}`).state, 'current');
+  assert.equal(plan(`mine\n\n${old.replace('C2', 'EDIT')}`).state, 'edited');
+});
+
+test('R37: an old block and a new block in one file are malformed, and so are mixed begin and end markers', () => {
+  const old = OLD(`${begin('core', 'none', 'cb477dddc15de845')}\nC1\nC2\n${END}\n`);
+  const fresh = `${begin('core', 'none', 'cb477dddc15de845')}\nC1\nC2\n${END}\n`;
+  const note = '2 begin and 2 end markers, at lines 1, 4, 5, 8';
+  assert.deepEqual(plan(old + fresh), { state: 'malformed', after: null, note });
+  assert.deepEqual(plan(old + fresh, { remove: true }), { state: 'malformed', after: null, note });
+  const mixed = `${begin('core', 'none', 'cb477dddc15de845')}\nC1\nC2\n<!-- recode:house-rules end -->\n`;
+  assert.deepEqual(plan(mixed), { state: 'malformed', after: null, note: 'the begin and end markers carry different names, at lines 1, 4' });
 });
 
 test('R42: install then remove gives back the original bytes for LF, CRLF, BOM and no final newline', () => {
@@ -181,7 +237,7 @@ const SHIPPED = loadTexts();
 
 function sandbox(fn, { codex = true } = {}) {
   return async () => {
-    const root = mkdtempSync(join(tmpdir(), 'recode-rules-'));
+    const root = mkdtempSync(join(tmpdir(), 'ccx-rules-'));
     const s = { root, claudeDir: join(root, 'claude'), codexDir: join(root, 'codex'), data: join(root, 'data'), home: join(root, 'home') };
     s.claude = join(s.claudeDir, 'CLAUDE.md');
     s.codex = join(s.codexDir, 'AGENTS.md');
@@ -207,8 +263,8 @@ test('R33: with no Codex home, the Codex target is skipped and nothing is create
   const out = s.run('plan');
   assert.deepEqual(out.slice(-3), [`target: codex ${s.codex}`,
     `state: skipped; there is no Codex home at ${s.codexDir}, so nothing is written there`, 'change: none']);
-  assert.deepEqual(s.run('apply', ['claude']), [`recode: wrote ${s.claude}`]);
-  assert.throws(() => s.run('apply', ['codex']), { message: 'there is no planned change for codex; run /recode:rules again' });
+  assert.deepEqual(s.run('apply', ['claude']), [`ccx: wrote ${s.claude}`]);
+  assert.throws(() => s.run('apply', ['codex']), { message: 'there is no planned change for codex; run /ccx:rules again' });
   assert.equal(existsSync(s.codexDir), false);
   assert.deepEqual(readdirSync(s.root).sort(), ['claude', 'data', 'home']);
 }, { codex: false }));
@@ -245,7 +301,7 @@ test('R35, R46: the writing option adds the shipped Writing section to the Codex
   assert.equal(codexBody, `${SHIPPED['core.md']}\n${SHIPPED['writing-codex.md']}${END}\n`);
   assert.equal(bytes(s.claude).split('\n').slice(1).join('\n'), `${SHIPPED['core.md']}${END}\n`);
   assert.match(bytes(s.codex).split('\n')[0],
-    /^<!-- recode:house-rules begin version=0\.1\.3 options=core,writing join=none digest=[0-9a-f]{16} -->$/);
+    /^<!-- ccx:house-rules begin version=0\.2\.0 options=core,writing join=none digest=[0-9a-f]{16} -->$/);
 }));
 
 test('R37: plan writes nothing for current, edited and malformed targets', sandbox((s) => {
@@ -260,7 +316,7 @@ test('R37: plan writes nothing for current, edited and malformed targets', sandb
   put(s.claude, bytes(s.claude).replace('## Working', '## Working (mine)'));
   assert.equal(s.run('status')[0], `claude: edited ${s.claude} options=core`);
   const edited = s.run('plan');
-  assert.ok(edited.includes('state: edited; the block was edited by hand; move your lines below the end marker, then run /recode:rules again'));
+  assert.ok(edited.includes('state: edited; the block was edited by hand; move your lines below the end marker, then run /ccx:rules again'));
   const shown = edited.join('\n');
   assert.ok(shown.includes(`--- the rules this plugin would write\n+++ the block in ${s.claude}\n@@ line `));
   assert.ok(shown.includes('\n-## Working\n+## Working (mine)\n'));
@@ -272,17 +328,17 @@ test('R39: apply refuses when the target changed after the plan, and writes noth
   s.run('plan');
   put(s.claude, 'mine, changed\n');
   assert.throws(() => s.run('apply', ['claude']),
-    { message: `${s.claude} changed after the diff was shown, so nothing was written; run /recode:rules again` });
+    { message: `${s.claude} changed after the diff was shown, so nothing was written; run /ccx:rules again` });
   assert.equal(bytes(s.claude), 'mine, changed\n');
   assert.deepEqual(readdirSync(s.claudeDir), ['CLAUDE.md']);
-  assert.throws(() => s.run('apply', ['bogus']), { message: 'there is no planned change for bogus; run /recode:rules again' });
+  assert.throws(() => s.run('apply', ['bogus']), { message: 'there is no planned change for bogus; run /ccx:rules again' });
 }));
 
 test('R39: a file created after the plan, where none was, is a change too', sandbox((s) => {
   s.run('plan');
   put(s.claude, 'new\n');
   assert.throws(() => s.run('apply', ['claude']),
-    { message: `${s.claude} changed after the diff was shown, so nothing was written; run /recode:rules again` });
+    { message: `${s.claude} changed after the diff was shown, so nothing was written; run /ccx:rules again` });
   assert.equal(bytes(s.claude), 'new\n');
 }));
 
@@ -290,33 +346,33 @@ test('R41: an existing file is backed up with the time in its name, and no tempo
   put(s.claude, 'mine\n');
   s.run('plan');
   assert.deepEqual(s.run('apply', ['claude']),
-    [`recode: wrote ${s.claude}; the earlier content is in ${s.claude}.recode-backup-20261003120000`]);
-  assert.deepEqual(readdirSync(s.claudeDir).sort(), ['CLAUDE.md', 'CLAUDE.md.recode-backup-20261003120000']);
-  assert.equal(bytes(`${s.claude}.recode-backup-20261003120000`), 'mine\n');
-  assert.ok(bytes(s.claude).startsWith('mine\n\n<!-- recode:house-rules begin version=0.1.3 options=core join=blank digest='));
+    [`ccx: wrote ${s.claude}; the earlier content is in ${s.claude}.ccx-backup-20261003120000`]);
+  assert.deepEqual(readdirSync(s.claudeDir).sort(), ['CLAUDE.md', 'CLAUDE.md.ccx-backup-20261003120000']);
+  assert.equal(bytes(`${s.claude}.ccx-backup-20261003120000`), 'mine\n');
+  assert.ok(bytes(s.claude).startsWith('mine\n\n<!-- ccx:house-rules begin version=0.2.0 options=core join=blank digest='));
   assert.deepEqual(s.state().created, {});
   assert.deepEqual(readdirSync(s.data).sort(), ['rules-plan.json', 'rules-state.json']);
 }));
 
 test('R41: a backup that already exists is never overwritten, and nothing is written', sandbox((s) => {
   put(s.claude, 'mine\n');
-  put(`${s.claude}.recode-backup-20261003120000`, 'older backup\n');
+  put(`${s.claude}.ccx-backup-20261003120000`, 'older backup\n');
   s.run('plan');
   assert.throws(() => s.run('apply', ['claude']),
-    { message: `could not back up ${s.claude} to ${s.claude}.recode-backup-20261003120000 (EEXIST); nothing was written` });
+    { message: `could not back up ${s.claude} to ${s.claude}.ccx-backup-20261003120000 (EEXIST); nothing was written` });
   assert.equal(bytes(s.claude), 'mine\n');
-  assert.equal(bytes(`${s.claude}.recode-backup-20261003120000`), 'older backup\n');
+  assert.equal(bytes(`${s.claude}.ccx-backup-20261003120000`), 'older backup\n');
 }));
 
 test('R41, R42: a missing Claude file is created and recorded, and remove deletes it with no backup', sandbox((s) => {
   rmSync(s.codexDir, { recursive: true });
   s.run('plan');
-  assert.deepEqual(s.run('apply', ['claude']), [`recode: wrote ${s.claude}`]);
+  assert.deepEqual(s.run('apply', ['claude']), [`ccx: wrote ${s.claude}`]);
   assert.deepEqual(s.state().created, { claude: true });
   assert.deepEqual(readdirSync(s.claudeDir), ['CLAUDE.md']);
   s.run('remove', [], { now: LATER });
   assert.deepEqual(s.run('apply', ['claude'], { now: LATER }),
-    [`recode: removed ${s.claude}, which /recode:rules had created and which held nothing else`]);
+    [`ccx: removed ${s.claude}, which /ccx:rules had created and which held nothing else`]);
   assert.deepEqual(readdirSync(s.claudeDir), []);
   assert.deepEqual(s.state(), { options: {}, created: {}, declined: {} });
 }));
@@ -327,7 +383,7 @@ test('R42: a created file that the user added to is kept on remove, holding only
   put(s.claude, `${bytes(s.claude)}mine\n`);
   s.run('remove', [], { now: LATER });
   assert.deepEqual(s.run('apply', ['claude'], { now: LATER }),
-    [`recode: wrote ${s.claude}; the earlier content is in ${s.claude}.recode-backup-20261003120001`]);
+    [`ccx: wrote ${s.claude}; the earlier content is in ${s.claude}.ccx-backup-20261003120001`]);
   assert.equal(bytes(s.claude), 'mine\n');
 }));
 
@@ -356,7 +412,7 @@ test('R40, R42: install then remove leaves each fixture file equal to its origin
       s.run('apply', ['codex'], { now: LATER });
       assert.equal(bytes(s.claude), original, label);
       assert.equal(bytes(s.codex), original, label);
-      assert.equal(bytes(`${s.claude}.recode-backup-20261003120000`), original, label);
+      assert.equal(bytes(`${s.claude}.ccx-backup-20261003120000`), original, label);
     })();
   }
 });
@@ -365,7 +421,7 @@ test('R43: a decline is recorded with its digest, and the next plan says so', sa
   put(s.claude, `mine\n\n${begin('core', 'blank', '6d3e610aaf815551')}\nold rules\n${END}\n`);
   rmSync(s.codexDir, { recursive: true });
   assert.ok(s.run('plan').includes('state: stale'));
-  assert.deepEqual(s.run('decline', ['claude']), [`recode: declined the change to ${s.claude}; the session notice stays quiet for this text`]);
+  assert.deepEqual(s.run('decline', ['claude']), [`ccx: declined the change to ${s.claude}; the session notice stays quiet for this text`]);
   const { declined } = s.state();
   assert.deepEqual(Object.keys(declined), ['claude']);
   assert.match(declined.claude[0], /^[0-9a-f]{16}$/);
@@ -379,7 +435,7 @@ test('R44: an @ import in the Claude file is noted and left as it is', sandbox((
   const out = s.run('plan');
   assert.ok(out.includes('note: line 1: @~/shared/rules.md imports a file that may hold the same rules; it is left as it is'));
   s.run('apply', ['claude']);
-  assert.ok(bytes(s.claude).startsWith('@~/shared/rules.md\nmine\n\n<!-- recode:house-rules begin'));
+  assert.ok(bytes(s.claude).startsWith('@~/shared/rules.md\nmine\n\n<!-- ccx:house-rules begin'));
 }));
 
 test('R41, R42: two applies started at once both land in the state and plan files', sandbox(async (s) => {
@@ -413,14 +469,14 @@ test('a step waits while another holds the lock, and takes over a lock left by a
   assert.equal(existsSync(join(s.data, 'rules-plan.json')), true);
   mkdirSync(lock);
   utimesSync(lock, new Date('2026-10-03T11:00:00Z'), new Date('2026-10-03T11:00:00Z'));
-  assert.deepEqual(s.run('apply', ['claude']), [`recode: wrote ${s.claude}`]);
+  assert.deepEqual(s.run('apply', ['claude']), [`ccx: wrote ${s.claude}`]);
   assert.equal(existsSync(lock), false);
 }));
 
 test('the script prints a refusal on stdout and exits 1, and a status exits 0', sandbox((s) => {
   const env = { ...process.env, ...s.env, HOME: s.home, USERPROFILE: s.home };
   const bad = spawnSync(process.execPath, [SCRIPT, 'bogus', s.data], { env, encoding: 'utf8' });
-  assert.equal(bad.stdout, 'recode: unknown command bogus; use status, plan, remove, apply or decline\n');
+  assert.equal(bad.stdout, 'ccx: unknown command bogus; use status, plan, remove, apply or decline\n');
   assert.equal(bad.status, 1);
   const ok = spawnSync(process.execPath, [SCRIPT, 'status', s.data], { env, encoding: 'utf8' });
   // The spawned script runs on the real platform, where Windows adds its option to the default (R35).

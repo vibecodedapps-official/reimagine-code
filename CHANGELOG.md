@@ -3,6 +3,83 @@
 One changelog for the suite. Each release has a subsection per component. The source
 repos' own changelogs are kept under `docs/history/`.
 
+## 0.2.0 - 2026-10-04
+
+### ccx
+
+- Renamed from `recode`. The commands are `/ccx:setup`, `rules`, `ask`, `review`, `do`,
+  and `implement`, and the bridge script is `scripts/ccx.mjs`.
+- `/ccx:rules` reads the block that `/recode:rules` wrote, under the `recode:house-rules`
+  markers. The session notice names such a block, a run of `/ccx:rules` rewrites it under
+  the `ccx:house-rules` markers after the usual diff, and `/ccx:rules --remove` takes
+  out either. A file holding both blocks is reported as malformed.
+- Setup also lists `recode-loop@reimagine-code`, then `recode@reimagine-code`, on Claude
+  Code, and `recode@reimagine-code` on Codex, as old plugins.
+- Fixed a rules block reading as edited by hand after its file's line endings changed,
+  as when an editor or Git turns a CRLF file into LF. The block then stopped updating
+  and the session notice went quiet. A marker's digest is now taken over the body with
+  CRLF read as LF, and the two older digests are still accepted.
+- The plugin data directory is not carried over, so the rules state starts empty. If
+  `/recode:rules` created your `CLAUDE.md`, `/ccx:rules --remove` leaves it empty instead
+  of deleting it, and a rules text you declined can raise the session notice again. You
+  can delete `~/.claude/plugins/data/recode-reimagine-code/`.
+
+### ccx-loop
+
+- Renamed from `recode-loop`, and it depends on `ccx` `>=0.2.0 <1.0.0`. The commands are
+  `/ccx-loop:run` and `/ccx-loop:plan`, and the skill is `ccx-loop:ccx-loop`. It calls the
+  bridge as `ccx:ask`, `ccx:review`, and `ccx:implement`.
+- A repository with `.recode.json` or `.ccl.json` and no `.ccx.json` ends the run
+  `blocked`, with a message to rename the file. Ignoring it would drop the owner's
+  `checks` and `timeouts`.
+
+### ccx (Codex)
+
+- Renamed from `recode`. The config table is `[plugins."ccx@reimagine-code"]`. Codex has no
+  rename: run `codex plugin add ccx@reimagine-code`, then `codex plugin remove
+  recode@reimagine-code`.
+
+### Breaking
+
+Claude Code moves the plugins by itself, but nothing else. The Claude catalog has a
+`renames` map from `recode` to `ccx` and from `recode-loop` to `ccx-loop`. The first
+plugin command or session start after the marketplace updates renames the plugins in your
+`enabledPlugins`, and keeps the loop's `codex` option. It also drops the install
+records, so install the new names once. Old uninstall lines then fail, because those plugins
+are no longer installed.
+
+- **Plugins.** `recode@reimagine-code` is now `ccx@reimagine-code` on Claude Code, and
+  `recode-loop@reimagine-code` is now `ccx-loop@reimagine-code`. On Codex,
+  `recode@reimagine-code` is now `ccx@reimagine-code`, with the config table
+  `[plugins."ccx@reimagine-code"]`.
+- **Install lines.** `/plugin install ccx@reimagine-code`, `/plugin install
+  ccx-loop@reimagine-code`, and `codex plugin add ccx@reimagine-code`. The uninstall
+  lines change the same way. The option is set with `/plugin configure
+  ccx-loop@reimagine-code`.
+- **Commands.** `/recode:ask`, `review`, `implement`, `do`, `setup`, and `rules` are now
+  `/ccx:ask` and so on. A Skill call to `recode:<name>` is now `ccx:<name>`.
+  `/recode-loop:run` and `/recode-loop:plan` are now `/ccx-loop:run` and
+  `/ccx-loop:plan`, and the skill is `ccx-loop:ccx-loop`.
+- **Output style.** `recode:Concise Plain` is now `ccx:Concise Plain`. The renaming does
+  not move the setting: select the style again.
+- **Allow rule.** The Bash rule from `/ccx:setup` names `scripts/ccx.mjs`, so paste the
+  new one.
+- **Bridge paths.** `scripts/recode.mjs` is now `scripts/ccx.mjs`, and messages start
+  `ccx: `. The data directory is now `~/.claude/plugins/data/ccx-reimagine-code/` and starts
+  empty. Probe names start `.ccx-probe-` and `.ccx-sandbox-probe-`. The test-only
+  variables start `CCX_`.
+- **House rules.** The markers are `<!-- ccx:house-rules begin ... -->` and `<!--
+  ccx:house-rules end -->`, and the old ones are still read. Backups are
+  `<file>.ccx-backup-<timestamp>`.
+- **Loop paths in your repositories.** `.recode/<run-id>/` is now `.ccx/<run-id>/`, and
+  `.recode.json` is now `.ccx.json`. Snapshots go to `specs/ccx/<run-id>/`. Worktrees
+  are `<checkout>-ccx-<run-id>`. Reports start `# ccx run report`, and the PR status
+  comment starts `Status from the ccx run`.
+
+What still reads an old name: the old rules markers, `.recode.json` and `.ccl.json` (to
+block with a message), and the `renames` map. Nothing else does. repo-docs is unchanged
+at 0.1.3.
+
 ## 0.1.3 - 2026-10-04
 
 ### recode

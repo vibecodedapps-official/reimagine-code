@@ -300,3 +300,64 @@ with recode 0.1.3. `docs/acceptance.md` has both records.
    confirmed with `planTarget`: a block written into a CRLF file reads `current`, and
    the same file converted to LF reads `edited`, so the block stops updating and the
    session notice goes quiet. Tracked in issue 16.
+
+## Part 11: ccx 0.2.0, the rename from recode, 2026-10-04
+
+Issue 15 settled four choices. The spikes ran on 2026-10-04 on macOS with Claude Code
+2.1.288 and codex-cli 0.159.2, in scratch profiles, never the real one. CI's pinned
+Claude Code 2.1.283 was not tested.
+
+1. **The Claude catalog carries a `renames` map.** It maps `recode` to `ccx` and
+   `recode-loop` to `ccx-loop`. `claude plugin validate --strict` accepts it, rejects a
+   chain that ends at no listed plugin ("chain does not resolve (target-missing)"), and
+   rejects a loop ("cycle"). The docs call the map append-only history, so it stays
+   after everyone has moved. Lint pins it, because the manifest check never asks that
+   the old names be listed.
+2. **The rewrite is lazy and drops the install records.** Nothing happens during the
+   marketplace update, which prints nothing about it. The first plugin command or
+   session start after it rewrites the keys of `enabledPlugins` and `pluginConfigs`, and
+   the loop's `codex` option survived under `ccx-loop@reimagine-code`. It also deletes
+   the old entries from `installed_plugins.json` instead of renaming them, so
+   `claude plugin list` shows no plugin at all, not "not cached", until the user runs
+   `/plugin install ccx@reimagine-code`, and `ccx-loop@reimagine-code` for the loop.
+   Installing `ccx-loop` alone resolved its dependency on `ccx` through the
+   `ccx--v0.2.0` tag. This corrects the issue, which expected "not cached".
+3. **The README does not tell Claude Code users to uninstall the old plugins.** After
+   the rewrite, `claude plugin uninstall recode@reimagine-code` fails with "not found in
+   installed plugins". Setup's Claude old-plugin entries are only a fallback for an
+   install the map did not move, listed with the loop first because Claude Code refuses
+   to disable the bridge while the loop needs it (Part 1 item 1).
+4. **Two settings are not migrated.** `outputStyle` stays `recode:Concise Plain`,
+   pointing at a style that no longer exists, until the user selects `ccx:Concise
+   Plain`. The data directory is not migrated either: `plugins/data/recode-reimagine-code/`
+   stays, orphaned, and `ccx` starts with an empty one. That confirms the issue's
+   unverified guess. Its two effects, a created `CLAUDE.md` left empty by `--remove` and a
+   declined rules text raising the notice again, are minor and stay in the changelog
+   instead of a migration.
+5. **Codex has no rename mechanism.** After the catalog drops `recode`, `codex plugin
+   list` no longer shows it, though `config.toml` keeps its table. `codex plugin add
+   ccx@reimagine-code` and then `codex plugin remove recode@reimagine-code` both
+   succeed, and the remove deletes the old table. The README gives those two lines.
+6. **`/ccx:rules` keeps reading the old block.** A plain rename would have read a block
+   under `recode:house-rules` as absent: a second block below it, `--remove` finding
+   nothing, and no notice. `inspect()` reads both markers; a block under the old one
+   plans as `stale` even when its rules match, so one run of `/ccx:rules` rewrites it
+   under the new marker; a file holding both blocks, or one block with a begin line of
+   one name and an end line of the other, is `malformed`. Telling users to run
+   `/recode:rules --remove` first would not work, because the map moves them with no
+   command of theirs.
+7. **The loop's repository paths follow the plugin name.** `.recode/`, `.recode.json`,
+   `specs/recode/`, and `<checkout>-recode-<run-id>` become the `ccx` forms, as the 0.1.0
+   rename did for `ccl`. A repository with `.recode.json` or `.ccl.json` and no
+   `.ccx.json` ends `blocked`, for the reason of R23: ignoring the file would drop its
+   `checks` and `timeouts`.
+8. **`ccx`, `ccx-loop`, and the Codex `ccx` are released as 0.2.0.** A minor bump marks a
+   breaking change in 0.x. 1.0.0 is not needed, because the bridge contract the loop
+   parses (R10) does not change. The loop's range becomes `>=0.2.0 <1.0.0`, because no
+   `ccx` below 0.2.0 exists. repo-docs is unchanged and stays at 0.1.3. The old
+   `recode--v` and `recode-loop--v` tags stay as they are.
+9. **repo-docs was unaffected** by the rename in every spike.
+10. **The rules digest ignores line endings.** The commit before the rename, for issue
+    16 and Part 10 item 6, takes a marker's digest over the block body with CRLF read as
+    LF, and still accepts the two older digests, so a block no longer reads as edited by
+    hand after its file's line endings change.

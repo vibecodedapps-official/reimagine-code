@@ -12,11 +12,11 @@ name a plugin are rerun under the new names and recorded here.
 ## Items
 
 1. **Bridge in a scratch profile.** Setup: scratch `CLAUDE_CONFIG_DIR` and `CODEX_HOME`,
-   `recode` installed from this repository's catalog, and a scratch git repository.
-   Command: `/recode:setup`, then `/recode:ask` with a short question, then
-   `/recode:implement` from a test skill that asks for a one-line edit. Expected: setup
+   `ccx` installed from this repository's catalog, and a scratch git repository.
+   Command: `/ccx:setup`, then `/ccx:ask` with a short question, then
+   `/ccx:implement` from a test skill that asks for a one-line edit. Expected: setup
    reports the Codex version and login, and an allow rule that names the installed
-   `recode` path (before 0.1.2, also an Edit rule for the `recode-reimagine-code` data
+   `ccx` path (before 0.1.2, also an Edit rule for the plugin's data
    directory); ask prints Codex's answer; implement edits the scratch repository and its
    footer shows the change. Covers R9 and R15. Rerun when a bridge command, the setup
    report, or the data directory changes. Run 2026-10-03, setup rerun 2026-10-04; see the
@@ -24,15 +24,15 @@ name a plugin are rerun under the new names and recorded here.
 2. **codex-lite items under the new names.** Setup: as each item says, in scratch
    profiles. Command: items 1, 5, 8, 11, 12, 16, 17, 18, and 19 of
    `docs/history/codex-lite-cc/acceptance.md`, the items that name the plugin or its
-   variables, with `/codex-lite:` read as `/recode:` and `CODEX_LITE_` as `RECODE_`.
+   variables, with `/codex-lite:` read as `/ccx:` and `CODEX_LITE_` as `CCX_`.
    Item 15, the Windows install, runs on the Windows work machine with R53. List drawn
    2026-10-03 at the start of M2. Expected: each item's own result. Rerun when that
    file's own conditions say. Run 2026-10-03; see the record.
 3. **House rules in a scratch profile.** Setup: scratch `CLAUDE_CONFIG_DIR` whose
    `CLAUDE.md` holds text of its own, scratch `CODEX_HOME` holding an `AGENTS.md`, and
-   `recode` installed from this repository's catalog. Command: `/recode:rules`, choose
+   `ccx` installed from this repository's catalog. Command: `/ccx:rules`, choose
    the options, and accept each target; start a new session and ask it to quote a rule
-   from the block; then `/recode:rules --remove` and accept each target. Repeat with no
+   from the block; then `/ccx:rules --remove` and accept each target. Repeat with no
    Codex home. Expected: each target's diff is shown and asked about separately; the new
    session quotes the rule; after removal each file equals its backup byte for byte; with
    no Codex home the Codex target is reported as skipped and no directory is created.
@@ -40,64 +40,64 @@ name a plugin are rerun under the new names and recorded here.
    file changes. Run 2026-10-03, and 2026-10-04 for 0.1.3; see the records.
 4. **Staleness notice and decline.** Setup: as item 3, with this block after the text
    of `CLAUDE.md` and an empty line, whose digest matches its body: begin line
-   `<!-- recode:house-rules begin version=0.0.1 options=core join=blank digest=6d3e610aaf815551 -->`,
-   then the line `old rules`, then `<!-- recode:house-rules end -->`. Command: start an
-   interactive session; then `/recode:rules` and decline the Claude change; then start
+   `<!-- ccx:house-rules begin version=0.0.1 options=core join=blank digest=6d3e610aaf815551 -->`,
+   then the line `old rules`, then `<!-- ccx:house-rules end -->`. Command: start an
+   interactive session; then `/ccx:rules` and decline the Claude change; then start
    another session. Expected: the first session shows one line naming the file and
-   `/recode:rules`; after the decline the next session shows nothing. Covers R43 and
+   `/ccx:rules`; after the decline the next session shows nothing. Covers R43 and
    R45. Rerun when `suite.mjs` or the hooks change. Run 2026-10-03, and 2026-10-04 for
    0.1.3; see the records.
 5. **Output style and old plugins.** Setup: as item 3, with `codex-lite` also installed
-   from its old marketplace. Command: `/output-style`, then `/recode:setup`. Expected: the
-   picker lists `recode:Concise Plain`, and replies follow it once chosen; setup's
+   from its old marketplace. Command: `/output-style`, then `/ccx:setup`. Expected: the
+   picker lists `ccx:Concise Plain`, and replies follow it once chosen; setup's
    output ends with `claude plugin uninstall codex-lite@vibecodedapps-codex-lite`, and
    nothing is uninstalled. Covers R16 and R46. Rerun when the style or the old-plugin
    list changes. Run 2026-10-03; see the record.
 6. **Loop install and its dependency.** Setup: a scratch profile with this
    repository's catalog added and neither plugin installed. Command: `claude plugin
-   install recode-loop@reimagine-code`, then `claude plugin disable
-   recode@reimagine-code`, then `claude plugin uninstall recode-loop@reimagine-code`.
-   Expected: the install also installs `recode`; the disable is refused, naming
-   `recode-loop`; the uninstall reports `recode` as no longer needed, for `claude plugin
+   install ccx-loop@reimagine-code`, then `claude plugin disable
+   ccx@reimagine-code`, then `claude plugin uninstall ccx-loop@reimagine-code`.
+   Expected: the install also installs `ccx`; the disable is refused, naming
+   `ccx-loop`; the uninstall reports `ccx` as no longer needed, for `claude plugin
    prune`. Covers R4 with the real plugins; spike M0.1 covered the update order. Rerun
    when the loop's `dependencies` change. Run 2026-10-03; see the record.
 7. **Loop plan runs on a local remote.** Setup: scratch git repositories, each with
    `math.mjs`, `test.mjs`, a `package.json` whose `test` script passes, and a local bare
    `origin`; one also holds `.ccl.json` with `{"checks":["npm test"]}`. Command:
-   `/recode-loop:plan "<a one-function change>" --effort low`, in headless sessions: with
+   `/ccx-loop:plan "<a one-function change>" --effort low`, in headless sessions: with
    `--no-codex`; in the repository with `.ccl.json`; with `codex` absent from `PATH`;
    with the `codex` option set to false, never set, and set to true. Expected: each run
-   calls `recode-loop:recode-loop` with the invocation block. The `.ccl.json` run ends
+   calls `ccx-loop:ccx-loop` with the invocation block. The `.ccl.json` run ends
    `blocked` before writing anything and says to rename the file. The others end
-   `plan-only` with the plan and a report headed `# recode run report` under
-   `.recode/<run-id>/`, and `.recode/` in `.git/info/exclude`. With `--no-codex`, `codex`
+   `plan-only` with the plan and a report headed `# ccx run report` under
+   `.ccx/<run-id>/`, and `.ccx/` in `.git/info/exclude`. With `--no-codex`, `codex`
    absent, or the option false, no Codex call is made, each Codex role runs on its Claude
    fallback, and the report says why. With the option unset or true, the block says
    `no-codex: false` and Codex is called. Covers R17, R20, R21, R23, and part of R22.
    Rerun when a loop command, the option, or Step 0 changes. Run 2026-10-03; see the
    record.
 8. **Loop runs to the end on a local remote.** Setup: as item 7, without `.ccl.json`.
-   Command: `/recode-loop:run "<the same change>" --no-codex --effort low`, in separate
-   repositories: with `--no-publish` and a committed `.recode.json` of
+   Command: `/ccx-loop:run "<the same change>" --no-codex --effort low`, in separate
+   repositories: with `--no-publish` and a committed `.ccx.json` of
    `{"commit": true}`; with `--no-publish` alone; after `git update-index
    --skip-worktree` on an edited file; with `--confirm-plan`, answering no; with
    `--continue` naming a branch on the remote; and with `--repo` naming a second such
-   repository. Also `/recode-loop:plan` with the committed `.recode.json`. Expected: the
-   plan run ends `plan-only` with nothing under `specs/recode/` and a clean tree; the
+   repository. Also `/ccx-loop:plan` with the committed `.ccx.json`. Expected: the
+   plan run ends `plan-only` with nothing under `specs/ccx/` and a clean tree; the
    `--no-publish` runs and the runs on a local remote end `prepared` with no commit,
-   nothing under `specs/recode/`, and the report giving the commit and push commands;
+   nothing under `specs/ccx/`, and the report giving the commit and push commands;
    the `--no-publish` run writes no `handoff.md` or `cca-manifest.json` and says why;
-   the skip-worktree run works in `<parent>/<checkout>-recode-<run-id>` and names its
+   the skip-worktree run works in `<parent>/<checkout>-ccx-<run-id>` and names its
    removal; the declined plan ends `plan-only`; the `--continue` run works on that
    branch; the `--repo` run changes both repositories. Covers ccl items 16, 65, 72, and
    172 under the new names, and the local parts of R22. Rerun when Step 0, Step 7, or an
    artifact path changes. Run 2026-10-03; see the record.
 9. **Loop runs that publish.** Setup: a throwaway GitHub repository with issue #1, a
    one-line bug, and a passing `npm test`; a second one on the same host for the
-   multi-repo run; Codex logged in. Command: `/recode-loop:run #1 --effort low`; then
+   multi-repo run; Codex logged in. Command: `/ccx-loop:run #1 --effort low`; then
    ccl items 4, 75, and 114 under the new names, and a `--continue` run on a branch with
    an open PR. Expected: Codex implements and Claude publishes a PR that closes #1;
-   with `"commit": true` the snapshot lands in `specs/recode/<run-id>/`; each item's own
+   with `"commit": true` the snapshot lands in `specs/ccx/<run-id>/`; each item's own
    result. Covers the rest of R22 and R25. Rerun when Step 7 or the CI watch changes. Run
    2026-10-03; see the record.
 10. **ccl items under the new names.** The list was drawn 2026-10-03 at the start of M4
@@ -106,17 +106,17 @@ name a plugin are rerun under the new names and recorded here.
     renamed path or a removed gate: 1 (in item 7), 16, 65, 72, and 172 (in item 8), and
     4, 75, and 114 (in item 9). Item 66 tested the skill-listing retry that R24 removed;
     item 7's runs check what is left of it, that `run.md` records the availability check.
-    Expected: each item's own result with `/ccl:` read as `/recode-loop:`, `.ccl` as
-    `.recode`, and `specs/ccl` as `specs/recode`. Rerun when that file's own conditions
+    Expected: each item's own result with `/ccl:` read as `/ccx-loop:`, `.ccl` as
+    `.ccx`, and `specs/ccl` as `specs/ccx`. Rerun when that file's own conditions
     say. Items 1, 4, 16, 65, 72, 75, 114, and 172 run 2026-10-03; see the record.
 
 11. **Codex catalog and install.** Setup: a new scratch `CODEX_HOME` holding a
     `config.toml` with only the model, effort, sandbox, and approval settings, and a
     Codex login. Command: `codex plugin marketplace add
     vibecodedapps-official/reimagine-code`, with `--ref <branch>` before the branch is
-    merged; `codex plugin list`; `codex plugin add recode@reimagine-code`; `codex plugin
+    merged; `codex plugin list`; `codex plugin add ccx@reimagine-code`; `codex plugin
     add repo-docs@reimagine-code`. Expected: the `reimagine-code` marketplace lists
-    exactly `recode` and `repo-docs`, from `plugins/recode-codex` and `plugins/repo-docs`,
+    exactly `ccx` and `repo-docs`, from `plugins/ccx-codex` and `plugins/repo-docs`,
     and they install at 0.1.0 and 0.1.2. Covers R2. Rerun when the Codex catalog or a
     Codex manifest changes. Run 2026-10-03; see the record.
 12. **Code review on Codex.** Setup: as item 11, in a scratch git repository with
@@ -162,23 +162,23 @@ name a plugin are rerun under the new names and recorded here.
     `plugins/repo-docs/`, or the skill changes. Run 2026-10-03; see the record.
 
 16. **Always-on cost.** Setup: a logged-in scratch profile with this repository's
-    catalog added from `main` and `recode-loop` and `repo-docs` installed. Command:
-    `claude plugin details <plugin>@reimagine-code` for `recode` and `recode-loop`.
-    Expected: "Always-on" at most 1,300 tokens for `recode` and at most 510 for
-    `recode-loop`. Covers R8. Rerun at each release. Run 2026-10-03 for 0.1.0, and
+    catalog added from `main` and `ccx-loop` and `repo-docs` installed. Command:
+    `claude plugin details <plugin>@reimagine-code` for `ccx` and `ccx-loop`.
+    Expected: "Always-on" at most 1,300 tokens for `ccx` and at most 510 for
+    `ccx-loop`. Covers R8. Rerun at each release. Run 2026-10-03 for 0.1.0, and
     2026-10-04 for 0.1.1, 0.1.2, and 0.1.3; see the records.
 17. **Tags.** Setup: the release commit on `main`. Command: `claude plugin tag --push`
-    on `plugins/recode`, then `plugins/recode-loop`, then `plugins/repo-docs`; then
+    on `plugins/ccx`, then `plugins/ccx-loop`, then `plugins/repo-docs`; then
     `git ls-remote --tags origin`. Expected: each tag command checks the manifest against
     its catalog entry and pushes; the remote holds a `<plugin>--v<version>` tag for each
     plugin's new version, and no bare `v` tag. Covers R49. Rerun at each release. Run
     2026-10-03 for 0.1.0, and 2026-10-04 for 0.1.1, 0.1.2, and 0.1.3; see the records.
 18. **Install from GitHub.** Setup: on macOS and on Windows 11 with both CLIs from npm,
     new scratch profiles on each host. Command: the four lines of R3, then `claude plugin
-    install recode-loop@reimagine-code` and `codex plugin add
-    repo-docs@reimagine-code`; then `/recode:setup` and `/recode:ask` with a short
+    install ccx-loop@reimagine-code` and `codex plugin add
+    repo-docs@reimagine-code`; then `/ccx:setup` and `/ccx:ask` with a short
     question. Expected: each install succeeds at the tagged version; the loop's install
-    also installs `recode`; setup passes; the ask prints Codex's answer; `codex plugin
+    also installs `ccx`; setup passes; the ask prints Codex's answer; `codex plugin
     list` shows both Codex plugins. Run from the private repository after tagging, then
     once per host from the public one. Covers R3 and R4. Rerun at each release. Run on
     macOS and Windows 2026-10-03 for 0.1.0, from the private repository. Run
@@ -187,8 +187,8 @@ name a plugin are rerun under the new names and recorded here.
     and for 0.1.3 on macOS and Windows, from the public repository; see the records.
 19. **Windows.** Setup: the Windows 11 work machine with both CLIs from npm, the suite
     installed as in item 18, and a test repository checked out under a path that holds
-    a space. Command: `/recode:ask` and `/recode:implement` with a one-line change;
-    `/recode:rules` against a `CLAUDE.md` with CRLF line endings; a commit by the agent
+    a space. Command: `/ccx:ask` and `/ccx:implement` with a one-line change;
+    `/ccx:rules` against a `CLAUDE.md` with CRLF line endings; a commit by the agent
     in each host, Codex after trusting the hook. Expected: the ask and implement succeed;
     the rules block is added with the file's CRLF endings kept; the repo-docs hook adds
     its reminder on both hosts. Covers R53. Rerun when the bridge's spawn code, the rules

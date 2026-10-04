@@ -1,4 +1,4 @@
-# Architecture: recode v0.1.0
+# Architecture: v0.1.0
 
 Drafted 2026-10-03 from the pre-planning handoff of 2026-10-02, an inventory of the four
 source repos on 2026-10-03, and a read of the Claude Code docs and the Codex 0.159.2
@@ -12,7 +12,7 @@ them, and the design names what changes if a spike fails.
 
 ## Shape
 
-recode is one repository that is two plugin catalogs: a Claude Code marketplace and a
+reimagine-code is one repository that is two plugin catalogs: a Claude Code marketplace and a
 Codex marketplace, both named `reimagine-code`. It replaces four repos: codex-lite-cc
 (the bridge), claude-codex-loop (the loop), the general half of codex-code-review, and
 repo-docs. The audit plugin (claude-codex-audit) joins in a later release.
@@ -20,35 +20,35 @@ repo-docs. The audit plugin (claude-codex-audit) joins in a later release.
 The suite has four layers:
 
 - **Bridge**: Claude dispatches the Codex CLI for a question, a review, or an edit.
-  Plugin `recode`.
+  Plugin `ccx`.
 - **Loop** (process): plan, review, implement, review, publish for one unit of work,
-  with Codex as implementer and second reviewer. Plugin `recode-loop`. Audit joins it
+  with Codex as implementer and second reviewer. Plugin `ccx-loop`. Audit joins it
   later.
 - **House rules** (policy): working rules written into the user's home instruction files,
-  plus an optional writing style. Shipped and applied by `recode`.
+  plus an optional writing style. Shipped and applied by `ccx`.
 - **Setup**: diagnostics, old-plugin detection, and the house rules command. Part of
-  `recode`.
+  `ccx`.
 
 repo-docs is a separate, independent plugin in the same catalogs.
 
 ```
 reimagine-code/
-  .claude-plugin/marketplace.json     Claude catalog: recode, recode-loop, repo-docs
-  .agents/plugins/marketplace.json    Codex catalog: recode, repo-docs
+  .claude-plugin/marketplace.json     Claude catalog: ccx, ccx-loop, repo-docs
+  .agents/plugins/marketplace.json    Codex catalog: ccx, repo-docs
   plugins/
-    recode/                           Claude only
+    ccx/                           Claude only
       .claude-plugin/plugin.json
       commands/                       ask review do implement setup rules
-      scripts/                        recode.mjs codex.mjs rules.mjs suite.mjs
+      scripts/                        ccx.mjs codex.mjs rules.mjs suite.mjs
       hooks/hooks.json                UserPromptSubmit, SessionStart
       rules/                          house rules sources
       output-styles/                  the Writing style, opt-in
       chat/                           claude.ai and ChatGPT blocks, copy by hand
-    recode-loop/                      Claude only
-      .claude-plugin/plugin.json      depends on recode
+    ccx-loop/                      Claude only
+      .claude-plugin/plugin.json      depends on ccx
       commands/                       plan run
-      skills/recode-loop/
-    recode-codex/                     Codex only, plugin name `recode`
+      skills/ccx-loop/
+    ccx-codex/                     Codex only, plugin name `ccx`
       plugin.json                     agent-plugins schema 1.0.0
       skills/general-code-review*/
       LICENSE NOTICE                  every plugin carries LICENSE
@@ -63,9 +63,9 @@ reimagine-code/
 
 | Plugin | Directory | Claude | Codex | Depends on | Version line |
 |---|---|---|---|---|---|
-| `recode` | `plugins/recode` | yes | no | none | recode family |
-| `recode-loop` | `plugins/recode-loop` | yes | no | `recode` `>=0.1.0 <1.0.0` | recode family |
-| `recode` | `plugins/recode-codex` | no | yes | none | recode family |
+| `ccx` | `plugins/ccx` | yes | no | none | ccx family |
+| `ccx-loop` | `plugins/ccx-loop` | yes | no | `ccx` `>=0.1.0 <1.0.0` | ccx family |
+| `ccx` | `plugins/ccx-codex` | no | yes | none | ccx family |
 | `repo-docs` | `plugins/repo-docs` | yes | yes | none | its own |
 
 What each host gets in v0.1.0:
@@ -101,7 +101,7 @@ reasons:
 - Codex's manifest `skills` field replaces the default `skills/` scan, while Claude's
   adds to it. One directory serving both hosts would need two different skill lists.
 
-The Codex `recode` therefore has its own directory, `plugins/recode-codex/`. It keeps the
+The Codex `ccx` therefore has its own directory, `plugins/ccx-codex/`. It keeps the
 manifest form the general review plugin uses today: a root `plugin.json` with the
 `agent-plugins.org` schema 1.0.0. That plugin is installed and enabled on this machine
 now (verified, `~/.codex/config.toml`). This form loads skills only; it skips commands
@@ -113,19 +113,19 @@ repo-docs keeps its `.codex-plugin/plugin.json`, the legacy form, because it nee
 hook and Codex loads a Claude-format `hooks/hooks.json` in that form (verified in source;
 the user must trust the hook once in `/hooks`).
 
-Two plugins named `recode` live in two catalogs. They share one version line, enforced by
-lint, so the `recode--v<version>` tag names one commit for both.
+Two plugins named `ccx` live in two catalogs. They share one version line, enforced by
+lint, so the `ccx--v<version>` tag names one commit for both.
 
 ## Components
 
-### recode (Claude)
+### ccx (Claude)
 
 Behavior carries over from codex-lite 0.9.0 unchanged except for names.
 
 - **Commands.** `ask`, `review`, `implement` as today. `do` and `setup` keep
   `disable-model-invocation: true`, so they cost nothing until typed. New: `rules`, also
   `disable-model-invocation: true`.
-- **Scripts.** `recode.mjs` (was `codex-lite.mjs`) and `codex.mjs` keep their 700-line
+- **Scripts.** `ccx.mjs` (was `codex-lite.mjs`) and `codex.mjs` keep their 700-line
   runtime budget and change only by renames; the budget has 3 lines of headroom today.
   New code goes in two new modules with their own budgets: `rules.mjs` (house rules,
   pure file logic, spawns nothing) and `suite.mjs` (the old-plugin report and the
@@ -135,7 +135,7 @@ Behavior carries over from codex-lite 0.9.0 unchanged except for names.
   This is the existing pattern: the variable inside the Bash tool once held another
   plugin's value (recorded in an untracked note in codex-lite-cc). Substitution in hook
   `args` is checked in spike M0.4. The directory becomes
-  `~/.claude/plugins/data/recode-reimagine-code/`. It survives updates and is deleted on
+  `~/.claude/plugins/data/ccx-reimagine-code/`. It survives updates and is deleted on
   uninstall (verified, docs).
 - **UserPromptSubmit hook.** It prints a routing note only when the prompt matches
   `/codex/i` and does not start with a slash command. It also deletes the session's
@@ -154,7 +154,7 @@ Behavior carries over from codex-lite 0.9.0 unchanged except for names.
 - **Output style.** `output-styles/concise-plain.md`, made from forge-ops
   `concise-plain-v4.4.md` with its `name` changed to `Concise Plain` and the version
   moved into the description, so a user's selection survives style updates. A plugin
-  style shows in `/output-style` as `recode:<name>` (verified, docs; selecting it with
+  style shows in `/output-style` as `ccx:<name>` (verified, docs; selecting it with
   an argument needs Claude Code 2.1.269). The rules command prints how to select it;
   nothing edits `settings.json`.
 - **Chat instructions.** `chat/instructions.md`: the one block forge-ops pastes into both
@@ -182,18 +182,18 @@ loop, so they are frozen across 0.x:
 
 A caller that wants Codex to read a file puts it under a directory the repository
 ignores; that is why the loop's run directory must stay ignored. The message prefix
-changes from `codex-lite: ` to `recode: `; the loop does not parse it.
+changes from `codex-lite: ` to `ccx: `; the loop does not parse it.
 
-### recode-loop (Claude)
+### ccx-loop (Claude)
 
 Behavior carries over from ccl 0.10.0 except as listed.
 
 - **Commands.** `plan` and `run`, with today's flags and rejection rules. Both end by
-  invoking the `recode-loop:recode-loop` skill with the same invocation block, so the
+  invoking the `ccx-loop:ccx-loop` skill with the same invocation block, so the
   skill's interface does not change. The handoff retired `run` in favor of `loop`; `run`
-  was kept on 2026-10-03, because `/recode-loop:loop` repeats itself and Claude Code
+  was kept on 2026-10-03, because `/ccx-loop:loop` repeats itself and Claude Code
   has a built-in `/loop` that does something else.
-- **Dependency.** `{ "name": "recode", "version": ">=0.1.0 <1.0.0" }`. The host
+- **Dependency.** `{ "name": "ccx", "version": ">=0.1.0 <1.0.0" }`. The host
   installs the bridge with the loop, refuses to disable the bridge while the loop is
   enabled, holds a bridge update inside the loop's range, and disables the loop when the
   bridge is missing or out of range (verified, spike M0.1).
@@ -222,20 +222,20 @@ Behavior carries over from ccl 0.10.0 except as listed.
 
   | Was | Becomes |
   |---|---|
-  | `.ccl/<run-id>/` | `.recode/<run-id>/` |
-  | `.ccl.json` | `.recode.json` |
-  | `specs/ccl/<run-id>/` | `specs/recode/<run-id>/` |
-  | `<checkout>-ccl-<run-id>` worktree | `<checkout>-recode-<run-id>` |
-  | `# ccl run report` | `# recode run report` |
+  | `.ccl/<run-id>/` | `.ccx/<run-id>/` |
+  | `.ccl.json` | `.ccx.json` |
+  | `specs/ccl/<run-id>/` | `specs/ccx/<run-id>/` |
+  | `<checkout>-ccl-<run-id>` worktree | `<checkout>-ccx-<run-id>` |
+  | `# ccl run report` | `# ccx run report` |
 
-  A repo with `.ccl.json` and no `.recode.json` ends the run in `blocked` with a message
+  A repo with `.ccl.json` and no `.ccx.json` ends the run in `blocked` with a message
   to rename the file. Silently ignoring it would drop the owner's `checks` and
   `timeouts`.
 - **Audit coupling.** Unchanged. The loop writes `handoff.md` and `cca-manifest.json` and
   suggests `/cca:audit`, all optional, and works without the audit plugin. These names
   stay until the audit plugin joins the suite.
 
-### recode (Codex)
+### ccx (Codex)
 
 The five `general-code-review*` skills from codex-code-review-general 0.1.0, names and
 text unchanged. The orchestrator skill names its four companions, so the skill names are
@@ -264,7 +264,7 @@ plugins' versions.
 
 ### Content
 
-Sources live in `plugins/recode/rules/`, because an installed plugin holds only its own
+Sources live in `plugins/ccx/rules/`, because an installed plugin holds only its own
 directory.
 
 - `core.md`: the line "Any instruction file can add an ask-first rule; none removes
@@ -298,9 +298,9 @@ to the targets. Repo-level instruction files belong to repo-docs.
 ### Block format
 
 ```
-<!-- recode:house-rules begin version=0.1.0 options=core,windows join=blank digest=<hex> -->
+<!-- ccx:house-rules begin version=0.1.0 options=core,windows join=blank digest=<hex> -->
 ...rules...
-<!-- recode:house-rules end -->
+<!-- ccx:house-rules end -->
 ```
 
 `join` records the bytes the command added in front of the begin marker, so removal
@@ -308,7 +308,9 @@ takes back exactly those: `none` when the file was empty or created, `blank` for
 empty line after a file that ended with a newline, and `newline` for a line break plus
 an empty line after a file that did not. The block ends with the file's line ending.
 
-The digest is over the block body as written. It tells two things apart:
+The digest is over the block body with CRLF read as LF, so a change of line ending is not
+an edit. A marker whose digest is over the CRLF body is accepted too. It tells two things
+apart:
 
 - **Edited**: the body in the file no longer matches the recorded digest.
 - **Stale**: the body the current plugin would write for the recorded options differs
@@ -332,7 +334,7 @@ The digest is over the block body as written. It tells two things apart:
 - Text outside the block is preserved byte for byte, including line endings, a byte order
   mark, and the final newline. The block takes the file's line ending.
 - Before a change to an existing file, it is copied to
-  `<file>.recode-backup-<timestamp>`. A missing file is created, and the data directory
+  `<file>.ccx-backup-<timestamp>`. A missing file is created, and the data directory
   records that the command created it. The new content goes to a temporary file in the
   same directory, then is renamed over the target. On Windows a failed rename is
   retried once, then reported with the backup's path.
@@ -350,7 +352,7 @@ The digest is over the block body as written. It tells two things apart:
 
 The SessionStart hook reads the begin marker in each target and compares the digest with
 the shipped text for the recorded options. When stale and not declined, it shows the user
-one line naming the file and `/recode:rules`. It writes nothing. The line is the hook's
+one line naming the file and `/ccx:rules`. It writes nothing. The line is the hook's
 `systemMessage`, which Claude Code shows on screen at startup (spike M0.4, in
 docs/decisions.md). The hook matches `startup` only, so resume, clear, and compaction do
 not repeat it.
@@ -364,8 +366,9 @@ ships.
 
 ## Versions, tags, and dependencies
 
-- **recode family in lockstep.** `recode`, `recode-loop`, and the Codex `recode` share one
-  version, starting at 0.1.0. This is the suite version that the changelog and the
+- **ccx family in lockstep.** `ccx`, `ccx-loop`, and the Codex `ccx` share one
+  version, starting at 0.1.0 under their earlier names and at 0.2.0 as `ccx` (the rename of
+  `docs/decisions.md` Part 11). This is the suite version that the changelog and the
   Claude catalog's `metadata.version` carry.
 - **repo-docs on its own line.** It continues from 0.1.1 to 0.1.2: a new home, no change
   in behavior.
@@ -379,7 +382,7 @@ ships.
   updating the loop to a new minor before the bridge left it disabled with
   `Requires "a@spike-mkt" ^0.2.0, installed 0.1.1` until the bridge caught up; with the
   bounded floor range, either update order worked (`docs/decisions.md` Part 1 item 2).
-- **Release order.** `recode` is tagged before `recode-loop`, because installing the loop
+- **Release order.** `ccx` is tagged before `ccx-loop`, because installing the loop
   from git resolves the bridge against the highest satisfying tag (verified, docs).
 - **`main` is the release ref.** Codex has no dependencies and no tag convention, and a
   git marketplace upgrades at Codex startup from its ref (verified, source), so Codex
@@ -401,7 +404,7 @@ ships.
 - **Claude-only**: automatic when the `codex` binary is absent or broken; persistent with
   the loop's `codex` option set to false; per run with `--no-codex`. The bridge commands
   report that Codex is missing.
-- **Bridge only**: install `recode` alone.
+- **Bridge only**: install `ccx` alone.
 - **Loop without bridge**: not possible; the dependency installs the bridge.
 - **Codex-only**: not offered in v0.1.0. A Codex user gets the review skills and
   repo-docs. The house rules command runs only from Claude Code in v0.1.0.
@@ -411,19 +414,19 @@ ships.
 - **Root `package.json`**: private, no dependencies, Node 22 or later. `npm test` and
   `npm run lint`.
 - **Tests** live under `tests/`, never in a plugin directory, so they do not ship:
-  `tests/recode/` (the bridge suite and its fixtures, moved) and `tests/rules/` (house
+  `tests/ccx/` (the bridge suite and its fixtures, moved) and `tests/rules/` (house
   rules and `suite.mjs`). Catalog and manifest checks are lint rules.
 - **Lint** (`tools/lint.mjs`) generalizes the bridge's lint: manifests and catalog
-  entries agree; the recode family is in lockstep; the loop's dependency range is
+  entries agree; the ccx family is in lockstep; the loop's dependency range is
   `>=<floor> <1.0.0` with a floor at or below the family version; every catalog source
   exists; no old names remain in shipped files,
   apart from the migration literals it lists by file; shipped files are ASCII;
   per-module line budgets; the Codex schema URL is 1.0.0;
-  every plugin directory holds LICENSE, and `plugins/recode-codex/` also NOTICE; a
+  every plugin directory holds LICENSE, and `plugins/ccx-codex/` also NOTICE; a
   plugin changed since its highest `<name>--v<version>` tag carries a higher version,
-  the Codex `recode` against the bridge's tags, which share its name; and the changelog
+  the Codex `ccx` against the bridge's tags, which share its name; and the changelog
   has a dated heading for the suite version.
-- **Release** (`tools/release.mjs`): `recode <version> [--floor <version>]` or
+- **Release** (`tools/release.mjs`): `ccx <version> [--floor <version>]` or
   `repo-docs <version>` sets the version line in every manifest and catalog entry that
   carries it, and with `--floor` the loop's dependency range, writing no file unless all
   can be set cleanly. It then runs lint, which checks the copies, the range, and the
@@ -445,20 +448,23 @@ ships.
 - **Pinned sources.** codex-lite-cc `2b2454d`, claude-codex-loop `16b8ee7`,
   codex-code-review `f5c7687`, repo-docs `83b14a2`. The house rules, style, and chat
   block come from forge-ops `main` when M3 starts, recorded in the PR; it was `948ce5f`
-  on 2026-10-03, which added two rules after the 2026-10-02 handoff. recode 0.1.3 synced
+  on 2026-10-03, which added two rules after the 2026-10-02 handoff. Release 0.1.3 synced
   the core rules to `9faabda` on 2026-10-04 (`docs/decisions.md` Part 9).
 - **Untracked design docs.** claude-codex-loop's `SPEC.md`, `docs/architecture.md`,
   `docs/build-plan-v0.1.0.md`, and `docs/spec-amendments-draft.md` are excluded from git
   in that repo, so no import carries them. They exist only on the author's disk. They are
   copied by hand into `docs/history/claude-codex-loop/`.
 - **Old plugins.** Setup lists, with uninstall commands: on Claude Code, `codex-lite`,
-  `ccl`, and `repo-docs` from their old marketplaces; on Codex, `codex-code-review`,
-  `codex-code-review-general`, and `repo-docs` from an old marketplace. It never lists
+  `ccl`, and `repo-docs` from their old marketplaces, and `recode-loop` then `recode`
+  from this one; on Codex, `codex-code-review`, `codex-code-review-general`, and
+  `repo-docs` from an old marketplace, and `recode` from this one. The Claude catalog's
+  `renames` map moves `recode` and `recode-loop` installs to `ccx` and `ccx-loop`, so
+  setup finds the Claude ones only after a move that did not happen. It never lists
   the audit plugin, which stays separate. Running old and new together duplicates the
   bridge hook and the review skills.
 - **Audit plugin.** It calls the bridge as `codex-lite:ask` and finds it by the
   `codex-lite@` plugin id on 33 lines. Uninstalling `codex-lite` breaks it until those
-  lines say `recode`. Decided 2026-10-03: the audit repo switches them to `recode` before
+  lines say `ccx`. Decided 2026-10-03: the audit repo switches them to `ccx` before
   cutover uninstalls `codex-lite`. As of 0.6.0 it has not, so `codex-lite` stays.
 - **Cutover**, after release, in three steps so no machine is left without rules:
   1. forge-ops installers stop writing the home instruction files. Today
@@ -486,8 +492,8 @@ ships.
 - The allow rules setup printed in 0.1.0 and 0.1.1 changed with the data directory path,
   so the old rules stop matching. Since 0.1.2 setup prints only the Bash rule, which
   names the installed version's path.
-- Uninstalling `recode` cannot remove the block, because there is no uninstall hook. The
-  README says to run `/recode:rules --remove` first.
+- Uninstalling `ccx` cannot remove the block, because there is no uninstall hook. The
+  README says to run `/ccx:rules --remove` first.
 
 ## Out of scope for v0.1.0
 
