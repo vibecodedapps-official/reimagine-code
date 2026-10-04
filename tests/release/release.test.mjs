@@ -24,6 +24,8 @@ const release = (dir, ...args) => {
   return { status: r.status, out: r.stdout + r.stderr };
 };
 const json = (dir, file) => JSON.parse(readFileSync(join(dir, file), 'utf8'));
+// A Windows checkout holds the JSON files with CRLF endings, so lines are compared without them.
+const lines = (dir, file) => readFileSync(join(dir, file), 'utf8').split(/\r?\n/);
 const versions = (dir) => {
   const market = json(dir, '.claude-plugin/marketplace.json');
   return {
@@ -51,7 +53,7 @@ test('release sets the suite version and the range everywhere, then lint asks fo
     suite: '0.2.0', recode: '0.2.0', loop: '0.2.0', range: '>=0.2.0 <1.0.0', codex: '0.2.0',
     docsClaude: '0.1.2', docsCodex: '0.1.2', catalog: '0.2.0', entries: { recode: '0.2.0', 'recode-loop': '0.2.0', 'repo-docs': '0.1.2' },
   });
-  assert.ok(readFileSync(join(d, 'plugins/recode-loop/.claude-plugin/plugin.json'), 'utf8').includes('\n    { "name": "recode", "version": ">=0.2.0 <1.0.0" }\n'));
+  assert.ok(lines(d, 'plugins/recode-loop/.claude-plugin/plugin.json').includes('    { "name": "recode", "version": ">=0.2.0 <1.0.0" }'));
   heading(d, '## 0.2.0 - 2026-10-04');
   const again = release(d, 'recode', '0.2.0', '--floor', '0.2.0');
   assert.equal(again.status, 0, again.out);
@@ -65,7 +67,7 @@ test('release sets repo-docs in its two manifests and its catalog entry only', (
     suite: '0.1.0', recode: '0.1.0', loop: '0.1.0', range: '>=0.1.0 <1.0.0', codex: '0.1.0',
     docsClaude: '0.1.3', docsCodex: '0.1.3', catalog: '0.1.0', entries: { recode: '0.1.0', 'recode-loop': '0.1.0', 'repo-docs': '0.1.3' },
   });
-  assert.ok(readFileSync(join(d, 'plugins/repo-docs/.codex-plugin/plugin.json'), 'utf8').includes('\n  "author": { "name": "vibecodedapps.net" },\n'));
+  assert.ok(lines(d, 'plugins/repo-docs/.codex-plugin/plugin.json').includes('  "author": { "name": "vibecodedapps.net" },'));
 }));
 
 test('release rejects a malformed request', () => inCopy((d) => {
@@ -104,7 +106,7 @@ test('release raises a plugin changed since its tag, so lint passes again', () =
 
 test('release keeps CRLF line endings, as in a Windows checkout', () => inCopy((d) => {
   const files = ['.claude-plugin/marketplace.json', 'plugins/repo-docs/.claude-plugin/plugin.json', 'plugins/repo-docs/.codex-plugin/plugin.json'];
-  for (const f of files) writeFileSync(join(d, f), readFileSync(join(d, f), 'utf8').replace(/\n/g, '\r\n'));
+  for (const f of files) writeFileSync(join(d, f), readFileSync(join(d, f), 'utf8').replace(/\r?\n/g, '\r\n'));
   const r = release(d, 'repo-docs', '0.1.3');
   assert.equal(r.status, 0, r.out);
   assert.deepEqual([versions(d).docsClaude, versions(d).docsCodex, versions(d).entries['repo-docs']], ['0.1.3', '0.1.3', '0.1.3']);
