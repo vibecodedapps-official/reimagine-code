@@ -308,6 +308,10 @@ if [ "$name" = ground-truth ]; then
 		same "export $id id" "id: $id" "$(grep '^id:' "$F/exports/$id.md" 2>/dev/null)"
 	done
 	same "export GT-0 state" "state: Done" "$(grep '^state:' "$F/exports/GT-0.md" 2>/dev/null)"
+	case $(cat "$F/exports/GT-2.md" 2>/dev/null | tr '\n' ' ' | tr -s ' ') in
+	*'The importer then imports a record linked to such a target, without that link, instead of rejecting the record.'*) ;;
+	*) fail "GT-2 export does not say the importer then imports a record without the dropped link" ;;
+	esac
 	mf=$(tr -d ' \t\r\n' < "$F/manifest.json")
 	same "manifest.json bundle 1" \
 		'{"repo":"./svc","pr":"file:./exports/PR-1.md","branch":"feature","base":"main","run_once":["migrations/*.sh"],"tickets":["file:./exports/GT-1.md","file:./exports/GT-2.md","file:./exports/GT-3.md","file:./exports/GT-4.md","file:./exports/GT-5.md","file:./exports/GT-6.md","file:./exports/GT-7.md","file:./exports/GT-8.md","file:./exports/GT-9.md","file:./exports/GT-10.md","file:./exports/GT-12.md","file:./exports/GT-13.md"]}' \
@@ -323,7 +327,7 @@ if [ "$name" = ground-truth ]; then
 		'If the settings cache cannot be read, the import fails closed and rolls back.' \
 		'Related: PR-3 (branch gt-11-lookup), open against main, changes the lookup function for GT-11.' \
 		'build 1.4.0-17' \
-		'001_create_schema.sh 002_records_columns.sh 003_records_pk.sh f_lookup_ops7.sh f_rank_gt13.sh f_audit_ops8.sh' \
+		'001_create_schema.sh 002_records_columns.sh 003_records_pk.sh f_audit_ops8.sh f_lookup_ops7.sh f_rank_gt13.sh' \
 		'Host=localhost;Database=svc;Username=svc_writer;Password=********'; do
 		case $pr1 in
 		*"$s"*) ;;
@@ -378,6 +382,9 @@ if [ "$name" = ground-truth ]; then
 		fail "S1: importer.sh import K2 does not print 'rejected K2' and exit 1 (exit $rc, output '$out')"
 	run head sh src/sweep.sh
 	same "S1: sweep.sh output" "dropped K3,X2" "$out"
+	run head sh src/importer.sh import K3
+	[ "$rc" -eq 0 ] && [ "$out" = "imported K3" ] ||
+		fail "S1: importer.sh import K3 does not print 'imported K3' and exit 0 (exit $rc, output '$out')"
 
 	# S2: import_contract has no import guard.
 	run head env IMPORTED="$tmp/s2.csv" sh src/handlers.sh import_contract viewer k1
@@ -591,8 +598,11 @@ if [ "$name" = ground-truth ]; then
 	same "R3: 'score is not null' lines in f_rank_gt13.sh at the head" 1 \
 		"$(grep -c 'score is not null' "$tmp/head/migrations/f_rank_gt13.sh" 2>/dev/null)"
 	clone r3 face5b6264f805300d4ede99ba1295f2d5df39b0 && (cd "$tmp/r3" && sh migrate.sh) >/dev/null 2>&1
-	printf '%s\n' 001_create_schema.sh 002_records_columns.sh 003_records_pk.sh f_lookup_ops7.sh \
-		f_rank_gt13.sh f_audit_ops8.sh > "$tmp/r3/data/applied.txt"
+	same "R3: journal of a fresh install at face5b6, as PR-1's thread lists it" \
+		"001_create_schema.sh|002_records_columns.sh|003_records_pk.sh|f_audit_ops8.sh|f_lookup_ops7.sh|f_rank_gt13.sh" \
+		"$(lines < "$tmp/r3/data/applied.txt" 2>/dev/null)"
+	printf '%s\n' 001_create_schema.sh 002_records_columns.sh 003_records_pk.sh f_audit_ops8.sh \
+		f_lookup_ops7.sh f_rank_gt13.sh > "$tmp/r3/data/applied.txt"
 	gm -C "$tmp/r3" checkout -q --detach origin/feature 2>/dev/null
 	run r3 sh migrate.sh
 	[ "$rc" -eq 0 ] && ! says 'defined rank' ||

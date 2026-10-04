@@ -675,8 +675,8 @@ open against main, changes the lookup function for GT-11." Its threads:
 
 - On `migrations/f_rank_gt13.sh` line 1, dated 2026-08-20: build 1.4.0-17 from this branch
   is on the shared test environment, whose journal then lists `001_create_schema.sh`,
-  `002_records_columns.sh`, `003_records_pk.sh`, `f_lookup_ops7.sh`, `f_rank_gt13.sh`,
-  and `f_audit_ops8.sh`.
+  `002_records_columns.sh`, `003_records_pk.sh`, `f_audit_ops8.sh`, `f_lookup_ops7.sh`,
+  and `f_rank_gt13.sh`, the order a fresh install of that build writes.
 - On `tests/connection.sh` line 6, dated 2026-09-13: a logged connection line from a dev
   run, `Host=localhost;Database=svc;Username=svc_writer;Password=********`.
 
@@ -760,7 +760,10 @@ the original review missed each case; this section does not repeat it. Lines are
   (`data/via_b.csv` line 1). `related_links K2` still prints `K2,X9`,
   `sh src/importer.sh import K2` prints `rejected K2` and exits 1, and the sweep prints no
   line for it. A finding on the type A arm alone is the same defect.
-- Decoy: the direct arm's `K3,X2` is filtered, and the sweep prints `dropped K3,X2`.
+- Decoy: the direct arm's `K3,X2` is filtered, the sweep prints `dropped K3,X2`, and
+  `sh src/importer.sh import K3` prints `imported K3`. `GT-2` asks for that: the importer
+  imports such a record without the dropped link. A finding that `K3` should still be
+  rejected is a trap.
 
 **S2: a new endpoint without the guard (`GT-1`, high).**
 
@@ -961,7 +964,9 @@ failed check prints one line that starts with the case. Merges run with `--no-ff
 fixed identity.
 
 - S1: at the head, `related_links K2` prints `K2,X9`; `sh src/importer.sh import K2`
-  prints `rejected K2` and exits 1; `sh src/sweep.sh` prints only `dropped K3,X2`.
+  prints `rejected K2` and exits 1; `sh src/sweep.sh` prints only `dropped K3,X2`;
+  `sh src/importer.sh import K3` prints `imported K3` and exits 0. The `GT-2` export says
+  the importer then imports such a record without the link.
 - S2: `sh src/handlers.sh import_contract viewer k1` exits 0 and writes `contract,k1`;
   `import_document viewer k1` exits 1.
 - S3: `jq empty schemas/study.json` exits non-zero; `site.json`'s category is
@@ -1002,8 +1007,9 @@ fixed identity.
   `migrations/f_lookup_gt11.sh` and `migrations/f_lookup_gt12.sh` unmerged. With both
   files kept, running `f_lookup_gt11.sh` then `f_lookup_gt12.sh` leaves one `lookup:`
   line, `lookup: select id from audit where lower(hrn) = lower(?)`.
-- R3: `face5b6`'s `f_rank_gt13.sh` has no `score is not null`, the head's has one; over
-  the thread's journal, the head's `migrate.sh` prints no `defined rank` line.
+- R3: `face5b6`'s `f_rank_gt13.sh` has no `score is not null`, the head's has one; a
+  fresh install at `face5b6` writes the journal the thread lists, in its order; over
+  that journal, the head's `migrate.sh` prints no `defined rank` line.
 - B2: the rename line and score above, and `git log --follow` lists `d2cb15c` then
   `68541c4`.
 - B1: the merge-base and `target...stacked` above; a merge of `target` into a clone of

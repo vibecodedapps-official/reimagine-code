@@ -381,3 +381,80 @@ file is kept as `converged.merger-failed.md`. The merger reads only the ledger f
 which hold no trace content. And, as in both earlier runs, agents logged read-only
 commands outside hard rule 2's list (`cat` of run-directory files, `ls -R`,
 `git ls-tree`, `git rev-parse`).
+
+# Detection record: the `ground-truth` fixture (2026-10-04)
+
+One run found 16 of the 20 cases, all in pass one, missed 4, and counted one decoy. One
+run is one sample, not a rate.
+
+It ran headless with
+`claude -p "/cca:audit <manifest> --effort medium --budget 240" --plugin-dir <snapshot>
+--model opus --output-format stream-json`, from the fixture's `svc` checkout, on a fresh
+`sh tests/fixture/build.sh ground-truth` build from `2b6f65d` (feature head `2a88b28`,
+stacked head `4aa559a`). The snapshot held only `.claude-plugin`, `agents`, `commands`,
+and `skills` from `bf0b004` (0.6.0), archived outside the repo; the stream's init line
+named it as the only `cca` plugin. The brief records `medium`, set by `--effort` (auto
+would have chosen `high`). Codex ran stage 6.
+
+Run `2026-10-04-0054-svc-pr-1`, stage 1 started 04:54Z and stage 8 ended 06:06Z, ended
+`reported`, verdict `not ready`, 45 items (3 high, 18 medium, 17 low, 7 note, 1
+contested), every stage complete but 2 and 3 (not applicable). The session reported a
+cost of $57.66 (`total_cost_usd`, at list price, without Codex), against an estimate of
+$25 to $40. Agent tokens in `usage.md` sum to 2,768,909 over 20 agents.
+
+| Case | Case set severity | First stage | Final item |
+|---|---|---|---|
+| S1 type A and B arms unfiltered | medium | pass one (`import-api-F2`, `tests-hygiene-F11`) | C3, medium, `verified fact` |
+| S2 `import_contract` without the guard | high | pass one (`import-api-F1`, `tests-hygiene-F1`) | C1, high, `verified fact` |
+| S3 two of four schemas | medium | pass one (`records-F1`, `tests-hygiene-F9`) | C5, medium; does not notice that `study.json` is invalid JSON |
+| S4 site update loses `source_id` | medium | pass one (`records-F5`) | C9, low |
+| S5 invoice specs still require `items` | low | pass one (`records-F2`, `tests-hygiene-F10`) | C6, medium |
+| T1 waiver after the base prefix | high | pass one (`bulk-rules-F1`) | C11, medium; its pass-one finding names `a1dfff3`; C12 (medium) for the two tests |
+| T2 text checks as coverage | medium | pass one (`sql-F1`, `tests-hygiene-F7`) | C18, medium; C19 (low) for text-only checks |
+| T3 control after a throwing assertion | low | pass one (`harness-F4`) | C29, low |
+| T4 `LAST_ROW` across scenarios | low | pass one (`harness-F3`, `tests-hygiene-F16`) | C28, low |
+| T5 untagged `report_reader` | low | pass one (`harness-F2`, `tests-hygiene-F15`) | C27, counts at medium (contested); C31 (low) |
+| C1 settings callee fails two ways | high | pass one (`bulk-rules-F2`) | C14, high; the silent-off half only |
+| C2 `office_code` rule follows the tenant | medium | none | none |
+| C3 store read without `APP_TENANT` | medium | pass one (`harness-F1`, `tests-hygiene-F14`) | C26, medium, `verified fact` |
+| H1 read as `svc_writer` | medium | none | none |
+| H2 built hrn query | low | pass one (`harness-F8`) | C34, note |
+| R1 rename reruns the key rebuild | medium | none | none |
+| R2 two renames of one script | high | pass one (`migrations-F2`, `tests-hygiene-F19`, `interactions-F3`) | C39, medium |
+| R3 journaled name, later body | medium | pass one (`migrations-F1`, `tests-hygiene-F18`) | C38, medium, `unverified assumption`, live check |
+| B2 rename and edit in one commit | low | none | none |
+| B1 stacked on the old target | medium | pass one (`harness-F6`, `stacked-F2`, `interactions-F1`, `interactions-F2`) | C32, medium |
+
+What the run said where it missed:
+
+- R1: `migrations-OK8` holds that each renamed script is safe to rerun, and the late
+  verdict on C43 calls the key step idempotent. Both judge the end state, which a rerun
+  leaves the same; the case's harm is the rebuild itself on every install.
+- H1: `harness-OK5` checked only that the scenario's role tag matches the account it
+  reads as.
+- B2: `migrations-OK9` counts the rename and the edit in one commit as a good thing,
+  since no build carried the new name with the old body.
+- C2: no item names the `office_code` rule. The closest, C15, compares the old all-on
+  default with the new reading of unknown values.
+- C1's other half: `bulk-rules-OK1` calls the stop on a missing or locked cache correct,
+  so no item says one cache failure ends the whole batch.
+
+Decoys: C2 (high) says the importer now imports `K3`, linked directly to a rejected
+target, instead of rejecting it. That is S1's decoy counted, a trap. `GT-2` then did not
+say what the importer should do with such a record, so the reading was open; the ticket
+now says the record is imported without the link. The masked password (`harness-OK6`),
+`health`, and `scenario_report_audit` were not counted.
+
+The claims check marked 5 of the 14 claims false: GT-1, GT-2, GT-5, GT-6, and GT-8,
+through C1, C3 and C2, C6, C14, and C18. It marked GT-7's claim true at the head; the
+merge case is C11.
+
+The other 25 items are outside the cases. Several are correct findings on the fixture's
+own code: C13, the waiver has no caller (the fixture does not wire it); C20 to C25, on
+the planted SQL; C36, no test command runs the fetch scenarios; C41, the office-columns
+step on a rerun.
+
+Fixture changes after the run, both in exports, with commit ids unchanged: `GT-2` states
+the importer's behavior as above, and the journal in `PR-1`'s thread is in the order
+`migrate.sh` writes. Pass two had noted the old order, which weakened C38's inference
+but not its finding. A run on the current fixture may differ on S1's decoy and R3.

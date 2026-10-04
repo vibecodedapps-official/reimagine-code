@@ -1686,8 +1686,9 @@ import endpoints.
 EOF
 	gt_ticket GT-2 "Skip ineligible targets in related links" "In Progress" <<'EOF'
 `related_links` in src/links.sh must not report a link to a target whose status is
-neither active nor pending. Add src/sweep.sh, which prints the links dropped this way as
-`dropped <record>,<target>`.
+neither active nor pending. The importer then imports a record linked to such a target,
+without that link, instead of rejecting the record. Add src/sweep.sh, which prints the
+links dropped this way as `dropped <record>,<target>`.
 EOF
 	gt_ticket GT-3 "Use the category reference in the record schemas" "In Progress" <<'EOF'
 The `category` property of the person, org, site, and study schemas in schemas/ is a
@@ -1775,9 +1776,9 @@ threads:
               001_create_schema.sh
               002_records_columns.sh
               003_records_pk.sh
+              f_audit_ops8.sh
               f_lookup_ops7.sh
               f_rank_gt13.sh
-              f_audit_ops8.sh
   - file: tests/connection.sh
     line: 6
     comments:
