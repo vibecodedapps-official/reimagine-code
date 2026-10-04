@@ -3,6 +3,47 @@
 One changelog for the suite. Each release has a subsection per component. The source
 repos' own changelogs are kept under `docs/history/`.
 
+## 0.3.0 - 2026-10-04
+
+### ccx
+
+- Version 0.3.0, to stay in step with `ccx-loop`. No change.
+
+### ccx-loop
+
+- The loop has four effort tiers: `low`, `medium`, `high`, and `xhigh`. The max tier is
+  gone, and an xhigh-shaped change with a risk floor trigger is now xhigh.
+- The final review has one reviewer role per run, not Codex and Claude together. A run
+  is higher-risk when the change carries a risk floor trigger, touches more than eight
+  distinct files across all slices, or adds a new module, type, interface, or rule
+  section that another file cites. A higher-risk run gets Claude: `code-review` at the
+  tier's level, or its Opus stand-in in a worktree run and for each additional
+  repository. Any other run gets Codex `gpt-6-astra`. The rule is judged on the plan and
+  again before every review, and a run that turns higher-risk stays on Claude. It picks
+  the reviewer only and never raises the tier.
+- Plan review is Codex `gpt-6-astra` at every tier. Implementation is `gpt-6.1-sol` at
+  low and medium and `gpt-6-astra` at high and xhigh. `gpt-6-luna` is no longer used.
+- At high and xhigh, a slice that has a risk floor trigger, owns more than eight files,
+  or adds a cited new module is implemented by Sonnet, not Opus. Opus no longer
+  implements. A Sonnet slice whose call errors stops the run.
+- `code-review` is needed only for a higher-risk run. A lower-risk run, including one
+  under `--no-codex`, does not need it. A lower-risk run that turns higher-risk in the
+  final review or a CI repair, and finds the skill missing, ends `blocked`. A higher-risk
+  run under `--no-codex` still gets Claude.
+- In a multi-repo run the chosen role covers every changed repository, and the patch
+  files are written whichever role is chosen.
+
+### ccx (Codex)
+
+- Version 0.3.0, to stay in step with `ccx-loop`. No change.
+
+### Breaking
+
+- `--effort max` is removed from `/ccx-loop:run` and `/ccx-loop:plan`. Both commands
+  reject it and point to `--effort xhigh`.
+- A run no longer gets a Codex review and a Claude review of the same diff. A higher-risk
+  run gets Claude only, and any other run gets Codex only.
+
 ## 0.2.0 - 2026-10-04
 
 ### ccx
