@@ -174,3 +174,50 @@ test('lint rejects a loop command that does not read the codex option', () => fa
     writeFileSync(p, s.replace('`${user_config.codex}`', '`true`'));
   },
   'plugins/recode-loop/commands/plan.md: must read the codex option as `${user_config.codex}`'));
+
+test('lint rejects a codex catalog with another name', () => fails(
+  (d) => editJson(d, '.agents/plugins/marketplace.json', (j) => { j.name = 'codex-code-review'; }),
+  '.agents/plugins/marketplace.json: name must be reimagine-code, not codex-code-review'));
+
+test('lint rejects a codex catalog entry that is not available on install', () => fails(
+  (d) => editJson(d, '.agents/plugins/marketplace.json', (j) => { j.plugins[0].policy.installation = 'NOT_AVAILABLE'; }),
+  '.agents/plugins/marketplace.json: recode: policy must be installation AVAILABLE and authentication ON_INSTALL'));
+
+test('lint rejects a codex catalog that lists a claude-only plugin', () => fails(
+  (d) => editJson(d, '.agents/plugins/marketplace.json', (j) => {
+    j.plugins.push({ name: 'recode-loop', source: { source: 'local', path: './plugins/recode-loop' }, policy: { installation: 'AVAILABLE', authentication: 'ON_INSTALL' } });
+  }),
+  '.agents/plugins/marketplace.json: recode-loop: source ./plugins/recode-loop is not a Codex plugin in PLUGINS'));
+
+test('lint rejects a codex catalog without repo-docs', () => fails(
+  (d) => editJson(d, '.agents/plugins/marketplace.json', (j) => { j.plugins = j.plugins.filter((e) => e.name !== 'repo-docs'); }),
+  '.agents/plugins/marketplace.json: no entry for plugins/repo-docs'));
+
+test('lint rejects a codex catalog entry named apart from its manifest', () => fails(
+  (d) => editJson(d, '.agents/plugins/marketplace.json', (j) => { j.plugins[0].name = 'codex-code-review-general'; }),
+  '.agents/plugins/marketplace.json: entry codex-code-review-general differs from plugins/recode-codex manifest recode'));
+
+test('lint rejects the codex manifest on another schema', () => fails(
+  (d) => editJson(d, 'plugins/recode-codex/plugin.json', (j) => { j.$schema = 'https://agent-plugins.org/schemas/1.1.0/plugin.schema.json'; }),
+  'plugins/recode-codex/plugin.json: $schema must be https://agent-plugins.org/schemas/1.0.0/plugin.schema.json'));
+
+test('lint rejects the codex recode off the suite version', () => fails(
+  (d) => editJson(d, 'plugins/recode-codex/plugin.json', (j) => { j.version = '0.2.0'; }),
+  'plugins/recode-codex: version 0.2.0 differs from the suite version 0.1.0 in package.json'));
+
+test('lint rejects repo-docs manifests with different versions', () => fails(
+  (d) => editJson(d, 'plugins/repo-docs/.codex-plugin/plugin.json', (j) => { j.version = '0.1.1'; }),
+  'plugins/repo-docs/.codex-plugin/plugin.json: version 0.1.1 differs from 0.1.2 in .claude-plugin/plugin.json'));
+
+test('lint rejects the codex plugin without its NOTICE', () => fails(
+  (d) => rmSync(join(d, 'plugins/recode-codex/NOTICE')),
+  'plugins/recode-codex/NOTICE: missing, or without the upstream NOTICE text'));
+
+test('lint rejects a review skill without its provenance comment', () => fails(
+  (d) => {
+    const p = join(d, 'plugins/recode-codex/skills/general-code-review-testing/SKILL.md');
+    const s = readFileSync(p, 'utf8');
+    assert.ok(s.includes('<!-- Modified. Adapted from openai/codex '), 'the skill lacks its comment');
+    writeFileSync(p, s.split('\n').filter((l) => !l.startsWith('<!-- Modified. Adapted from openai/codex ')).join('\n'));
+  },
+  'plugins/recode-codex/skills/general-code-review-testing/SKILL.md: lacks its provenance comment'));

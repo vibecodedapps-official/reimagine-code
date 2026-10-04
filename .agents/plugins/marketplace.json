@@ -1,14 +1,14 @@
 {
-  "name": "codex-code-review",
+  "name": "reimagine-code",
   "interface": {
-    "displayName": "Codex Code Review"
+    "displayName": "reimagine-code"
   },
   "plugins": [
     {
-      "name": "codex-code-review",
+      "name": "recode",
       "source": {
         "source": "local",
-        "path": "./plugins/codex-code-review"
+        "path": "./plugins/recode-codex"
       },
       "policy": {
         "installation": "AVAILABLE",
@@ -17,10 +17,10 @@
       "category": "Productivity"
     },
     {
-      "name": "codex-code-review-general",
+      "name": "repo-docs",
       "source": {
         "source": "local",
-        "path": "./plugins/codex-code-review-general"
+        "path": "./plugins/repo-docs"
       },
       "policy": {
         "installation": "AVAILABLE",

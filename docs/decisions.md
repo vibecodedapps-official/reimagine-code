@@ -154,3 +154,21 @@ catalog at `feat/loop`.
    2026-10-03 by the author over keeping ccl's behavior for 0.2.0. At b1ccbee the same
    four runs on the same private repositories each ended `done` with CI green, and each
    report named the 403. Observed on runs of 2026-10-03.
+
+## Part 5: M5 Codex plugin and repo-docs, 2026-10-03
+
+Run on macOS with Claude Code 2.1.288 and Codex CLI 0.159.2, with both plugins
+installed from this repository's catalogs at `feat/codex-and-repo-docs`.
+
+1. **The pointers to the repo-docs skill files stay in the root hub.** repo-docs
+   0.1.1 indexed its skill files in its own `AGENTS.md`. As a directory spoke, that
+   file holds no index, and the hub points to it and to each skill file. repo-docs
+   counts "a pointer outside the index" as a finding, and the index is the hub's
+   `## Spokes` section (`references/spokes.md`, pointer grammar). The audit of this
+   repository on 2026-10-03 reported no errors and flagged these pointers' scope as a
+   finding; moving them into the spoke would trade that finding for the other one.
+2. **The spoke dropped its copy of the `@token` rule.** repo-docs 0.1.1 told agents
+   to put a bare `@token` in backticks in commit subjects and release notes. The hub
+   already said so for commit subjects and PR text, and repo-docs counts a rule in both
+   the hub and a directory spoke with the same meaning as a finding (judgment check
+   2). The hub's rule now names release notes too, and the spoke has none.

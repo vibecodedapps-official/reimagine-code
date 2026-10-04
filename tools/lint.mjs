@@ -34,6 +34,8 @@ const PLUGINS = [
     { files: ["scripts/codex.mjs", "scripts/recode.mjs"], max: 700 }, { files: ["scripts/rules.mjs"], max: 400 }, { files: ["scripts/suite.mjs"], max: 200 },
   ] },
   { dir: "plugins/recode-loop", catalogs: ["claude"], family: true, budgets: [] },
+  { dir: "plugins/recode-codex", catalogs: ["codex"], family: true, budgets: [] },
+  { dir: "plugins/repo-docs", catalogs: ["claude", "codex"], family: false, budgets: [] },
 ];
 // Old names a shipped file may still contain, by repository-relative path: the migration literals of R7.
 const OLD_NAME_LITERALS = {
@@ -92,12 +94,15 @@ if (market) {
     if (!entries.some((e) => String(e.source ?? "").replace(/^\.\//, "") === pl.dir)) fail(`.claude-plugin/marketplace.json: no entry for ${pl.dir}`);
   }
 }
+// A Codex plugin's manifest is .codex-plugin/plugin.json when the plugin also serves Claude Code, else plugin.json at its root.
+const codexPath = (dir) => (existsSync(join(root, dir, ".codex-plugin", "plugin.json")) ? `${dir}/.codex-plugin/plugin.json` : `${dir}/plugin.json`);
+const codexManifests = new Map(PLUGINS.filter((pl) => pl.catalogs.includes("codex")).map((pl) => [pl.dir, json(codexPath(pl.dir))]));
 for (const pl of PLUGINS.filter((p) => p.family)) {
-  const v = manifests.get(pl.dir)?.version;
+  const v = (manifests.get(pl.dir) ?? codexManifests.get(pl.dir))?.version;
   if (pkg && v !== undefined && v !== pkg.version) fail(`${pl.dir}: version ${v} differs from the suite version ${pkg.version} in package.json`);
 }
-const repos = [...new Set([...manifests.values()].filter(Boolean).map((m) => String(m.repository ?? "")))];
-if (repos.length > 1) fail(`Claude manifests name different repositories: ${repos.join(", ")}`);
+const repos = [...new Set([...manifests.values(), ...codexManifests.values()].filter(Boolean).map((m) => String(m.repository ?? "")).filter((r) => r))];
+if (repos.length > 1) fail(`Plugin manifests name different repositories: ${repos.join(", ")}`);
 const readme = read("README.md");
 if (readme !== null && market && repos.length === 1) {
   const repo = repos[0].replace(/^https:\/\/github\.com\//, "").replace(/\.git$/, "");
@@ -240,6 +245,40 @@ for (const p of shipped.filter((f) => rel(f).startsWith("plugins/recode-loop/"))
 for (const f of ["run", "plan"].map((n) => `plugins/recode-loop/commands/${n}.md`)) {
   const text = read(f);
   if (text !== null && !text.includes("`${user_config.codex}`")) fail(`${f}: must read the codex option as \`\${user_config.codex}\``);
+}
+
+// 17. The Codex catalog lists exactly the Codex plugins above, each available and authenticated on install (R2), and agrees with
+// their manifests; the root plugin.json form is pinned to the agent-plugins.org 1.0.0 schema, which Codex accepts (R27); a plugin
+// with both manifests carries one version (R48); and the review skills keep the upstream NOTICE and their provenance comments (R28).
+const codexMarket = json(".agents/plugins/marketplace.json");
+const codexRows = PLUGINS.filter((pl) => pl.catalogs.includes("codex"));
+if (codexMarket) {
+  const at = ".agents/plugins/marketplace.json";
+  if (codexMarket.name !== "reimagine-code") fail(`${at}: name must be reimagine-code, not ${codexMarket.name}`);
+  const entries = codexMarket.plugins ?? [];
+  for (const e of entries) {
+    const src = String(e.source?.path ?? "").replace(/^\.\//, "");
+    if (e.source?.source !== "local" || !codexRows.some((pl) => pl.dir === src)) { fail(`${at}: ${e.name}: source ${e.source?.path} is not a Codex plugin in PLUGINS`); continue; }
+    if (e.policy?.installation !== "AVAILABLE" || e.policy?.authentication !== "ON_INSTALL") fail(`${at}: ${e.name}: policy must be installation AVAILABLE and authentication ON_INSTALL`);
+    const m = codexManifests.get(src);
+    if (m && e.name !== m.name) fail(`${at}: entry ${e.name} differs from ${src} manifest ${m.name}`);
+  }
+  for (const pl of codexRows) {
+    if (!entries.some((e) => String(e.source?.path ?? "").replace(/^\.\//, "") === pl.dir)) fail(`${at}: no entry for ${pl.dir}`);
+  }
+}
+const schema = "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json";
+for (const pl of codexRows) {
+  const p = codexPath(pl.dir);
+  const m = codexManifests.get(pl.dir);
+  if (m && p === `${pl.dir}/plugin.json` && m.$schema !== schema) fail(`${p}: $schema must be ${schema}`);
+  const c = manifests.get(pl.dir);
+  if (m && c && m.version !== c.version) fail(`${p}: version ${m.version} differs from ${c.version} in .claude-plugin/plugin.json`);
+}
+const notice = existsSync(join(root, "plugins/recode-codex/NOTICE")) ? readFileSync(join(root, "plugins/recode-codex/NOTICE"), "utf8") : "";
+if (!/The upstream NOTICE file reads:\s+OpenAI Codex\s+Copyright 2025 OpenAI/.test(notice)) fail("plugins/recode-codex/NOTICE: missing, or without the upstream NOTICE text");
+for (const p of shipped.filter((f) => /^plugins\/recode-codex\/skills\/[^/]+\/SKILL\.md$/.test(rel(f)))) {
+  if (!readFileSync(p, "utf8").split("\n").some((l) => l.startsWith("<!-- Modified. Adapted from openai/codex "))) fail(`${rel(p)}: lacks its provenance comment`);
 }
 
 if (failures.length) {
