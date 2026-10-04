@@ -159,6 +159,35 @@ name a plugin are rerun under the new names and recorded here.
     made in the author's own profile. Covers R31. Rerun when the hub, a file under
     `plugins/repo-docs/`, or the skill changes. Run 2026-10-03; see the record.
 
+16. **Always-on cost.** Setup: a logged-in scratch profile with this repository's
+    catalog added from `main` and `recode-loop` and `repo-docs` installed. Command:
+    `claude plugin details <plugin>@reimagine-code` for `recode` and `recode-loop`.
+    Expected: "Always-on" at most 1,300 tokens for `recode` and at most 510 for
+    `recode-loop`. Covers R8. Rerun at each release. Run 2026-10-03; see the record.
+17. **Tags.** Setup: the release commit on `main`. Command: `claude plugin tag --push`
+    on `plugins/recode`, then `plugins/recode-loop`, then `plugins/repo-docs`; then
+    `git ls-remote --tags origin`. Expected: each tag command checks the manifest against
+    its catalog entry and pushes; the remote holds `recode--v0.1.0`,
+    `recode-loop--v0.1.0`, and `repo-docs--v0.1.2`, and no bare `v` tag. Covers R49.
+    Rerun at each release. Not yet run.
+18. **Install from GitHub.** Setup: on macOS and on Windows 11 with both CLIs from npm,
+    new scratch profiles on each host. Command: the four lines of R3, then `claude plugin
+    install recode-loop@reimagine-code` and `codex plugin add
+    repo-docs@reimagine-code`; then `/recode:setup` and `/recode:ask` with a short
+    question. Expected: each install succeeds at the tagged version; the loop's install
+    also installs `recode`; setup passes; the ask prints Codex's answer; `codex plugin
+    list` shows both Codex plugins. Run from the private repository after tagging, then
+    once per host from the public one. Covers R3 and R4. Rerun at each release. Not yet
+    run.
+19. **Windows.** Setup: the Windows 11 work machine with both CLIs from npm, the suite
+    installed as in item 18, and a test repository checked out under a path that holds
+    a space. Command: `/recode:ask` and `/recode:implement` with a one-line change;
+    `/recode:rules` against a `CLAUDE.md` with CRLF line endings; a commit by the agent
+    in each host, Codex after trusting the hook. Expected: the ask and implement succeed;
+    the rules block is added with the file's CRLF endings kept; the repo-docs hook adds
+    its reminder on both hosts. Covers R53. Rerun when the bridge's spawn code, the rules
+    command, or the hook changes. Not yet run.
+
 ## Record of runs
 
 Each entry gives the date, the machine, the Claude Code, Codex, and Node versions, the
@@ -449,3 +478,15 @@ under `/tmp/recode-accept/m5/`.
   and `docs/architecture.md`, `docs/rename-map.md`, and this file are long.
 - **Not run.** The hook on Windows from a path with a space (R53), and installing from
   the published repository (R3), which waits for M6.
+
+### 2026-10-03: M6, release 0.1.0, before tagging
+
+macOS 27.0, Claude Code 2.1.288, Node 26.4.0. The M4 scratch profile, with the catalog
+removed and added again from `main` at 6dc678e.
+
+- **Item 16 passed.** `claude plugin details` reported "Always-on: ~1,256 tok" for
+  `recode`, under R8's 1,300, and "~497 tok" for `recode-loop`, under 510. `repo-docs`
+  reported ~169.
+- **R51, by review.** The README states Claude Code 2.1.288 and Codex CLI 0.159.2, the
+  versions the M3 to M5 items ran on, and Node 22 or later, and says Claude Code before
+  2.1.269 lacks features the suite uses (`docs/decisions.md` Part 6 item 1).

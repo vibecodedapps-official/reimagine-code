@@ -416,14 +416,20 @@ there so the block stays identical to what ships.
   exists; no old names remain in shipped files,
   apart from the migration literals it lists by file; shipped files are ASCII;
   per-module line budgets; the Codex schema URL is 1.0.0;
-  every plugin directory holds LICENSE, and `plugins/recode-codex/` also NOTICE.
-- **Release** (`tools/release.mjs`): sets a version line in every manifest and catalog
-  entry it covers and the dependency range, and checks the changelog has the heading.
-  Tagging stays with `claude plugin tag`.
+  every plugin directory holds LICENSE, and `plugins/recode-codex/` also NOTICE; a
+  plugin changed since its highest `<name>--v<version>` tag carries a higher version,
+  the Codex `recode` against the bridge's tags, which share its name; and the changelog
+  has a dated heading for the suite version.
+- **Release** (`tools/release.mjs`): `recode <version> [--floor <version>]` or
+  `repo-docs <version>` sets the version line in every manifest and catalog entry that
+  carries it, and with `--floor` the loop's dependency range, writing no file unless all
+  can be set cleanly. It then runs lint, which checks the copies, the range, and the
+  changelog heading. Tagging stays with `claude plugin tag`.
 - **CI**: GitHub Actions on Ubuntu, macOS, and Windows with Node 22, running lint and
   tests, then `claude plugin validate --strict` on the root and on each plugin
   directory. CI installs the Claude Code npm package, pinned to a version, for that step
-  only (approved 2026-10-03).
+  only (approved 2026-10-03). The test job checks out the full history and tags, which
+  the tag rule needs; lint fails in a shallow clone.
 - **`.gitattributes`** keeps `*.sh`, `*.mjs`, and `*.md` at LF, so Windows checkouts do not
   break the repo-docs hook script.
 

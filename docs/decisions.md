@@ -172,3 +172,22 @@ installed from this repository's catalogs at `feat/codex-and-repo-docs`.
    already said so for commit subjects and PR text, and repo-docs counts a rule in both
    the hub and a directory spoke with the same meaning as a finding (judgment check
    2). The hub's rule now names release notes too, and the spoke has none.
+
+## Part 6: M6 release, 2026-10-03
+
+1. **R51 names 2.1.269, not 2.1.139.** R51 let the README name 2.1.139 as the
+   documented feature floor. The architecture's floor note, from the Claude Code docs and
+   changelog, puts the newest feature the suite uses at 2.1.269: `userConfig` rows in
+   `/config` and `/output-style` with an argument. 2.1.139 would be a false floor. R51
+   now lets the README say Claude Code before 2.1.269 lacks features the suite uses,
+   without promising 2.1.269. The README states 2.1.288 and Codex CLI 0.159.2: the
+   items from M3 on ran on 2.1.288, and M2's on 2.1.284, so only 2.1.288 has run the
+   whole suite.
+2. **The Codex `recode` is held to the bridge's tags.** R49 tags the Claude plugins
+   only, and Codex installs whatever is on `main`. The Codex plugin shares the bridge's
+   name and the family version, so lint compares a change under `plugins/recode-codex/`
+   with the highest `recode--v` tag, and a change to it alone needs a family release.
+3. **A shallow clone fails lint.** actions/checkout fetches one commit and no tags by
+   default, which would turn the tag rule off without a word. The test job now fetches
+   the full history, and lint fails in a shallow clone, so a later change to the
+   checkout cannot switch the rule off unnoticed.
