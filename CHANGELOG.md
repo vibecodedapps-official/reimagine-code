@@ -1,13 +1,19 @@
 # Changelog
 
-## Unreleased
+## 0.7.0 - 2026-10-04
+
+Adds an opt-in stage 1 step that runs a bundle's changed tests with the change reverted,
+so a test that passes without its change is shown by a run, not only flagged by reading.
+Nothing new runs unless a bundle sets `test_command`. A run started under 0.6.0 or
+earlier reruns from stage 1 on resume.
 
 ### Added
 
 - The `ground-truth` fixture: 20 confirmed findings from a hand review, de-identified
   in `tests/fixture/ground-truth-cases.md`, planted in one repo across two bundles, with
   decoys and checks that show each defect is real (#21). Detection is recorded per audit
-  run in `docs/acceptance.md`.
+  run in `docs/acceptance.md`: 16 of the 20 cases under 0.6.0, and 15 with the test
+  keys, at about 3% more cost. One run each is one sample.
 - Optional `test_command` and `test_run` bundle keys, with `test_paths`, `test_setup`,
   and `test_timeout`. Stage 1 then runs each changed test file in a copy of the head and
   in a copy of the merge-base with the test code at its head state, and writes one
