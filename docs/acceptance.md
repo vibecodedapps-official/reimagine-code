@@ -163,13 +163,14 @@ name a plugin are rerun under the new names and recorded here.
     catalog added from `main` and `recode-loop` and `repo-docs` installed. Command:
     `claude plugin details <plugin>@reimagine-code` for `recode` and `recode-loop`.
     Expected: "Always-on" at most 1,300 tokens for `recode` and at most 510 for
-    `recode-loop`. Covers R8. Rerun at each release. Run 2026-10-03; see the record.
+    `recode-loop`. Covers R8. Rerun at each release. Run 2026-10-03 for 0.1.0 and
+    2026-10-04 for 0.1.1; see the records.
 17. **Tags.** Setup: the release commit on `main`. Command: `claude plugin tag --push`
     on `plugins/recode`, then `plugins/recode-loop`, then `plugins/repo-docs`; then
     `git ls-remote --tags origin`. Expected: each tag command checks the manifest against
-    its catalog entry and pushes; the remote holds `recode--v0.1.0`,
-    `recode-loop--v0.1.0`, and `repo-docs--v0.1.2`, and no bare `v` tag. Covers R49.
-    Rerun at each release. Run 2026-10-03; see the record.
+    its catalog entry and pushes; the remote holds a `<plugin>--v<version>` tag for each
+    plugin's new version, and no bare `v` tag. Covers R49. Rerun at each release. Run
+    2026-10-03 for 0.1.0 and 2026-10-04 for 0.1.1; see the records.
 18. **Install from GitHub.** Setup: on macOS and on Windows 11 with both CLIs from npm,
     new scratch profiles on each host. Command: the four lines of R3, then `claude plugin
     install recode-loop@reimagine-code` and `codex plugin add
@@ -178,8 +179,9 @@ name a plugin are rerun under the new names and recorded here.
     also installs `recode`; setup passes; the ask prints Codex's answer; `codex plugin
     list` shows both Codex plugins. Run from the private repository after tagging, then
     once per host from the public one. Covers R3 and R4. Rerun at each release. Run on
-    macOS 2026-10-03 from the private repository; see the record. Not yet run on
-    Windows or from the public repository.
+    macOS and Windows 2026-10-03 for 0.1.0, and on macOS 2026-10-04 for 0.1.1, from the
+    private repository and then the public one; see the records. Not yet run on Windows
+    from the public repository.
 19. **Windows.** Setup: the Windows 11 work machine with both CLIs from npm, the suite
     installed as in item 18, and a test repository checked out under a path that holds
     a space. Command: `/recode:ask` and `/recode:implement` with a one-line change;
@@ -187,7 +189,7 @@ name a plugin are rerun under the new names and recorded here.
     in each host, Codex after trusting the hook. Expected: the ask and implement succeed;
     the rules block is added with the file's CRLF endings kept; the repo-docs hook adds
     its reminder on both hosts. Covers R53. Rerun when the bridge's spawn code, the rules
-    command, or the hook changes. Not yet run.
+    command, or the hook changes. Run 2026-10-03; see the record.
 
 ## Record of runs
 
@@ -519,5 +521,73 @@ d928f13, the merge of PR 7.
   `workspace-write` sandbox proven, and "old plugins: none found". `/recode:ask` with
   "What is 17 times 3? Reply with the number only." printed "51" and `status: ok`. The
   new Codex home held a copy of the author's Codex login for the ask, deleted afterward.
-- **Not yet run.** Item 18 on Windows, item 19, and the installs from the public
-  repository.
+- **Windows and the public repository.** See the next two records.
+
+### 2026-10-03: M6, Windows, recode 0.1.0 and repo-docs 0.1.2
+
+Windows 11 Pro 10.0.26200, Claude Code 2.1.283 and codex-cli 0.157.1 from npm, the
+newest that npm's 7-day minimum release age allowed, Node 26.4.0, Git 2.55.0.windows.5,
+and PowerShell 7.6.6 from the Microsoft Store. The scratch `CLAUDE_CONFIG_DIR` and
+`CODEX_HOME` were under `~/.cache/recode-acceptance`, the Codex home set `[windows]
+sandbox = "unelevated"`, and the test repositories were under `C:\recode accept\`. The
+runs were made by a session on the work machine and reported here.
+
+- **Item 18 passed, from the private repository at d928f13.** Both catalogs were added.
+  `recode` 0.1.0, `recode-loop` 0.1.0, and `repo-docs` 0.1.2 installed, and installing
+  the loop alone printed "(+ 1 dependency: recode)". `codex plugin list` showed `recode`
+  0.1.0 and `repo-docs` 0.1.2. `/recode:setup` passed. `/recode:ask` printed "51" and
+  `status: ok` in an interactive session in default mode.
+- **Known, not fixed: the ask's request-file Write on Windows.** In headless runs, the
+  Write was refused as sensitive in default and acceptEdits modes. In auto mode the
+  classifier gave no verdict, in 4 of 4 runs, one of them interactive. Not tried: the
+  Edit allow rule that `/recode:setup` prints.
+- **Item 19 passed, after the fixes below.**
+  - Implement, called through a test skill, edited `math.mjs`. Codex reported "Shell
+    startup failed", the limit of Store PowerShell that the bridge's README describes.
+  - `/recode:rules` on a `CLAUDE.md` with CRLF endings added the block with 84 CRLF and
+    no bare LF, and `--remove` restored the file byte for byte. The `windows` option
+    was offered and on by default.
+  - The hook reminded before a commit through Claude Code's Bash tool (commit d61c01b).
+    Through the PowerShell tool, which a new profile used as its primary shell, there
+    was no reminder (26def5c). In Codex there was no reminder (d2d0059): only `Git\cmd`
+    was on `PATH`, so `sh` was not found. With `Git\bin` on `PATH`, it reminded
+    (015f362).
+- **Defects, fixed in recode 0.1.1 and repo-docs 0.1.3.** These were fixed in PR 8;
+  `docs/decisions.md` Part 7 has the evidence.
+  - In a new Codex home, one of Codex's first sandboxed commands took 28.8 to 31.6 s,
+    and 1 of 5 setups failed at the probe's 30 s limit.
+  - The hook gained a `PowerShell` entry, and a commit through that tool then got the
+    reminder (865cb70).
+  - The README now says Codex needs Git's `bin` folder on `PATH`. With it there, the
+    hook reminded (593f6c1), and the trust record made for 0.1.2 still held.
+  - The fixes were checked from the branch, not from the 0.1.1 tags.
+
+### 2026-10-04: M6, release 0.1.1 and the public repository
+
+macOS 27.0, Claude Code 2.1.288, codex-cli 0.159.2, Node 26.4.0. The release commit was
+e0a27de, the merge of PR 8.
+
+- **Item 17 passed for 0.1.1.** The dry runs named `recode--v0.1.1`,
+  `recode-loop--v0.1.1`, and `repo-docs--v0.1.3`. `claude plugin tag --push` then
+  created and pushed them in that order, each at e0a27de. The remote holds those three
+  and the three tags of 0.1.0, and no bare `v` tag. Lint on `main` passed with them.
+- **Item 16 passed for 0.1.1.** `claude plugin details` reported about 1,256 always-on
+  tokens for `recode`, 497 for `recode-loop`, and 169 for `repo-docs`.
+- **Item 18 passed on macOS for 0.1.1, from the private repository.** In `claude-m6`,
+  with the catalog removed and added again at e0a27de, installing the loop alone printed
+  "(+ 1 dependency: recode)". `recode-loop` 0.1.1, `recode` 0.1.1, and `repo-docs`
+  0.1.3 installed. In `codex-m6`, with the marketplace removed and added again at
+  e0a27de, `recode` 0.1.1 and `repo-docs` 0.1.3 installed and showed as enabled. In the
+  M4 profile, reinstalled the same way, setup ran recode 0.1.1's script and reported the
+  sandbox proven and no old plugins. The ask with "What is 19 times 3? Reply with the
+  number only." printed "57" and `status: ok`. The copy of the Codex login was deleted
+  afterward.
+- **The repository was made public on 2026-10-04.** Before that, a scan of the full
+  history found no credentials. The four source repositories were already public.
+- **Item 18 passed on macOS from the public repository.** Git credentials were turned
+  off with `GIT_CONFIG_NOSYSTEM=1`, `GIT_CONFIG_GLOBAL=/dev/null`, and
+  `GIT_TERMINAL_PROMPT=0`, with no GitHub token in the environment. `git ls-remote`
+  then read `main` at e0a27de. In `claude-m6` the catalog was added again, and the loop
+  alone installed with `recode`, both 0.1.1. In `codex-m6` the marketplace was added
+  again, and `recode` 0.1.1 installed.
+- **Not yet run.** Item 18 on Windows from the public repository.
