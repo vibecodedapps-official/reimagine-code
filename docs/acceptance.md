@@ -164,14 +164,14 @@ name a plugin are rerun under the new names and recorded here.
     catalog added from `main` and `recode-loop` and `repo-docs` installed. Command:
     `claude plugin details <plugin>@reimagine-code` for `recode` and `recode-loop`.
     Expected: "Always-on" at most 1,300 tokens for `recode` and at most 510 for
-    `recode-loop`. Covers R8. Rerun at each release. Run 2026-10-03 for 0.1.0 and
-    2026-10-04 for 0.1.1; see the records.
+    `recode-loop`. Covers R8. Rerun at each release. Run 2026-10-03 for 0.1.0, and
+    2026-10-04 for 0.1.1 and 0.1.2; see the records.
 17. **Tags.** Setup: the release commit on `main`. Command: `claude plugin tag --push`
     on `plugins/recode`, then `plugins/recode-loop`, then `plugins/repo-docs`; then
     `git ls-remote --tags origin`. Expected: each tag command checks the manifest against
     its catalog entry and pushes; the remote holds a `<plugin>--v<version>` tag for each
     plugin's new version, and no bare `v` tag. Covers R49. Rerun at each release. Run
-    2026-10-03 for 0.1.0 and 2026-10-04 for 0.1.1; see the records.
+    2026-10-03 for 0.1.0, and 2026-10-04 for 0.1.1 and 0.1.2; see the records.
 18. **Install from GitHub.** Setup: on macOS and on Windows 11 with both CLIs from npm,
     new scratch profiles on each host. Command: the four lines of R3, then `claude plugin
     install recode-loop@reimagine-code` and `codex plugin add
@@ -182,7 +182,8 @@ name a plugin are rerun under the new names and recorded here.
     once per host from the public one. Covers R3 and R4. Rerun at each release. Run on
     macOS and Windows 2026-10-03 for 0.1.0, from the private repository. Run
     2026-10-04 for 0.1.1 on macOS, from the private repository and then the public one,
-    and on Windows from the public one; see the records.
+    and on Windows from the public one. Run 2026-10-04 for 0.1.2 on macOS, from the
+    public repository; see the records.
 19. **Windows.** Setup: the Windows 11 work machine with both CLIs from npm, the suite
     installed as in item 18, and a test repository checked out under a path that holds
     a space. Command: `/recode:ask` and `/recode:implement` with a one-line change;
@@ -669,3 +670,26 @@ and the settings were restored afterward.
   Claude Code version. The rule was not retried on this day, so on Windows this is
   consistent with the macOS result rather than a second proof of it. The runs were made
   by a session on the work machine and reported here.
+
+### 2026-10-04: release 0.1.2
+
+macOS 27.0, Claude Code 2.1.288, codex-cli 0.159.2, Node 26.4.0. The release commit was
+c696321, the merge of PR 11. Git credentials were turned off as in the 0.1.1 public
+run, and `git ls-remote` read `main` at c696321.
+
+- **Item 17 passed for 0.1.2.** The dry runs named `recode--v0.1.2` and
+  `recode-loop--v0.1.2`. The repo-docs dry run refused, because `repo-docs--v0.1.3`
+  already exists and repo-docs did not change. `claude plugin tag --push` then created
+  and pushed the two tags, each at c696321. The remote holds them, the tags of 0.1.0
+  and 0.1.1, and no bare `v` tag. Lint on `main` passed with them.
+- **Item 16 passed for 0.1.2.** `claude plugin details` reported about 1,256 always-on
+  tokens for `recode`, 497 for `recode-loop`, and 169 for `repo-docs`, as for 0.1.1.
+- **Item 18 passed on macOS for 0.1.2, from the public repository.** In `claude-m6`,
+  with the catalog removed and added again, installing the loop alone printed "(+ 1
+  dependency: recode)". `recode-loop` 0.1.2, `recode` 0.1.2, and `repo-docs` 0.1.3
+  installed, each recording c696321. In `codex-m6`, with the marketplace removed and
+  added again, `recode` 0.1.2 and `repo-docs` 0.1.3 installed and showed as enabled. In
+  the M4 profile, reinstalled the same way, `/recode:setup` reported the sandbox proven,
+  one allow rule naming the 0.1.2 script, and no old plugins. A headless `/recode:ask`
+  in auto mode with "What is 23 times 3? Reply with the number only." printed "69" and
+  `status: ok`. The copy of the Codex login was deleted afterward.
