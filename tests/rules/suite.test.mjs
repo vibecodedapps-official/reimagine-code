@@ -8,7 +8,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { targets } from '../../plugins/ccx/scripts/rules.mjs';
-import { codexEnabled, notice, oldPluginReport, staleTargets } from '../../plugins/ccx/scripts/suite.mjs';
+import { codexEnabled, legacyTargets, notice, oldPluginReport, staleTargets } from '../../plugins/ccx/scripts/suite.mjs';
 
 const SCRIPT = fileURLToPath(new URL('../../plugins/ccx/scripts/suite.mjs', import.meta.url));
 const TEXTS = { 'core.md': 'C1\nC2\n', 'windows-claude.md': 'WC\n', 'windows-codex.md': 'WX\n', 'writing-codex.md': 'WR\n' };
@@ -122,6 +122,19 @@ test('R45: a line ending change or a legacy CRLF digest does not hide a stale bl
   assert.deepEqual(staleTargets(all(), TEXTS, { ...NONE, declined: { claude: ['d9ccd27017096bcc'] } }), []);
 }));
 
+test('R45: a block under the old marker is stale even when its rules match, and the notice names it', sandbox((s) => {
+  const all = () => targets(s.env, s.home);
+  const old = (text) => text.replace('ccx:house-rules', 'recode:house-rules').replace('ccx:house-rules', 'recode:house-rules');
+  writeFileSync(s.claude, block('core', 'cb477dddc15de845', 'C1\nC2\n'));
+  writeFileSync(s.codex, old(block('core', 'cb477dddc15de845', 'C1\nC2\n')));
+  assert.deepEqual(staleTargets(all(), TEXTS, NONE), [s.codex]);
+  assert.deepEqual(legacyTargets(all()), [s.codex]);
+  assert.deepEqual(staleTargets(all(), TEXTS, { ...NONE, declined: { codex: ['cb477dddc15de845'] } }), []);
+  assert.deepEqual(JSON.parse(notice([s.codex], [s.codex])), {
+    systemMessage: `ccx: the house rules in ${s.codex} are older than this plugin's; ${s.codex} still uses the old marker recode:house-rules; run /ccx:rules to update them`,
+  });
+}));
+
 test('R45: the notice is one line naming the files and /ccx:rules, and nothing when none is stale', () => {
   assert.deepEqual(JSON.parse(notice(['/h/.claude/CLAUDE.md'])),
     { systemMessage: "ccx: the house rules in /h/.claude/CLAUDE.md are older than this plugin's; run /ccx:rules to update them" });
@@ -138,6 +151,15 @@ test('R45: session-start prints the notice for a stale block, writes nothing, an
     { systemMessage: `ccx: the house rules in ${s.claude} are older than this plugin's; run /ccx:rules to update them` });
   assert.equal(r.status, 0);
   assert.equal(existsSync(s.data), false);
+}));
+
+test('R45: session-start names a block under the old marker', sandbox((s) => {
+  writeFileSync(s.claude, `mine\n\n${block('core', '6d3e610aaf815551', 'old rules\n').replace('join=none', 'join=blank').replace('ccx:house-rules', 'recode:house-rules').replace('ccx:house-rules', 'recode:house-rules')}`);
+  const r = s.spawn('session-start', s.data);
+  assert.deepEqual(JSON.parse(r.stdout), {
+    systemMessage: `ccx: the house rules in ${s.claude} are older than this plugin's; ${s.claude} still uses the old marker recode:house-rules; run /ccx:rules to update them`,
+  });
+  assert.equal(r.status, 0);
 }));
 
 test('R45: session-start runs when its path goes through a symlink, as under a linked ~/.claude', sandbox((s) => {

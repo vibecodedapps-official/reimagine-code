@@ -13,8 +13,8 @@ import { digests, inspect, loadState, loadTexts, readText, render, targets } fro
 export const OLD_CLAUDE = ['codex-lite@vibecodedapps-codex-lite', 'ccl@vibecodedapps-claude-codex-loop', 'repo-docs@repo-docs'];
 export const OLD_CODEX = ['codex-code-review-general@codex-code-review', 'codex-code-review@codex-code-review', 'repo-docs@repo-docs'];
 
-// Stale: the block still matches its digest, but the rules this plugin ships for its options differ. A block edited by
-// hand is left to the command, and a text the user declined stays quiet.
+// Stale: the block still matches its digest, but the rules this plugin ships for its options differ, or it carries the
+// old marker. A block edited by hand is left to the command, and a text the user declined stays quiet.
 export function staleTargets(all, texts, state) {
   const stale = [];
   for (const [name, t] of Object.entries(all)) {
@@ -22,13 +22,17 @@ export function staleTargets(all, texts, state) {
     const found = text === null ? { kind: 'absent' } : inspect(text);
     if (found.kind !== 'block' || !digests(text.slice(found.bodyStart, found.bodyEnd)).includes(found.digest)) continue;
     const shipped = digests(render(name, found.options, texts));
-    if (!shipped.includes(found.digest) && !shipped.some((d) => (state.declined[name] ?? []).includes(d))) stale.push(t.path);
+    if ((found.legacy || !shipped.includes(found.digest)) && !shipped.some((d) => (state.declined[name] ?? []).includes(d))) stale.push(t.path);
   }
   return stale;
 }
 
-export const notice = (paths) => (paths.length
-  ? `${JSON.stringify({ systemMessage: `ccx: the house rules in ${paths.join(' and ')} are older than this plugin's; run /ccx:rules to update them` })}\n`
+// The files whose block carries the old marker.
+export const legacyTargets = (all) => Object.values(all).filter((t) => !t.skip && readText(t.path) !== null && inspect(readText(t.path)).legacy).map((t) => t.path);
+
+export const notice = (paths, legacy = []) => (paths.length
+  ? `${JSON.stringify({ systemMessage: `ccx: the house rules in ${paths.join(' and ')} are older than this plugin's${legacy.length
+    ? `; ${legacy.join(' and ')} still uses the old marker recode:house-rules` : ''}; run /ccx:rules to update them` })}\n`
   : '');
 
 // Plugin ids enabled in a Codex config.toml: each [plugins."<id>"] table with enabled = true.
@@ -71,7 +75,7 @@ if (process.argv[1] && import.meta.url === pathToFileURL(realpathSync(process.ar
   const [verb, dataDir] = process.argv.slice(2);
   if (verb === 'session-start') {
     // A hook must never fail a session start: any error prints nothing.
-    try { process.stdout.write(notice(staleTargets(targets(process.env), loadTexts(), loadState(dataDir)))); } catch {}
+    try { process.stdout.write(notice(staleTargets(targets(process.env), loadTexts(), loadState(dataDir)), legacyTargets(targets(process.env)))); } catch {}
   } else if (verb === 'old-plugins') {
     const codexDir = process.env.CODEX_HOME || join(homedir(), '.codex');
     process.stdout.write(`${oldPluginReport(listClaudePlugins(), readText(join(codexDir, 'config.toml'))).join('\n')}\n`);

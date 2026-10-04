@@ -17,7 +17,10 @@ export const PARTS = {
 };
 export const END = '<!-- ccx:house-rules end -->';
 const BEGIN_PREFIX = '<!-- ccx:house-rules begin';
-const BEGIN = /^<!-- ccx:house-rules begin version=(\S+) options=([a-z,]+) join=(none|blank|newline) digest=([0-9a-f]{16}) -->$/;
+// The markers an earlier name of the plugin wrote; a block under them is read, and rewritten under the current ones.
+const OLD_END = '<!-- recode:house-rules end -->';
+const OLD_BEGIN_PREFIX = '<!-- recode:house-rules begin';
+const BEGIN = /^<!-- [a-z]+:house-rules begin version=(\S+) options=([a-z,]+) join=(none|blank|newline) digest=([0-9a-f]{16}) -->$/;
 const JOINS = { none: 0, blank: 1, newline: 2 };
 const PLAN_FILE = 'rules-plan.json';
 const STATE_FILE = 'rules-state.json';
@@ -65,8 +68,8 @@ export function inspect(text) {
     const next = nl < 0 ? text.length : nl + 1;
     const line = text.slice(at, nl < 0 ? text.length : nl).replace(/\r$/, '');
     n++;
-    if (line.startsWith(BEGIN_PREFIX)) begins.push({ n, at, next, line });
-    else if (line === END) ends.push({ n, at, next });
+    if (line.startsWith(BEGIN_PREFIX) || line.startsWith(OLD_BEGIN_PREFIX)) begins.push({ n, at, next, line });
+    else if (line === END || line === OLD_END) ends.push({ n, at, next, line });
     at = next;
   }
   if (!begins.length && !ends.length) return { kind: 'absent' };
@@ -74,10 +77,12 @@ export function inspect(text) {
   if (begins.length !== 1 || ends.length !== 1) return { kind: 'malformed', lines, reason: `${begins.length} begin and ${ends.length} end markers` };
   const [b] = begins, [e] = ends;
   if (e.n < b.n) return { kind: 'malformed', lines, reason: 'the end marker comes before the begin marker' };
+  const legacy = b.line.startsWith(OLD_BEGIN_PREFIX);
+  if (legacy !== (e.line === OLD_END)) return { kind: 'malformed', lines, reason: 'the begin and end markers carry different names' };
   const m = b.line.match(BEGIN);
   const options = m?.[2].split(',');
   if (!m || options.some((o) => !OPTIONS.includes(o))) return { kind: 'malformed', lines, reason: 'the begin marker cannot be read' };
-  return { kind: 'block', start: b.at, bodyStart: b.next, bodyEnd: e.at, end: e.next, version: m[1], options, join: m[3], digest: m[4] };
+  return { kind: 'block', start: b.at, bodyStart: b.next, bodyEnd: e.at, end: e.next, version: m[1], options, join: m[3], digest: m[4], legacy };
 }
 
 // The text with the block and the bytes its join added taken out. Join bytes that are no longer there are not taken.
@@ -114,7 +119,7 @@ export function planTarget({ target, text, options, recorded, version, texts, pl
   }
   const opts = options ?? found.options;
   const body = render(target, opts, texts, eol);
-  if (digests(body).includes(found.digest) && opts.join() === found.options.join()) return { state: 'current', after: null, options: opts };
+  if (!found.legacy && digests(body).includes(found.digest) && opts.join() === found.options.join()) return { state: 'current', after: null, options: opts };
   const block = beginLine(version, opts, found.join, body) + eol + body + END + eol;
   // The end marker may have lost its line break; the replacement keeps the file's last byte as it was.
   const tail = found.end === text.length && !text.endsWith('\n') ? block.slice(0, -eol.length) : block;

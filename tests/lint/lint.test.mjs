@@ -105,6 +105,14 @@ test('lint rejects codex-lite in any case in a shipped file', () => fails(
   (d) => writeFileSync(join(d, 'plugins/ccx/x.md'), 'See Codex_Lite.\n'),
   'plugins/ccx/x.md:1: old name /codex[-_]lite/'));
 
+test('lint rejects recode in any case in a shipped file', () => fails(
+  (d) => writeFileSync(join(d, 'plugins/ccx/x.md'), 'Run /Recode:rules.\n'),
+  'plugins/ccx/x.md:1: old name /recode/'));
+
+test('lint rejects the old rules marker outside rules.mjs and suite.mjs', () => fails(
+  (d) => appendFileSync(join(d, 'plugins/ccx/scripts/codex.mjs'), '// recode:house-rules\n'),
+  'plugins/ccx/scripts/codex.mjs:', 'old name /recode/'));
+
 test('lint rejects the word ccl in a shipped file', () => fails(
   (d) => writeFileSync(join(d, 'plugins/ccx/x.md'), 'ok\nLike CCL did.\n'),
   'plugins/ccx/x.md:2: old name /\\bccl\\b/'));

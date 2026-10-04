@@ -39,7 +39,8 @@ const PLUGINS = [
 ];
 // Old names a shipped file may still contain, by repository-relative path: the migration literals of R7.
 const OLD_NAME_LITERALS = {
-  "plugins/ccx/scripts/suite.mjs": ["codex-lite@vibecodedapps-codex-lite", "ccl@vibecodedapps-claude-codex-loop"],
+  "plugins/ccx/scripts/rules.mjs": ["recode:house-rules"],
+  "plugins/ccx/scripts/suite.mjs": ["codex-lite@vibecodedapps-codex-lite", "ccl@vibecodedapps-claude-codex-loop", "recode:house-rules"],
   "plugins/ccx-loop/skills/ccx-loop/SKILL.md": [".ccl.json"],
 };
 
@@ -196,7 +197,7 @@ for (const p of shipped) {
 }
 
 // 10. No shipped file names a source plugin or its marketplace (R7), apart from the migration literals listed for it.
-const oldNames = [/codex[-_]lite/i, /\bccl\b/i, /vibecodedapps-claude-codex-loop/i];
+const oldNames = [/codex[-_]lite/i, /\bccl\b/i, /vibecodedapps-claude-codex-loop/i, /recode/i];
 for (const p of shipped) {
   const allowed = OLD_NAME_LITERALS[rel(p)] ?? [];
   readFileSync(p, "utf8").split("\n").forEach((l, i) => {

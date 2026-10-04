@@ -161,7 +161,7 @@ test('R37: each malformed shape is reported with its line numbers and writes not
 test('inspect finds a CRLF block by its byte offsets', () => {
   const text = `ab\r\n${begin('core', 'none', 'cb477dddc15de845')}\r\nC1\r\n${END}\r\nz`;
   const found = inspect(text);
-  assert.deepEqual(found, { kind: 'block', start: 4, bodyStart: 97, bodyEnd: 101, end: 131, version: '0.0.1', options: ['core'], join: 'none', digest: 'cb477dddc15de845' });
+  assert.deepEqual(found, { kind: 'block', start: 4, bodyStart: 97, bodyEnd: 101, end: 131, version: '0.0.1', options: ['core'], join: 'none', digest: 'cb477dddc15de845', legacy: false });
   assert.equal(text.slice(found.bodyStart, found.bodyEnd), 'C1\r\n');
 });
 
@@ -177,6 +177,38 @@ test('R42: remove takes the block and the bytes of its join, for each join value
   const middle = `top\n\n${b('blank')}below\n`;
   assert.deepEqual(plan(middle, { remove: true }), { state: 'remove', after: 'top\nbelow\n', options: ['core'] });
   assert.deepEqual(plan('mine\n', { remove: true }), { state: 'absent', after: null, note: 'there is no block to remove' });
+});
+
+// A block as 0.1.x wrote it, under the old marker.
+const OLD = (text) => text.replace(/ccx:house-rules/g, 'recode:house-rules');
+
+test('R42: remove takes out a block under the old marker, with the bytes of its join', () => {
+  const old = OLD(`${begin('core', 'blank', 'cb477dddc15de845')}\nC1\nC2\n${END}\n`);
+  assert.equal(old, '<!-- recode:house-rules begin version=0.0.1 options=core join=blank digest=cb477dddc15de845 -->\nC1\nC2\n<!-- recode:house-rules end -->\n');
+  assert.equal(inspect(`mine\n\n${old}`).legacy, true);
+  assert.equal(inspect(CORE_LF).legacy, false);
+  assert.deepEqual(plan(`mine\n\n${old}`, { remove: true }), { state: 'remove', after: 'mine\n', options: ['core'] });
+  assert.equal(plan(`mine\r\n\r\n${old.replace(/\n/g, '\r\n')}`, { remove: true }).after, 'mine\r\n');
+});
+
+test('R37: a current block under the old marker is stale, and its rewrite carries the new marker', () => {
+  const old = OLD(`${begin('core', 'blank', 'cb477dddc15de845')}\nC1\nC2\n${END}\n`);
+  const p = plan(`mine\n\n${old}`);
+  assert.equal(p.state, 'stale');
+  assert.equal(p.after, `mine\n\n${CORE_LF}`);
+  assert.equal(p.digest, 'cb477dddc15de845');
+  assert.equal(plan(`mine\n\n${CORE_LF}`).state, 'current');
+  assert.equal(plan(`mine\n\n${old.replace('C2', 'EDIT')}`).state, 'edited');
+});
+
+test('R37: an old block and a new block in one file are malformed, and so are mixed begin and end markers', () => {
+  const old = OLD(`${begin('core', 'none', 'cb477dddc15de845')}\nC1\nC2\n${END}\n`);
+  const fresh = `${begin('core', 'none', 'cb477dddc15de845')}\nC1\nC2\n${END}\n`;
+  const note = '2 begin and 2 end markers, at lines 1, 4, 5, 8';
+  assert.deepEqual(plan(old + fresh), { state: 'malformed', after: null, note });
+  assert.deepEqual(plan(old + fresh, { remove: true }), { state: 'malformed', after: null, note });
+  const mixed = `${begin('core', 'none', 'cb477dddc15de845')}\nC1\nC2\n<!-- recode:house-rules end -->\n`;
+  assert.deepEqual(plan(mixed), { state: 'malformed', after: null, note: 'the begin and end markers carry different names, at lines 1, 4' });
 });
 
 test('R42: install then remove gives back the original bytes for LF, CRLF, BOM and no final newline', () => {
