@@ -25,7 +25,14 @@ const STATE_FILE = 'rules-state.json';
 class Refusal extends Error {}
 const refuse = (message) => { throw new Refusal(message); };
 
-export const digest = (body) => createHash('sha256').update(body, 'latin1').digest('hex').slice(0, 16);
+const hash = (body) => createHash('sha256').update(body, 'latin1').digest('hex').slice(0, 16);
+// A marker's digest is over the body with CRLF as LF, so a change of line ending does not read as an edit.
+const lf = (body) => body.replace(/\r\n/g, '\n');
+export const digest = (body) => hash(lf(body));
+// Every digest a marker may hold for a body: the LF one, the CRLF one, and the raw bytes. An older marker hashed the body
+// in the file's own line ending.
+export const digests = (body) => [digest(body), hash(lf(body).replace(/\n/g, '\r\n')), hash(body)];
+const isDeclined = (declined, body) => digests(body).some((d) => declined.includes(d));
 const fileHash = (text) => (text === null ? 'missing' : createHash('sha256').update(text, 'latin1').digest('hex'));
 // The file's line ending is that of its first line; a file with no line break takes LF.
 export const eolOf = (text) => { const i = text.indexOf('\n'); return i > 0 && text[i - 1] === '\r' ? '\r\n' : '\n'; };
@@ -98,21 +105,21 @@ export function planTarget({ target, text, options, recorded, version, texts, pl
     const before = text ?? '';
     const join = before === '' ? 'none' : before.endsWith('\n') ? 'blank' : 'newline';
     const after = before + eol.repeat(JOINS[join]) + beginLine(version, opts, join, body) + eol + body + END + eol;
-    return { state: 'absent', after, digest: digest(body), options: opts, declined: declined.includes(digest(body)) };
+    return { state: 'absent', after, digest: digest(body), options: opts, declined: isDeclined(declined, body) };
   }
   const inFile = text.slice(found.bodyStart, found.bodyEnd);
-  if (digest(inFile) !== found.digest) {
+  if (!digests(inFile).includes(found.digest)) {
     return { state: 'edited', after: null, options: found.options, edits: [render(target, found.options, texts, eol), inFile],
       note: 'the block was edited by hand; move your lines below the end marker, then run /recode:rules again' };
   }
   const opts = options ?? found.options;
   const body = render(target, opts, texts, eol);
-  if (digest(body) === found.digest && opts.join() === found.options.join()) return { state: 'current', after: null, options: opts };
+  if (digests(body).includes(found.digest) && opts.join() === found.options.join()) return { state: 'current', after: null, options: opts };
   const block = beginLine(version, opts, found.join, body) + eol + body + END + eol;
   // The end marker may have lost its line break; the replacement keeps the file's last byte as it was.
   const tail = found.end === text.length && !text.endsWith('\n') ? block.slice(0, -eol.length) : block;
   const after = text.slice(0, found.start) + tail + text.slice(found.end);
-  return { state: 'stale', after, digest: digest(body), options: opts, declined: declined.includes(digest(body)) };
+  return { state: 'stale', after, digest: digest(body), options: opts, declined: isDeclined(declined, body) };
 }
 
 // Lines that import another file into Claude's instructions, outside the block: they may carry the same rules.

@@ -177,7 +177,8 @@ requirement below changes it. The audit plugin is not part of v0.1.0.
 36. **Block format.** The block starts with
     `<!-- recode:house-rules begin version=<v> options=<list> join=<j> digest=<hex> -->`
     and ends with `<!-- recode:house-rules end -->`. `join` is `none`, `blank`, or
-    `newline`, as the architecture defines. The digest covers the body as written.
+    `newline`, as the architecture defines. The digest covers the body with CRLF read as
+    LF; a digest of the CRLF body is accepted too.
     Check: test.
 37. **States.** The command tells apart absent, current, stale, edited, malformed, and
     declined, and acts as the architecture's table says. It writes nothing for current,

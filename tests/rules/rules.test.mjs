@@ -74,9 +74,9 @@ test('R36, R40: a file without a final newline gets join=newline, a line break a
   assert.equal(plan('mine').after, `mine\n\n${begin('core', 'newline', 'cb477dddc15de845', '9.9.9')}\nC1\nC2\n${END}\n`);
 });
 
-test('R40: a CRLF file gets a CRLF block, with the digest of the body as written', () => {
+test('R40: a CRLF file gets a CRLF block, with the digest of the body in LF', () => {
   assert.equal(plan('mine\r\n').after,
-    `mine\r\n\r\n${begin('core', 'blank', 'd9ccd27017096bcc', '9.9.9')}\r\nC1\r\nC2\r\n${END}\r\n`);
+    `mine\r\n\r\n${begin('core', 'blank', 'cb477dddc15de845', '9.9.9')}\r\nC1\r\nC2\r\n${END}\r\n`);
 });
 
 test('R40: a byte order mark and a byte that is not UTF-8 are kept, as latin1 characters', () => {
@@ -99,6 +99,30 @@ test('R37: absent, current, stale, edited and declined each plan as the table sa
   assert.equal(plan(`${begin('core', 'none', 'be1ba97540b68c56')}\nC1\nOLD\n${END}\n`, { declined: ['cb477dddc15de845'] }).declined, true);
 });
 
+test('R37: a block reads the same after its file changes line ending, and a legacy CRLF digest still reads', () => {
+  const lf = `mine\n\n${CORE_LF}`;
+  const crlf = `mine\r\n\r\n${begin('core', 'blank', 'cb477dddc15de845', '9.9.9')}\r\nC1\r\nC2\r\n${END}\r\n`;
+  assert.equal(plan(lf).state, 'current');
+  assert.equal(plan(crlf).state, 'current');
+  assert.equal(plan(crlf.replace(/\r\n/g, '\n')).state, 'current');
+  assert.equal(plan(lf.replace(/\n/g, '\r\n')).state, 'current');
+  // 0.1.3 took the digest over the CRLF body.
+  const legacy = `mine\r\n\r\n${begin('core', 'blank', 'd9ccd27017096bcc')}\r\nC1\r\nC2\r\n${END}\r\n`;
+  assert.equal(plan(legacy).state, 'current');
+  assert.equal(plan(legacy.replace(/\r\n/g, '\n')).state, 'current');
+  const legacyStale = `mine\r\n\r\n${begin('core', 'blank', '38b8fa30cf40c6eb')}\r\nC1\r\nOLD\r\n${END}\r\n`;
+  assert.equal(plan(legacyStale).state, 'stale');
+  assert.equal(plan(legacyStale.replace(/\r\n/g, '\n')).state, 'stale');
+  assert.equal(plan(crlf.replace('C2', 'EDIT')).state, 'edited');
+  assert.equal(plan(crlf.replace('C2', 'EDIT').replace(/\r\n/g, '\n')).state, 'edited');
+});
+
+test('R43: a decline recorded over a CRLF body still matches, and the digest recorded now is the LF one', () => {
+  assert.equal(plan('mine\r\n', { declined: ['d9ccd27017096bcc'] }).declined, true);
+  assert.equal(plan('mine\r\n', { declined: ['cb477dddc15de845'] }).declined, true);
+  assert.equal(plan('mine\r\n').digest, 'cb477dddc15de845');
+});
+
 test('R37: a version change alone, with the same rules, is current', () => {
   assert.equal(plan(`${begin('core', 'none', 'cb477dddc15de845', '0.0.1')}\nC1\nC2\n${END}\n`).state, 'current');
 });
@@ -110,7 +134,7 @@ test('R37, R40: a stale block in the middle is replaced in place, and the text b
 
 test('R40: a stale CRLF block stays CRLF', () => {
   const p = plan(`mine\r\n\r\n${begin('core', 'blank', '38b8fa30cf40c6eb')}\r\nC1\r\nOLD\r\n${END}\r\n`);
-  assert.equal(p.after, `mine\r\n\r\n${begin('core', 'blank', 'd9ccd27017096bcc', '9.9.9')}\r\nC1\r\nC2\r\n${END}\r\n`);
+  assert.equal(p.after, `mine\r\n\r\n${begin('core', 'blank', 'cb477dddc15de845', '9.9.9')}\r\nC1\r\nC2\r\n${END}\r\n`);
 });
 
 test('R40: an end marker with no final newline is replaced without adding one', () => {

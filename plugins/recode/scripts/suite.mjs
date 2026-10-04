@@ -7,7 +7,7 @@ import { realpathSync } from 'node:fs';
 import { homedir } from 'node:os';
 import { join } from 'node:path';
 import { pathToFileURL } from 'node:url';
-import { digest, eolOf, inspect, loadState, loadTexts, readText, render, targets } from './rules.mjs';
+import { digests, inspect, loadState, loadTexts, readText, render, targets } from './rules.mjs';
 
 // The source plugins, by their old ids. The audit plugin is not one of them and is never listed.
 export const OLD_CLAUDE = ['codex-lite@vibecodedapps-codex-lite', 'ccl@vibecodedapps-claude-codex-loop', 'repo-docs@repo-docs'];
@@ -20,9 +20,9 @@ export function staleTargets(all, texts, state) {
   for (const [name, t] of Object.entries(all)) {
     const text = t.skip ? null : readText(t.path);
     const found = text === null ? { kind: 'absent' } : inspect(text);
-    if (found.kind !== 'block' || digest(text.slice(found.bodyStart, found.bodyEnd)) !== found.digest) continue;
-    const shipped = digest(render(name, found.options, texts, eolOf(text)));
-    if (shipped !== found.digest && !(state.declined[name] ?? []).includes(shipped)) stale.push(t.path);
+    if (found.kind !== 'block' || !digests(text.slice(found.bodyStart, found.bodyEnd)).includes(found.digest)) continue;
+    const shipped = digests(render(name, found.options, texts));
+    if (!shipped.includes(found.digest) && !shipped.some((d) => (state.declined[name] ?? []).includes(d))) stale.push(t.path);
   }
   return stale;
 }

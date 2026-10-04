@@ -308,7 +308,9 @@ takes back exactly those: `none` when the file was empty or created, `blank` for
 empty line after a file that ended with a newline, and `newline` for a line break plus
 an empty line after a file that did not. The block ends with the file's line ending.
 
-The digest is over the block body as written. It tells two things apart:
+The digest is over the block body with CRLF read as LF, so a change of line ending is not
+an edit. A marker whose digest is over the CRLF body is accepted too. It tells two things
+apart:
 
 - **Edited**: the body in the file no longer matches the recorded digest.
 - **Stale**: the body the current plugin would write for the recorded options differs

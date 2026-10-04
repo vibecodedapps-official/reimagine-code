@@ -100,6 +100,28 @@ test('R45: a block whose shipped text changed is stale; current, edited, absent 
   assert.deepEqual(staleTargets(all(), TEXTS, NONE), [s.claude]);
 }));
 
+test('R45: a line ending change or a legacy CRLF digest does not hide a stale block, and a hand edit still does', sandbox((s) => {
+  const all = () => targets(s.env, s.home);
+  const crlf = (text) => text.replace(/\n/g, '\r\n');
+  for (const text of [block('core', 'be1ba97540b68c56', 'C1\nOLD\n'), crlf(block('core', 'be1ba97540b68c56', 'C1\nOLD\n')),
+    crlf(block('core', '38b8fa30cf40c6eb', 'C1\nOLD\n')), block('core', '38b8fa30cf40c6eb', 'C1\nOLD\n')]) {
+    writeFileSync(s.claude, text);
+    assert.deepEqual(staleTargets(all(), TEXTS, NONE), [s.claude]);
+  }
+  for (const text of [block('core', 'cb477dddc15de845', 'C1\nC2\n'), crlf(block('core', 'cb477dddc15de845', 'C1\nC2\n')),
+    crlf(block('core', 'd9ccd27017096bcc', 'C1\nC2\n')), block('core', 'd9ccd27017096bcc', 'C1\nC2\n')]) {
+    writeFileSync(s.claude, text);
+    assert.deepEqual(staleTargets(all(), TEXTS, NONE), []);
+  }
+  for (const text of [block('core', 'cb477dddc15de845', 'C1\nEDIT\n'), crlf(block('core', 'cb477dddc15de845', 'C1\nEDIT\n'))]) {
+    writeFileSync(s.claude, text);
+    assert.deepEqual(staleTargets(all(), TEXTS, NONE), []);
+  }
+  writeFileSync(s.claude, crlf(block('core', '38b8fa30cf40c6eb', 'C1\nOLD\n')));
+  assert.deepEqual(staleTargets(all(), TEXTS, { ...NONE, declined: { claude: ['cb477dddc15de845'] } }), []);
+  assert.deepEqual(staleTargets(all(), TEXTS, { ...NONE, declined: { claude: ['d9ccd27017096bcc'] } }), []);
+}));
+
 test('R45: the notice is one line naming the files and /recode:rules, and nothing when none is stale', () => {
   assert.deepEqual(JSON.parse(notice(['/h/.claude/CLAUDE.md'])),
     { systemMessage: "recode: the house rules in /h/.claude/CLAUDE.md are older than this plugin's; run /recode:rules to update them" });
