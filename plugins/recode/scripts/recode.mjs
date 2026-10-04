@@ -237,7 +237,7 @@ async function main() {
   if (!['review', 'ask', 'do', 'implement', 'setup'].includes(command)) refuse(`unknown command ${JSON.stringify(command)}; expected review, ask, do, implement or setup`);
   if (command !== 'setup') status = 'refused';
   if (typeof dataDir !== 'string' || !isAbsolute(dataDir)) refuse(`the plugin data directory must be an absolute path, not ${JSON.stringify(dataDir)}`);
-  if (command === 'setup') return setup(dataDir);
+  if (command === 'setup') return setup();
   // Before any filesystem access: the id is joined into a path that is then deleted.
   if (!validateRequestId(id)) refuse('the session id is missing or malformed, so no request file was opened');
   const text = takeRequest(dataDir, id);
@@ -308,8 +308,8 @@ async function main() {
   return why.length === 0;
 }
 
-// Reports each check whatever the others found. Edits no settings; prints the allow rules for the user to add.
-async function setup(dataDir) {
+// Reports each check whatever the others found. Edits no settings; prints the allow rule for the user to add.
+async function setup() {
   const cwd = process.cwd();
   let ok = true, codex;
   const check = async (label, f) => {
@@ -349,16 +349,14 @@ async function setup(dataDir) {
       return [p.pass, p.reason];
     });
   }
-  // Claude Code permission rules write an absolute path with a leading //; Windows paths as //c/Users/...
-  const abs = POSIX ? dataDir.replace(/\/+$/, '') : `/${dataDir.replace(/^([A-Za-z]):/, (_, d) => d.toLowerCase()).replaceAll('\\', '/').replace(/\/+$/, '')}`;
-  // The Bash rule matches the command as the command files write it: Claude Code substitutes the plugin root with forward
-  // slashes, on Windows too, while Node resolves argv[1] with backslashes. It names the version directory: a * in the
+  // No Edit rule for the request file: it is sensitive, so the rule never lets its Write through, and in auto mode it stops
+  // that Write. The Bash rule matches the command as the command files write it: Claude Code substitutes the plugin root with
+  // forward slashes, on Windows too, while Node resolves argv[1] with backslashes. It names the version directory: a * in the
   // path would also match a sibling directory or a .. path.
   const root = POSIX ? dirname(dirname(process.argv[1])) : dirname(dirname(process.argv[1])).replaceAll('\\', '/');
-  const rules = [`Edit(/${abs}/**)`, `Bash(node "${root}/scripts/recode.mjs" *)`];
-  out.push('', 'Allow rules for this plugin, as JSON strings. setup adds neither; to use them, paste them into the permissions.allow ' +
-    'array in your Claude Code settings:', ...rules.map((r, i) => `  ${JSON.stringify(r)}${i < rules.length - 1 ? ',' : ''}`),
-  'The Bash rule names the installed version\'s path, so it changes with every release.');
+  out.push('', 'Allow rule for this plugin, as a JSON string. setup does not add it; to use it, paste it into the permissions.allow ' +
+    'array in your Claude Code settings:', `  ${JSON.stringify(`Bash(node "${root}/scripts/recode.mjs" *)`)}`,
+  'It names the installed version\'s path, so it changes with every release.');
   return ok;
 }
 

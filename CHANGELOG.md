@@ -3,6 +3,29 @@
 One changelog for the suite. Each release has a subsection per component. The source
 repos' own changelogs are kept under `docs/history/`.
 
+## 0.1.2 - 2026-10-04
+
+### recode
+
+- `/recode:setup` no longer prints an Edit allow rule for the plugin's data directory.
+  That rule never stopped the prompt for the request file: Claude Code treats the file
+  as sensitive and asks in default mode with or without the rule. In auto mode the rule
+  made the request file's Write fail with "The server-side auto mode classifier gave no
+  verdict". If you added it, remove it from `permissions.allow` in your Claude Code
+  settings. It starts with `Edit(` and names `plugins/data/recode-reimagine-code`. Setup
+  still prints the Bash rule.
+- The README now says that in default mode no allow rule or hook stops the request-file
+  prompt, so a headless run in default mode stops there. For unattended calls, use auto
+  mode.
+
+### recode-loop
+
+- Version 0.1.2, to stay in step with `recode`. No change.
+
+### recode (Codex)
+
+- Version 0.1.2, to stay in step with `recode`. No change.
+
 ## 0.1.1 - 2026-10-04
 
 ### recode

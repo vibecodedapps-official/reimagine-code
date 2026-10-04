@@ -217,3 +217,24 @@ profiles, with the suite installed from GitHub at the 0.1.0 release commit.
    With `C:\Program Files\Git\bin` on `PATH`, the same run got the reminder. Finding
    `sh` without `PATH` would need a Windows-only command form, so the prerequisite is
    stated instead.
+
+## Part 8: recode 0.1.2, setup's Edit rule, 2026-10-04
+
+Run on macOS with Claude Code 2.1.288 and on Windows 11 with Claude Code 2.1.283, in
+scratch profiles, with recode 0.1.0 and 0.1.1 installed from GitHub.
+
+1. **Setup no longer prints an Edit rule for the data directory.** R15 kept codex-lite's
+   two rules. The Edit rule was meant to stop the prompt for the request file's Write in
+   default mode, and it never did: the file is under `~/.claude`, which Claude Code treats
+   as sensitive, and that check refused the Write with the rule present on macOS and on
+   Windows, and with a PreToolUse hook returning `allow` on macOS. In auto mode the rule
+   did harm. With only that rule in the settings, the Write failed with "The server-side
+   auto mode classifier gave no verdict (it skipped this action)" in 3 of 3 runs on
+   macOS, two headless and one interactive. Without it, 3 of 3 passed, and on Windows
+   2 of 2 headless runs passed; Windows runs with the rule on 2026-10-03 had got no
+   verdict, but the rule was not retried there on the day. The Bash rule
+   stays: with only that rule, 3 of 3 headless auto runs passed, two typed and one in
+   plain words. On a folder that is not sensitive, a matching Edit rule did let the
+   Write through in headless default mode, on both hosts, so moving the request file out
+   of `~/.claude` would allow unattended default-mode calls. That move is deferred: auto
+   mode already covers unattended calls, and the bridge script is at its line budget.

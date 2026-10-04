@@ -350,6 +350,13 @@ In auto mode, `ask` and `review` run with no approvals, whether you type the com
 plain words. This was seen on 2026-09-26 on Claude Code 2.1.280 in headless auto mode, for
 "dispatch codex to review my changes against main" and "ask codex what math.mjs exports".
 
+This works without an Edit rule for the plugin's data directory, and fails with one.
+`/recode:setup` printed such a rule before 0.1.2; if you added it, remove it. With it, the
+request file's Write fails in auto mode with "The server-side auto mode classifier gave no
+verdict". This was seen in 3 of 3 runs on 2026-10-04 on Claude Code 2.1.288 on macOS, and
+the same runs without the rule passed. On Windows, with Claude Code 2.1.283, 2 of 2
+headless runs without the rule passed the same day.
+
 In auto mode, by inference from that observation for `ask` and `review`, `implement` invoked by a
 skill is not gated either; nobody has yet observed it, and the repository's `docs/acceptance.md` is where
 it gets recorded. See the tradeoff under "Commands".
@@ -357,14 +364,18 @@ it gets recorded. See the tradeoff under "Commands".
 In default mode, Claude Code asks before each step it does not trust: running a command Claude
 invoked on its own, writing the request file (it is under `~/.claude`, which Claude Code
 treats as sensitive), and running the script when Claude invoked the command. When you type
-the command, the script call is pre-approved by the command file.
+the command, the script call is pre-approved by the command file. No allow rule or hook
+stops the request-file prompt, because Claude Code's sensitive-file check overrides both.
+This was seen on 2026-10-04 for the rule on macOS and Windows, and for a hook returning
+`allow` on macOS. So a headless run in default mode stops at that Write; for unattended
+calls, use auto mode as described above.
 
-`/recode:setup` prints allow rules for default mode as JSON strings, ready to paste into
-`permissions.allow`; it adds none itself. The Bash rule names the installed version's path,
-so update it after each release. It has no `*` in the path, because Claude Code's `*` would
-also match another plugin's directory or a path through `..`. On Windows the path uses
-forward slashes (`C:/Users/...`), because that is how Claude Code writes the plugin root into
-the command.
+`/recode:setup` prints an allow rule for default mode as a JSON string, ready to paste into
+`permissions.allow`; it adds none itself. It covers the script call when Claude invoked the
+command. The rule names the installed version's path, so update it after each release. It
+has no `*` in the path, because Claude Code's `*` would also match another plugin's
+directory or a path through `..`. On Windows the path uses forward slashes
+(`C:/Users/...`), because that is how Claude Code writes the plugin root into the command.
 
 Optionally, to stop Claude from running the Codex CLI directly through Bash, add a deny rule
 to your Claude Code settings:

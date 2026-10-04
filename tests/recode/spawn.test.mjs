@@ -163,7 +163,7 @@ test('do refuses when a sandboxed write outside the workspace lands', spawning, 
 test('do refuses from the home directory, saying the probe target is unusable rather than blaming the host', spawning, refusesDo(
   (s) => ({ HOME: s.repo }), /^recode: do was not run: the probe target .* is inside this working directory .* This says nothing about whether the host can sandbox\nstatus: refused\n$/));
 
-test('setup: version, login and both probe rows, and the printed allow rules', spawning, withScratch((s) => {
+test('setup: version, login and both probe rows, and the printed allow rule', spawning, withScratch((s) => {
   const r = cli(s, ['setup', s.data], { cwd: s.plain });
   const [version, login, positive, negative] = calls(s);
   assert.deepEqual(version, ['--version']);
@@ -173,9 +173,9 @@ test('setup: version, login and both probe rows, and the printed allow rules', s
   assert.deepEqual(negative, [...SANDBOX, s.target]);
   assert.equal(r.stdout, 'codex: codex-cli 0.155.1\nlogin: Logged in using ChatGPT\n' +
     'sandbox: workspace-write proven: an inside write landed and an outside write was denied (EPERM)\n\n' +
-    'Allow rules for this plugin, as JSON strings. setup adds neither; to use them, paste them into the permissions.allow array in your Claude Code settings:\n' +
-    `  "Edit(/${s.data}/**)",\n  "Bash(node \\"${dirname(dirname(SCRIPT))}/scripts/recode.mjs\\" *)"\n` +
-    'The Bash rule names the installed version\'s path, so it changes with every release.\n');
+    'Allow rule for this plugin, as a JSON string. setup does not add it; to use it, paste it into the permissions.allow array in your Claude Code settings:\n' +
+    `  "Bash(node \\"${dirname(dirname(SCRIPT))}/scripts/recode.mjs\\" *)"\n` +
+    'It names the installed version\'s path, so it changes with every release.\n');
   assert.equal(r.status, 0);
   assert.deepEqual(readdirSync(s.plain), []);
 }));

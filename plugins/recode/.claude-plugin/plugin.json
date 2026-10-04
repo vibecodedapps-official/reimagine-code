@@ -1,6 +1,6 @@
 {
   "name": "recode",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "Hand a task to the Codex CLI, run it once, and print what it said. Also keeps a block of house rules in your CLAUDE.md and AGENTS.md.",
   "author": {
     "name": "vibecodedapps.net"
