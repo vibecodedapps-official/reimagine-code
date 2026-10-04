@@ -361,3 +361,57 @@ Claude Code 2.1.283 was not tested.
     16 and Part 10 item 6, takes a marker's digest over the block body with CRLF read as
     LF, and still accepts the two older digests, so a block no longer reads as edited by
     hand after its file's line endings change.
+
+## Part 12: ccx-loop 0.3.0, four tiers and one final reviewer, 2026-10-04
+
+Issue 20 settled these choices. A `gpt-6-astra` second opinion on the issue, the same
+day, added the file count over the whole run, the checks before every review, the
+narrower need for `code-review`, and the multi-repo rules.
+
+1. **Four tiers; max is gone.** An xhigh-shaped change with a risk floor trigger is now
+   xhigh. `--effort max` is rejected with a pointer to `xhigh` rather than read as
+   `xhigh`, so a script that passes it learns of the change. Lint check 16c fails if
+   either command lists any other set of values. This replaces the max bucket of ccl
+   Part 5 item 6.
+2. **The tier alone fixes every cell.** Plan review is `gpt-6-astra` at every tier. The
+   implementer is `gpt-6.1-sol` at low and medium and `gpt-6-astra` at high and xhigh, and
+   `gpt-6-luna` is no longer used. No cell follows a trigger, which supersedes ccl Part
+   10 item 4.
+3. **Sonnet, not Opus, implements a slice that meets the criteria at high and xhigh.**
+   The criteria are unchanged. This reverses ccl Part 10 item 2, which kept Sonnet as a
+   fallback only, by the author's choice. Opus no longer implements, and a Sonnet call
+   that errors stops the run, as an erroring Sonnet fallback already did.
+4. **The final review has one reviewer role per run.** By the author's choice, a
+   higher-risk run gets Claude, the `code-review` skill at the tier's level, and any
+   other run gets Codex `gpt-6-astra`. This reverses ccl Part 10 item 3, both reviewers
+   at every tier, and Part 7 item 5, a round is both passes. Issue 20 records the costs:
+   - a higher-risk slice is implemented by Sonnet and reviewed by Claude, so Codex sees
+     that work only at the plan review;
+   - a lower-risk run at high or xhigh is implemented and reviewed by `gpt-6-astra`.
+5. **Higher-risk means the Sonnet criteria, taken over the whole run.** That is a risk
+   floor trigger, more than eight distinct files across all slices, or a new module,
+   type, interface, or rule section that another file cites. The count covers the run,
+   so splitting work into slices cannot change the reviewer. A trigger alone was the
+   other candidate. It misses internal structure and documentation contracts, and since a
+   trigger raises a run to high, it would never pick Claude at low or medium.
+6. **The rule is judged at the plan and before every review, and a positive result
+   sticks.**
+   - **At the plan.** A trigger is known at Step 1.6, and the file count and the cited
+     module once Step 2 has the slices, so Step 2 records the result.
+   - **Before every review.** Step 4.5 judges the diff, Step 5 each later round, and Step
+     7.3.5 each CI repair review.
+   - **A late switch.** A run that turns higher-risk moves to Claude for its remaining
+     rounds, inside the same cap of 3, and never moves back. The second opinion proposed
+     blocking such a run instead. The switch was kept because it only deepens the review,
+     and blocking would throw away a nearly finished run.
+   - **Reviewer only.** The rule never raises the tier, reruns Step 3, or changes a
+     slice's model.
+7. **`code-review` is needed only by a higher-risk run.** A lower-risk run, under
+   `--no-codex` too, uses Codex or its Fable, then Opus, fallback. A lower-risk run that
+   turns higher-risk and finds the skill missing ends `blocked`, naming both the switch and
+   the skill. A higher-risk run under `--no-codex` still gets Claude.
+8. **In Multi-repo mode the role covers every changed repository.** The patch files are
+   written whichever role is chosen, because the Claude stand-in reads them too.
+9. **The suite moves to 0.3.0 together.** `tools/release.mjs` keeps one suite version, so
+   `ccx` and the Codex `ccx` move with no change, as at earlier releases. The loop's
+   range stays `>=0.2.0 <1.0.0`.

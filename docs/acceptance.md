@@ -76,7 +76,7 @@ name a plugin are rerun under the new names and recorded here.
    fallback, and the report says why. With the option unset or true, the block says
    `no-codex: false` and Codex is called. Covers R17, R20, R21, R23, and part of R22.
    Rerun when a loop command, the option, or Step 0 changes. Run 2026-10-03, and
-   2026-10-04 for 0.2.0; see the records.
+   2026-10-04 for 0.2.0 and 0.3.0; see the records.
 8. **Loop runs to the end on a local remote.** Setup: as item 7, without `.ccl.json`.
    Command: `/ccx-loop:run "<the same change>" --no-codex --effort low`, in separate
    repositories: with `--no-publish` and a committed `.ccx.json` of
@@ -92,7 +92,8 @@ name a plugin are rerun under the new names and recorded here.
    removal; the declined plan ends `plan-only`; the `--continue` run works on that
    branch; the `--repo` run changes both repositories. Covers ccl items 16, 65, 72, and
    172 under the new names, and the local parts of R22. Rerun when Step 0, Step 7, or an
-   artifact path changes. Run 2026-10-03, and 2026-10-04 for 0.2.0; see the records.
+   artifact path changes. Run 2026-10-03, and 2026-10-04 for 0.2.0 and 0.3.0; see the
+   records.
 9. **Loop runs that publish.** Setup: a throwaway GitHub repository with issue #1, a
    one-line bug, and a passing `npm test`; a second one on the same host for the
    multi-repo run; Codex logged in. Command: `/ccx-loop:run #1 --effort low`; then
@@ -100,7 +101,7 @@ name a plugin are rerun under the new names and recorded here.
    an open PR. Expected: Codex implements and Claude publishes a PR that closes #1;
    with `"commit": true` the snapshot lands in `specs/ccx/<run-id>/`; each item's own
    result. Covers the rest of R22 and R25. Rerun when Step 7 or the CI watch changes. Run
-   2026-10-03, and 2026-10-04 for 0.2.0; see the records.
+   2026-10-03, and 2026-10-04 for 0.2.0 and 0.3.0; see the records.
 10. **ccl items under the new names.** The list was drawn 2026-10-03 at the start of M4
     from `docs/history/claude-codex-loop/acceptance.md`: of its 174 items, 58 name a
     renamed string, 35 of them only through bridge calls. The items rerun hinge on a
@@ -199,6 +200,35 @@ name a plugin are rerun under the new names and recorded here.
     hook adds its reminder on both hosts. Covers R53. Rerun when the bridge's spawn code,
     the rules command, or the hook changes. Run 2026-10-03, and 2026-10-04 for 0.2.0;
     see the records.
+20. **Reviewer routing.** Setup: scratch git repositories as in item 7, with a local bare
+    `origin`; `ccx-loop` installed from this repository's catalog; Codex logged in.
+    Command:
+    - `/ccx-loop:plan` once at each tier, with `--effort`;
+    - plans or `--no-publish` runs whose change, in turn, carries a risk floor trigger,
+      touches nine files across two slices, touches eight files across two slices, adds
+      a module that another file imports, or edits only a comment in an auth module;
+    - in a session where `code-review` is not listed, through `--settings
+      '{"skillOverrides":{"code-review":"off"}}'`, a lower-risk `--no-publish` run and
+      then a higher-risk one;
+    - a higher-risk `--no-publish` run in a worktree, and one in Multi-repo mode;
+    - where one can be staged, a run that turns higher-risk after the plan.
+
+    Expected:
+    - every plan review is `gpt-6-astra`;
+    - the plan names each slice's implementer, and the Step 5 role with the criterion
+      that held, or "none";
+    - the trigger, nine-file, and imported-module runs are higher-risk and get Claude;
+      the eight-file and comment-only runs get Codex;
+    - without the skill, the lower-risk run passes Step 5 with Codex, and the higher-risk
+      run ends `blocked` at the start of Step 5, naming the missing skill;
+    - the worktree and Multi-repo runs give the Opus stand-in each checkout the skill
+      cannot reach;
+    - a run that turns higher-risk later moves to Claude inside the cap of 3, and the
+      report names the switch.
+
+    Rerun when the tier table, the higher-risk rule, or the Claude review contract
+    changes. Run 2026-10-04 for 0.3.0, except the late switch, which could not be
+    staged; see the record.
 
 ## Record of runs
 
@@ -1096,3 +1126,58 @@ before.
     through the reinstall. Claude Code made commit d0af8f0, with the reminder in its
     transcript.
   - The copy of the Codex login was deleted afterward.
+
+### 2026-10-04: ccx-loop 0.3.0, before the merge
+
+macOS 27.0, Claude Code 2.1.288, codex-cli 0.159.2, Node 26.4.0. The runs installed the
+suite from a local clone of `feat/loop-tiers` at 5bd6ee9, with the two 0.3.0 tags made in
+the clone only, into the M4 profile, which was restored afterward. Installing the loop
+printed "(+ 1 dependency: ccx)". The runs were headless, in auto mode, with a copy of the
+Codex login that was deleted afterward. No permission denial occurred. The real
+`~/.claude` and `~/.codex` files had the same sha256 after the runs as before.
+
+- **Item 16 passed before the release.** About 1,268 always-on tokens for `ccx` and 504
+  for `ccx-loop`, down from 508.
+- **Item 7 passed.** Each run called `ccx-loop:ccx-loop` with the invocation block.
+  With the option unset or true, the plan review was `ccx:ask` at `gpt-6-astra`. With
+  `--no-codex`, `codex` absent from `PATH`, or the option false, it was the `fable`
+  fallback and the report named the reason. The `.ccl.json` run and a run with
+  `.recode.json` ended `blocked` and created nothing. Every plan recorded Codex
+  `gpt-6-astra` as the Step 5 role, with no higher-risk criterion.
+- **Item 8 passed.** Every run ended as the item expects, with the Codex role served by
+  its `fable` fallback under `--no-codex`.
+- **Item 20 passed, except the late switch.**
+  - **Plan review.** It was `gpt-6-astra` in all 14 runs that called Codex. Plans at
+    low, medium, and high for a one-function change got Codex, with `gpt-6.1-sol`
+    implementing at low and medium and `gpt-6-astra` at high.
+  - **Higher-risk cases.** A risk floor trigger got Claude `code-review high` and a
+    Sonnet slice. Nine files over two slices got Claude `code-review medium`. A new
+    module imported by another file got Claude `code-review low`.
+  - **Lower-risk cases.** Eight files over two slices got Codex, and so did a comment-only
+    edit in an auth module.
+  - **xhigh.** The same one-function change at xhigh came out higher-risk: Codex's plan
+    review called the new export a public API change, and the plan accepted it. Whether a
+    change carries a trigger is the plan's judgment, so the role can differ between runs.
+  - **Without `code-review`.** With the skill turned off through `skillOverrides`, a
+    lower-risk run passed Step 5 with Codex and ended `prepared`. A higher-risk run ended
+    `blocked` at the start of Step 5, naming the missing skill. `--disallowedTools
+    'Skill(code-review)'` left the skill listed.
+  - **Worktree and Multi-repo.** A higher-risk worktree run got the Opus stand-in and no
+    `code-review` call. A higher-risk Multi-repo run got `code-review low` for the primary
+    and the Opus stand-in for the second repository.
+  - **Late switch.** It could not be staged. In the one try, the planner read the check
+    that needed a ninth file and planned it, so the run was higher-risk from the plan.
+    The switch to Claude after the plan is not yet checked by a run.
+- **Item 9 passed.** In `vibecodedapps-dev/recode-accept-a` and `recode-accept-b`, four
+  runs on new issues a#26 to a#29 and b#7, each in a fresh clone, all ended `done` with
+  CI green.
+  - The Codex run opened PR 30, with `gpt-6-astra` reviewing the plan and the diff and
+    `gpt-6.1-sol` implementing.
+  - The `--no-codex` run opened PR 31.
+  - The `--continue t114` run, with a skip-worktree edit, worked in
+    `<parent>/r3-ccx-2026-10-04-26` and posted to PR 5.
+  - The `--repo` run opened PR 32 in `a` and PR 8 in `b`, each closing its own issue and
+    referring to the other's.
+  - Every run had the Codex role, with no higher-risk criterion. The issue and PR comments,
+    the snapshots under `specs/ccx/<run-id>/`, and cca's `handoff.sh check` were as for
+    0.2.0.
