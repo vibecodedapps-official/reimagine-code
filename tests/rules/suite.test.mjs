@@ -148,6 +148,9 @@ test('R45: the notice is one line naming the files and /ccx:rules, and nothing w
     { systemMessage: "ccx: the house rules in /h/.claude/CLAUDE.md are older than this plugin's; run /ccx:rules to update them" });
   assert.deepEqual(JSON.parse(notice(['/a/CLAUDE.md', '/b/AGENTS.md'])),
     { systemMessage: "ccx: the house rules in /a/CLAUDE.md and /b/AGENTS.md are older than this plugin's; run /ccx:rules to update them" });
+  assert.deepEqual(JSON.parse(notice(['/a/CLAUDE.md', '/b/AGENTS.md'], ['/a/CLAUDE.md', '/b/AGENTS.md'])), {
+    systemMessage: "ccx: the house rules in /a/CLAUDE.md and /b/AGENTS.md are older than this plugin's; /a/CLAUDE.md and /b/AGENTS.md still use the old marker recode:house-rules; run /ccx:rules to update them",
+  });
   assert.equal(notice([]), '');
   assert.equal(notice(['/a/CLAUDE.md']).split('\n').length, 2);
 });

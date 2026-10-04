@@ -35,7 +35,7 @@ export const legacyTargets = (all) => Object.values(all).filter((t) => !t.skip &
 
 export const notice = (paths, legacy = []) => (paths.length
   ? `${JSON.stringify({ systemMessage: `ccx: the house rules in ${paths.join(' and ')} are older than this plugin's${legacy.length
-    ? `; ${legacy.join(' and ')} still uses the old marker recode:house-rules` : ''}; run /ccx:rules to update them` })}\n`
+    ? `; ${legacy.join(' and ')} still use${legacy.length > 1 ? '' : 's'} the old marker recode:house-rules` : ''}; run /ccx:rules to update them` })}\n`
   : '');
 
 // Plugin ids enabled in a Codex config.toml: each [plugins."<id>"] table with enabled = true.
