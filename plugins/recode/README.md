@@ -354,7 +354,8 @@ This works without an Edit rule for the plugin's data directory, and fails with 
 `/recode:setup` printed such a rule before 0.1.2; if you added it, remove it. With it, the
 request file's Write fails in auto mode with "The server-side auto mode classifier gave no
 verdict". This was seen in 3 of 3 runs on 2026-10-04 on Claude Code 2.1.288 on macOS, and
-the same runs without the rule passed.
+the same runs without the rule passed. On Windows, with Claude Code 2.1.283, 2 of 2
+headless runs without the rule passed the same day.
 
 In auto mode, by inference from that observation for `ask` and `review`, `implement` invoked by a
 skill is not gated either; nobody has yet observed it, and the repository's `docs/acceptance.md` is where

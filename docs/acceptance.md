@@ -542,7 +542,8 @@ runs were made by a session on the work machine and reported here.
   Write was refused as sensitive in default and acceptEdits modes. In auto mode the
   classifier gave no verdict, in 4 of 4 runs, one of them interactive. Corrected
   2026-10-04: these runs did try the Edit allow rule that `/recode:setup` prints, and
-  it did not help; see the Windows record of 2026-10-04.
+  it did not help; see the Windows record of 2026-10-04. Without that rule, auto mode
+  passed on Windows on 2026-10-04; see the recode 0.1.2 record.
 - **Item 19 passed, after the fixes below.**
   - Implement, called through a test skill, edited `math.mjs`. Codex reported "Shell
     startup failed", the limit of Store PowerShell that the bridge's README describes.
@@ -658,5 +659,13 @@ and the settings were restored afterward.
 - **Item 1, setup only, rerun with 0.1.2 from its branch.** The script was run directly
   with `node`, with a scratch `CODEX_HOME`: Codex 0.159.2, the ChatGPT login,
   `workspace-write` proven, and one allow rule, the Bash rule naming the script's path.
-  It wrote no file. The copy of the Codex login was deleted afterward. Auto mode without
-  the Edit rule is not yet confirmed on Windows.
+  It wrote no file. The copy of the Codex login was deleted afterward.
+- **Windows, auto mode without the Edit rule.** On Windows 11 with Claude Code 2.1.283
+  and codex-cli 0.157.1, in `claude-m6` and `codex-m6` with recode 0.1.1 from GitHub,
+  and from a folder whose path holds a space, 2 of 2 headless asks in auto mode passed.
+  Each Write created the request file, and each run printed 123 and `status: ok`. The
+  only allow rule named the 0.1.0 script, so it did not match, and auto mode approved
+  the Bash call itself. The 2026-10-03 runs with the rule got no verdict on the same
+  Claude Code version. The rule was not retried on this day, so on Windows this is
+  consistent with the macOS result rather than a second proof of it. The runs were made
+  by a session on the work machine and reported here.
