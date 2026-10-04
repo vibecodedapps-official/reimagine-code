@@ -83,10 +83,13 @@ names, for each repository, and leaves the rest of that step as written.
 - Step 5.2: review only repositories that have a diff from their base commit (`git -C <path>
   diff <base> --stat`, after `git -C <path> add -N` of new files). A repository with an
   empty diff is skipped and named in `run.md`.
-  - Codex: write `.ccx/<run-id>/diff-<slug>.patch` from `git -C <path> diff <base>` for
-    every additional repository with a diff, in both cases below, because the fallback
-    subagent and the Claude substitute read it. When the primary has a diff, review it
-    with `ccx:review --base <primary base>`.
+  - The run's reviewer role, Codex `gpt-6-astra` or Claude, covers every repository with a
+    diff, and the Higher-risk rule of `tiers.md` is judged before each round. Write
+    `.ccx/<run-id>/diff-<slug>.patch` from `git -C <path> diff <base>` for every
+    additional repository with a diff, whichever role is chosen, because the fallback
+    subagent and the Claude substitute read it.
+  - Codex role: when the primary has a diff, review it with `ccx:review --base <primary
+    base>`.
     - After a `drop` answer, the Reviewer contract item 5 diff scan runs before each
       native `ccx:review` call, the primary's and each `--cwd` one, over `git -C
       <path> diff <base>` of that repository, after the `add -N` of new files. On a match
@@ -107,15 +110,15 @@ names, for each repository, and leaves the rest of that step as written.
     <base-commit>` itself. Before the first fallback review, write the primary's diff to
     `.ccx/<run-id>/diff.patch`, after `git add -N` of new files. Step 5.4 and CI repair
     (Step 7.3.5) continue that same subagent with SendMessage.
-  - Claude, at every tier: the `code-review` pass covers the primary when it has a diff,
-    as the Claude review contract says. For each additional repository with a diff, the
-    Claude slot is a Claude subagent at Agent model `opus`, given the repository's patch
-    file, the acceptance criteria, and the reply shape of Reviewer contract item 8, and
-    told to read and report only. This is a defined substitute for a checkout the skill
-    cannot target, and a worktree run uses the same substitute for its checkout (Claude
-    review contract item 7). It is not a swap. Record it in `run.md` per repository and
-    name it in the report. It is the one Claude pass that is continued rather than fresh:
-    Step 5.4 follow-ups continue the same subagent with SendMessage.
+  - Claude role, for a higher-risk run: the `code-review` pass covers the primary when it
+    has a diff, as the Claude review contract says. For each additional repository with a
+    diff, the Claude role is a Claude subagent at Agent model `opus`, given the
+    repository's patch file, the acceptance criteria, and the reply shape of Reviewer
+    contract item 8, and told to read and report only. This is a defined substitute for a
+    checkout the skill cannot target, and a worktree run uses the same substitute for its
+    checkout (Claude review contract item 7). It is not a swap. Record it in `run.md` per
+    repository and name it in the report. It is the one Claude pass that is continued
+    rather than fresh: Step 5.4 follow-ups continue the same subagent with SendMessage.
 - Step 6: discover and run checks per repository.
 - Step 7: commit and push per repository that has a diff, each to its own branch, and open
   one PR per such repository. Each body has a "Related pull requests" section, with
@@ -130,10 +133,11 @@ names, for each repository, and leaves the rest of that step as written.
   The exception covers only PRs this run opened; a continued PR whose comment was not
   yet posted gets none. Editing the body of this run's own PR is inside the approval
   scope and publishes nothing new.
-- Step 7.3.5: a CI repair review for an additional repository follows the Step 5.2 rule:
-  Codex resumes that repository's own thread through `ccx:ask --resume`, naming
-  `diff-<slug>.patch`, never another repository's thread. The repository's Claude
-  subagent is continued too.
+- Step 7.3.5: a CI repair review for an additional repository follows the Step 5.2 rule
+  for the run's role: with Codex, it resumes that repository's own thread through
+  `ccx:ask --resume`, naming `diff-<slug>.patch`, never another repository's thread; with
+  Claude, the repository's Claude subagent is continued. Repairs continue only the chosen
+  role's threads and subagents.
 - Closing references: an issue is closed only by the PR in its own repository (`Closes #n`).
   Every other PR of the run cites it as `Refs <owner>/<repo>#n`. The issue status comment
   names the PR in the issue's repository first, then the siblings.

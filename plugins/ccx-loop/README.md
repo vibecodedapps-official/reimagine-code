@@ -2,8 +2,8 @@
 
 `ccx-loop` is a Claude Code plugin that runs a tiered plan, review, implement, review,
 publish loop for one unit of work. Claude orchestrates and reviews. Codex gives a second
-opinion and implements the slices. Claude subagents implement a slice at high, xhigh,
-and max when the criteria say so, and when Codex is unavailable. You type one command
+opinion and implements the slices. Sonnet subagents implement a slice at high and xhigh
+when the criteria say so, and when Codex is unavailable. You type one command
 instead of a hand-written workflow prompt.
 
 The plugin is prompt-only. It is markdown and one JSON manifest. It has no hooks, no
@@ -19,12 +19,13 @@ Given an issue, a file of notes, or a short description, the loop:
    tier.
 4. Creates a branch, runs the repo's checks once as a baseline, and has an implementer
    build each slice of the plan. Codex is the default at every tier, at a model that
-   rises with the tier. At high, xhigh, and max the plan picks Opus for a slice that
+   rises with the tier. At high and xhigh the plan picks Sonnet for a slice that
    carries a risk trigger, owns more than eight files, or adds a new module or interface.
-   Sonnet is only the fallback. Codex slices run one at a time; Opus and Sonnet slices
+   Sonnet is also the fallback. Codex slices run one at a time; Sonnet slices
    may run in parallel. Claude reviews each slice.
-5. At every tier, has Codex review the whole diff, and the built-in `/code-review` skill
-   reviews it too, at a level that rises with the tier.
+5. Has one reviewer role review the whole diff. A higher-risk run gets Claude, with the
+   built-in `/code-review` skill at a level that rises with the tier. Any other run gets
+   Codex.
 6. Runs every check the repo has that can run locally.
 7. Commits, pushes, opens one pull request (one per repository in Multi-repo mode),
    watches CI, and comments on each source issue. A PR retargeted to another base branch
@@ -53,13 +54,15 @@ directory exists prints the report and writes nothing.
   installs with this plugin as a dependency. Codex needs a git repository as its working
   directory and has no network access.
 
-- The built-in `/code-review` skill, for every run that reaches the final review. It is
-  the second final reviewer beside Codex at every tier. A run that needs it and cannot
-  find it ends in `blocked`. Plan-only runs do not need it.
+- The built-in `/code-review` skill, for a higher-risk run that reaches the final review.
+  A higher-risk run on the normal checkout that needs it and cannot find it ends in
+  `blocked`, and so does a lower-risk run that turns higher-risk in the final review or
+  a CI repair. Lower-risk runs and plan-only runs do not need it.
 
 Without Codex, use `--no-codex`. The loop then uses Claude subagents in place of the Codex
 reviewers and Sonnet subagents in place of the Codex implementers, and names every swap
-in the report. `--no-codex` does not remove the `/code-review` pass. To leave Codex out of
+in the report. A higher-risk run still gets Claude for its final review under
+`--no-codex`, so the flag changes nothing there. To leave Codex out of
 every run, set the plugin's `codex` option to false with
 `/plugin configure ccx-loop@reimagine-code`; each run then behaves as `--no-codex`.
 
@@ -86,10 +89,10 @@ claude --plugin-dir <path-to-clone>/plugins/ccx --plugin-dir <path-to-clone>/plu
 ## Commands
 
 ```
-/ccx-loop:run <inputs...> [--effort low|medium|high|xhigh|max] [--plan-only] [--confirm-plan]
+/ccx-loop:run <inputs...> [--effort low|medium|high|xhigh] [--plan-only] [--confirm-plan]
          [--no-codex] [--no-publish] [--branch <name>] [--continue <branch>]
          [--run-budget <minutes>] [--repo <path>[@<branch>]]...
-/ccx-loop:plan <inputs...> [--effort low|medium|high|xhigh|max] [--no-codex] [--branch <name>]
+/ccx-loop:plan <inputs...> [--effort low|medium|high|xhigh] [--no-codex] [--branch <name>]
           [--continue <branch>] [--run-budget <minutes>] [--repo <path>[@<branch>]]...
 ```
 
@@ -127,8 +130,9 @@ common shapes, not a guarantee.
 
 ### Flags
 
-- `--effort low|medium|high|xhigh|max`: skip the estimate and force a tier. It cannot
-  lower a task below the risk floor.
+- `--effort low|medium|high|xhigh`: skip the estimate and force a tier. It cannot
+  lower a task below the risk floor. `--effort max` is rejected, and the message points
+  to `xhigh`.
 - `--plan-only`: stop after the plan is final, at every tier, and print it. Nothing
   after the plan runs and the working tree is not changed.
 - `--confirm-plan` (`/ccx-loop:run` only, rejected with `--plan-only`): pause once the plan is
@@ -222,10 +226,11 @@ agents read them directly. In this mode:
   every `git` call with `git -C <path>`.
 - Codex `review` covers the primary. Each additional repository with a diff is reviewed
   with `ccx:review --cwd <absolute path>` in its own thread, and its follow-ups resume
-  that thread. `/code-review` covers the primary, and a
-  Claude Opus subagent fills the Claude slot for each additional repository with a
-  diff. That substitute is recorded and is not a swap. A Codex implementer call for a
-  slice in an additional repository passes that checkout as `--cwd`.
+  that thread. In a higher-risk run, `/code-review` covers the primary, and a
+  Claude Opus subagent fills the Claude role for each additional repository with a
+  diff. The chosen role covers every changed repository. That substitute is recorded and
+  is not a swap. A Codex implementer call for a slice in an additional repository passes
+  that checkout as `--cwd`.
 - Step 7 opens one PR per repository that has a diff, each with a "Related pull
   requests" section that links the siblings. `Closes #n` comes only from the PR in the
   issue's own repository. Every other PR of the run cites it as `Refs <owner>/<repo>#n`.
@@ -264,7 +269,7 @@ rename it.
 | `timeouts` | see below | Time budgets in minutes. |
 
 Default timeouts, in minutes: `subagent` 20, `codex` 10, `check` 15, `ci` 45. The
-`run` default is by tier: 120 at low and medium, 240 at high, 360 at xhigh and max. The
+`run` default is by tier: 120 at low and medium, 240 at high, 360 at xhigh. The
 run budget is `--run-budget`, else `timeouts.run`, else the tier default. An explicit
 value from the flag or the file applies from Step 0 to the terminal state and is never
 replaced by a tier default. With no explicit value, 240 applies until Step 1.6 sets the
@@ -323,39 +328,45 @@ model output, not approval.
 
 ## Effort tiers
 
-| Step | Low | Medium | High | xhigh | Max |
-|---|---|---|---|---|---|
-| Plan review | Codex `gpt-6.1-sol` | Codex `gpt-6.1-sol` | Codex `gpt-6-astra` with a trigger, else `gpt-6.1-sol` | Codex `gpt-6-astra` | Codex `gpt-6-astra` |
-| Implement | Codex `gpt-6-luna` per slice, orchestrator reviews | Codex `gpt-6.1-sol` per slice, orchestrator reviews | Codex `gpt-6.1-sol`, or Opus by criteria, per slice | Codex `gpt-6-astra`, or Opus by criteria, per slice | Codex `gpt-6-astra`, or Opus by criteria, per slice |
-| Final review | Codex `gpt-6.1-sol` and Claude `code-review low` | Codex `gpt-6.1-sol` and Claude `code-review medium` | Codex `gpt-6-astra` and Claude `code-review high` with a trigger, else `gpt-6.1-sol` and `code-review medium` | Codex `gpt-6-astra` and Claude `code-review high` | Codex `gpt-6-astra` and Claude `code-review xhigh` |
+| Step | Low | Medium | High | xhigh |
+|---|---|---|---|---|
+| Plan review | Codex `gpt-6-astra` | Codex `gpt-6-astra` | Codex `gpt-6-astra` | Codex `gpt-6-astra` |
+| Implement | Codex `gpt-6.1-sol` per slice, orchestrator reviews | Codex `gpt-6.1-sol` per slice, orchestrator reviews | Codex `gpt-6-astra`, or Sonnet by criteria, per slice | Codex `gpt-6-astra`, or Sonnet by criteria, per slice |
+| Final review | Codex `gpt-6-astra`, or Claude `code-review low` | Codex `gpt-6-astra`, or Claude `code-review medium` | Codex `gpt-6-astra`, or Claude `code-review high` | Codex `gpt-6-astra`, or Claude `code-review xhigh` |
 
 Review of the inputs, checks, and publish run at every tier. The tier is sized from
-behavioral risk, and xhigh and max from how many areas that share no file the change
+behavioral risk, and xhigh from how many areas that share no file the change
 spans. Bundling issues does not raise it. A change that adds, alters, or removes an auth
 check, a permission rule, a schema or migration, a row-level security policy, a data
 access path, or a public API's signature or behavior is at least high tier, and
-`--effort` cannot lower that. xhigh and max are above the floor. "With a trigger"
-means the change has one of those triggers, whether or not the floor raised the tier. It
-is judged at high tier only, and decides two cells: the plan review, judged from the
-Step 1.6 floor check, so a floored high run gets `gpt-6-astra` and a high run that is
-only cross-cutting gets `gpt-6.1-sol`; and the final review, judged from a trigger at
-the estimate or in the diff after implementation. A medium run that rises to high always
-has a trigger in the diff, so it gets the trigger cell. xhigh and max do not depend on
-the trigger. After implementation the floor is applied to the diff again; the estimate
-is not repeated, so a run never rises above high. At every tier a final review round is
-both reviewers over the same diff, with one shared cap of 3 rounds. When Codex is
-unavailable, a Claude subagent replaces the Codex reviewer and the stage still runs; the
-`code-review` pass is never swapped. `gpt-6-luna` is never a reviewer.
+`--effort` cannot lower that. xhigh is above the floor. After implementation the floor
+is applied to the diff again; the estimate is not repeated, so a run never rises above
+high.
 
-The implementer is Codex at the tier's model, one default per tier. At high, xhigh, and
-max, Opus replaces it for a slice that carries a risk trigger, owns more than eight
-files, or adds a new module or interface. The plan never chooses Sonnet. Sonnet is the
-fallback when `--no-codex` is set, when Codex is unavailable at Step 0.6, when a Codex
-implementer call returns `failed` or no status line twice in a row, and on an Opus tool
-error. Codex has no network, so the orchestrator installs any dependency the plan adds
-before an implementer starts, and runs any slice check that needs the network after the
-implementer returns. A worktree run at any tier uses the Opus substitute for the Claude
-slot, because the `code-review` skill reviews only the session's checkout.
+The final review has one reviewer role per run. A run is higher-risk when the change
+carries a risk trigger, touches more than eight distinct files across all slices, or
+adds a new module, type, interface, or rule section that another file cites. A
+higher-risk run gets Claude, the `/code-review` skill at the tier's level, or its Opus
+stand-in in a worktree run and for each additional repository. Any other run gets Codex
+`gpt-6-astra`. The rule is judged on the plan, again on the diff after implementation,
+and before each later round and each CI repair review. Once a run is higher-risk it stays
+so and keeps Claude for its remaining rounds; a lower-risk run that turns higher-risk
+in the final review or a CI repair and finds `/code-review` missing ends in `blocked`.
+The rule picks the reviewer only: it never raises the tier. Rounds are capped at 3,
+shared by both roles. When Codex is unavailable, or under `--no-codex`, a Claude subagent
+replaces the Codex reviewer for a lower-risk run; the `code-review` pass is never
+swapped. `gpt-6.1-sol` is never a reviewer.
+
+The implementer is Codex at the tier's model, one default per tier. At high and
+xhigh, Sonnet replaces it for a slice that carries a risk trigger, owns more than eight
+files, or adds a new module or interface. Sonnet is also the fallback when `--no-codex`
+is set, when Codex is unavailable at Step 0.6, and when a Codex implementer call returns
+`failed` or no status line twice in a row. A Sonnet slice whose call errors stops the
+run. Codex has no network, so the orchestrator installs any
+dependency the plan adds before an implementer starts, and runs any slice check that
+needs the network after the implementer returns. A higher-risk worktree run uses the
+Opus substitute for the Claude role, because the `code-review` skill reviews only the
+session's checkout.
 
 Every step that repeats is capped at 3 rounds. Time is bounded per call and per run.
 

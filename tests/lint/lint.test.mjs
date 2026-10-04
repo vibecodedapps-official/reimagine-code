@@ -204,6 +204,33 @@ test('lint rejects a loop command that does not read the codex option', () => fa
   },
   'plugins/ccx-loop/commands/plan.md: must read the codex option as `${user_config.codex}`'));
 
+test('lint rejects a loop command that lists the max effort value in its description', () => fails(
+  (d) => {
+    const p = join(d, 'plugins/ccx-loop/commands/run.md');
+    const s = readFileSync(p, 'utf8');
+    assert.ok(s.includes('--effort low|medium|high|xhigh,'), 'run.md lacks the description list');
+    writeFileSync(p, s.replace('--effort low|medium|high|xhigh,', '--effort low|medium|high|xhigh|max,'));
+  },
+  'plugins/ccx-loop/commands/run.md: the description must list the effort values exactly low, medium, high, xhigh; found "low,medium,high,xhigh,max"'));
+
+test('lint rejects a loop command that drops an effort value from its argument hint', () => fails(
+  (d) => {
+    const p = join(d, 'plugins/ccx-loop/commands/plan.md');
+    const s = readFileSync(p, 'utf8');
+    assert.ok(s.includes('[--effort low|medium|high|xhigh]'), 'plan.md lacks the hint list');
+    writeFileSync(p, s.replace('[--effort low|medium|high|xhigh]', '[--effort low|medium|high]'));
+  },
+  'plugins/ccx-loop/commands/plan.md: the argument-hint must list the effort values exactly low, medium, high, xhigh; found "low,medium,high"'));
+
+test('lint rejects a loop command whose flag check accepts max', () => fails(
+  (d) => {
+    const p = join(d, 'plugins/ccx-loop/commands/run.md');
+    const s = readFileSync(p, 'utf8');
+    assert.ok(s.includes('one of `low`, `medium`, `high`, `xhigh`;'), 'run.md lacks the flag check list');
+    writeFileSync(p, s.replace('one of `low`, `medium`, `high`, `xhigh`;', 'one of `low`, `medium`, `high`, `xhigh`, `max`;'));
+  },
+  'plugins/ccx-loop/commands/run.md: the flag check must list the effort values exactly low, medium, high, xhigh; found "low,medium,high,xhigh,max"'));
+
 test('lint rejects a codex catalog with another name', () => fails(
   (d) => editJson(d, '.agents/plugins/marketplace.json', (j) => { j.name = 'codex-code-review'; }),
   '.agents/plugins/marketplace.json: name must be reimagine-code, not codex-code-review'));

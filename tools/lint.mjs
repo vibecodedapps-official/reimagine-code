@@ -269,6 +269,24 @@ if (loopSkill !== null) {
   }
 }
 
+// 16c. Each loop command lists the effort values low, medium, high, xhigh and no others in its description, its argument hint, and
+// its flag check.
+for (const f of ["run", "plan"].map((n) => `plugins/ccx-loop/commands/${n}.md`)) {
+  const text = read(f);
+  if (text === null) continue;
+  const want = "low,medium,high,xhigh";
+  const lists = [
+    ["description", text.match(/^description: .*?--effort ([a-z|]+)/m)],
+    ["argument-hint", text.match(/^argument-hint: .*?--effort ([a-z|]+)/m)],
+    ["flag check", text.match(/`--effort` takes exactly one value, one of ((?:`[a-z]+`(?:, )?)+);/)],
+    ["flag check", text.match(/`--effort` value other than ((?:`[a-z]+`(?:, )?)+)\./)],
+  ];
+  for (const [where, m] of lists) {
+    const got = m ? m[1].replace(/[`\s]/g, "").replace(/\|/g, ",") : null;
+    if (got !== want) fail(`${f}: the ${where} must list the effort values exactly low, medium, high, xhigh; found ${JSON.stringify(got)}`);
+  }
+}
+
 // 17. The Codex catalog lists exactly the Codex plugins above, each available and authenticated on install (R2), and agrees with
 // their manifests; the root plugin.json form is pinned to the agent-plugins.org 1.0.0 schema, which Codex accepts (R27); a plugin
 // with both manifests carries one version (R48); and the review skills keep the upstream NOTICE and their provenance comments (R28).
