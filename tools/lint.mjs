@@ -132,6 +132,13 @@ if (hooks) {
   };
   if (!isDeepStrictEqual(hooks.hooks, want)) fail(`plugins/recode/hooks/hooks.json must declare exactly these hooks: ${JSON.stringify(want)}`);
 }
+// repo-docs' one hook, before each Bash and each PowerShell tool call: Claude Code on Windows runs commands through either.
+const docsHooks = json("plugins/repo-docs/hooks/hooks.json");
+if (docsHooks) {
+  const run = [{ type: "command", command: "sh \"${CLAUDE_PLUGIN_ROOT}/hooks/pre-commit.sh\"" }];
+  const want = { PreToolUse: [{ matcher: "Bash", hooks: run }, { matcher: "PowerShell", hooks: run }] };
+  if (!isDeepStrictEqual(docsHooks.hooks, want)) fail(`plugins/repo-docs/hooks/hooks.json must declare exactly these hooks: ${JSON.stringify(want)}`);
+}
 
 // 6. No file names a docs/*.md file listed in .git/info/exclude, or cites a numbered entry of one ("<name> 12").
 // A fresh clone's exclude file lists none, so the check runs only in a working copy that has such files.

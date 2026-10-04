@@ -38,7 +38,9 @@ codex plugin add repo-docs@reimagine-code
 ```
 
 Codex runs a plugin hook only after you trust it. Run `/hooks` in a session to trust it.
-On Windows the hook needs Git for Windows, whose Git Bash runs it in Claude Code.
+On Windows the hook needs Git for Windows, whose Git Bash runs it in Claude Code. Codex
+runs it with the `sh` it finds on `PATH`, so add Git's `bin` folder, such as
+`C:\Program Files\Git\bin`, to `PATH`; without it the hook does nothing.
 
 ## License
 

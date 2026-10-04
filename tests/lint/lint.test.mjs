@@ -125,6 +125,10 @@ test('lint rejects hooks without the SessionStart notice', () => fails(
   (d) => editJson(d, 'plugins/recode/hooks/hooks.json', (j) => { delete j.hooks.SessionStart; }),
   'plugins/recode/hooks/hooks.json must declare exactly these hooks'));
 
+test('lint rejects repo-docs hooks that skip the PowerShell tool', () => fails(
+  (d) => editJson(d, 'plugins/repo-docs/hooks/hooks.json', (j) => { j.hooks.PreToolUse.pop(); }),
+  'plugins/repo-docs/hooks/hooks.json must declare exactly these hooks'));
+
 test('lint rejects missing chat instructions', () => fails(
   (d) => rmSync(join(d, 'plugins/recode/chat/instructions.md')),
   'plugins/recode/chat/instructions.md: missing'));

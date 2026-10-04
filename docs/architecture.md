@@ -247,9 +247,11 @@ unmodified at a locked commit; that becomes false when the mirror is dropped.
 
 Moves to `plugins/repo-docs/` with both manifests. Its skill and hook are unchanged;
 its `AGENTS.md` and README are rewritten for the new home.
-The hook is a shell-form command, `sh "${CLAUDE_PLUGIN_ROOT}/hooks/pre-commit.sh"`. On
-Windows it needs Git for Windows, whose Git Bash Claude Code uses for shell-form hooks;
-the README states that prerequisite, and acceptance runs it from a path with a space.
+The hook is a shell-form command, `sh "${CLAUDE_PLUGIN_ROOT}/hooks/pre-commit.sh"`, run
+before each `Bash` tool call and, for Claude Code on Windows, each `PowerShell` one. On
+Windows it needs Git for Windows, whose Git Bash Claude Code uses for shell-form hooks,
+and Codex needs Git's `bin` folder on `PATH` to find `sh`; the README states both
+prerequisites, and acceptance runs the hook from a path with a space.
 Its `AGENTS.md` becomes a directory spoke under the root hub: its paths are rewritten
 relative to the plugin directory, its POSIX-only constraints apply to that directory,
 not the suite, and its references to the version script and plain `v` tags go. The

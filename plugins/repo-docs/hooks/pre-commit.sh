@@ -1,7 +1,8 @@
 #!/bin/sh
-# PreToolUse hook for Bash. When the command runs `git commit` in a repo that tracks an
-# AGENTS.md or CLAUDE.md, add a reminder to run the repo-docs audit. Reads stdin and the
-# git index of the working directory, never blocks the command, never writes a file.
+# PreToolUse hook for Bash and PowerShell. When the command runs `git commit` in a repo
+# that tracks an AGENTS.md or CLAUDE.md, add a reminder to run the repo-docs audit. Reads
+# stdin and the git index of the working directory, never blocks the command, never
+# writes a file.
 # The event is JSON: an escaped newline ends a command, an escaped tab is a space, and
 # escaped quotes are dropped, so the only `"` left ends the command string.
 sed 's/\\n/;/g; s/\\t/ /g; s/\\"//g' |
