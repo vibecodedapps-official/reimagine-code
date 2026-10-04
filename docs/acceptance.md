@@ -169,7 +169,7 @@ name a plugin are rerun under the new names and recorded here.
     `git ls-remote --tags origin`. Expected: each tag command checks the manifest against
     its catalog entry and pushes; the remote holds `recode--v0.1.0`,
     `recode-loop--v0.1.0`, and `repo-docs--v0.1.2`, and no bare `v` tag. Covers R49.
-    Rerun at each release. Not yet run.
+    Rerun at each release. Run 2026-10-03; see the record.
 18. **Install from GitHub.** Setup: on macOS and on Windows 11 with both CLIs from npm,
     new scratch profiles on each host. Command: the four lines of R3, then `claude plugin
     install recode-loop@reimagine-code` and `codex plugin add
@@ -177,8 +177,9 @@ name a plugin are rerun under the new names and recorded here.
     question. Expected: each install succeeds at the tagged version; the loop's install
     also installs `recode`; setup passes; the ask prints Codex's answer; `codex plugin
     list` shows both Codex plugins. Run from the private repository after tagging, then
-    once per host from the public one. Covers R3 and R4. Rerun at each release. Not yet
-    run.
+    once per host from the public one. Covers R3 and R4. Rerun at each release. Run on
+    macOS 2026-10-03 from the private repository; see the record. Not yet run on
+    Windows or from the public repository.
 19. **Windows.** Setup: the Windows 11 work machine with both CLIs from npm, the suite
     installed as in item 18, and a test repository checked out under a path that holds
     a space. Command: `/recode:ask` and `/recode:implement` with a one-line change;
@@ -490,3 +491,33 @@ removed and added again from `main` at 6dc678e.
 - **R51, by review.** The README states Claude Code 2.1.288 and Codex CLI 0.159.2, the
   versions the M3 to M5 items ran on, and Node 22 or later, and says Claude Code before
   2.1.269 lacks features the suite uses (`docs/decisions.md` Part 6 item 1).
+
+### 2026-10-03: M6, tags and the macOS install
+
+macOS 27.0, Claude Code 2.1.288, codex-cli 0.159.2, Node 26.4.0. The release commit was
+d928f13, the merge of PR 7.
+
+- **Item 17 passed.** `claude plugin tag --dry-run` on each plugin named the tag and the
+  push it would make. `claude plugin tag --push` then created and pushed
+  `recode--v0.1.0`, `recode-loop--v0.1.0`, and `repo-docs--v0.1.2`, in that order, each
+  at d928f13. `git ls-remote --tags origin` listed those three and no other tag. Lint on
+  `main` passed with the tags. With one line appended to `plugins/recode/README.md`, it
+  failed with "plugins/recode: changed since recode--v0.1.0, so its version must be
+  above 0.1.0; found 0.1.0".
+- **Item 18 passed on macOS, from the private repository.** In a new Claude profile,
+  `~/.cache/recode-acceptance/claude-m6`, the catalog came from `main` at d928f13, and
+  `recode`, `recode-loop`, and `repo-docs` installed at 0.1.0, 0.1.0, and 0.1.2. With the
+  bridge uninstalled, installing the loop alone printed "(+ 1 dependency: recode)". In a
+  new Codex home, `~/.cache/recode-acceptance/codex-m6`, `codex plugin marketplace add
+  vibecodedapps-official/reimagine-code` fetched d928f13, and `recode` 0.1.0 and
+  `repo-docs` 0.1.2 installed and showed as enabled.
+- **Setup and ask, in the M4 profile.** The new Claude profile has no login, and
+  `claude -p` there replied that it was not logged in. So setup and the ask
+  ran in the M4 scratch profile, after its catalog was removed and added again from
+  GitHub, at d928f13. Installing the loop alone there also printed "(+ 1 dependency:
+  recode)". `/recode:setup` reported codex-cli 0.159.2, the ChatGPT login, the
+  `workspace-write` sandbox proven, and "old plugins: none found". `/recode:ask` with
+  "What is 17 times 3? Reply with the number only." printed "51" and `status: ok`. The
+  new Codex home held a copy of the author's Codex login for the ask, deleted afterward.
+- **Not yet run.** Item 18 on Windows, item 19, and the installs from the public
+  repository.
