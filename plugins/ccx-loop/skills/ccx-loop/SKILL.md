@@ -671,8 +671,8 @@ it. Step 0 creates nothing except artifacts.
 
 1. Read the user's and the repo's instruction files, and `.ccx.json`. Record every
    ask-first rule. A malformed `.ccx.json` stops the run in `blocked`. So does a
-   `.ccl.json` at the repo root with no `.ccx.json` beside it: that is the config's
-   name from before the plugin was renamed, and ignoring it would drop its `checks` and
+   `.recode.json` or a `.ccl.json` at the repo root with no `.ccx.json` beside it: that is
+   the config's name from before the plugin was renamed, and ignoring it would drop its `checks` and
    `timeouts`. The report says to rename the file to `.ccx.json` and run again. Once
    the permission mode has dropped a parallel call in this session, issue Step 0's
    commands one at a time (Approval scope, carve-out 6). Then scan every file input and

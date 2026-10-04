@@ -162,6 +162,15 @@ test('lint rejects a chat block over 5,000 characters', () => fails(
   },
   'plugins/ccx/chat/instructions.md: the block is ', ", over ChatGPT's 5,000"));
 
+test('lint rejects a loop skill that stops blocking on the old config names', () => fails(
+  (d) => {
+    const p = join(d, 'plugins/ccx-loop/skills/ccx-loop/SKILL.md');
+    const s = readFileSync(p, 'utf8');
+    assert.ok(s.includes('`.recode.json` or a `.ccl.json`'), 'the skill lacks the old names');
+    writeFileSync(p, s.replace('`.recode.json` or a `.ccl.json`', '`.ccl.json`'));
+  },
+  'plugins/ccx-loop/skills/ccx-loop/SKILL.md: Step 0 item 1 must block on a .recode.json or .ccl.json'));
+
 test('lint rejects a loop dependency range with a caret', () => fails(
   (d) => editJson(d, 'plugins/ccx-loop/.claude-plugin/plugin.json', (j) => { j.dependencies = [{ name: 'ccx', version: '^0.1.0' }]; }),
   'plugins/ccx-loop/.claude-plugin/plugin.json: dependencies must hold', 'found "^0.1.0"'));

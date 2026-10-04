@@ -41,7 +41,7 @@ const PLUGINS = [
 const OLD_NAME_LITERALS = {
   "plugins/ccx/scripts/rules.mjs": ["recode:house-rules"],
   "plugins/ccx/scripts/suite.mjs": ["codex-lite@vibecodedapps-codex-lite", "ccl@vibecodedapps-claude-codex-loop", "recode:house-rules", "recode-loop@reimagine-code", "recode@reimagine-code"],
-  "plugins/ccx-loop/skills/ccx-loop/SKILL.md": [".ccl.json"],
+  "plugins/ccx-loop/skills/ccx-loop/SKILL.md": [".ccl.json", ".recode.json"],
 };
 
 // 1. Syntax of every module.
@@ -256,6 +256,16 @@ for (const p of shipped.filter((f) => rel(f).startsWith("plugins/ccx-loop/"))) {
 for (const f of ["run", "plan"].map((n) => `plugins/ccx-loop/commands/${n}.md`)) {
   const text = read(f);
   if (text !== null && !text.includes("`${user_config.codex}`")) fail(`${f}: must read the codex option as \`\${user_config.codex}\``);
+}
+
+// 16b. The loop's first preflight item blocks on the config an earlier name of the plugin read, `.recode.json` or `.ccl.json`,
+// when `.ccx.json` is missing, and says to rename it (R23).
+const loopSkill = read("plugins/ccx-loop/skills/ccx-loop/SKILL.md");
+if (loopSkill !== null) {
+  const flat = loopSkill.replace(/\s+/g, " ");
+  if (!/ a `\.recode\.json` or a `\.ccl\.json` at the repo root with no `\.ccx\.json` beside it[^.]*\. .{0,300}says to rename the file to `\.ccx\.json`/.test(flat)) {
+    fail("plugins/ccx-loop/skills/ccx-loop/SKILL.md: Step 0 item 1 must block on a .recode.json or .ccl.json with no .ccx.json beside it, and say to rename the file");
+  }
 }
 
 // 17. The Codex catalog lists exactly the Codex plugins above, each available and authenticated on install (R2), and agrees with
