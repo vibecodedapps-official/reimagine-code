@@ -3,6 +3,31 @@
 One changelog for the suite. Each release has a subsection per component. The source
 repos' own changelogs are kept under `docs/history/`.
 
+## 0.1.1 - 2026-10-04
+
+### recode
+
+- Fixed `/recode:setup`, `do`, and `implement` failing the sandbox probe on their first
+  run in a new Codex home on Windows. There, one of Codex's first sandboxed commands
+  took about 30 s, and the probe stopped each call at 30 s. Each probe call now gets
+  120 s. Other local commands keep 30 s.
+
+### recode-loop
+
+- Version 0.1.1, to stay in step with `recode`. No change.
+
+### recode (Codex)
+
+- Version 0.1.1, to stay in step with `recode`. No change.
+
+### repo-docs
+
+- Released as 0.1.3. The commit reminder now also runs before Claude Code's PowerShell
+  tool, which a new profile on Windows uses as its primary shell. Before, a commit made
+  through it got no reminder.
+- The README now says Codex on Windows needs Git's `bin` folder, such as
+  `C:\Program Files\Git\bin`, on `PATH`. Without it the hook does nothing.
+
 ## 0.1.0 - 2026-10-03
 
 ### Suite
