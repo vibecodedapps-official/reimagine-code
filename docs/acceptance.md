@@ -19,8 +19,8 @@ name a plugin are rerun under the new names and recorded here.
    `ccx` path (before 0.1.2, also an Edit rule for the plugin's data
    directory); ask prints Codex's answer; implement edits the scratch repository and its
    footer shows the change. Covers R9 and R15. Rerun when a bridge command, the setup
-   report, or the data directory changes. Run 2026-10-03, setup rerun 2026-10-04; see the
-   record.
+   report, or the data directory changes. Run 2026-10-03, setup rerun 2026-10-04, and run
+   2026-10-04 for 0.2.0; see the records.
 2. **codex-lite items under the new names.** Setup: as each item says, in scratch
    profiles. Command: items 1, 5, 8, 11, 12, 16, 17, 18, and 19 of
    `docs/history/codex-lite-cc/acceptance.md`, the items that name the plugin or its
@@ -37,7 +37,7 @@ name a plugin are rerun under the new names and recorded here.
    session quotes the rule; after removal each file equals its backup byte for byte; with
    no Codex home the Codex target is reported as skipped and no directory is created.
    Covers R33, R38, R41, and R42. Rerun when `rules.mjs`, the rules command, or a rules
-   file changes. Run 2026-10-03, and 2026-10-04 for 0.1.3; see the records.
+   file changes. Run 2026-10-03, and 2026-10-04 for 0.1.3 and 0.2.0; see the records.
 4. **Staleness notice and decline.** Setup: as item 3, with this block after the text
    of `CLAUDE.md` and an empty line, whose digest matches its body: begin line
    `<!-- ccx:house-rules begin version=0.0.1 options=core join=blank digest=6d3e610aaf815551 -->`,
@@ -46,13 +46,13 @@ name a plugin are rerun under the new names and recorded here.
    another session. Expected: the first session shows one line naming the file and
    `/ccx:rules`; after the decline the next session shows nothing. Covers R43 and
    R45. Rerun when `suite.mjs` or the hooks change. Run 2026-10-03, and 2026-10-04 for
-   0.1.3; see the records.
+   0.1.3 and 0.2.0; see the records.
 5. **Output style and old plugins.** Setup: as item 3, with `codex-lite` also installed
    from its old marketplace. Command: `/output-style`, then `/ccx:setup`. Expected: the
    picker lists `ccx:Concise Plain`, and replies follow it once chosen; setup's
    output ends with `claude plugin uninstall codex-lite@vibecodedapps-codex-lite`, and
    nothing is uninstalled. Covers R16 and R46. Rerun when the style or the old-plugin
-   list changes. Run 2026-10-03; see the record.
+   list changes. Run 2026-10-03, and 2026-10-04 for 0.2.0; see the records.
 6. **Loop install and its dependency.** Setup: a scratch profile with this
    repository's catalog added and neither plugin installed. Command: `claude plugin
    install ccx-loop@reimagine-code`, then `claude plugin disable
@@ -60,7 +60,8 @@ name a plugin are rerun under the new names and recorded here.
    Expected: the install also installs `ccx`; the disable is refused, naming
    `ccx-loop`; the uninstall reports `ccx` as no longer needed, for `claude plugin
    prune`. Covers R4 with the real plugins; spike M0.1 covered the update order. Rerun
-   when the loop's `dependencies` change. Run 2026-10-03; see the record.
+   when the loop's `dependencies` change. Run 2026-10-03, and 2026-10-04 for 0.2.0; see
+   the records.
 7. **Loop plan runs on a local remote.** Setup: scratch git repositories, each with
    `math.mjs`, `test.mjs`, a `package.json` whose `test` script passes, and a local bare
    `origin`; one also holds `.ccl.json` with `{"checks":["npm test"]}`. Command:
@@ -74,8 +75,8 @@ name a plugin are rerun under the new names and recorded here.
    absent, or the option false, no Codex call is made, each Codex role runs on its Claude
    fallback, and the report says why. With the option unset or true, the block says
    `no-codex: false` and Codex is called. Covers R17, R20, R21, R23, and part of R22.
-   Rerun when a loop command, the option, or Step 0 changes. Run 2026-10-03; see the
-   record.
+   Rerun when a loop command, the option, or Step 0 changes. Run 2026-10-03, and
+   2026-10-04 for 0.2.0; see the records.
 8. **Loop runs to the end on a local remote.** Setup: as item 7, without `.ccl.json`.
    Command: `/ccx-loop:run "<the same change>" --no-codex --effort low`, in separate
    repositories: with `--no-publish` and a committed `.ccx.json` of
@@ -91,7 +92,7 @@ name a plugin are rerun under the new names and recorded here.
    removal; the declined plan ends `plan-only`; the `--continue` run works on that
    branch; the `--repo` run changes both repositories. Covers ccl items 16, 65, 72, and
    172 under the new names, and the local parts of R22. Rerun when Step 0, Step 7, or an
-   artifact path changes. Run 2026-10-03; see the record.
+   artifact path changes. Run 2026-10-03, and 2026-10-04 for 0.2.0; see the records.
 9. **Loop runs that publish.** Setup: a throwaway GitHub repository with issue #1, a
    one-line bug, and a passing `npm test`; a second one on the same host for the
    multi-repo run; Codex logged in. Command: `/ccx-loop:run #1 --effort low`; then
@@ -99,7 +100,7 @@ name a plugin are rerun under the new names and recorded here.
    an open PR. Expected: Codex implements and Claude publishes a PR that closes #1;
    with `"commit": true` the snapshot lands in `specs/ccx/<run-id>/`; each item's own
    result. Covers the rest of R22 and R25. Rerun when Step 7 or the CI watch changes. Run
-   2026-10-03; see the record.
+   2026-10-03, and 2026-10-04 for 0.2.0; see the records.
 10. **ccl items under the new names.** The list was drawn 2026-10-03 at the start of M4
     from `docs/history/claude-codex-loop/acceptance.md`: of its 174 items, 58 name a
     renamed string, 35 of them only through bridge calls. The items rerun hinge on a
@@ -108,7 +109,8 @@ name a plugin are rerun under the new names and recorded here.
     item 7's runs check what is left of it, that `run.md` records the availability check.
     Expected: each item's own result with `/ccl:` read as `/ccx-loop:`, `.ccl` as
     `.ccx`, and `specs/ccl` as `specs/ccx`. Rerun when that file's own conditions
-    say. Items 1, 4, 16, 65, 72, 75, 114, and 172 run 2026-10-03; see the record.
+    say. Items 1, 4, 16, 65, 72, 75, 114, and 172 run 2026-10-03, and 2026-10-04 for
+    0.2.0 within items 7 to 9; see the records.
 
 11. **Codex catalog and install.** Setup: a new scratch `CODEX_HOME` holding a
     `config.toml` with only the model, effort, sandbox, and approval settings, and a
@@ -118,7 +120,7 @@ name a plugin are rerun under the new names and recorded here.
     add repo-docs@reimagine-code`. Expected: the `reimagine-code` marketplace lists
     exactly `ccx` and `repo-docs`, from `plugins/ccx-codex` and `plugins/repo-docs`,
     and they install at 0.1.0 and 0.1.2. Covers R2. Rerun when the Codex catalog or a
-    Codex manifest changes. Run 2026-10-03; see the record.
+    Codex manifest changes. Run 2026-10-03, and 2026-10-04 for 0.2.0; see the records.
 12. **Code review on Codex.** Setup: as item 11, in a scratch git repository with
     `math.mjs`, `test.mjs`, and a `package.json` whose `test` script passes, then an
     uncommitted change that renames an export, gives `add` a third argument with a
@@ -166,13 +168,14 @@ name a plugin are rerun under the new names and recorded here.
     `claude plugin details <plugin>@reimagine-code` for `ccx` and `ccx-loop`.
     Expected: "Always-on" at most 1,300 tokens for `ccx` and at most 510 for
     `ccx-loop`. Covers R8. Rerun at each release. Run 2026-10-03 for 0.1.0, and
-    2026-10-04 for 0.1.1, 0.1.2, and 0.1.3; see the records.
+    2026-10-04 for 0.1.1, 0.1.2, 0.1.3, and 0.2.0; see the records.
 17. **Tags.** Setup: the release commit on `main`. Command: `claude plugin tag --push`
     on `plugins/ccx`, then `plugins/ccx-loop`, then `plugins/repo-docs`; then
     `git ls-remote --tags origin`. Expected: each tag command checks the manifest against
     its catalog entry and pushes; the remote holds a `<plugin>--v<version>` tag for each
     plugin's new version, and no bare `v` tag. Covers R49. Rerun at each release. Run
-    2026-10-03 for 0.1.0, and 2026-10-04 for 0.1.1, 0.1.2, and 0.1.3; see the records.
+    2026-10-03 for 0.1.0, and 2026-10-04 for 0.1.1, 0.1.2, 0.1.3, and 0.2.0; see the
+    records.
 18. **Install from GitHub.** Setup: on macOS and on Windows 11 with both CLIs from npm,
     new scratch profiles on each host. Command: the four lines of R3, then `claude plugin
     install ccx-loop@reimagine-code` and `codex plugin add
@@ -184,15 +187,18 @@ name a plugin are rerun under the new names and recorded here.
     macOS and Windows 2026-10-03 for 0.1.0, from the private repository. Run
     2026-10-04 for 0.1.1 on macOS, from the private repository and then the public one,
     and on Windows from the public one. Run 2026-10-04 for 0.1.2 on macOS and Windows,
-    and for 0.1.3 on macOS and Windows, from the public repository; see the records.
-19. **Windows.** Setup: the Windows 11 work machine with both CLIs from npm, the suite
+    for 0.1.3 on macOS and Windows, and for 0.2.0 on macOS and Windows, from the public
+    repository; see the records.
+19. **Windows.** Setup: a Windows 11 machine with both CLIs from npm, the suite
     installed as in item 18, and a test repository checked out under a path that holds
     a space. Command: `/ccx:ask` and `/ccx:implement` with a one-line change;
-    `/ccx:rules` against a `CLAUDE.md` with CRLF line endings; a commit by the agent
-    in each host, Codex after trusting the hook. Expected: the ask and implement succeed;
-    the rules block is added with the file's CRLF endings kept; the repo-docs hook adds
-    its reminder on both hosts. Covers R53. Rerun when the bridge's spawn code, the rules
-    command, or the hook changes. Run 2026-10-03; see the record.
+    `/ccx:rules` against a `CLAUDE.md` with CRLF line endings, then its status after
+    the file is converted to LF; a commit by the agent in each host, Codex after
+    trusting the hook. Expected: the ask and implement succeed; the rules block is added
+    with the file's CRLF endings kept, and still reads `current` in LF; the repo-docs
+    hook adds its reminder on both hosts. Covers R53. Rerun when the bridge's spawn code,
+    the rules command, or the hook changes. Run 2026-10-03, and 2026-10-04 for 0.2.0;
+    see the records.
 
 ## Record of runs
 
@@ -907,3 +913,186 @@ was committed in this repository.
 - **Retired.** `ccl`, `repo-docs@repo-docs`, `codex-code-review-general`, and their
   marketplaces. `codex-lite` and `cca` stay.
 - **Found.** A CRLF block converted to LF reads as edited by hand (issue 16).
+
+### 2026-10-04: ccx 0.2.0, before the merge
+
+macOS 27.0, Claude Code 2.1.288, codex-cli 0.159.2, Node 26.4.0. These checks are the
+acceptance criteria of issue 15, run at bd21369 on `feat/rename-ccx`. The catalog was a
+local clone with the two `ccx` tags made in the clone only, checked out at
+`recode--v0.1.3` for the old state and at the branch for the new one. The runs used the
+M4 profile and new scratch profiles. The real `~/.claude` and `~/.codex` files had the
+same sha256 after the runs as before.
+
+- **Claude upgrade.** With `recode` and `recode-loop` 0.1.3 installed and the loop's
+  `codex` option false, the branch checkout and the next `claude plugin list` rewrote
+  `enabledPlugins` to `ccx@reimagine-code` and `ccx-loop@reimagine-code`, and
+  `pluginConfigs` to `ccx-loop@reimagine-code` with `codex` false. The old installs
+  were dropped, and `claude plugin install` for `ccx` and `ccx-loop` installed 0.2.0.
+  `outputStyle` stayed `recode:Concise Plain`. The data directory did not carry over;
+  `ccx-reimagine-code` appeared on the first `/ccx:setup`.
+- **Old plugins.** With the 0.1.3 plugins installed and a Codex `recode` table,
+  `suite.mjs old-plugins` listed `recode-loop@reimagine-code`, then
+  `recode@reimagine-code`, then the Codex `recode@reimagine-code`.
+- **Session and rules.** The session start notice named the files still under the old
+  marker. `/ccx:setup` proved the sandbox, with an allow rule naming `scripts/ccx.mjs`.
+  `/ccx:ask` printed "42." and `status: ok`. `/ccx:rules` read both old-marker blocks as
+  `stale`, and after "yes" to each, wrote `ccx:house-rules` blocks with the same digest;
+  the text above each block was unchanged. `/ccx:rules --remove` then left each file
+  equal to its copy from before the block (`cmp`), and so did a removal straight from
+  the 0.1.3 block.
+- **Line endings (issue 16).** A block applied to a CRLF `CLAUDE.md` read `current`
+  after the file was converted to LF. The 0.1.3 script read the same file as `edited`.
+- **Fresh install.** In new profiles, `ccx-loop` alone printed "(+ 1 dependency: ccx)",
+  both at 0.2.0, and Codex added `ccx` 0.2.0 and `repo-docs` 0.1.3.
+- **Codex upgrade.** `codex plugin add ccx@reimagine-code` and `codex plugin remove
+  recode@reimagine-code` both exited 0, leaving only the `ccx` table.
+- **Old loop config.** A loop run in a repository with `.recode.json` and no `.ccx.json`
+  ended `blocked`, said to run `git mv .recode.json .ccx.json`, and created nothing.
+- **Defect, fixed in 757dbbc.** With both files under the old marker, the notice read
+  "... and ... still uses the old marker". It now says "use" for two files.
+
+### 2026-10-04: release 0.2.0
+
+macOS 27.0, Claude Code 2.1.288, codex-cli 0.159.2, Node 26.4.0. The release commit was
+b3806f2, the merge of PR 18. Git credentials were turned off for the GitHub runs with
+`GIT_CONFIG_NOSYSTEM=1`, `GIT_CONFIG_GLOBAL=/dev/null`, `GIT_TERMINAL_PROMPT=0`, and no
+GitHub token. The real `~/.claude` and `~/.codex` files had the same sha256 after the
+runs as before.
+
+- **Item 17 passed for 0.2.0.** The dry runs named `ccx--v0.2.0` and
+  `ccx-loop--v0.2.0`. The repo-docs dry run refused, because `repo-docs--v0.1.3` already
+  exists and repo-docs did not change. `claude plugin tag --push` then created and
+  pushed both tags at b3806f2. The `recode` and `recode-loop` tags still point where
+  they did, 0.1.3 at 5da2c2c, and the remote holds no bare `v` tag. Lint and tests on
+  `main` passed with the tags.
+- **Upgrade from GitHub.** In the M4 profile, with 0.1.3 installed from GitHub,
+  `claude plugin marketplace update reimagine-code` printed nothing about the rename and
+  left `settings.json` unchanged. The next `claude plugin list` still printed the old
+  plugins and rewrote `enabledPlugins` to the `ccx` names; the one after showed neither.
+  `claude plugin install ccx-loop@reimagine-code` printed "(+ 1 dependency: ccx)", and
+  both installed at 0.2.0 from b3806f2. In `claude-m6`, a `codex` option set to false
+  on `recode-loop` came through as false on `ccx-loop`. In `codex-m6`, with 0.1.3 from
+  GitHub, `codex plugin marketplace upgrade reimagine-code` dropped `recode` from
+  `codex plugin list` while its `config.toml` table stayed; `codex plugin add
+  ccx@reimagine-code` and `codex plugin remove recode@reimagine-code` then left only
+  the `ccx` and `repo-docs` tables.
+- **Item 16 passed for 0.2.0.** `claude plugin details` reported about 1,268
+  always-on tokens for `ccx`, 508 for `ccx-loop`, and 169 for `repo-docs`, up from
+  1,256 and 497 for 0.1.3. `ccx-loop` is 2 tokens under its limit.
+- **Item 18 passed on macOS for 0.2.0, from the public repository.** `git ls-remote`
+  read both tags at b3806f2. In `claude-m6`, with the catalog removed and added again,
+  installing the loop alone printed "(+ 1 dependency: ccx)". `ccx-loop` 0.2.0, `ccx`
+  0.2.0, and `repo-docs` 0.1.3 installed, each recording b3806f2 and a GitHub source.
+  In `codex-m6`, with the marketplace removed and added again, `ccx` 0.2.0 and
+  `repo-docs` 0.1.3 installed and showed as enabled. In the M4 profile, `/ccx:setup`
+  reported the sandbox proven, one allow rule naming the 0.2.0 `scripts/ccx.mjs`, and
+  "old plugins: none found". A headless `/ccx:ask` with "What is 17 times 3? Reply with
+  the number only." printed "51" and `status: ok`. The copy of the Codex login was
+  deleted afterward.
+- **Items 1 and 3 to 9 passed for 0.2.0.** The rename changed a file each of them
+  reruns on. They ran in the M4 profile and new scratch profiles, with the suite from
+  GitHub at b3806f2.
+  - Item 1: setup and ask passed in item 18. `/ccx:implement`, from a test skill in a
+    scratch repository, printed "sandbox: workspace-write proven on this host before the
+    run", changed one line of `math.mjs`, and ended `status: ok`.
+  - Item 3: each target's diff was asked about separately. A new session in a folder
+    outside the home directory quoted "Before adding a dependency, once per package,
+    with the reason." After `/ccx:rules --remove`, both files equalled their originals
+    (`cmp`). With no Codex home, the Codex target was skipped and nothing was written
+    there, and the removal took out the `CLAUDE.md` that `/ccx:rules` had created.
+  - Item 4: in interactive sessions, the first showed "SessionStart:startup says: ccx:
+    the house rules in .../claude/CLAUDE.md are older than this plugin's; run
+    /ccx:rules to update them". After both targets were declined, `/ccx:rules` printed
+    "declined the change ...; the session notice stays quiet for this text", both files
+    were unchanged (`cmp`), and the next session showed no notice.
+  - Item 5: `/output-style` listed `ccx:Concise Plain`, and a session with it chosen
+    reported that style and replied in it. With `codex-lite` installed from its old
+    marketplace, `/ccx:setup` ended with `claude plugin uninstall
+    codex-lite@vibecodedapps-codex-lite`, and `codex-lite` stayed installed. With an old
+    Codex review plugin also enabled, a `codex plugin remove` line followed.
+  - Item 6: the loop's install printed "(+ 1 dependency: ccx)". `claude plugin disable
+    ccx@reimagine-code` was refused: "ccx is still required by ccx-loop". Uninstalling
+    the loop printed "1 auto-installed dependency no longer needed: ccx. Run `claude
+    plugin prune` to remove."
+  - Item 7: each run called `ccx-loop:ccx-loop` with the invocation block. With
+    `--no-codex`, `codex` absent from `PATH`, or the option false, no Codex call was
+    made and the report named the reason; with the option unset or true, the block said
+    `no-codex: false` and `ccx:ask` was called. These ended `plan-only` with `# ccx run
+    report` under `.ccx/<run-id>/` and `.ccx/` excluded. The `.ccl.json` run, and a run
+    with `.recode.json` and no `.ccx.json`, each ended `blocked` at Step 0.1, said to
+    rename the file to `.ccx.json`, and created nothing.
+  - Item 8: the plan run ended `plan-only` with a clean tree and nothing under `specs/`.
+    The `--no-publish` runs and the local-remote runs ended `prepared` with no commit,
+    the commit and push commands in the report, and no handoff, with the reason. The
+    skip-worktree run worked in `<parent>/r-skip-ccx-<run-id>` and named `git worktree
+    remove`. The declined plan ended `plan-only` with no branch. The `--continue
+    feat-sub` run worked on `feat-sub` from `origin/feat-sub`. The `--repo` run changed
+    both repositories.
+  - Item 9: in `vibecodedapps-dev/recode-accept-a` and `recode-accept-b`, `.recode.json`
+    was first renamed to `.ccx.json` on `main` (77babd7 and dacbf45) and on `t114`
+    (653d69b). Four runs on new issues a#19 to a#22 and b#5, each in a fresh clone, all
+    ended `done` with CI green. The Codex run opened PR 24, with Codex reviewing the
+    plan and the diff. The `--no-codex` run opened PR 23. The `--continue t114` run,
+    with a skip-worktree edit, worked in `<parent>/r3-ccx-2026-10-04-20` and posted to
+    PR 5. The `--repo` run opened PR 25 in `a` and PR 6 in `b`, each closing its own
+    issue and referring to the other's. Each issue got a comment starting "Status from
+    the ccx run", each PR holding a snapshot got one starting `# ccx run report`, the
+    snapshots are under `specs/ccx/<run-id>/`, and cca's `handoff.sh check` printed
+    `handoff: ok` for all four.
+- **Item 11 passed for 0.2.0.** In a new Codex home holding only the model, effort,
+  sandbox, and approval settings, and no login, which these commands do not use, `codex
+  plugin marketplace add vibecodedapps-official/reimagine-code` cloned b3806f2. `codex
+  plugin list` showed exactly `ccx` from `plugins/ccx-codex` and `repo-docs` from
+  `plugins/repo-docs`. They installed at 0.2.0 and 0.1.3 and showed as enabled.
+- **Found, not fixed.** Two `apply` runs within the same second pick the same backup
+  name, so the second refuses: "could not back up ... (EEXIST); nothing was written".
+  It fails safe, and 0.1.3 names backups the same way.
+
+### 2026-10-04: release 0.2.0, Windows
+
+A personal Windows 11 machine, not the work machine. The scratch CLIs from npm were
+Claude Code 2.1.283 and codex-cli 0.157.1, with Node 26.4.0 and Git 2.55.0.windows.5.
+The scratch profiles were `claude-m6` and `codex-m6`. Git credentials were turned off
+as in the earlier public runs: `git config --list` printed nothing, and `git ls-remote`
+read `main` and both tags at b3806f2. A session on that machine ran a brief and
+reported here. The real profile's five files had the same sha256 after the run as
+before.
+
+- **Upgrade from GitHub.** `claude-m6` had the 0.1.3 plugins from GitHub at 5da2c2c.
+  `claude plugin marketplace update reimagine-code` printed "Successfully updated
+  marketplace: reimagine-code" and left `enabledPlugins` on the `recode` keys. The next
+  `claude plugin list` still showed the old plugins, each with a note such as `Renamed
+  to "ccx-loop" in the "reimagine-code" marketplace`, and moved the keys to the `ccx`
+  names; the one after showed only `repo-docs`. Installing `ccx-loop` printed "(+ 1
+  dependency: ccx)", both at 0.2.0 from b3806f2. The old data directory stayed, and
+  `ccx-reimagine-code` did not exist yet. In `codex-m6`, after `codex plugin marketplace
+  upgrade reimagine-code`, `codex plugin list` showed `ccx` as not installed and no
+  `recode` line, while `config.toml` still enabled `recode`. `codex plugin add
+  ccx@reimagine-code` and `codex plugin remove recode@reimagine-code` exited 0 and left
+  the `ccx` and `repo-docs` tables.
+- **Item 18 passed on Windows for 0.2.0, from the public repository.**
+  - In `claude-m6`, with the plugins and catalog removed and added again, installing
+    the loop alone printed "(+ 1 dependency: ccx)". `ccx-loop` 0.2.0, `ccx` 0.2.0, and
+    `repo-docs` 0.1.3 installed and were enabled, each recording b3806f2 and a GitHub
+    source.
+  - In `codex-m6`, `ccx` 0.2.0 and `repo-docs` 0.1.3 showed as installed and enabled,
+    with the clone at b3806f2.
+  - Headless `/ccx:setup` passed in 11 s: the `unelevated` sandbox, the ChatGPT login,
+    `workspace-write` proven, one allow rule naming the 0.2.0 `scripts/ccx.mjs` with
+    forward slashes, and "old plugins: none found".
+  - A first `/ccx:ask` from a folder outside any git repository was refused by the
+    bridge, as 0.1.3 does: "ccx: not inside a git repository, so nothing was run". From
+    the item 19 repository, in auto mode, it printed "141" and `status: ok`.
+- **Item 19 passed for 0.2.0.** The repository was `C:\recode accept\ccx020\repo`.
+  - A project skill that delegates to `ccx:implement` printed "Changed a - b to a + b
+    in the add definition in math.mjs" and `status: ok`.
+  - The installed 0.2.0 rules script, with a scratch `CLAUDE.md` in CRLF holding text of
+    its own, planned `absent` and `change: ready`, and `apply` exited 0. All 89 line
+    breaks stayed CRLF, and the text above the block was kept.
+  - With that file converted to LF, `status` read `current` and `plan` read `change:
+    none`, where 0.1.3 read `edited` in the M7 step 2 run. This is the issue 16 fix.
+  - Codex, started from PowerShell, made commit a315823, and its session file holds the
+    repo-docs reminder. The hook was already trusted in `codex-m6` and stayed trusted
+    through the reinstall. Claude Code made commit d0af8f0, with the reminder in its
+    transcript.
+  - The copy of the Codex login was deleted afterward.
