@@ -40,7 +40,7 @@ const PLUGINS = [
 // Old names a shipped file may still contain, by repository-relative path: the migration literals of R7.
 const OLD_NAME_LITERALS = {
   "plugins/ccx/scripts/rules.mjs": ["recode:house-rules"],
-  "plugins/ccx/scripts/suite.mjs": ["codex-lite@vibecodedapps-codex-lite", "ccl@vibecodedapps-claude-codex-loop", "recode:house-rules"],
+  "plugins/ccx/scripts/suite.mjs": ["codex-lite@vibecodedapps-codex-lite", "ccl@vibecodedapps-claude-codex-loop", "recode:house-rules", "recode-loop@reimagine-code", "recode@reimagine-code"],
   "plugins/ccx-loop/skills/ccx-loop/SKILL.md": [".ccl.json"],
 };
 

@@ -10,8 +10,11 @@ import { pathToFileURL } from 'node:url';
 import { digests, inspect, loadState, loadTexts, readText, render, targets } from './rules.mjs';
 
 // The source plugins, by their old ids. The audit plugin is not one of them and is never listed.
-export const OLD_CLAUDE = ['codex-lite@vibecodedapps-codex-lite', 'ccl@vibecodedapps-claude-codex-loop', 'repo-docs@repo-docs'];
-export const OLD_CODEX = ['codex-code-review-general@codex-code-review', 'codex-code-review@codex-code-review', 'repo-docs@repo-docs'];
+// The loop comes before the bridge it depends on: Claude Code refuses to disable the bridge while the loop needs it.
+export const OLD_CLAUDE = ['codex-lite@vibecodedapps-codex-lite', 'ccl@vibecodedapps-claude-codex-loop', 'repo-docs@repo-docs',
+  'recode-loop@reimagine-code', 'recode@reimagine-code'];
+export const OLD_CODEX = ['codex-code-review-general@codex-code-review', 'codex-code-review@codex-code-review', 'repo-docs@repo-docs',
+  'recode@reimagine-code'];
 
 // Stale: the block still matches its digest, but the rules this plugin ships for its options differ, or it carries the
 // old marker. A block edited by hand is left to the command, and a text the user declined stays quiet.

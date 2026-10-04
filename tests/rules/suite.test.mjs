@@ -23,6 +23,8 @@ const CLAUDE_LIST = JSON.stringify([
   { id: 'cca@vibecodedapps-claude-codex-audit', version: '0.3.0', scope: 'user', enabled: true },
   { id: 'ccx@reimagine-code', version: '0.1.0', scope: 'user', enabled: true },
   { id: 'repo-docs@repo-docs', version: '0.1.1', scope: 'user', enabled: false },
+  { id: 'recode@reimagine-code', version: '0.1.3', scope: 'user', enabled: true },
+  { id: 'recode-loop@reimagine-code', version: '0.1.3', scope: 'user', enabled: true },
 ]);
 const CODEX_TOML = [
   'model = "gpt-5"',
@@ -36,14 +38,17 @@ const CODEX_TOML = [
   '[plugins."ccx@reimagine-code"]',
   'enabled = true # the new one',
   '',
+  '[plugins."recode@reimagine-code"]',
+  'enabled = true',
+  '',
   '[projects."/work"]',
   'enabled = true',
   '',
 ].join('\n');
 
 test('codexEnabled lists each [plugins."<id>"] table with enabled = true, in LF or CRLF', () => {
-  assert.deepEqual(codexEnabled(CODEX_TOML), ['codex-code-review-general@codex-code-review', 'ccx@reimagine-code']);
-  assert.deepEqual(codexEnabled(CODEX_TOML.replace(/\n/g, '\r\n')), ['codex-code-review-general@codex-code-review', 'ccx@reimagine-code']);
+  assert.deepEqual(codexEnabled(CODEX_TOML), ['codex-code-review-general@codex-code-review', 'ccx@reimagine-code', 'recode@reimagine-code']);
+  assert.deepEqual(codexEnabled(CODEX_TOML.replace(/\n/g, '\r\n')), ['codex-code-review-general@codex-code-review', 'ccx@reimagine-code', 'recode@reimagine-code']);
   assert.deepEqual(codexEnabled(''), []);
 });
 
@@ -52,7 +57,10 @@ test('R16: the report lists each old plugin with the command that removes it, an
     'old plugins: the reimagine-code suite replaces these; remove each once its replacement works for you:',
     '  claude plugin uninstall codex-lite@vibecodedapps-codex-lite',
     '  claude plugin uninstall repo-docs@repo-docs',
+    '  claude plugin uninstall recode-loop@reimagine-code',
+    '  claude plugin uninstall recode@reimagine-code',
     '  codex plugin remove codex-code-review-general@codex-code-review',
+    '  codex plugin remove recode@reimagine-code',
   ]);
 });
 
@@ -197,6 +205,7 @@ test('R16: old-plugins with no claude on PATH names the unread list and still re
     { env: { ...s.env, HOME: s.home, USERPROFILE: s.home, PATH: s.home, SystemRoot: process.env.SystemRoot ?? '' }, encoding: 'utf8' });
   assert.equal(r.stdout, 'old plugins: the Claude plugin list could not be read, so Claude plugins were not checked\n' +
     'old plugins: the reimagine-code suite replaces these; remove each once its replacement works for you:\n' +
-    '  codex plugin remove codex-code-review-general@codex-code-review\n');
+    '  codex plugin remove codex-code-review-general@codex-code-review\n' +
+    '  codex plugin remove recode@reimagine-code\n');
   assert.equal(r.status, 0);
 }));
