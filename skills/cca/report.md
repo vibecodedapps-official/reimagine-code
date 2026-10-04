@@ -192,6 +192,13 @@ session.
   the paths flagged at audit time, each held at its index version: its local content is
   not in the head, and a change to one during the run may escape the read-only check,
   which does not compare it.
+- Each bundle with `test_command`: that stage 1 step 6b ran its changed test files with
+  the change reverted, or that it found none to run; setup's exit status per copy, when
+  `test_setup` is set; the verdict counts; every `not run` with its reason; the changed
+  paths outside `test_paths`, whose tests were not measured; and that the bundle's own
+  commands ran with the user's environment and credentials, in copies under cca's data
+  directory that the step removed, and may have written outside the audited repos (an
+  allowed write). Without `test_command`, nothing is listed.
 - Stage 6: whether the mandatory ids were requested in batches (`batched`) and, from
   `missing_positions`, every mandatory id left without a position (those Codex was
   asked for and left unanswered after the follow-up, and those of a fallback batch

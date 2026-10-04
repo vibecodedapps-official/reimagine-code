@@ -25,7 +25,11 @@ These hold for every stage, for the orchestrator and every agent.
    when cca calls it; `git fetch` into remote-tracking refs, after the user approves it
    once per run; and, for a bundle with `head: working-tree`, the loose git objects that
    `working-tree.sh build` writes in the repo's object store (stage 1 step 1c, and resume
-   step 3 when it rebuilds the head), which the report discloses. Nothing else. An ignored
+   step 3 when it rebuilds the head), which the report discloses; and, in stage 1 step
+   6b, the orchestrator's copies in cca's data directory (`revert-work/<run id>/`),
+   removed when the step ends, and whatever a bundle's own test commands write outside
+   every audited repo and the run directory, under the consent its `test_command` key
+   gives, which the report discloses. Nothing else. An ignored
    file written by a check run that an agent logged under its `runs:` heading is allowed
    and reported, never silently.
 2. **Prevention and detection.** Agent tool lists exclude Edit and NotebookEdit. An
@@ -131,9 +135,45 @@ and the sha it is pinned at.
   listed in the brief and absent. Git LFS files are their pointer files. Cite as
   `repo@sha:path:line` with the repo-relative path, not the export path. No test or lint
   command runs in an export, whether or not it needs installed dependencies; mark that
-  question "not run".
+  question "not run". The one exception is stage 1's own run of a bundle's changed
+  tests, in its own copies, which you read as "Reverted test runs" below says.
 - **Read by `git show`** (an export over 1 GB the user declined): read with
   `git -C <repo> show <sha>:<path>`. Only agents with Bash are assigned to it.
+
+### Reverted test runs
+
+For a bundle whose manifest sets `test_command`, stage 1 ran the bundle's changed test
+files twice, outside every audited repo: in a copy of the head, and in a copy of the
+merge-base with the test code (each changed path under `test_paths`) at its head state.
+`revert/<bundle>.md` gives one verdict per file, what each copy held, and each run's exit
+status and output tail. It counts as a run: cite the result file's line
+(`revert/<bundle>.md:<line>`), the file, and the copy. A verdict means this much:
+
+- Before any verdict counts as evidence, show from the output tail that the tests the
+  bundle added or changed in that file ran in that copy, by name, and were not skipped.
+  Other tests in the file running is not enough: an unchanged test can pass while the
+  changed one skips. When the tail cannot show it (no names, cut, an empty collection, a
+  wrapper), the verdict is a lead only.
+- `passes at head and without the change` is a lead with a run behind it. It supports
+  `verified fact` only when the tail shows the changed tests ran in both copies, you
+  name the behavior the ticket asks for that those tests should detect, and you cite the
+  diff hunk outside `test_paths` that implements it, so the reverted copy lacked it.
+  When the implementation sits in a changed test-code path (kept at its head state; the
+  result file lists these), or you cannot find it, the verdict stays a lead. A file can
+  rightly pass without the change: a refactor, or a test of older behavior.
+- `passes at head only` does not prove the file detects the behavior: the reverted copy
+  may lack a file, import, or command the bundle added. Read the tail and judge the file
+  as you would without the run.
+- `does not pass at head` is a lead, never a finding by itself. Without `test_setup` a
+  copy has no installed dependencies; the result file shows whether setup ran, and the
+  tail shows why the run failed.
+- One verdict per file. When the reverted copy's tail shows a changed test passed by name
+  before a later test failed, that test passes without the change, whatever the file's
+  verdict, and the rules for a file that passes in both copies apply to it.
+- A changed file outside `test_paths` stays at the merge-base in the reverted copy, so
+  tests inside it are not measured. `not run` verdicts give their reason.
+- Output tails are recorded unredacted. Quote no more than the finding needs, and never
+  a credential.
 
 ## Finding schema
 

@@ -244,7 +244,7 @@ never loses a finished one. With `--live`, it first imports approved live check 
    When `stages.json` is missing, no entry lists outputs, so walk the run directory
    instead: move every one of these paths that exists to `superseded/<k>/<path>`:
    `audit-brief.md`, `common.md`, `claims.md`, `groups.md`, `diffs/`, `forge/`,
-   `trees/`, `guidelines/`, `domain/`, `scope/`, `pass1/`, `pass2/`, `ledger/`,
+   `trees/`, `revert/`, `guidelines/`, `domain/`, `scope/`, `pass1/`, `pass2/`, `ledger/`,
    `codex/`, `late/`, `converged/`, `converged.md`, `gate.md`, `report.md`,
    `claims-verdicts.md`, `work-items.jsonl`, `usage.md`, `tmp/`, and `baseline/`.
    `manifest.json`, `stages.json`, and `superseded/` are never moved.

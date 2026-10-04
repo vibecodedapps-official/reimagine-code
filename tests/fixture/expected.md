@@ -619,6 +619,21 @@ fixture repo never changes. Each failed check prints one line that starts with t
   `id,name,status,email,last_login`, and a direct rerun of 001 and 002 leaves the file as
   it was.
 
+### With `manifest-revert.json`
+
+Stage 1 step 6b runs `tests/test_log.sh` and `tests/test_users.sh` with `sh`, in a copy of
+the head and in a copy of the merge-base with `tests/` at its head state.
+`tests/revert-tests.sh` (case 12) checks these verdicts:
+
+- `tests/test_log.sh`: passes at head only. Without the change `src/warnings.sh` is
+  absent, and the file exits 1.
+- `tests/test_users.sh`: passes at head only. In the reverted copy its tail prints
+  `pass test_deactivate_rejects_bad_id` and `pass test_deactivate_keeps_row` before
+  `test_migration_adds_last_login` fails, since `migrations/002_add_last_login.sh` is
+  absent there (exit 127 under bash, 2 under dash). The two passing lines show P18 by a
+  run: under `common.md`'s "Reverted test runs", a changed test that passes by name in
+  the reverted copy passes without the change, whatever the file's verdict.
+
 ### Verify
 
 ```sh
@@ -1016,6 +1031,27 @@ fixed identity.
   `stacked` exits non-zero with `tests/steps.sh` unmerged; with `target`'s side of that
   file, both `tests/scenarios_fetch/*.sh` exit 1; at the `stacked` head both exit 0.
 - Isolation: after the checks, the five branch heads and `svc`'s status are as built.
+
+### With `manifest-revert.json`
+
+Stage 1 step 6b runs bundle 1's eleven changed files under `tests/test_*.sh` and
+`tests/scenario_*.sh` with `sh`, in a copy of the head and in a copy of the merge-base
+with the test code (the default `test_paths`, so all of `tests/`) at its head state.
+`tests/revert-tests.sh` (case 13) checks these verdicts:
+
+- Passes at head and without the change: `tests/scenario_dates.sh` (T3's file) and
+  `tests/scenario_hrn_lookup.sh` (H1's file).
+- Does not pass at head: `tests/scenario_fetch_record.sh`, exit 1 with
+  `expected 1 row, got 0` (C3).
+- Passes at head only: `tests/scenario_bulk.sh`, `tests/scenario_report_audit.sh`,
+  `tests/scenario_report_read.sh`, `tests/test_bulk_import.sh`, `tests/test_schemas.sh`,
+  `tests/test_sql_contract.sh`, `tests/test_upsert_site.sh`, and `tests/test_waiver.sh`.
+  In the reverted copy, `tests/test_sql_contract.sh` prints
+  `pass test_stamp_has_no_null_placeholder` and `pass test_stamp_notifies_nobody`, and
+  `tests/test_bulk_import.sh` prints `pass test_imports_the_batch`, before a later test
+  fails.
+
+Bundle 2 has no test keys.
 
 ### Verify
 

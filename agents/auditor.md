@@ -33,7 +33,9 @@ custom list.
    in your group and every claim your scope file lists by number and kind; take the claim
    text from `claims.md`. Do not search `claims.md` for your scope id, since a claim
    targeted `hygiene` is listed in the scope file of `tests-hygiene` or `combined`.
-   Review every one; none may be skipped.
+   Review every one; none may be skipped. When your scope file lists a
+   `revert/<bundle>.md`, read it too, and use it for each changed test file of your
+   scope that it names, as `common.md`'s "Reverted test runs" says.
 4. Read the three-dot diff for your bundle from `diffs/<bundle>.diff`, and the changed files
    at the head sha. Read the digests under `guidelines/` and the maps under `domain/` that
    exist now; use them as leads and cite the original document or source at its sha.
