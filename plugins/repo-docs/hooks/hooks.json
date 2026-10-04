@@ -9,6 +9,15 @@
             "command": "sh \"${CLAUDE_PLUGIN_ROOT}/hooks/pre-commit.sh\""
           }
         ]
+      },
+      {
+        "matcher": "PowerShell",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "sh \"${CLAUDE_PLUGIN_ROOT}/hooks/pre-commit.sh\""
+          }
+        ]
       }
     ]
   }

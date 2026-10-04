@@ -191,3 +191,29 @@ installed from this repository's catalogs at `feat/codex-and-repo-docs`.
    default, which would turn the tag rule off without a word. The test job now fetches
    the full history, and lint fails in a shallow clone, so a later change to the
    checkout cannot switch the rule off unnoticed.
+
+## Part 7: M6 Windows fixes, 2026-10-03
+
+Run on Windows 11 with Claude Code 2.1.283 and Codex CLI 0.157.1 from npm, in scratch
+profiles, with the suite installed from GitHub at the 0.1.0 release commit.
+
+1. **The sandbox probe gets four times the local limit.** In a new `CODEX_HOME`, one of
+   Codex's first sandboxed commands took 28.8 to 31.6 s, with the npm 0.157.1 and the
+   standalone 0.160.0: run alone, the first one, in four homes; in setup, either
+   control. Later ones took about 0.13 s. The bridge stopped local commands at 30 s, so
+   one of five first setups failed. A run stopped at 20 s saved nothing: the next one
+   took 28.8 s again, so a slower machine would fail every time. Each probe control now
+   gets 120 s, four times the local limit, so the test seam still scales it. Other
+   local commands keep 30 s.
+2. **repo-docs' hook also runs before the PowerShell tool.** A new Claude Code profile
+   on Windows, with no setting for it, reported PowerShell as its primary shell. A
+   commit made through the PowerShell tool got no reminder, because the hook matched
+   `Bash` only. The hook gains a second entry with the matcher `PowerShell`, not the
+   pattern `Bash|PowerShell`: Codex documents its matcher as a tool name, and the
+   `Bash` entry stays byte for byte as it was. Lint pins both entries.
+3. **Codex on Windows needs Git's `bin` folder on `PATH`, and the README says so.**
+   Codex ran the hook's `sh` from `PATH`. A default Git for Windows install puts only
+   `Git\cmd` there, so the hook did nothing, with no error, and the commit went ahead.
+   With `C:\Program Files\Git\bin` on `PATH`, the same run got the reminder. Finding
+   `sh` without `PATH` would need a Windows-only command form, so the prerequisite is
+   stated instead.

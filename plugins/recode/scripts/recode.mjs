@@ -84,10 +84,10 @@ function run(file, args, { ms, cwd, input, onStdout }) {
 }
 
 // For commands that normally take milliseconds: failing to start or missing the deadline is a refusal naming them.
-async function local(name, file, args, cwd) {
-  const r = await run(file, args, { ms: LOCAL_MS, cwd });
+async function local(name, file, args, cwd, ms = LOCAL_MS) {
+  const r = await run(file, args, { ms, cwd });
   if (r.spawnError) refuse(`could not start ${name}: ${r.spawnError.message}`);
-  if (r.timedOut) refuse(`${name} did not finish within ${secs(LOCAL_MS)}${r.stillRunning ? `; it may still be running as pid ${r.pid}` : ' and was stopped'}`);
+  if (r.timedOut) refuse(`${name} did not finish within ${secs(ms)}${r.stillRunning ? `; it may still be running as pid ${r.pid}` : ' and was stopped'}`);
   return r;
 }
 const git = (args, cwd) => local(`git ${args.join(' ')}`, 'git', args, cwd);
@@ -189,8 +189,9 @@ async function probe(codex, cwd, windowsSandbox) {
       return { pass: false, reason: `the positive control could not create its temp directory under ${cwd} (${e.code}), so the sandbox ` +
         'cannot be tested from here. This says nothing about whether the host can sandbox' };
     }
+    // In a new Codex home one of Codex's first sandboxed commands took 30 s on Windows, and stopping it early saved nothing.
     const control = async (name, target) => {
-      const r = await local(`codex sandbox (${name})`, codex, buildArgv('sandbox', { execPath: process.execPath, target, windowsSandbox }), cwd);
+      const r = await local(`codex sandbox (${name})`, codex, buildArgv('sandbox', { execPath: process.execPath, target, windowsSandbox }), cwd, 4 * LOCAL_MS);
       return { exit: r.code, created: existsSync(target), code: r.stderr.trim() };
     };
     const positive = await control('positive control', join(dir, 'probe'));

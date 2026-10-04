@@ -20,6 +20,8 @@ The [changelog](CHANGELOG.md) lists each release.
   release was tested on. Claude Code before 2.1.269 lacks features the suite uses.
 - Node 22 or later, which runs the bridge's scripts.
 - On Windows, Git for Windows, whose Git Bash runs the repo-docs hook in Claude Code.
+  Codex runs the hook with the `sh` it finds on `PATH`, so add Git's `bin` folder, such
+  as `C:\Program Files\Git\bin`, to `PATH`.
 
 ## Install
 
