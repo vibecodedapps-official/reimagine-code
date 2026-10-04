@@ -184,7 +184,7 @@ name a plugin are rerun under the new names and recorded here.
     macOS and Windows 2026-10-03 for 0.1.0, from the private repository. Run
     2026-10-04 for 0.1.1 on macOS, from the private repository and then the public one,
     and on Windows from the public one. Run 2026-10-04 for 0.1.2 on macOS and Windows,
-    and for 0.1.3 on macOS, from the public repository; see the records.
+    and for 0.1.3 on macOS and Windows, from the public repository; see the records.
 19. **Windows.** Setup: the Windows 11 work machine with both CLIs from npm, the suite
     installed as in item 18, and a test repository checked out under a path that holds
     a space. Command: `/recode:ask` and `/recode:implement` with a one-line change;
@@ -806,3 +806,34 @@ as before, and the profile got back its own `CLAUDE.md`.
   0.1.3 script, and "old plugins: none found", which `suite.mjs` prints. A headless
   `/recode:ask` in auto mode printed "81" and `status: ok`. The copy of the Codex login
   was deleted afterward.
+
+### 2026-10-04: release 0.1.3, Windows
+
+Windows 11 with Claude Code 2.1.283 and codex-cli 0.157.1 from npm, Node 26.4.0. The
+scratch profiles were `claude-m6` and `codex-m6`. Git credentials were turned off as in
+the earlier public runs: `git config --list` printed nothing, and `git ls-remote` read
+`main` and the two 0.1.3 tags at 5da2c2c. The runs were made by a session on the work
+machine and reported here.
+
+- **Item 18 passed on Windows for 0.1.3, from the public repository.**
+  - In `claude-m6`, the plugins were uninstalled and the catalog removed and added
+    again. Installing the loop alone printed "(+ 1 dependency: recode)". `recode-loop`,
+    `recode`, and `repo-docs` installed at 0.1.3 and were enabled, each recording
+    5da2c2c and a GitHub source. Uninstalling printed the prune notice again, as in the
+    0.1.2 run.
+  - In `codex-m6`, both plugins and the marketplace were removed and added again.
+    `recode` 0.1.3 and `repo-docs` 0.1.3 showed as installed and enabled, with the clone
+    at 5da2c2c.
+  - Headless `/recode:setup` passed in 11 s: `workspace-write` proven, one allow rule
+    naming the 0.1.3 script with forward slashes, and "old plugins: none found".
+  - With no Edit rule for the data directory in `settings.json`, a headless
+    `/recode:ask` in auto mode wrote the request file, printed "141" for "What is 47
+    times 3?", and ended with `status: ok`.
+- **The rules script, from the installed path.** `rules.mjs status`, run directly from
+  the installed 0.1.3 with the scratch profiles, exited 0 and printed four lines:
+  `claude: absent ... options=core,windows (default)`, the same for `codex`,
+  `options recorded: no`, and `options offered: core, windows, writing`. Both targets
+  were correctly absent. So the entry check added in 0.1.3 runs the script on a
+  standard Windows install path.
+- The copy of the Codex login was deleted afterward. The old Edit rule was left out of
+  `claude-m6`'s `settings.json`, with the earlier file kept beside it.
