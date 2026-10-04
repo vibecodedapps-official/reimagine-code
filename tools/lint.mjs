@@ -281,6 +281,34 @@ for (const p of shipped.filter((f) => /^plugins\/recode-codex\/skills\/[^/]+\/SK
   if (!readFileSync(p, "utf8").split("\n").some((l) => l.startsWith("<!-- Modified. Adapted from openai/codex "))) fail(`${rel(p)}: lacks its provenance comment`);
 }
 
+// 18. main is the release ref: once a plugin has a <name>--v<version> tag, a change under its directory since its highest tag
+// needs a version above that tag (R49). The Codex recode shares its name, and so its tags, with the bridge. The rule needs the
+// tags, so a shallow clone fails it; outside a git work tree, as in the lint tests' copies, it does not apply.
+const git = (...args) => spawnSync("git", args, { cwd: root, encoding: "utf8" });
+const below = (a, b) => { const x = a.split(".").map(Number), y = b.split(".").map(Number); return x[0] - y[0] || x[1] - y[1] || x[2] - y[2]; };
+if (git("rev-parse", "--is-inside-work-tree").stdout?.trim() === "true") {
+  if (git("rev-parse", "--is-shallow-repository").stdout.trim() === "true") {
+    fail("R49: this clone is shallow, so release tags may be missing; fetch the full history (actions/checkout: fetch-depth: 0)");
+  } else {
+    const tags = git("tag", "--list", "*--v*").stdout.split("\n").filter(Boolean);
+    for (const pl of PLUGINS) {
+      const m = manifests.get(pl.dir) ?? codexManifests.get(pl.dir);
+      if (!m?.name || typeof m.version !== "string") continue;
+      const last = tags.map((t) => t.match(new RegExp(`^${m.name}--v(\\d+\\.\\d+\\.\\d+)$`))?.[1]).filter(Boolean).sort(below).at(-1);
+      if (!last) continue;
+      const diff = git("diff", "--quiet", `refs/tags/${m.name}--v${last}`, "--", pl.dir);
+      if (diff.status !== 0 && diff.status !== 1) fail(`${pl.dir}: cannot compare with ${m.name}--v${last}: ${diff.stderr.trim()}`);
+      else if (diff.status === 1 && below(m.version, last) <= 0) fail(`${pl.dir}: changed since ${m.name}--v${last}, so its version must be above ${last}; found ${m.version}`);
+    }
+  }
+}
+
+// 19. The changelog has a dated heading for the suite version, "## <version> - <YYYY-MM-DD>" (R50).
+const changelog = read("CHANGELOG.md");
+if (changelog !== null && pkg && !new RegExp(`^## ${String(pkg.version).replace(/\./g, "\\.")} - \\d{4}-\\d{2}-\\d{2}$`, "m").test(changelog)) {
+  fail(`CHANGELOG.md: no heading "## ${pkg.version} - <YYYY-MM-DD>" for the suite version`);
+}
+
 if (failures.length) {
   console.error(`lint: ${failures.length} failure(s)\n${failures.map((f) => `- ${f}`).join("\n")}`);
   process.exit(1);

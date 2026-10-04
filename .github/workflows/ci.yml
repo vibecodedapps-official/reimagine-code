@@ -18,6 +18,9 @@ jobs:
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v7
+        with:
+          # Lint compares each plugin with its release tag (R49), so it needs the tags and their history.
+          fetch-depth: 0
       - uses: actions/setup-node@v7
         with:
           node-version: 22
