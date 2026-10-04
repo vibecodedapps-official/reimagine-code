@@ -182,8 +182,8 @@ name a plugin are rerun under the new names and recorded here.
     once per host from the public one. Covers R3 and R4. Rerun at each release. Run on
     macOS and Windows 2026-10-03 for 0.1.0, from the private repository. Run
     2026-10-04 for 0.1.1 on macOS, from the private repository and then the public one,
-    and on Windows from the public one. Run 2026-10-04 for 0.1.2 on macOS, from the
-    public repository; see the records.
+    and on Windows from the public one. Run 2026-10-04 for 0.1.2 on macOS and Windows,
+    from the public repository; see the records.
 19. **Windows.** Setup: the Windows 11 work machine with both CLIs from npm, the suite
     installed as in item 18, and a test repository checked out under a path that holds
     a space. Command: `/recode:ask` and `/recode:implement` with a one-line change;
@@ -693,3 +693,37 @@ run, and `git ls-remote` read `main` at c696321.
   one allow rule naming the 0.1.2 script, and no old plugins. A headless `/recode:ask`
   in auto mode with "What is 23 times 3? Reply with the number only." printed "69" and
   `status: ok`. The copy of the Codex login was deleted afterward.
+
+### 2026-10-04: release 0.1.2, Windows
+
+Windows 11 with Claude Code 2.1.283 and codex-cli 0.157.1 from npm, Node 26.4.0. The
+scratch profiles were `claude-m6` and `codex-m6`. Git credentials were turned off as in
+the 0.1.1 Windows public run: `git config --list` printed nothing, and `git ls-remote`
+read `main` and the two 0.1.2 tags at c696321. The runs were made by a session on the
+work machine and reported here.
+
+- **Item 18 passed on Windows for 0.1.2, from the public repository.**
+  - In `claude-m6`, the plugins were uninstalled and the catalog removed and added
+    again. Installing the loop alone printed "(+ 1 dependency: recode)". `recode-loop`
+    0.1.2, `recode` 0.1.2, and `repo-docs` 0.1.3 installed and were enabled, each
+    recording c696321 and a GitHub source.
+  - In `codex-m6`, both plugins and the marketplace were removed and added again.
+    `recode` 0.1.2 and `repo-docs` 0.1.3 showed as installed and enabled, with the
+    clone at c696321.
+  - Headless `/recode:setup` passed in 10 s: `workspace-write` proven, one allow rule
+    naming the 0.1.2 script with forward slashes, and no old plugins.
+  - With the Edit rule that 0.1.1's setup printed removed from `settings.json`, as the
+    0.1.2 changelog says, a headless `/recode:ask` in auto mode wrote the request file,
+    printed "129" for "What is 43 times 3?", and ended with `status: ok`.
+- **Auto mode with the old Edit rule, on Windows.** Before the rule was removed, the
+  same ask failed: "The server-side auto mode classifier gave no verdict (it skipped
+  this action), so auto mode cannot determine the safety of Write. This is a hard
+  failure, not a transient one". With the two rechecks earlier the same day, that is
+  1 of 1 failing with the rule and 3 of 3 passing without it.
+- **The prune notice.** Uninstalling `recode-loop` printed "1 auto-installed dependency
+  no longer needed: recode. Run `claude plugin prune` to remove." Uninstalling
+  `repo-docs` afterward printed the same line. On macOS the same day, uninstalling
+  `repo-docs` while the loop was installed printed nothing, and after the loop was
+  uninstalled it printed the line again. So Claude Code repeats the notice for the
+  orphaned `recode` after any uninstall; `repo-docs` declares no dependency.
+- The settings were restored and the copy of the Codex login was deleted afterward.
