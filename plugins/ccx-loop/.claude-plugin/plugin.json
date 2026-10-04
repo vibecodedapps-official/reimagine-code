@@ -1,7 +1,7 @@
 {
   "name": "ccx-loop",
-  "version": "0.2.0",
-  "description": "Run a tiered plan, review, implement, review, publish loop for one unit of work, with Claude orchestrating, Codex implementing, and Codex and Claude reviewing.",
+  "version": "0.3.0",
+  "description": "Run a tiered plan, review, implement, review, publish loop for one unit of work, with Claude orchestrating, Codex implementing, and Codex or Claude reviewing.",
   "license": "Apache-2.0",
   "author": {
     "name": "vibecodedapps.net"
