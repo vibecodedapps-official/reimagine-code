@@ -238,7 +238,7 @@ scratch profiles, with recode 0.1.0 and 0.1.1 installed from GitHub.
    of `~/.claude` would allow unattended default-mode calls. That move is deferred: auto
    mode already covers unattended calls, and the bridge script is at its line budget.
 
-## Part 9: recode 0.1.3, the rules synced to forge-ops, 2026-10-04
+## Part 9: recode 0.1.3, the rules sync and the symlink fix, 2026-10-04
 
 1. **The core rules come from forge-ops commit 9faabda.** Since 948ce5f, forge-ops had
    added two bullets to both of its files: the cause check under Working, from its PR
@@ -252,3 +252,11 @@ scratch profiles, with recode 0.1.0 and 0.1.1 installed from GitHub.
    Writing section now starts at line 83. Checked with `cmp` on 2026-10-04. This
    repository stays the source; a later forge-ops change reaches the block only through a
    sync like this one.
+2. **The rules and suite scripts compare their path after resolving it.** Each ran its
+   `main()` only when `import.meta.url` equalled `process.argv[1]` as a file URL. Node
+   resolves the entry point through symlinks and `argv[1]` keeps the link, so with a
+   link in the plugin's path neither script did anything, with exit 0. Found while
+   running item 3 from a path under `/tmp`, a symlink on macOS. Both now compare with
+   `realpathSync(process.argv[1])`, the same resolution Node applies. `recode.mjs` has
+   no such check and is unchanged. A test per script runs it through a linked folder,
+   a junction on Windows so it needs no extra rights.

@@ -13,6 +13,9 @@ repos' own changelogs are kept under `docs/history/`.
   ticket numbers and change history in the commit message. If you added the rules
   block, the session start notice now says it is out of date; run `/recode:rules` to
   update it.
+- Fixed `/recode:rules`, the session start notice, and setup's list of old plugins doing
+  nothing when the plugin's path goes through a symlink, such as a linked `~/.claude`.
+  Their scripts exited with no output and no error.
 - The README now says the old Edit rule also breaks auto mode on Windows.
 
 ### recode-loop

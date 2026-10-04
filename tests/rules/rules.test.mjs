@@ -3,7 +3,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { spawn, spawnSync } from 'node:child_process';
-import { existsSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, rmSync, utimesSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, rmSync, symlinkSync, unlinkSync, utimesSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -427,4 +427,19 @@ test('the script prints a refusal on stdout and exits 1, and a status exits 0', 
   const defaults = process.platform === 'win32' ? 'core,windows' : 'core';
   assert.equal(ok.stdout.split('\n')[0], `claude: absent ${s.claude} options=${defaults} (default)`);
   assert.equal(ok.status, 0);
+}));
+
+test('the script runs when its path goes through a symlink, as under a linked ~/.claude', sandbox((s) => {
+  // A junction on Windows, which needs no extra rights; the type is ignored elsewhere.
+  const linked = join(s.root, 'linked');
+  symlinkSync(join(SCRIPT, '..', '..'), linked, 'junction');
+  try {
+    const env = { ...process.env, ...s.env, HOME: s.home, USERPROFILE: s.home };
+    const r = spawnSync(process.execPath, [join(linked, 'scripts', 'rules.mjs'), 'status', s.data], { env, encoding: 'utf8' });
+    const defaults = process.platform === 'win32' ? 'core,windows' : 'core';
+    assert.equal(r.stdout.split('\n')[0], `claude: absent ${s.claude} options=${defaults} (default)`);
+    assert.equal(r.status, 0);
+  } finally {
+    unlinkSync(linked);
+  }
 }));

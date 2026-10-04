@@ -764,4 +764,7 @@ got back its own `CLAUDE.md` and the GitHub catalog at 0.1.2.
   has no such check and ran from both paths. So with a symlink anywhere in the plugin's
   path, the rules command, the session start notice, and setup's old-plugin list fail
   silently. A linked `~/.claude` should do the same; that is reasoned from the check,
-  not run. Present since 0.1.0. Not fixed in this branch.
+  not run. Present since 0.1.0. Fixed in 0.1.3: both scripts compare with the resolved
+  path. A test for each script, run through a linked folder, failed before the fix
+  with empty output and passes after it, and the `/tmp` commands above then printed
+  their reports.

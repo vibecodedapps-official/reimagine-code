@@ -3,6 +3,7 @@
 // is stale and not declined, else nothing, and writes nothing. node suite.mjs old-plugins, run by setup: lists the plugins
 // this suite replaces that are still installed, with the command that removes each. It never runs those commands.
 import { spawnSync } from 'node:child_process';
+import { realpathSync } from 'node:fs';
 import { homedir } from 'node:os';
 import { join } from 'node:path';
 import { pathToFileURL } from 'node:url';
@@ -65,7 +66,8 @@ function listClaudePlugins() {
   return r.status === 0 ? r.stdout : null;
 }
 
-if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
+// Node resolves the entry point through symlinks, so compare with the resolved path.
+if (process.argv[1] && import.meta.url === pathToFileURL(realpathSync(process.argv[1])).href) {
   const [verb, dataDir] = process.argv.slice(2);
   if (verb === 'session-start') {
     // A hook must never fail a session start: any error prints nothing.
