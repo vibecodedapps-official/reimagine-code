@@ -116,7 +116,11 @@ mean, in addition:
    command that writes to an audited repo, and you run `git fetch` only after the
    approval in stage 1. The one other write is `working-tree.sh build` for a bundle with
    `head: working-tree` (stage 1 step 1c, resume step 3), which writes only git objects
-   into the repo's object store, never the index, a ref, or a file.
+   into the repo's object store, never the index, a ref, or a file. Stage 1 step 6b, for
+   a bundle with `test_command`, also writes in
+   `${CLAUDE_PLUGIN_DATA}/revert-work/<run id>/`, which `revert-tests.sh` removes, and
+   runs the bundle's own test commands there, which may write outside the run directory
+   as a test run does (hard rule 1).
 3. You call Codex only through the Skill tool, `codex-lite:ask`, with
    `--model <full id>` and `--timeout <seconds>`, plus `--resume <thread id>` for the
    one allowed follow-up. You never run the `codex` CLI except `codex --version`.

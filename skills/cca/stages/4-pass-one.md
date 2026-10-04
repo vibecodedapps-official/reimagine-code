@@ -18,7 +18,7 @@ Outputs: `scope/<scope>.md` and `pass1/<scope>.md` for every pass-one scope.
 
 1. **Write the stage 4 entry as `running`** in `stages.json`, with its input hashes
    (`git hash-object --no-filters <file>` for `audit-brief.md`, `groups.md`,
-   `claims.md`, `common.md`), before the first launch.
+   `claims.md`, `common.md`, and each `revert/<bundle>.md`), before the first launch.
 
 2. **List the scopes by tier.** The tier is in `audit-brief.md`.
 
@@ -44,6 +44,9 @@ Outputs: `scope/<scope>.md` and `pass1/<scope>.md` for every pass-one scope.
    - each claim assigned to it in stage 1, by number with its kind (for `combined`, every
      claim); the scope that holds the `hygiene` claims gets every one of them: `hygiene` at
      high tier, `tests-hygiene` at medium, `combined` at low;
+   - each `revert/<bundle>.md` it reads (stage 1 step 6b): for `tests`, `tests-hygiene`,
+     and `combined`, every one; for a group scope, each whose verdict list names one of
+     the scope's changed files; or `none`;
    - the tickets it concerns and the readable-tree path of each repo, from the brief;
    - the question ids to answer (every question, at every tier);
    - for a group scope or `combined`, the duty to write the outward trace (`## Outward
@@ -54,7 +57,7 @@ Outputs: `scope/<scope>.md` and `pass1/<scope>.md` for every pass-one scope.
 
    | Role | Checklist |
    |---|---|
-   | tests | coverage of new behavior; weakened, deleted, or skipped tests; CI config changes; read each added or changed test and flag one that asserts the code's own constant or a value computed the way the code computes it, pins text without running the code that produces it, or accepts a wrong outcome among the ones it allows (a flag is a lead; it becomes a finding only when you name the regression the test would miss, with the test quoted; with the default questions, file it under Q2: the change is not shown to do what the ticket says, because its test would pass without it; with a custom question list, file it under the question closest to test coverage, or the first question when none fits, and say so in the finding; the tests are read, not run) |
+   | tests | coverage of new behavior; weakened, deleted, or skipped tests; CI config changes; read each added or changed test and flag one that asserts the code's own constant or a value computed the way the code computes it, pins text without running the code that produces it, or accepts a wrong outcome among the ones it allows (a flag is a lead; it becomes a finding only when you name the regression the test would miss, with the test quoted; with the default questions, file it under Q2: the change is not shown to do what the ticket says, because its test would pass without it; with a custom question list, file it under the question closest to test coverage, or the first question when none fits, and say so in the finding; the tests are read, not run, except that a `revert/<bundle>.md` the scope file lists is a run, read as `common.md`'s "Reverted test runs" says) |
    | hygiene | each ticket matches the change; each acceptance criterion met or not, with evidence; follow-ups recorded; each `status` claim's parent and links checked against the forge data; every key the brief lists as "not in export" reported as a finding; the scope check for every `scope` claim (`## Scope` in `common.md`) |
    | tests-hygiene | both rows above |
    | interactions | contracts, schemas, and APIs changed in one bundle and used in another; stack order and the combined state the brief states |

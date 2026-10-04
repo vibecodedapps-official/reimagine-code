@@ -1018,6 +1018,49 @@ pass-two adversary challenges it.
   forge file can list the target branch's other open pull requests and their changed
   files, is a comment on #23, so R2 can be caught without `gh`.
 
+## Changed tests with the change reverted (#22, 2026-10-04)
+
+- **Opt-in by manifest key.** Running a bundle's own commands is new for the
+  orchestrator, so nothing runs without `test_command`, and setting it is the consent.
+  The commands get the user's environment and credentials, as an agent's test run in a
+  directly read tree already does. Stripping credentials would break suites that read
+  a config file under the home directory, and a sandbox would need a dependency per
+  platform.
+- **By path, not by hunk.** A changed path that matches `test_paths` is test code whole
+  and keeps its head state in the reverted copy; every other path goes back to the
+  merge-base. A file that mixes tests and code is not split, since that needs a parser
+  per language. The result file lists the changed paths outside `test_paths`, and the
+  auditor must cite an implementation hunk outside `test_paths` before a pass in both
+  copies supports `verified fact`.
+- **Copies outside every repo and the run directory.** Both copies are written with
+  stage 1's `cat-file` export method under `${CLAUDE_PLUGIN_DATA}/revert-work/`, so no
+  checkout, filter, or worktree touches an audited repo, the read-only check sees nothing
+  new, and agents never read a copy. The script removes them on every exit.
+- **Every exit status is a run.** Exit 127 was going to mean "could not run". In
+  `patterns`, `tests/test_users.sh` exits 127 under bash in the reverted copy from
+  inside the test, because a script it calls is absent, which is a real failure. Only a
+  failed setup, a timeout in the reverted copy, a path conflict, or a cap gives
+  `not run`; the auditor reads the tail for the rest.
+- **One verdict per file, tests by name from the tail.** Per-test verdicts need a
+  runner per framework. The tail does the same job when it names tests: in `patterns`,
+  the file fails without the change, but its tail shows P18's test passing first.
+- **The script supervises process groups itself.** GNU `timeout` exits when its direct
+  child dies on TERM, before its KILL, so a grandchild that ignores TERM lives on. Each
+  command runs as a job under `set -m`, and the group always gets KILL when the command
+  ends, with `kill -<sig> -<pgid>` (dash rejects `kill -- -<pgid>`). A process that
+  leaves the group, and on Windows a native program's own children, are out of reach;
+  the README says so.
+- **This one script runs under bash.** dash turns job control off when it has no
+  controlling terminal (`set: can't access tty; job control turned off`), so every job
+  would share the script's group and no deadline would kill anything. Bash keeps job
+  control without a terminal, and ships on Linux, macOS, and Git Bash, so the script
+  re-executes itself under bash when another `sh` starts it. The other scripts stay
+  POSIX sh. `setsid` would also give each command its own group, but macOS and Git Bash
+  lack it.
+- **Caps.** 20 files, `test_timeout` (default 300 seconds) per command, 30 minutes per
+  bundle, and no run over 1 GB. `REVERT_TESTS_CAP` overrides the 30 minutes so the test
+  suite's cap case runs in seconds.
+
 ## Deferred past 0.3
 
 - ccl emitting a handoff, and a ccl hint suggesting `/cca:audit` (F7 and H6). Both are ccl

@@ -8,6 +8,13 @@
   in `tests/fixture/ground-truth-cases.md`, planted in one repo across two bundles, with
   decoys and checks that show each defect is real (#21). Detection is recorded per audit
   run in `docs/acceptance.md`.
+- Optional `test_command` and `test_run` bundle keys, with `test_paths`, `test_setup`,
+  and `test_timeout`. Stage 1 then runs each changed test file in a copy of the head and
+  in a copy of the merge-base with the test code at its head state, and writes one
+  verdict per file to `revert/<bundle>.md`. Auditors read it as a run: a file, or a
+  test named in its output, that passes without the change can support a
+  `verified fact` finding (#22). The commands run with your environment and
+  credentials, in copies under cca's data directory, and only when you set the keys.
 
 ## 0.6.0 - 2026-10-03
 

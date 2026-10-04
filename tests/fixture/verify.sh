@@ -117,6 +117,10 @@ if [ "$name" = patterns ]; then
 	same "manifest.json run_once" '"run_once": ["migrations/*.sh"],' \
 		"$(sed -n 's/^ *"run_once"/"run_once"/p' "$F/manifest.json" 2>/dev/null)"
 	same "manifest.json claims lines" 0 "$(grep -c claims "$F/manifest.json" 2>/dev/null)"
+	same "manifest-revert.json test keys" '"test_command": "sh", "test_run": "tests/test_*.sh",' \
+		"$(sed -n 's/^ *"test_command"/"test_command"/p' "$F/manifest-revert.json" 2>/dev/null)"
+	same "manifest-revert.json is manifest.json plus the test keys" "$(cat "$F/manifest.json" 2>/dev/null)" \
+		"$(grep -v '"test_command"' "$F/manifest-revert.json" 2>/dev/null)"
 
 	# Behavior, in temp copies. tree <rev> <dir> exports a revision of the app repo.
 	tmp=$(mktemp -d)
@@ -322,6 +326,11 @@ if [ "$name" = ground-truth ]; then
 	same "manifest.json groups on ./svc" "import-api records bulk-rules sql harness migrations stacked" \
 		"$(printf '%s\n' "$mf" | tr '{' '\n' | sed -n 's/^"name":"\([^"]*\)","repo":"\.\/svc".*/\1/p' | tr '\n' ' ' | sed 's/ $//')"
 	same "manifest.json claims lines" 1 "$(grep -cF '"claims": ["./session-summary.md"]' "$F/manifest.json")"
+	same "manifest-revert.json test keys, bundle 1 only" \
+		'"test_command": "sh", "test_run": ["tests/test_*.sh", "tests/scenario_*.sh"],' \
+		"$(sed -n 's/^ *"test_command"/"test_command"/p' "$F/manifest-revert.json" 2>/dev/null)"
+	same "manifest-revert.json is manifest.json plus the test keys" "$(cat "$F/manifest.json" 2>/dev/null)" \
+		"$(grep -v '"test_command"' "$F/manifest-revert.json" 2>/dev/null)"
 	pr1=$(cat "$F/exports/PR-1.md" 2>/dev/null | tr '\n' ' ' | tr -s ' ')
 	for s in 'items are optional for invoices, so invoices now match orders (GT-0).' \
 		'If the settings cache cannot be read, the import fails closed and rolls back.' \

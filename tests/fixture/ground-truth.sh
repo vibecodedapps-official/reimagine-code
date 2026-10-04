@@ -1875,4 +1875,8 @@ write_ground_truth_manifest() {
   "claims": ["./session-summary.md"]
 }
 EOF
+	# The same with stage 1's run of bundle 1's changed tests with the change reverted.
+	awk '{ print } $0 == "      \"run_once\": [\"migrations/*.sh\"]," {
+		print "      \"test_command\": \"sh\", \"test_run\": [\"tests/test_*.sh\", \"tests/scenario_*.sh\"]," }' \
+		"$T/manifest.json" | put manifest-revert.json
 }

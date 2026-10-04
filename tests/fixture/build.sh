@@ -1360,6 +1360,10 @@ write_patterns_manifest() {
   ]
 }
 EOF
+	# The same with stage 1's run of the changed tests with the change reverted.
+	awk '{ print } $0 == "      \"run_once\": [\"migrations/*.sh\"]," {
+		print "      \"test_command\": \"sh\", \"test_run\": \"tests/test_*.sh\"," }' \
+		"$T/manifest.json" | put manifest-revert.json
 }
 
 # ---------------------------------------------------------------------------

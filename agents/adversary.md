@@ -33,7 +33,10 @@ the Verified OK list and of the outward trace the tier lets you attack.
 3. For each finding, open every citation at the sha it names and confirm the quoted lines
    are there and say what the finding says. Look for counter-evidence: callers, guards,
    tests, configuration, the three-dot diff, and base commits since the merge-base.
-   Challenge the severity and the label against the label rules in "Evidence".
+   Challenge the severity and the label against the label rules in "Evidence". A
+   citation of `revert/<bundle>.md` is a run: open the line, and hold it to "Reverted
+   test runs" in `common.md` (the tail names the changed tests as run, and for a file
+   that passes in both copies, the cited implementation lies outside `test_paths`).
 4. Give each finding exactly one verdict, `survives`, `downgraded`, `reworded`, or
    `dropped`, in the `### verdict on <finding id>` block of "Pass-two verdicts", with your
    evidence.

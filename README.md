@@ -218,6 +218,25 @@ are relative to the manifest's directory.
   uncommitted work. The bundle's branch must be checked out, and stage 1 builds a commit
   from the working tree, with the modified files and the untracked files that are not
   ignored, as the bundle's head. See Read-only boundary.
+  A bundle may add `test_command` and `test_run` to have stage 1 run its changed test
+  files with the change reverted. Each file under `test_run` that the bundle added or
+  changed runs twice, as `sh -c '<test_command> "$1"' sh <path>`: once in a copy of the
+  head, and once in a copy of the merge-base with the test code at its head state. A file
+  that passes in both does not detect the change. For example:
+  `"test_command": "pytest -v", "test_run": "tests/**/test_*.py"`. Optional keys:
+  `test_paths` (globs for test code, which keeps its head state in the reverted copy;
+  the default covers `test/`, `tests/`, `__tests__/`, and names like `test_*`, `*_test`,
+  `*.test.*`, `*.spec.*`, and `*Test.*`), `test_setup` (a command run once in each copy
+  first, such as `npm ci`; without it a copy holds tracked files only), and
+  `test_timeout` (seconds per command, default 300). At most 20 files and 30 minutes run
+  per bundle. Setting `test_command` is your consent to run the bundle's own commands:
+  they run with your environment and credentials, as a test run in your checkout does,
+  in copies under cca's data directory that are removed afterwards. Set it only for a
+  suite that reaches no live system, and have `test_setup` install into the copy (a
+  virtual environment, `npm ci`), not a shared interpreter. A tool cache outside the copy
+  may be written. Output is recorded unredacted in the run directory, where agents read
+  it and the report may quote it. A process that leaves its process group (a daemon),
+  and on Windows a native program's own children, may keep running after the step ends.
 - **`references`.** Read-only repos consulted only when a question needs them, each with
   a `name`, a `path`, and a `ref`. Each is pinned to the sha its `ref` resolves to in
   stage 1.
@@ -361,7 +380,8 @@ applies none of it.
    base, and merge-base shas, dump a three-dot diff per bundle (a two-dot diff is never
    used, since it shows the base's later changes as reversals), pin every reference and
    source, split the claims into numbered, typed claims, and map every changed file to a
-   review group.
+   review group. For a bundle with `test_command`, run its changed test files with the
+   change reverted (see Manifest).
 2. **Digest.** Digester agents turn each document corpus among the sources into a cited
    rule list. Not applicable without a document corpus.
 3. **Domain map.** Mapper agents answer per-ticket questions against each code base
@@ -474,8 +494,10 @@ audited repo is every bundle, reference, and source of truth. The only writes ar
 run directory, `runs.json`, codex-lite's own request and thread files in its data
 directory, and an explicit `git fetch --no-tags --refmap=` into remote-tracking refs after you
 approve the listed commands (a remote configured with `remote.<name>.prune` may also
-delete stale remote-tracking refs). An ignored file written by a check run that an
-agent logged is allowed and reported. That attribution is self-reported: it rests on the
+delete stale remote-tracking refs). A bundle with `test_command` adds the copies its
+stage 1 test run makes under cca's data directory, removed when it ends, and whatever
+those test commands write outside the audited repos; the report discloses both. An
+ignored file written by a check run that an agent logged is allowed and reported. That attribution is self-reported: it rests on the
 agent's own `runs:` list, and it is repo-level, so any logged run in a repo accounts for
 any ignored-file change in that repo.
 
@@ -662,10 +684,10 @@ form. Automatic chaining from ccl, and ccl writing a handoff itself, are not imp
 
 ## Development
 
-The plugin is prompt files and seven small shell scripts under `skills/cca/scripts/`
+The plugin is prompt files and eight small shell scripts under `skills/cca/scripts/`
 (`readonly.sh`, `handoff.sh`, `work-items.sh`, `working-tree.sh`, `live.sh`, `memory.sh`,
-and `ledger.sh`): commands, one orchestrator skill with its stage files and templates, and
-five agent definitions. The scripts are:
+`ledger.sh`, and `revert-tests.sh`): commands, one orchestrator skill with its stage
+files and templates, and five agent definitions. The scripts are:
 
 - `readonly.sh`: snapshots an audited repo and checks it later for changes.
 - `handoff.sh`: validates a handoff and lists its claims and commits.
@@ -676,6 +698,9 @@ five agent definitions. The scripts are:
 - `ledger.sh`: builds the finding sections of `ledger/5.md`, the mandatory and seen id
   lists, and `gate.md`, and checks the ledger files against the pass files, the Codex
   answers, and `converged.md`.
+- `revert-tests.sh`: runs a bundle's changed test files in a copy of the head and in a
+  copy of the merge-base with the test code at its head state, and writes a verdict per
+  file.
 
 Its checks are:
 
@@ -702,13 +727,16 @@ Its checks are:
   verdicts files that cover each key grammar.
 - `sh tests/ledger.sh`: runs `ledger.sh` on inline ledger inputs and compares each op's
   output and exit status with literals.
+- `sh tests/revert-tests.sh`: runs `revert-tests.sh` on inline repos (each change status,
+  odd paths, timeouts, caps, setup failures, an interrupt) and on the `patterns` and
+  `ground-truth` fixtures, and compares each verdict with a literal.
 
 CI runs a `checks` job (lint, then a fixture build and verify for `solo`, `solo-dirty`,
 `full`, `tokens`, `patterns`, and `ground-truth`) and a `scripts` job that runs the readonly, handoff, work-items,
-working-tree, live, memory, and ledger tests on Linux, macOS, and Windows (under Git
-Bash). On Linux the default `awk` is gawk, and a second step runs the awk-using tests
-(handoff, readonly, live, memory, working-tree, and ledger) with mawk first on `PATH` as
-`awk`. macOS runs them with its own BSD awk.
+working-tree, live, memory, ledger, and revert-tests tests on Linux, macOS, and Windows
+(under Git Bash). On Linux the default `awk` is gawk, and a second step runs the
+awk-using tests (handoff, readonly, live, memory, working-tree, ledger, and revert-tests)
+with mawk first on `PATH` as `awk`. macOS runs them with its own BSD awk.
 
 Acceptance results are recorded in `docs/acceptance.md` and design decisions in
 `docs/decisions.md`. On Windows, run the scripts under Git Bash.

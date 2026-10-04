@@ -92,6 +92,15 @@ step 1c, right after the baseline, for the same reason.
    - `head`: an optional bundle key, kept in the saved manifest. Its only value is
      `working-tree`, which makes the bundle's head a commit built from the repo's working
      tree (step 1c). It is a manifest key only, with no flag. A.4 validates it.
+   - `test_command`, `test_run`, `test_paths`, `test_setup`, `test_timeout`: optional
+     bundle keys, kept in the saved manifest, with no default but those below. With
+     `test_command`, step 6b runs the bundle's changed test files with the change
+     reverted; setting it is the user's consent to run the bundle's own commands.
+     `test_command` and `test_setup` are commands for `sh -c`. `test_run` and
+     `test_paths` are repo-relative glob patterns, as for `run_once`; a string becomes a
+     one-element list. `test_run` names the files to run; `test_paths` names test code,
+     and its default is the list in `revert-tests.sh`'s header. `test_timeout` is whole
+     seconds per command, default 300. A.4 validates them.
    - `sources_of_truth`: when the manifest lists it, it replaces the default order.
      Otherwise the default order is: legacy source code, then a guidelines corpus
      (each only when supplied, as a reference named `legacy` or a source entry), then
@@ -124,7 +133,17 @@ step 1c, right after the baseline, for the same reason.
    non-empty string or a non-empty array of non-empty strings is rejected: stop with
    `bundle <name>: run_once must be a pattern or a list of patterns`. A bundle whose
    `head` is anything but `working-tree` is rejected: stop with
-   `bundle <name>: head must be working-tree`. A
+   `bundle <name>: head must be working-tree`. The test keys are checked in this order,
+   and the first that fails stops with its line: a bundle with `test_run`, `test_paths`,
+   `test_setup`, or `test_timeout` but no `test_command`:
+   `bundle <name>: test_run, test_paths, test_setup, and test_timeout need test_command`;
+   a `test_command` or `test_setup` that is not a non-empty string, or holds a newline:
+   `bundle <name>: <key> must be a one-line command`; a `test_run` or `test_paths` that
+   is not a non-empty string or a non-empty array of non-empty strings, or has an entry
+   with a newline: `bundle <name>: <key> must be a pattern or a list of patterns`; a
+   `test_command` without `test_run`: `bundle <name>: test_command needs test_run`; a
+   `test_timeout` that is not a whole number of 1 or more:
+   `bundle <name>: test_timeout must be whole seconds, 1 or more`. A
    `working-tree` bundle needs a `branch`, or a PR whose `headRefName` names it, and that
    branch must be checked out: `git -C <repo> rev-parse --abbrev-ref HEAD` (which prints
    `HEAD` for a detached head) equals it. Otherwise stop before stage 1:
@@ -568,12 +587,48 @@ The brief maps each name to the path agents must read, the sha, and the mode (`d
 `direct (working tree)`, `export`, or `git show`). An export holds tracked files only, so
 no test or lint command runs in an export, whether or not it needs installed dependencies;
 a check run is done only in a directly read tree, and otherwise the question is marked
-"not run".
+"not run". Step 6b is the one exception: the orchestrator runs a bundle's own test
+command in its own copies, outside the run directory and every audited repo, and agents
+read the result.
 
 Classify each source of truth with a `path` for stages 2 and 3: count the tracked files
 at the pinned sha by extension; when more than half are documents (`.md`, `.mdx`,
 `.markdown`, `.txt`, `.rst`, `.adoc`, `.asciidoc`, `.html`, `.htm`, `.pdf`), it is a
 **document corpus**, else a **code base**. Record the class and the counts in the brief.
+
+### 6b. Changed tests with the change reverted
+
+Only the orchestrator runs this step. First, whatever the manifest holds, remove
+`<run dir>/revert/` and `${CLAUDE_PLUGIN_DATA}/revert-work/<run id>/` if they exist
+(`rm -rf`, those two directories only), so nothing from an earlier attempt, or from a run
+that was killed, remains. Then, for each bundle with `test_command`, in manifest order:
+
+1. Write `revert/<bundle>.keys` with the Write tool, from the saved manifest, one line
+   per value, `<key><TAB><value>`: `command` (the `test_command`), `setup` (the
+   `test_setup`, when given), `timeout` (the `test_timeout`, when given), one `run` line
+   per `test_run` pattern, and one `path` line per `test_paths` pattern (none when the
+   key is absent, so the default list applies). No key's text passes through a shell
+   command line.
+2. Run, with the resolved absolute script path,
+   `sh ${CLAUDE_PLUGIN_ROOT}/skills/cca/scripts/revert-tests.sh run <repo> <base> <head> <run dir>/revert/<bundle>.keys ${CLAUDE_PLUGIN_DATA}/revert-work/<run id>/<bundle> <run dir>/revert/<bundle>.md`,
+   with the base and head shas of step 3 (a `head: working-tree` bundle uses its built
+   head sha). The script lists the bundle's changed test files, builds two copies with
+   step 6's `cat-file` method in its work directory, one of the head and one of the
+   merge-base with the test code at its head state, runs each file in both, writes one
+   verdict per file to the result file, and removes its work directory. Its header gives
+   the rules and the caps: 20 files, `test_timeout` per command, 30 minutes per bundle,
+   and no run when a tree holds over 1 GB. The call can take longer than a foreground
+   command allows and move to the background; wait for its completion notification
+   without polling or any other tool call.
+3. Exit 0: the result file is written, whatever its verdicts. Exit 2: stop the run with
+   the script's line (on stderr), as for any stage 1 failure; it names a wrong key, a
+   failed git step or write, or a process group still live after KILL.
+
+The commands run with the user's environment and credentials, as an agent's test run
+in a directly read tree does, with `TMPDIR`, `TMP`, `TEMP`, and `XDG_CACHE_HOME` in the
+work directory. Their output tails are recorded unredacted. Agents read
+`revert/<bundle>.md` as `common.md`'s "Reverted test runs" says. Resume runs this step
+only when stage 1 reruns.
 
 ### 7. Claims
 
@@ -714,7 +769,9 @@ claim has a scope that stage 4 schedules; reassign any that does not by rule 3.
    files changed on both sides, stack, the `ticket_token` patterns when the bundle has
    them, the run-once list of step 3 when the bundle has `run_once`: the patterns, then
    one line per file with its status letter, its path, and `exists at merge-base` or
-   `new`, or `none`; the head sha is recorded as `headRefOid` for a GitHub PR, and the
+   `new`, or `none`; for a bundle with `test_command`, step 6b's line: the path
+   `revert/<bundle>.md` and its verdict counts line, or `no changed tests to run`; the
+   head sha is recorded as `headRefOid` for a GitHub PR, and the
    pinned base sha is the local sha of `<remote>/<baseRefName>`; for a GitHub PR also
    `baseRefOid`, labeled "base as GitHub last evaluated it", for information only;
    resume compares the head and the pinned base; a `head: working-tree` bundle also
@@ -745,7 +802,8 @@ claim has a scope that stage 4 schedules; reassign any that does not by rule 3.
 6. Write the stage 1 entry: status `complete`, outputs `manifest.json`,
    `audit-brief.md`, `common.md`, `claims.md`, `groups.md`, every `diffs/` file, every
    `forge/` file, every `trees/<name>/` export with its `trees/<name>.lstree` and
-   `trees/<name>.export.sh`, and `baseline/1-check.md`. Its inputs are those D7
+   `trees/<name>.export.sh`, each `revert/<bundle>.keys` and `revert/<bundle>.md`, and
+   `baseline/1-check.md`. Its inputs are those D7
    recorded plus each bundle's head, base, and merge-base sha (the pinned base is the
    local sha of the base ref; `baseRefOid` is recorded beside it for a GitHub PR, for
    information only), `head_parent` and `head_tree` for each `head: working-tree`
