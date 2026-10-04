@@ -121,7 +121,8 @@ name a plugin are rerun under the new names and recorded here.
     add repo-docs@reimagine-code`. Expected: the `reimagine-code` marketplace lists
     exactly `ccx` and `repo-docs`, from `plugins/ccx-codex` and `plugins/repo-docs`,
     and they install at 0.1.0 and 0.1.2. Covers R2. Rerun when the Codex catalog or a
-    Codex manifest changes. Run 2026-10-03, and 2026-10-04 for 0.2.0; see the records.
+    Codex manifest changes. Run 2026-10-03, and 2026-10-04 for 0.2.0 and 0.3.0; see the
+    records.
 12. **Code review on Codex.** Setup: as item 11, in a scratch git repository with
     `math.mjs`, `test.mjs`, and a `package.json` whose `test` script passes, then an
     uncommitted change that renames an export, gives `add` a third argument with a
@@ -169,14 +170,14 @@ name a plugin are rerun under the new names and recorded here.
     `claude plugin details <plugin>@reimagine-code` for `ccx` and `ccx-loop`.
     Expected: "Always-on" at most 1,300 tokens for `ccx` and at most 510 for
     `ccx-loop`. Covers R8. Rerun at each release. Run 2026-10-03 for 0.1.0, and
-    2026-10-04 for 0.1.1, 0.1.2, 0.1.3, and 0.2.0; see the records.
+    2026-10-04 for 0.1.1, 0.1.2, 0.1.3, 0.2.0, and 0.3.0; see the records.
 17. **Tags.** Setup: the release commit on `main`. Command: `claude plugin tag --push`
     on `plugins/ccx`, then `plugins/ccx-loop`, then `plugins/repo-docs`; then
     `git ls-remote --tags origin`. Expected: each tag command checks the manifest against
     its catalog entry and pushes; the remote holds a `<plugin>--v<version>` tag for each
     plugin's new version, and no bare `v` tag. Covers R49. Rerun at each release. Run
-    2026-10-03 for 0.1.0, and 2026-10-04 for 0.1.1, 0.1.2, 0.1.3, and 0.2.0; see the
-    records.
+    2026-10-03 for 0.1.0, and 2026-10-04 for 0.1.1, 0.1.2, 0.1.3, 0.2.0, and 0.3.0;
+    see the records.
 18. **Install from GitHub.** Setup: on macOS and on Windows 11 with both CLIs from npm,
     new scratch profiles on each host. Command: the four lines of R3, then `claude plugin
     install ccx-loop@reimagine-code` and `codex plugin add
@@ -187,9 +188,8 @@ name a plugin are rerun under the new names and recorded here.
     once per host from the public one. Covers R3 and R4. Rerun at each release. Run on
     macOS and Windows 2026-10-03 for 0.1.0, from the private repository. Run
     2026-10-04 for 0.1.1 on macOS, from the private repository and then the public one,
-    and on Windows from the public one. Run 2026-10-04 for 0.1.2 on macOS and Windows,
-    for 0.1.3 on macOS and Windows, and for 0.2.0 on macOS and Windows, from the public
-    repository; see the records.
+    and on Windows from the public one. Run 2026-10-04 for 0.1.2, 0.1.3, 0.2.0, and
+    0.3.0, each on macOS and Windows, from the public repository; see the records.
 19. **Windows.** Setup: a Windows 11 machine with both CLIs from npm, the suite
     installed as in item 18, and a test repository checked out under a path that holds
     a space. Command: `/ccx:ask` and `/ccx:implement` with a one-line change;
@@ -1181,3 +1181,88 @@ Codex login that was deleted afterward. No permission denial occurred. The real
   - Every run had the Codex role, with no higher-risk criterion. The issue and PR comments,
     the snapshots under `specs/ccx/<run-id>/`, and cca's `handoff.sh check` were as for
     0.2.0.
+
+### 2026-10-04: release 0.3.0
+
+macOS 27.0, Claude Code 2.1.288, codex-cli 0.159.2, Node 26.4.0. The release commit was
+a4b7fd8, the merge of PR 21. Git credentials were turned off for the GitHub runs as for
+0.2.0. No permission denial occurred. The real `~/.claude` and `~/.codex` files had the
+same sha256 after the runs as before.
+
+- **Item 17 passed for 0.3.0.** The dry runs named `ccx--v0.3.0` and
+  `ccx-loop--v0.3.0`. The repo-docs dry run refused, because `repo-docs--v0.1.3` already
+  exists and repo-docs did not change. `claude plugin tag --push` then created and
+  pushed both tags at a4b7fd8. The 0.2.0 tags still point at b3806f2, and the remote
+  holds no bare `v` tag. Lint and tests on `main` passed with the tags.
+- **Update from GitHub.** In the M4 profile, with 0.2.0 installed from GitHub,
+  `claude plugin marketplace update reimagine-code` printed "Successfully updated
+  marketplace: reimagine-code". `claude plugin update`, run once per plugin, printed
+  `Plugin "ccx-loop" updated from 0.2.0 to 0.3.0` and the same for `ccx`, each with
+  "Restart to apply changes". Both recorded a4b7fd8. `repo-docs` was "already at the
+  latest version (0.1.3)" and kept its earlier commit.
+- **Item 16 passed for 0.3.0.** `claude plugin details` reported about 1,268
+  always-on tokens for `ccx`, 504 for `ccx-loop`, and 169 for `repo-docs`. `ccx-loop`
+  is down from 508 and 6 tokens under its limit.
+- **Item 18 passed on macOS for 0.3.0, from the public repository.** `git ls-remote`
+  read `main` and both tags at a4b7fd8.
+  - In `claude-m6`, with the plugins and catalog removed and added again, installing
+    the loop alone printed "(+ 1 dependency: ccx)". `ccx-loop` 0.3.0, `ccx` 0.3.0, and
+    `repo-docs` 0.1.3 installed and were enabled, each recording a4b7fd8 and a GitHub
+    source.
+  - In `codex-m6`, with the marketplace removed and added again, `ccx` 0.3.0 and
+    `repo-docs` 0.1.3 installed and showed as enabled, with the clone at a4b7fd8.
+  - In the M4 profile, `/ccx:setup` reported the sandbox proven, one allow rule naming
+    the 0.3.0 `scripts/ccx.mjs`, and "old plugins: none found". A headless `/ccx:ask`
+    with "What is 17 times 3? Reply with the number only." printed "51" and `status:
+    ok`. The copy of the Codex login was deleted afterward.
+  - In a scratch repository with a local bare `origin`, `/ccx-loop:plan "add a mul
+    function to math.mjs" --effort max` was refused: "`--effort max` isn't valid because
+    the max tier has been removed. Use `--effort xhigh` for the highest tier instead".
+    No branch, commit, or `.ccx/` folder was created.
+- **Item 11 passed for 0.3.0.** In a new Codex home holding only the model, effort,
+  sandbox, and approval settings, and no login, `codex plugin marketplace add
+  vibecodedapps-official/reimagine-code` cloned a4b7fd8. `codex plugin list` showed
+  exactly `ccx` from `plugins/ccx-codex` and `repo-docs` from `plugins/repo-docs`. They
+  installed at 0.3.0 and 0.1.3 and showed as enabled.
+- **Not rerun.** Items 1, 3 to 6, 12 to 15, and 19: `ccx`, the Codex `ccx`, and
+  `repo-docs` changed only their version since 0.2.0. Items 7 to 9 and 20 ran before the
+  merge on the same loop files; see the record before this one.
+
+### 2026-10-04: release 0.3.0, Windows
+
+The personal Windows 11 machine, with the scratch CLIs from npm: Claude Code 2.1.283 and
+codex-cli 0.157.1, with Node 26.4.0 and Git 2.55.0.windows.5. The scratch profiles were
+`claude-m6` and `codex-m6`, both at the 0.2.0 plugins from GitHub. Git credentials were
+turned off as in the earlier public runs: `git config --list` printed nothing, and `git
+ls-remote` read `main` and both 0.3.0 tags at a4b7fd8 and the 0.2.0 tags at b3806f2. A
+session on that machine ran a brief and reported here. The real profile's five files had
+the same sha256 after the run as before.
+
+- **Update from GitHub.**
+  - In `claude-m6`, `claude plugin marketplace update reimagine-code` printed
+    "Successfully updated marketplace: reimagine-code". `claude plugin update
+    ccx-loop@reimagine-code` moved `ccx-loop` to 0.3.0 and left its dependency `ccx` at
+    0.2.0. `claude plugin update ccx@reimagine-code` then moved `ccx` to 0.3.0. Both
+    recorded a4b7fd8, and `repo-docs` stayed at 0.1.3. The old version folders stay in
+    the plugin cache.
+  - In `codex-m6`, `codex plugin marketplace upgrade reimagine-code` alone moved `ccx`
+    to 0.3.0, installed and enabled, with `repo-docs` at 0.1.3. The 0.2.0 folder was
+    removed from the cache.
+- **Item 18 passed on Windows for 0.3.0, from the public repository.**
+  - In `claude-m6`, with the plugins and catalog removed and added again, installing
+    the loop alone printed "(+ 1 dependency: ccx)". `ccx-loop` 0.3.0, `ccx` 0.3.0, and
+    `repo-docs` 0.1.3 installed and were enabled, each recording a4b7fd8 and a GitHub
+    source.
+  - In `codex-m6`, `ccx` 0.3.0 and `repo-docs` 0.1.3 showed as installed and enabled,
+    with the clone at a4b7fd8.
+  - In the item 19 repository from the 0.2.0 run, headless `/ccx:setup` passed in 11 s:
+    `workspace-write` proven, one allow rule naming the 0.3.0 `scripts/ccx.mjs` with
+    forward slashes, and "old plugins: none found". `/ccx:ask` in auto mode printed
+    "141" and `status: ok`.
+  - In a scratch repository with a local bare `origin`, `/ccx-loop:plan "add a mul
+    function to math.mjs" --effort max` was refused with no tool call: "`--effort max`
+    isn't a valid value anymore because the max tier is gone. Use `--effort xhigh`
+    instead". The repository and its origin were unchanged.
+  - The copy of the Codex login was deleted afterward.
+- **Not rerun.** Item 19: the bridge's spawn code, the rules command, and the hook did
+  not change.
