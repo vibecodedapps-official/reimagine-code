@@ -94,6 +94,15 @@ test('do passes a configured Windows sandbox mode to both probe controls and run
   assert.equal(r.status, 0);
 }));
 
+test('setup waits for a probe control past the local limit, as Codex can need in a new Codex home', windows, withScratch((s) => {
+  writeFileSync(join(s.data, 'config.toml'), '[windows]\nsandbox = "unelevated"\n');
+  const shim = pathToFileURL(fileURLToPath(new URL('./fixtures/node-as-codex.mjs', import.meta.url))).href;
+  const r = cli(s, ['setup', s.data], { cwd: s.plain, env: { RECODE_CODEX_BIN: process.execPath, CODEX_HOME: s.data,
+    NODE_OPTIONS: `--import "${shim}"`, FAKE_CODEX: 'sandbox-slow', RECODE_TIMEOUT_MS: '1500' } });
+  assert.equal(r.stdout.split('\n').find((l) => l.startsWith('sandbox: ')),
+    'sandbox: workspace-write proven: an inside write landed and an outside write was denied (EPERM)');
+}));
+
 // Claude Code writes the plugin root into the command with forward slashes, so the rule must use them to match.
 test('setup prints the Bash rule with a forward-slash plugin root on Windows', windows, withScratch((s) => {
   const r = cli(s, ['setup', s.data], { cwd: s.plain, env: { RECODE_CODEX_BIN: process.execPath, CODEX_HOME: s.data } });

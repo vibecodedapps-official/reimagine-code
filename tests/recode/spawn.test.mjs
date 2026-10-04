@@ -180,6 +180,11 @@ test('setup: version, login and both probe rows, and the printed allow rules', s
   assert.deepEqual(readdirSync(s.plain), []);
 }));
 
+test('setup waits for a probe control past the local limit, as Codex can need in a new Codex home', spawning, withScratch((s) => {
+  const r = cli(s, ['setup', s.data], { cwd: s.plain, env: { FAKE_CODEX: 'sandbox-slow', RECODE_TIMEOUT_MS: '1500' } });
+  assert.match(r.stdout, /\nsandbox: workspace-write proven: an inside write landed and an outside write was denied \(EPERM\)\n/);
+}));
+
 test('by default each run probes its own file in the home directory', spawning, withScratch((s) => {
   const home = join(s.root, 'outside');
   cli(s, ['setup', s.data], { cwd: s.plain, env: { HOME: home, RECODE_PROBE_TARGET: '' } });

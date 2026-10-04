@@ -51,7 +51,7 @@ test('release sets the suite version and the range everywhere, then lint asks fo
   assert.ok(r.out.includes('CHANGELOG.md: no heading "## 0.2.0 - <YYYY-MM-DD>" for the suite version'), r.out);
   assert.deepEqual(versions(d), {
     suite: '0.2.0', recode: '0.2.0', loop: '0.2.0', range: '>=0.2.0 <1.0.0', codex: '0.2.0',
-    docsClaude: '0.1.2', docsCodex: '0.1.2', catalog: '0.2.0', entries: { recode: '0.2.0', 'recode-loop': '0.2.0', 'repo-docs': '0.1.2' },
+    docsClaude: '0.1.3', docsCodex: '0.1.3', catalog: '0.2.0', entries: { recode: '0.2.0', 'recode-loop': '0.2.0', 'repo-docs': '0.1.3' },
   });
   assert.ok(lines(d, 'plugins/recode-loop/.claude-plugin/plugin.json').includes('    { "name": "recode", "version": ">=0.2.0 <1.0.0" }'));
   heading(d, '## 0.2.0 - 2026-10-04');
@@ -61,11 +61,11 @@ test('release sets the suite version and the range everywhere, then lint asks fo
 }));
 
 test('release sets repo-docs in its two manifests and its catalog entry only', () => inCopy((d) => {
-  const r = release(d, 'repo-docs', '0.1.3');
+  const r = release(d, 'repo-docs', '0.1.4');
   assert.equal(r.status, 0, r.out);
   assert.deepEqual(versions(d), {
-    suite: '0.1.0', recode: '0.1.0', loop: '0.1.0', range: '>=0.1.0 <1.0.0', codex: '0.1.0',
-    docsClaude: '0.1.3', docsCodex: '0.1.3', catalog: '0.1.0', entries: { recode: '0.1.0', 'recode-loop': '0.1.0', 'repo-docs': '0.1.3' },
+    suite: '0.1.1', recode: '0.1.1', loop: '0.1.1', range: '>=0.1.0 <1.0.0', codex: '0.1.1',
+    docsClaude: '0.1.4', docsCodex: '0.1.4', catalog: '0.1.1', entries: { recode: '0.1.1', 'recode-loop': '0.1.1', 'repo-docs': '0.1.4' },
   });
   assert.ok(lines(d, 'plugins/repo-docs/.codex-plugin/plugin.json').includes('  "author": { "name": "vibecodedapps.net" },'));
 }));
@@ -76,17 +76,17 @@ test('release rejects a malformed request', () => inCopy((d) => {
     assert.equal(r.status, 2, `${args.join(' ')}: ${r.out}`);
     assert.ok(r.out.startsWith('usage: node tools/release.mjs recode <version> [--floor <version>]'), r.out);
   }
-  assert.equal(versions(d).suite, '0.1.0');
+  assert.equal(versions(d).suite, '0.1.1');
 }));
 
 test('release writes no file when one cannot be edited cleanly', () => inCopy((d) => {
   const p = join(d, 'plugins/recode-codex/plugin.json');
-  writeFileSync(p, readFileSync(p, 'utf8').replace('\n  "version": "0.1.0",', '\n\t"version": "0.1.0",'));
+  writeFileSync(p, readFileSync(p, 'utf8').replace('\n  "version": "0.1.1",', '\n\t"version": "0.1.1",'));
   const r = release(d, 'recode', '0.2.0');
   assert.equal(r.status, 1, r.out);
   assert.ok(r.out.includes('release: plugins/recode-codex/plugin.json: cannot set the version without changing anything else; no file was written'), r.out);
-  assert.equal(versions(d).suite, '0.1.0');
-  assert.equal(versions(d).recode, '0.1.0');
+  assert.equal(versions(d).suite, '0.1.1');
+  assert.equal(versions(d).recode, '0.1.1');
 }));
 
 test('release raises a plugin changed since its tag, so lint passes again', () => inCopy((d) => {
@@ -95,20 +95,20 @@ test('release raises a plugin changed since its tag, so lint passes again', () =
   git('init', '-q', '-b', 'main');
   git('add', '-A');
   git('commit', '-q', '-m', 'release');
-  git('tag', 'recode--v0.1.0');
-  git('tag', 'recode-loop--v0.1.0');
+  git('tag', 'recode--v0.1.1');
+  git('tag', 'recode-loop--v0.1.1');
   appendFileSync(join(d, 'plugins/recode-loop/README.md'), 'More.\n');
-  heading(d, '## 0.1.1 - 2026-10-04');
-  const r = release(d, 'recode', '0.1.1');
+  heading(d, '## 0.1.2 - 2026-10-04');
+  const r = release(d, 'recode', '0.1.2');
   assert.equal(r.status, 0, r.out);
-  assert.deepEqual([versions(d).loop, versions(d).range], ['0.1.1', '>=0.1.0 <1.0.0']);
+  assert.deepEqual([versions(d).loop, versions(d).range], ['0.1.2', '>=0.1.0 <1.0.0']);
 }));
 
 test('release keeps CRLF line endings, as in a Windows checkout', () => inCopy((d) => {
   const files = ['.claude-plugin/marketplace.json', 'plugins/repo-docs/.claude-plugin/plugin.json', 'plugins/repo-docs/.codex-plugin/plugin.json'];
   for (const f of files) writeFileSync(join(d, f), readFileSync(join(d, f), 'utf8').replace(/\r?\n/g, '\r\n'));
-  const r = release(d, 'repo-docs', '0.1.3');
+  const r = release(d, 'repo-docs', '0.1.4');
   assert.equal(r.status, 0, r.out);
-  assert.deepEqual([versions(d).docsClaude, versions(d).docsCodex, versions(d).entries['repo-docs']], ['0.1.3', '0.1.3', '0.1.3']);
+  assert.deepEqual([versions(d).docsClaude, versions(d).docsCodex, versions(d).entries['repo-docs']], ['0.1.4', '0.1.4', '0.1.4']);
   for (const f of files) assert.ok(!/[^\r]\n/.test(readFileSync(join(d, f), 'utf8')), `${f} has a bare LF`);
 }));

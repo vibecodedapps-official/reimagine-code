@@ -239,7 +239,8 @@ requirement below changes it. The audit plugin is not part of v0.1.0.
 53. **Windows.** On the work machine (Windows 11, both CLIs from npm): bridge ask and
     implement, the rules command against a CRLF file, and the repo-docs hook on both
     hosts from a checkout whose path contains a space. The README states Git for
-    Windows as the repo-docs prerequisite. Check: acceptance.
+    Windows as the repo-docs prerequisite, with Git's `bin` folder on `PATH` for Codex.
+    Check: acceptance.
 54. **Line endings.** `.gitattributes` keeps `*.sh`, `*.mjs`, and `*.md` at LF. Check:
     lint.
 

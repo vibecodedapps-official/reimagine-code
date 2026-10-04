@@ -38,10 +38,12 @@ if (argv[0] === '--version') {
   console.log('Logged in using ChatGPT');
 } else if (argv[0] === 'sandbox') {
   // Runs the command after "--" for real. 'confine' (the default) denies a write outside the working directory the
-  // way a working sandbox does; 'sandbox-open' confines nothing; 'sandbox-broken' can launch nothing.
+  // way a working sandbox does; 'sandbox-open' confines nothing; 'sandbox-broken' can launch nothing; 'sandbox-slow' first
+  // waits 2 s, as one of Codex's first sandboxed commands in a new Codex home can.
   const command = argv.slice(argv.indexOf('--') + 1);
   const rel = relative(process.cwd(), resolve(command.at(-1)));
   if (mode === 'sandbox-broken') process.exit(71);
+  if (mode === 'sandbox-slow') Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, 2000);
   if (mode !== 'sandbox-open' && (rel === '..' || rel.startsWith(`..${sep}`) || isAbsolute(rel))) {
     process.stderr.write('EPERM');
     process.exit(42);

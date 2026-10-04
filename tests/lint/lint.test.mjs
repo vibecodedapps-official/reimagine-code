@@ -125,6 +125,10 @@ test('lint rejects hooks without the SessionStart notice', () => fails(
   (d) => editJson(d, 'plugins/recode/hooks/hooks.json', (j) => { delete j.hooks.SessionStart; }),
   'plugins/recode/hooks/hooks.json must declare exactly these hooks'));
 
+test('lint rejects repo-docs hooks that skip the PowerShell tool', () => fails(
+  (d) => editJson(d, 'plugins/repo-docs/hooks/hooks.json', (j) => { j.hooks.PreToolUse.pop(); }),
+  'plugins/repo-docs/hooks/hooks.json must declare exactly these hooks'));
+
 test('lint rejects missing chat instructions', () => fails(
   (d) => rmSync(join(d, 'plugins/recode/chat/instructions.md')),
   'plugins/recode/chat/instructions.md: missing'));
@@ -148,7 +152,7 @@ test('lint rejects a loop dependency range with a caret', () => fails(
 
 test('lint rejects a loop dependency floor above the suite version', () => fails(
   (d) => editJson(d, 'plugins/recode-loop/.claude-plugin/plugin.json', (j) => { j.dependencies = [{ name: 'recode', version: '>=0.2.0 <1.0.0' }]; }),
-  'with the floor at or below 0.1.0; found ">=0.2.0 <1.0.0"'));
+  'with the floor at or below 0.1.1; found ">=0.2.0 <1.0.0"'));
 
 test('lint rejects a loop with no recode dependency', () => fails(
   (d) => editJson(d, 'plugins/recode-loop/.claude-plugin/plugin.json', (j) => { delete j.dependencies; }),
@@ -203,11 +207,11 @@ test('lint rejects the codex manifest on another schema', () => fails(
 
 test('lint rejects the codex recode off the suite version', () => fails(
   (d) => editJson(d, 'plugins/recode-codex/plugin.json', (j) => { j.version = '0.2.0'; }),
-  'plugins/recode-codex: version 0.2.0 differs from the suite version 0.1.0 in package.json'));
+  'plugins/recode-codex: version 0.2.0 differs from the suite version 0.1.1 in package.json'));
 
 test('lint rejects repo-docs manifests with different versions', () => fails(
   (d) => editJson(d, 'plugins/repo-docs/.codex-plugin/plugin.json', (j) => { j.version = '0.1.1'; }),
-  'plugins/repo-docs/.codex-plugin/plugin.json: version 0.1.1 differs from 0.1.2 in .claude-plugin/plugin.json'));
+  'plugins/repo-docs/.codex-plugin/plugin.json: version 0.1.1 differs from 0.1.3 in .claude-plugin/plugin.json'));
 
 test('lint rejects the codex plugin without its NOTICE', () => fails(
   (d) => rmSync(join(d, 'plugins/recode-codex/NOTICE')),
@@ -226,10 +230,10 @@ test('lint rejects a changelog without a dated heading for the suite version', (
   (d) => {
     const p = join(d, 'CHANGELOG.md');
     const s = readFileSync(p, 'utf8');
-    assert.match(s, /^## 0\.1\.0 - \d{4}-\d{2}-\d{2}$/m, 'the changelog lacks the heading');
-    writeFileSync(p, s.replace(/^## 0\.1\.0 - \d{4}-\d{2}-\d{2}$/m, '## Unreleased'));
+    assert.match(s, /^## 0\.1\.1 - \d{4}-\d{2}-\d{2}$/m, 'the changelog lacks the heading');
+    writeFileSync(p, s.replace(/^## 0\.1\.1 - \d{4}-\d{2}-\d{2}$/m, '## Unreleased'));
   },
-  'CHANGELOG.md: no heading "## 0.1.0 - <YYYY-MM-DD>" for the suite version'));
+  'CHANGELOG.md: no heading "## 0.1.1 - <YYYY-MM-DD>" for the suite version'));
 
 // The copy becomes a git repository with one commit, tagged as each named release.
 const git = (cwd, ...args) => execFileSync('git', ['-c', 'user.email=t@example.com', '-c', 'user.name=t', '-c', 'commit.gpgsign=false', '-c', 'tag.gpgsign=false', ...args],
@@ -242,21 +246,21 @@ const tagged = (d, ...tags) => {
 };
 
 test('lint passes on a tagged copy with no change since its tags', () => {
-  const r = lint((d) => tagged(d, 'recode--v0.1.0', 'recode-loop--v0.1.0', 'repo-docs--v0.1.2'));
+  const r = lint((d) => tagged(d, 'recode--v0.1.1', 'recode-loop--v0.1.1', 'repo-docs--v0.1.3'));
   assert.equal(r.status, 0, r.out);
 });
 
 test('lint rejects a change to a tagged plugin that keeps its version', () => fails(
-  (d) => { tagged(d, 'recode--v0.1.0'); appendFileSync(join(d, 'plugins/recode/README.md'), 'More.\n'); },
-  'plugins/recode: changed since recode--v0.1.0, so its version must be above 0.1.0; found 0.1.0'));
+  (d) => { tagged(d, 'recode--v0.1.1'); appendFileSync(join(d, 'plugins/recode/README.md'), 'More.\n'); },
+  'plugins/recode: changed since recode--v0.1.1, so its version must be above 0.1.1; found 0.1.1'));
 
 test('lint holds the codex recode to the bridge tag', () => fails(
-  (d) => { tagged(d, 'recode--v0.1.0'); appendFileSync(join(d, 'plugins/recode-codex/README.md'), 'More.\n'); },
-  'plugins/recode-codex: changed since recode--v0.1.0, so its version must be above 0.1.0; found 0.1.0'));
+  (d) => { tagged(d, 'recode--v0.1.1'); appendFileSync(join(d, 'plugins/recode-codex/README.md'), 'More.\n'); },
+  'plugins/recode-codex: changed since recode--v0.1.1, so its version must be above 0.1.1; found 0.1.1'));
 
 test('lint compares a change with the highest tag by number', () => fails(
   (d) => { tagged(d, 'repo-docs--v0.1.9', 'repo-docs--v0.1.10'); appendFileSync(join(d, 'plugins/repo-docs/README.md'), 'More.\n'); },
-  'plugins/repo-docs: changed since repo-docs--v0.1.10, so its version must be above 0.1.10; found 0.1.2'));
+  'plugins/repo-docs: changed since repo-docs--v0.1.10, so its version must be above 0.1.10; found 0.1.3'));
 
 test('lint rejects a shallow clone, which may lack the tags', () => fails(
   (d) => { tagged(d); writeFileSync(join(d, '.git', 'shallow'), git(d, 'rev-parse', 'HEAD')); },

@@ -1,7 +1,7 @@
 {
   "$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
   "name": "recode",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "A generalized adaptation of the openai/codex code-review skills for use on any repository.",
   "author": {
     "name": "vibecodedapps.net",

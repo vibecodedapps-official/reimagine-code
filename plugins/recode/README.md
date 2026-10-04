@@ -164,6 +164,9 @@ writes:
 3. `codex sandbox` tries to write the home directory file. This must be denied, with no file
    created.
 
+Each `codex sandbox` call may take two minutes, because in a new Codex home one of Codex's
+first sandboxed commands took about 30 s on Windows.
+
 If any check fails, `do` and `implement` refuse and say which one and the error it saw. From your home
 directory, or a directory above it, the probe cannot work and the plugin says so rather than
 claiming the host cannot sandbox.
