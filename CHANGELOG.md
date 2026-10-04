@@ -3,6 +3,26 @@
 One changelog for the suite. Each release has a subsection per component. The source
 repos' own changelogs are kept under `docs/history/`.
 
+## 0.1.3 - 2026-10-04
+
+### recode
+
+- The house rules gain two rules, from forge-ops at commit 9faabda. Under Working:
+  before naming a cause or acting on one, run the check that could rule it out, or call
+  the cause unverified. Under Code: a code comment only where the code is unclear, with
+  ticket numbers and change history in the commit message. If you added the rules
+  block, the session start notice now says it is out of date; run `/recode:rules` to
+  update it.
+- The README now says the old Edit rule also breaks auto mode on Windows.
+
+### recode-loop
+
+- Version 0.1.3, to stay in step with `recode`. No change.
+
+### recode (Codex)
+
+- Version 0.1.3, to stay in step with `recode`. No change.
+
 ## 0.1.2 - 2026-10-04
 
 ### recode
