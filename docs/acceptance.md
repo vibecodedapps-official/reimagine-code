@@ -45,7 +45,8 @@ name a plugin are rerun under the new names and recorded here.
    interactive session; then `/recode:rules` and decline the Claude change; then start
    another session. Expected: the first session shows one line naming the file and
    `/recode:rules`; after the decline the next session shows nothing. Covers R43 and
-   R45. Rerun when `suite.mjs` or the hooks change. Run 2026-10-03; see the record.
+   R45. Rerun when `suite.mjs` or the hooks change. Run 2026-10-03, and 2026-10-04 for
+   0.1.3; see the records.
 5. **Output style and old plugins.** Setup: as item 3, with `codex-lite` also installed
    from its old marketplace. Command: `/output-style`, then `/recode:setup`. Expected: the
    picker lists `recode:Concise Plain`, and replies follow it once chosen; setup's
@@ -165,13 +166,13 @@ name a plugin are rerun under the new names and recorded here.
     `claude plugin details <plugin>@reimagine-code` for `recode` and `recode-loop`.
     Expected: "Always-on" at most 1,300 tokens for `recode` and at most 510 for
     `recode-loop`. Covers R8. Rerun at each release. Run 2026-10-03 for 0.1.0, and
-    2026-10-04 for 0.1.1 and 0.1.2; see the records.
+    2026-10-04 for 0.1.1, 0.1.2, and 0.1.3; see the records.
 17. **Tags.** Setup: the release commit on `main`. Command: `claude plugin tag --push`
     on `plugins/recode`, then `plugins/recode-loop`, then `plugins/repo-docs`; then
     `git ls-remote --tags origin`. Expected: each tag command checks the manifest against
     its catalog entry and pushes; the remote holds a `<plugin>--v<version>` tag for each
     plugin's new version, and no bare `v` tag. Covers R49. Rerun at each release. Run
-    2026-10-03 for 0.1.0, and 2026-10-04 for 0.1.1 and 0.1.2; see the records.
+    2026-10-03 for 0.1.0, and 2026-10-04 for 0.1.1, 0.1.2, and 0.1.3; see the records.
 18. **Install from GitHub.** Setup: on macOS and on Windows 11 with both CLIs from npm,
     new scratch profiles on each host. Command: the four lines of R3, then `claude plugin
     install recode-loop@reimagine-code` and `codex plugin add
@@ -183,7 +184,7 @@ name a plugin are rerun under the new names and recorded here.
     macOS and Windows 2026-10-03 for 0.1.0, from the private repository. Run
     2026-10-04 for 0.1.1 on macOS, from the private repository and then the public one,
     and on Windows from the public one. Run 2026-10-04 for 0.1.2 on macOS and Windows,
-    from the public repository; see the records.
+    and for 0.1.3 on macOS, from the public repository; see the records.
 19. **Windows.** Setup: the Windows 11 work machine with both CLIs from npm, the suite
     installed as in item 18, and a test repository checked out under a path that holds
     a space. Command: `/recode:ask` and `/recode:implement` with a one-line change;
@@ -768,3 +769,40 @@ got back its own `CLAUDE.md` and the GitHub catalog at 0.1.2.
   path. A test for each script, run through a linked folder, failed before the fix
   with empty output and passes after it, and the `/tmp` commands above then printed
   their reports.
+
+### 2026-10-04: release 0.1.3
+
+macOS 27.0, Claude Code 2.1.288, codex-cli 0.159.2, Node 26.4.0. The release commit was
+5da2c2c, the merge of PR 13. Items 3 and 4 ran after the merge and before tagging, in
+the M4 profile with the suite installed from GitHub `main` at 5da2c2c; the installed
+`recode` matched `plugins/recode/` apart from Claude Code's own `.in_use` marker. The
+real `~/.claude/CLAUDE.md` and `~/.codex/AGENTS.md` had the same sha256 after the runs
+as before, and the profile got back its own `CLAUDE.md`.
+
+- **Item 3 passed for 0.1.3, from GitHub.** As in the branch run: both diffs carried the
+  two new rules and each file was asked about separately; a new session gave the marker
+  and quoted both new rules in one turn without reading a file; `/recode:rules --remove`
+  left each file equal to its original and its first backup (`cmp`). The repeat with no
+  `CLAUDE.md` and a missing Codex home, run through the installed `rules.mjs`, skipped
+  the Codex target, created and then removed `CLAUDE.md`, and never made the Codex home.
+- **Item 4 passed for 0.1.3.** With the item's `version=0.0.1` block after the text of
+  `CLAUDE.md`, an interactive session showed "SessionStart:startup says: recode: the
+  house rules in .../claude/CLAUDE.md are older than this plugin's; run /recode:rules to
+  update them". `/recode:rules` offered to replace the block; after "no" it printed
+  "declined the change ...; the session notice stays quiet for this text", and the file
+  kept the old block. The next interactive session showed no notice.
+- **Item 17 passed for 0.1.3.** The dry runs named `recode--v0.1.3` and
+  `recode-loop--v0.1.3`, and `claude plugin tag --push` created and pushed both at
+  5da2c2c. repo-docs did not change and keeps `repo-docs--v0.1.3`. The remote holds no
+  bare `v` tag, and lint on `main` passed with the tags.
+- **Item 16 passed for 0.1.3.** About 1,256 always-on tokens for `recode`, 497 for
+  `recode-loop`, and 169 for `repo-docs`, as for 0.1.2.
+- **Item 18 passed on macOS for 0.1.3, from the public repository.** With git
+  credentials off, `git ls-remote` read `main` and `recode--v0.1.3` at 5da2c2c. In
+  `claude-m6`, installing the loop alone printed "(+ 1 dependency: recode)", and
+  `recode-loop` 0.1.3, `recode` 0.1.3, and `repo-docs` 0.1.3 installed from 5da2c2c. In
+  `codex-m6`, `recode` 0.1.3 and `repo-docs` 0.1.3 installed and showed as enabled. In
+  the M4 profile, `/recode:setup` reported the sandbox proven, one allow rule naming the
+  0.1.3 script, and "old plugins: none found", which `suite.mjs` prints. A headless
+  `/recode:ask` in auto mode printed "81" and `status: ok`. The copy of the Codex login
+  was deleted afterward.
