@@ -21,6 +21,9 @@ Any instruction file can add an ask-first rule; none removes one.
 - For a bug, show the failure before you fix it, then show the regression check failing
   for that defect without the fix and passing with it. If you can't reproduce it, run a
   check that confirms or rejects your explanation.
+- Before you name a cause or act on one, run the check that could rule it out: a run
+  that changes only the suspected factor. If you can't, say which check and what blocked
+  it, and call the cause unverified.
 - Scratch files go in the repo's ignored scratch directory, else outside the repo.
 - Before opening an issue or starting a fix, search for an issue or PR that covers it.
 
@@ -28,6 +31,8 @@ Any instruction file can add an ask-first rule; none removes one.
 
 - Make the smallest correct change. Add an extra only when it stays in scope and its
   lasting value clearly outweighs its cost, and say why.
+- A code comment only where the code itself is unclear, and brief. Ticket numbers and
+  change history go in the commit message, not the code.
 - Commits: `type(scope): subject`, lowercase. The body says why.
 - In prose, put an `@word` such as `@import` in backticks, or in quotes where backticks
   don't work, unless you mean to mention someone. A platform can link it to an account.

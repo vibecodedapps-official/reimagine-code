@@ -237,3 +237,18 @@ scratch profiles, with recode 0.1.0 and 0.1.1 installed from GitHub.
    Write through in headless default mode, on both hosts, so moving the request file out
    of `~/.claude` would allow unattended default-mode calls. That move is deferred: auto
    mode already covers unattended calls, and the bridge script is at its line budget.
+
+## Part 9: recode 0.1.3, the rules synced to forge-ops, 2026-10-04
+
+1. **The core rules come from forge-ops commit 9faabda.** Since 948ce5f, forge-ops had
+   added two bullets to both of its files: the cause check under Working, from its PR
+   68, and the code comment rule under Code. M7 step 2 replaces each machine's import
+   of those files with the block, so a block without them would drop both. `rules/core.md`
+   is again lines 6 to the end of `claude/CLAUDE.md`, now at 9faabda. The other three
+   rules files, the output style, and the chat block's pasted text already matched
+   9faabda, apart from the style's `name` line and the chat file's own header, so they
+   are unchanged. The Windows part, an empty line, and the core rebuild
+   `claude/CLAUDE.md` byte for byte, and the Codex parts rebuild `codex/AGENTS.md`, whose
+   Writing section now starts at line 83. Checked with `cmp` on 2026-10-04. This
+   repository stays the source; a later forge-ops change reaches the block only through a
+   sync like this one.
