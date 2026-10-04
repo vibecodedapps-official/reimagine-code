@@ -914,7 +914,8 @@ for the 0.5.1 ledger work.
   for #17 to #20, with decoys. `verify.sh` shows each defect is real by running the
   fixture's own scripts in temp copies. Detection is recorded per audit run in
   `docs/acceptance.md`, before and after this change, as observed results. One run each
-  is one sample, not a rate. The reviewer's 20 cases are not in the repo yet.
+  is one sample, not a rate. The reviewer's 20 cases were not in the repo yet; the
+  `ground-truth` fixture plants them (see "Ground-truth fixture" below).
 
 ## Outward trace (#17, 2026-10-03)
 
@@ -985,6 +986,37 @@ pass-two adversary challenges it.
   error: the same model wrote the shape correctly on the two other runs, and the
   grouping and positions of the failed file were usable. A stronger model would have
   guessed too. Revisit if a merger fails the check again with the shape in its file.
+
+## Ground-truth fixture (#21, 2026-10-03)
+
+- **The reviewer's cases, as given.** `tests/fixture/ground-truth-cases.md` holds 20
+  confirmed findings from one reviewer's threads, de-identified. The `ground-truth`
+  fixture plants each one under its own id, S1 to H2, in shell over CSV files like the
+  other fixtures, so the build adds no dependency. Where a case rests on what the forge
+  shows, an export carries it: R3's journal is pasted in a PR-1 thread, and R2's other
+  open pull request is a line in PR-1's body and a branch in the repo.
+- **Two bundles in one repo.** B1 is a pull request stacked on a target that was later
+  rebased, so it needs its own branch and base. A second bundle holds it. The other 19
+  cases share bundle 1, so a medium run also gets the `interactions` scope.
+- **Expectations are observed, not predicted.** `expected.md` gives each case's
+  location, the finding that describes it, its severity, and its decoys. It does not say
+  which stage should raise it. The case set's reason for the original miss stays as
+  context. `docs/acceptance.md` records, per run, the stage that raised each case, or
+  `none`.
+- **B2 has no forge view.** Its defect is the forge showing a rename near 60% similarity
+  as a deletion and an addition. Git detects the rename, and exporting a forge rendering
+  would invent one. A `none` on B2 measures missing evidence as well as detection.
+- **The journal stays ignored.** As in `patterns`, `data/applied.txt` is not tracked.
+  R1's evidence is the runner and the script, and R3's is the pasted journal.
+- **Runs see only the plugin.** An audit of this fixture passes `--plugin-dir` a copy
+  holding only `.claude-plugin`, `agents`, `commands`, and `skills`, so no agent can read
+  the cases or `expected.md`. Its 13 tickets select `high`, so a run passes
+  `--effort medium` to compare with the `patterns` runs.
+- **#22 comes before #23.** Five of the 20 cases are about tests, and T1 was caught only
+  by running the test, which is what #22 adds. #23's collision check, which R2 needs,
+  waits longer. The reviewer asked for this order. Their other request, that an exported
+  forge file can list the target branch's other open pull requests and their changed
+  files, is a comment on #23, so R2 can be caught without `gh`.
 
 ## Deferred past 0.3
 

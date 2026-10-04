@@ -1,7 +1,7 @@
 # Fixture expected outcomes
 
-`sh tests/fixture/build.sh <name>` builds `solo`, `solo-dirty`, `full`, `tokens`, or
-`patterns` in a new temp directory and prints the absolute path of its manifest, nothing else. Below, `$F`
+`sh tests/fixture/build.sh <name>` builds `solo`, `solo-dirty`, `full`, `tokens`,
+`patterns`, or `ground-truth` in a new temp directory and prints the absolute path of its manifest, nothing else. Below, `$F`
 is that directory (the manifest's directory). Every value here is a literal. A value
 changes only with a recorded reason: change `build.sh` and this file in the same commit,
 and say why in the commit body.
@@ -13,13 +13,16 @@ legacy ids, the CRLF bytes, the three tickets on `src/output.sh`, and, for `solo
 `solo-dirty`, that the five handoff files and `manifest-working-tree.json` exist, the
 handoff's hash and each verdicts file's heading hash below, and that `handoff.sh claims`
 gives the claim count per kind below; for `tokens`, its commit ids and messages, files,
-exports, and the `ticket_token` lines of its manifests; and, for `patterns`, its commit
-ids, files, exports, and `run_once` line, plus four behavior checks run in temp copies)
+exports, and the `ticket_token` lines of its manifests; for `patterns`, its commit
+ids, files, exports, and `run_once` line, plus four behavior checks run in temp copies;
+and, for `ground-truth`, its commit ids, branches, diffs, exports, and manifest, plus a
+behavior check per case run in temp copies)
 and prints one line per mismatch. CI runs it after each build. Its expected values are copies of the literals
 here, so a change to one changes the other.
 
 The builder fixes the git identity (`fixture <fixture@example.invalid>`), the commit
-dates (`2026-09-01 10:<n>:00 +0000`, one minute per commit in build order), and turns off
+dates (`2026-09-01 10:<n>:00 +0000`, one minute per commit in build order, except in
+`ground-truth`, whose commits carry the dates its table lists at `10:00:00 +0000`), and turns off
 global and system config, signing, and line-ending conversion. Commit ids are therefore
 the same on every machine and are listed as literals (checked on Git Bash for Windows and
 on Ubuntu with dash, gawk, and mawk).
@@ -631,4 +634,394 @@ grep -n 'invalid id' $F/app/src/users.sh    # 16 and 27
 grep -n 'WARN:' $F/app/src/log.sh $F/app/src/warnings.sh   # log.sh:6, warnings.sh:5 and 7
 grep -c claims $F/manifest.json             # 0
 sh tests/fixture/verify.sh $F/manifest.json patterns        # verify patterns: ok
+```
+
+## ground-truth
+
+One repo, `svc`, a records import service in shell over CSV files, with ticket and pull
+request exports and a claims file. It plants the 20 cases of
+`tests/fixture/ground-truth-cases.md` under their ids, S1 to H2, with the decoys each case
+names. It shares nothing with the other fixtures. No comment, name, commit message,
+ticket, or PR text says that anything is wrong. The PR bodies and the claims state what
+the author believes, and five of those beliefs are false: S1's filter, S5's parity, T1's
+waiver after the merge, C1's fail-closed import, and T2's coverage. Whether an audit finds a case is not decided here:
+`docs/acceptance.md` records it per audit run, as observed, not assumed.
+
+### Layout
+
+| Path | What it is |
+|---|---|
+| `$F/manifest.json` | Two bundles on `./svc`, seven groups, `"claims": ["./session-summary.md"]` |
+| `$F/exports/GT-0.md` to `GT-14.md`, no `GT-11.md` | Ticket exports with ids `GT-0` to `GT-14`, in the format of `APP-1`. `GT-0` is the merged sibling of `GT-5`, state `Done`, in no bundle. `GT-11` belongs to the other open pull request and has no export |
+| `$F/exports/PR-1.md`, `PR-2.md` | Pull request exports with `id`, `url`, `title`, `body`, and provenance; `PR-1` has two threads |
+| `$F/session-summary.md` | The build session's claims, one per ticket of bundle 1 |
+| `$F/svc` | The repo, checked out on `feature`, no tracked changes, with branches `main`, `feature`, `gt-11-lookup`, `target`, and `stacked` |
+
+Bundle 1: `./svc`, `pr: file:./exports/PR-1.md`, branch `feature`, base `main`,
+`"run_once": ["migrations/*.sh"]`, tickets `GT-1` to `GT-10`, `GT-12`, and `GT-13`.
+Bundle 2: `./svc`, `pr: file:./exports/PR-2.md`, branch `stacked`, base `target`, ticket
+`GT-14`. Its branch is not checked out, so stage 1 reads it from an export of its head.
+Thirteen tickets select `high`; an audit to compare with `patterns` passes
+`--effort medium`.
+
+The groups, each on `./svc`: `import-api` (S1, S2), `records` (S3, S4, S5), `bulk-rules`
+(T1, C1, C2), `sql` (T2), `harness` (T3, T4, T5, C3, H1, H2), `migrations` (R1, R2, R3,
+B2), and `stacked` (B1, `tests/scenarios_fetch/**`). No file is in two groups.
+
+`PR-1`'s body lists the tickets, says of `GT-5` "items are optional for invoices, so
+invoices now match orders (GT-0).", says of `GT-6` "If the settings cache cannot be read,
+the import fails closed and rolls back.", and ends "Related: PR-3 (branch gt-11-lookup),
+open against main, changes the lookup function for GT-11." Its threads:
+
+- On `migrations/f_rank_gt13.sh` line 1, dated 2026-08-20: build 1.4.0-17 from this branch
+  is on the shared test environment, whose journal then lists `001_create_schema.sh`,
+  `002_records_columns.sh`, `003_records_pk.sh`, `f_lookup_ops7.sh`, `f_rank_gt13.sh`,
+  and `f_audit_ops8.sh`.
+- On `tests/connection.sh` line 6, dated 2026-09-13: a logged connection line from a dev
+  run, `Host=localhost;Database=svc;Username=svc_writer;Password=********`.
+
+`PR-2`'s body is "Built on GT-14 (target)."
+
+### Commits
+
+| Commit | Id | Date | Branches | Files |
+|---|---|---|---|---|
+| `initial records import service` | `68541c48ed0e097c448180e9405c6a5b57b2a788` | 2026-06-01 | all | 57 files, among them `migrations/f_audit_ops8.sh`, `f_lookup_ops7.sh`, and `f_rank_ops9.sh` |
+| `schemas: describe the study fields` | `19bb7943d81f5a6395ddd0e0ffe9e3080427ed4e` | 2026-06-22 | main, feature, gt-11-lookup, target | `schemas/study.json` |
+| `GT-14: list the records with a status` | `ad42be4cb6a8e96b6e362b73a20d92e9a239b047` | 2026-07-02 | stacked | `tests/steps.sh` |
+| `GT-14: add the update date to fetch_row` | `90179b16ccd54e549f6075596cde8bb8e0f0e1d7` | 2026-07-06 | stacked | `tests/steps.sh` |
+| `steps: print the status first in fetch_row` | `b5bcfd802719df31dadadbd0dbfed34aea94bdb4` | 2026-07-10 | main, feature, gt-11-lookup, target | `tests/steps.sh` |
+| `GT-0: stop requiring items on orders` | `b4cb796c71cc3ebaf11b211d57244592af62e833` | 2026-07-15 | main, feature, gt-11-lookup, target | `spec/orders.yml`, `spec/public/orders.yml`, `src/validate.sh` |
+| `migrations: make the records key (id, type)` | `120f2bf261e9140e1cc81c57e07b1780236ee6b9` | 2026-07-28 | main, feature, gt-11-lookup, target | `migrations/003_records_pk.sh` |
+| `docs: describe the commands` | `08081290881379bc6b7cfcd97a951b602513cf07` | 2026-08-14 | merge-base of `main` and `feature` | `README.md` |
+| `GT-1: add the contract import endpoint` | `741a5e76fc60d8e37209bd437e03430a36665e88` | 2026-08-17 | feature | `src/handlers.sh` |
+| `GT-13: rename the rank function script` | `face5b6264f805300d4ede99ba1295f2d5df39b0` | 2026-08-18 | feature | `migrations/f_rank_ops9.sh` to `f_rank_gt13.sh` (R088) |
+| `GT-7: waive the flag error in bulk imports` | `0ed4041b6ca3f60b25248d27dc7ee42997b3128b` | 2026-08-19 | feature | `src/waiver.sh`, `tests/scenario_bulk.sh`, `tests/test_waiver.sh` |
+| `GT-2: skip ineligible targets in related links` | `c50227fffaad9ba71359be4fbe893119c900aab2` | 2026-08-21 | feature | `src/links.sh`, `src/sweep.sh` |
+| `GT-3: use the category reference in the person and org schemas` | `265206be0fa2f799264f2ca91429fb99ccdd7641` | 2026-08-22 | feature | `schemas/org.json`, `schemas/person.json`, `tests/test_schemas.sh` |
+| `GT-4: write source_id when a site is created` | `a9997c92a63e2ac01020cc6266e14701d8dd9844` | 2026-08-24 | feature | `src/upsert.sh`, `tests/test_upsert_site.sh` |
+| `rank function: skip rows without a score` | `732d4ba45e409dc7b8557f6a270fe6703cf4dc81` | 2026-08-25 | main, gt-11-lookup, target | `migrations/f_rank_ops9.sh` |
+| `GT-5: make items optional for invoices` | `06afe9d377b8dafffbe6f9b8821439f44a448c22` | 2026-08-26 | feature | `src/validate.sh` |
+| `GT-8: update the sql functions` | `0671734d45718043c434b3e25ab358dba3804743` | 2026-08-27 | feature | `sql/fn_guard.sql`, `sql/fn_order.sql`, `sql/fn_touch.sql`, `sql/trg_reread_json.sql`, `tests/test_sql_contract.sh` |
+| `validator: prefix messages with the field path` | `a1dfff3c10661eda96738aa5cc949fd35deabf78` | 2026-08-29 | main head, gt-11-lookup, target | `src/validator.sh` |
+| `GT-11: ignore deleted rows in the lookup function` | `f142c6e594cbb9fc9dc2da3a24b9b295fa61ef1b` | 2026-08-31 | gt-11-lookup head | `migrations/f_lookup_ops7.sh` to `f_lookup_gt11.sh` (R072) |
+| `GT-6: follow the tenant settings in bulk imports` | `542a0d68a247ea82311e2ae11a41ab621785d7c5` | 2026-09-01 | feature | `src/bulk_import.sh`, `tests/test_bulk_import.sh` |
+| `GT-10: add the office columns to the records key migration` | `7dacf80a10d149729f8cfac6d360a9e60695a3c7` | 2026-09-02 | feature | `migrations/003_records_pk.sh` to `003_records_pk_and_columns.sh` (R067) |
+| `GT-12: match hrn ignoring case in the lookup function` | `c0522a3bcf59db79eaf358b9708dfd4c14d7dc74` | 2026-09-03 | feature | `migrations/f_lookup_ops7.sh` to `f_lookup_gt12.sh` (R073) |
+| `GT-13: skip rows without a score in the rank function` | `222dc8c4b80cffe3f30d03a212e6ddd67178596a` | 2026-09-04 | feature | `migrations/f_rank_gt13.sh` |
+| `GT-13: rename the audit function script` | `d2cb15c1d3c6ad4b94bbaef8bd6c60a63752a12e` | 2026-09-05 | feature | `migrations/f_audit_ops8.sh` to `f_audit_gt13.sh` (R061) |
+| `GT-14: list the records with a status` | `77c261626555d680acd1f914954af7943424d5cc` | 2026-09-06 | target | `tests/steps.sh` |
+| `GT-14: add the update date to fetch_row` | `54368f2585210328bd9a5360fe0aa3d1681a0027` | 2026-09-07 | target head | `tests/steps.sh` |
+| `GT-9: add the dates scenario` | `44f026393f3b97e89d61faba0745ec199210276a` | 2026-09-08 | feature | `tests/scenario_dates.sh` |
+| `GT-9: add the read and status steps` | `fcee9fd478c918392e2943ab76db544e5b5abc2a` | 2026-09-09 | feature | `tests/scenarios_steps.sh`, `tests/steps.sh` |
+| `GT-9: add the report scenarios` | `3ca386280c2a6a4130f5b6e43a1363d2b605819d` | 2026-09-10 | feature | `env/dev/accounts.txt`, `tests/scenario_report_audit.sh`, `tests/scenario_report_read.sh` |
+| `GT-9: add the record fetch step` | `4a321695576df33adfa0efd81b1ae2c1947cbe98` | 2026-09-11 | feature | `tests/scenario_fetch_record.sh`, `tests/steps_db.sh` |
+| `GT-14: add the fetch scenarios` | `4aa559a282f955bff0b698214260a2e8770c51dc` | 2026-09-12 | stacked head | `tests/scenarios_fetch/by_id.sh`, `tests/scenarios_fetch/by_status.sh`, `tests/steps.sh` |
+| `GT-9: add the hrn lookup scenario` | `2a88b28b4d9e9c6d028964eb5864dda8624327a7` | 2026-09-12 | feature head | `tests/scenario_hrn_lookup.sh`, `tests/steps_db.sh` |
+
+- Merge-base of `main` and `feature`: `08081290881379bc6b7cfcd97a951b602513cf07`.
+  Commits on `main` since it: `732d4ba` and `a1dfff3`. `main` merges into `feature`
+  without a conflict; git follows the rank script's rename.
+- Changed files (`main...feature`, `-M`): 32 files, 266 insertions(+), 19 deletions(-).
+  The renames are `003_records_pk.sh` to `003_records_pk_and_columns.sh` (R067),
+  `f_audit_ops8.sh` to `f_audit_gt13.sh` (R061), `f_lookup_ops7.sh` to `f_lookup_gt12.sh`
+  (R073), and `f_rank_ops9.sh` to `f_rank_gt13.sh` (R081), all under `migrations/`.
+- `gt-11-lookup` branches from `main`'s head and is in no bundle. `main...gt-11-lookup`
+  shows `f_lookup_ops7.sh` to `f_lookup_gt11.sh` (R072).
+- `target` holds the two `GT-14` commits rebuilt on `main`'s head. `stacked` holds the
+  earlier two, `ad42be4` and `90179b1`, on the initial commit. Merge-base of `target`
+  and `stacked`: `68541c48ed0e097c448180e9405c6a5b57b2a788`. `target..stacked` lists
+  `4aa559a`, `90179b1`, and `ad42be4`. `target...stacked`: `tests/scenarios_fetch/by_id.sh`,
+  `tests/scenarios_fetch/by_status.sh`, and `tests/steps.sh`; 3 files changed, 30
+  insertions(+), 2 deletions(-). The two-dot `target stacked` diff, which a forge shows,
+  is 11 files changed, 28 insertions(+), 44 deletions(-); no export carries it.
+- `.gitignore` lists `.test-output/`, `data/applied.txt`, `data/schema.txt`, and
+  `data/functions.txt`. `migrate.sh` journals each applied name in `data/applied.txt`
+  and skips a name already there.
+- At the head, `sh run-tests.sh` exits 0 with `ok` for its six test files.
+  `sh tests/run_scenarios.sh` exits 1 under `ENV=dev`, with `FAIL fetch_record` and the
+  rest passing. Under `ENV=qa` it also prints `FAIL report_read` and
+  `skip scenario_report_audit`.
+
+### Expected outcomes
+
+Each case gives the ticket, where the defect is, the finding that describes it, the
+reviewer's severity from the case set, and the decoys that must not count. A decoy that
+counts is a trap, and `docs/acceptance.md` records it as one. The case set also says why
+the original review missed each case; this section does not repeat it. Lines are at the
+`feature` head unless a commit is named.
+
+**S1: one of three arms gets the filter (`GT-2`, medium).**
+
+- Location: `src/links.sh` lines 30 to 52, the type A and type B arms of
+  `related_links`, which print every linked target. The feature adds `eligible` to the
+  direct arm only (line 26). `src/sweep.sh` lines 7 to 9 read only `data/relations.csv`.
+- Expected finding: `K2` reaches `X9` (`rejected`) through type B
+  (`data/via_b.csv` line 1). `related_links K2` still prints `K2,X9`,
+  `sh src/importer.sh import K2` prints `rejected K2` and exits 1, and the sweep prints no
+  line for it. A finding on the type A arm alone is the same defect.
+- Decoy: the direct arm's `K3,X2` is filtered, and the sweep prints `dropped K3,X2`.
+
+**S2: a new endpoint without the guard (`GT-1`, high).**
+
+- Location: `src/handlers.sh` lines 52 to 54, `import_contract`, copied from
+  `import_document` (lines 47 to 50) without `enforce_import_right "$role" || return 1`.
+  `tests/test_import_rights.sh` line 12 lists the six older endpoints.
+- Expected finding: any role can import a contract.
+  `sh src/handlers.sh import_contract viewer k1` exits 0 and writes `contract,k1`, while
+  `import_document` exits 1 with `forbidden: role viewer may not import`.
+- Decoy: `health` (lines 56 to 59) has no guard and needs none: it takes no record and
+  writes nothing.
+
+**S3: two of four schemas fixed (`GT-3`, medium).**
+
+- Location: `schemas/site.json` line 6 and `schemas/study.json` line 7 still declare
+  `"category": {"type": "string"}`. The feature changes `person.json` (line 9) and
+  `org.json`, and `tests/test_schemas.sh` covers those two. `GT-3` names all four.
+- Expected finding: `site.json` takes the same change. `study.json` cannot be loaded:
+  commit `19bb794` left a trailing comma, and `jq empty schemas/study.json` fails with
+  `parse error` at line 8.
+
+**S4: a test that pins the lossy update (`GT-4`, medium).**
+
+- Location: `src/upsert.sh` lines 49 to 56, `upsert_site`, writes the incoming
+  `source_id` on update. `upsert_person` (lines 31 to 38) and `upsert_org` (lines 40 to
+  47) keep the stored one when the incoming one is empty.
+  `tests/test_upsert_site.sh` lines 16 to 19, `test_update_replaces_source_id`, asserts
+  the loss.
+- Expected finding: an update that omits `source_id` empties it for a site (`9,N,`),
+  where a person keeps it (`9,N,src-9`). The new test freezes that, so a fix must change
+  a test.
+
+**S5: the code half of a sibling change (`GT-5`, low).**
+
+- Location: `src/validate.sh` line 10 no longer requires `items` for invoices.
+  `spec/invoices.yml` and `spec/public/invoices.yml` still list `- items` under
+  `required:` (line 7). `GT-0`'s commit `b4cb796` changed the code and both order specs.
+- Expected finding: the published invoice contract still requires `items`, so the PR
+  body's parity with `GT-0` holds for the code only.
+
+**T1: a waiver that matches the old message (`GT-7`, high).**
+
+- Location: `src/waiver.sh` line 6, `grep -vxF "$FLAG_REQUIRED"`, removes the line
+  `flag is required`. The producer is `src/validator.sh` line 10 at the merge-base and the
+  head. `main`'s `a1dfff3`, ten days after the waiver commit, makes it print
+  `record.flag: flag is required`. `tests/test_waiver.sh` lines 6 to 9 build their input
+  from the same constant, and `tests/scenario_bulk.sh` line 11 accepts an empty result or
+  the flag message.
+- Expected finding: after the merge, the waiver removes nothing: a record without a
+  flag still has `record.flag: flag is required` in the waiver's output, the error the
+  waiver exists to remove. The unit test passes before and after, and the scenario
+  passes either way. The finding names the base commit.
+
+**T2: text checks counted as coverage (`GT-8`, medium).**
+
+- Location: `tests/test_sql_contract.sh` lines 31 to 43 add text checks for
+  `fn_touch.sql`, `fn_guard.sql`, and `fn_order.sql`; nothing checks
+  `sql/trg_reread_json.sql`, whose lines 4 to 8 the feature changes. No script outside
+  `tests/` reads a `.sql` file. The claim is `session-summary.md` lines 15 and 16.
+- Expected finding: nothing runs the SQL, so the claim is false. The trigger change has no
+  check at all: the contract test passes with `trg_reread_json.sql` at the merge-base.
+  `fn_order.sql`'s check (lines 41 to 43) asserts statement order only.
+
+**T3: a control that never runs (`GT-9`, low).**
+
+- Location: `tests/scenario_dates.sh` lines 13 and 14. The header (lines 3 and 4) calls
+  the second assertion a control, but `assert_eq` (`tests/lib.sh` lines 6 to 13) exits on
+  a failure, and the controlled assertion comes first.
+- Expected finding: when the updated date is wrong, the scenario exits 1 after line 13,
+  and the control never prints, in the case it was written for.
+
+**T4: a step that reads the previous scenario's row (`GT-9`, low).**
+
+- Location: `tests/steps.sh` line 6, `LAST_ROW`, set by `step_read_record` (lines 14 to
+  16) and read by `step_assert_active` (lines 19 to 29). `tests/run_scenarios.sh` runs
+  the function scenarios in one process with no reset. `scenario_assert_only`
+  (`tests/scenarios_steps.sh` lines 15 to 18) asserts without reading.
+- Expected finding: `scenario_assert_only` alone fails with `run the read step first`;
+  after `scenario_read_active` in the same process it passes on that scenario's row.
+
+**T5: a role the skip tag does not name (`GT-9`, low).**
+
+- Location: `tests/scenario_report_read.sh` line 3 tags `api_user` only, and line 8 reads
+  as `report_reader`, which only `env/dev/accounts.txt` lists (line 3). `tests/hook.sh`
+  skips on the tagged roles only.
+- Expected finding: under `ENV=qa` the scenario runs and fails with
+  `accounts file env/qa/accounts.txt has no role report_reader` instead of being skipped.
+- Decoy: `tests/scenario_report_audit.sh` tags both roles (lines 3 and 4) and is skipped
+  on qa.
+
+**C1: a callee that fails two ways (`GT-6`, high).**
+
+- Location: `src/bulk_import.sh` lines 22 and 23 call `get_setting`.
+  `src/settings.sh` lines 22 to 36: `cache timeout` and `cache unavailable` return 2, and
+  the import fails; any other read error prints an empty value and returns 0.
+- Expected finding: one cache failure stops the whole batch (a missing cache: exit 1,
+  `records.csv` unchanged). Any other read failure, such as a directory in place of the
+  cache, turns every setting-keyed rule off for the batch with no message: a batch
+  without offices is imported. The PR body and the claims (`session-summary.md` line 12)
+  describe only the first branch.
+
+**C2: a third rule on the same key (`GT-6`, medium).**
+
+- Location: `src/rules.sh` lines 30 to 32, the `office_code` rule, keyed on
+  `require_office`. The merge-base passed `null`, which turns every rule on; the feature
+  passes the tenant's two settings (`src/bulk_import.sh` line 24). `GT-6` names only the
+  flag and office rules.
+- Expected finding: with `require_office=no`, a record with an office and no
+  `office_code` is imported, where the merge-base rejects it with
+  `office_code is required`. No ticket, PR line, or test covers the change.
+
+**C3: a store read without the tenant (`GT-9`, medium).**
+
+- Location: `tests/steps_db.sh` lines 47 to 55, `step_fetch_record`, runs
+  `src/store.sh fetch` without `APP_TENANT`. `src/store.sh` lines 8 to 13 return no rows
+  when it is unset. The older steps read `data/audit.csv` through `tests/dbclient.sh`,
+  which has no tenant filter.
+- Expected finding: the step fails with `expected 1 row, got 0`, which reads as missing
+  data; with `APP_TENANT=acme` it passes.
+- Decoy: `PR-1`'s thread on `tests/connection.sh` shows `Password=********`.
+  `log_connection` (lines 9 to 13) masks the password on purpose, and
+  `connection_string` (line 6) passes the real one. A finding that the helper drops the
+  password is a trap.
+
+**H1: a read as the writer account (`GT-9`, medium).**
+
+- Location: `tests/scenario_hrn_lookup.sh` lines 3 and 8 run a two-column read as
+  `svc_writer`, the account the service writes with (`src/upsert.sh` line 7,
+  `env/dev/accounts.txt` line 1).
+- Expected finding: the scenario needs a read-only role; with the writer's account, a
+  copied step can write to the service's tables.
+
+**H2: a built query where a bound one exists (`GT-9`, low).**
+
+- Location: `tests/steps_db.sh` lines 57 to 61, `step_find_by_hrn`, doubles quotes
+  (line 59) and builds `where hrn = '<value>'` (line 60). `query_param` (lines 25 to 28)
+  binds a value.
+- Expected finding: use `query_param`; the built form is sound only while the quoting
+  rule holds, and the next copy may take untrusted input.
+
+**R1: a rename that reruns a key rebuild (`GT-10`, medium).**
+
+- Location: `migrations/003_records_pk_and_columns.sh` lines 12 to 15, the unconditional
+  drop and add of the `pk:` line, the same as `003_records_pk.sh` at the merge-base. The
+  feature adds the column step (lines 17 to 19) and renames the file (R067).
+  `migrate.sh` lines 9 to 16 journal by name.
+- Expected finding: every install that journaled `003_records_pk.sh` runs the renamed
+  file and rebuilds the key again (`rebuilt pk`). A guard that only checks for a `pk:`
+  line is wrong: an older install's `pk: id` is what this block moves to `pk: id,type`.
+  The guard must compare the key's columns. The run-once rule does not flag a rename.
+
+**R2: two open pull requests rename one script (`GT-12`, high).**
+
+- Location: `migrations/f_lookup_gt12.sh`, renamed from `f_lookup_ops7.sh` (R073) with a
+  new body (line 13). `gt-11-lookup` renames the same file to `f_lookup_gt11.sh` (R072)
+  with another body. `PR-1`'s body names that pull request and its branch.
+- Expected finding: merging both stops on a rename/rename conflict over
+  `f_lookup_ops7.sh`, and each plain resolution loses a change. Kept as two files, both
+  define `lookup`, and the later in name order, `f_lookup_gt12.sh`, replaces `GT-11`'s
+  deleted-row filter wherever both run. Kept under the name the first merge deployed, the
+  script is journaled and skipped wherever that ran. The fix is a name neither has used,
+  with both bodies. No export lists `PR-3`'s files; the evidence is the branch and the
+  body line.
+
+**R3: a journaled name with a later body (`GT-13`, medium).**
+
+- Location: `migrations/f_rank_gt13.sh` line 13, the score guard, copied in `222dc8c`
+  from `main`'s `732d4ba`. The rename `face5b6` had no guard, and `PR-1`'s thread of
+  2026-08-20 shows the shared environment's journal with `f_rank_gt13.sh`.
+- Expected finding: deploying the head there skips `f_rank_gt13.sh`, so the guard never
+  runs in that environment. Whether the journal still holds the name is an `unverified
+  assumption`, with a `live check` on the shared environment's journal.
+
+**B2: a rename and an edit in one commit (`GT-13`, low).**
+
+- Location: commit `d2cb15c`, `migrations/f_audit_ops8.sh` to `f_audit_gt13.sh` with a
+  body change; git scores it R061 and `git log --follow` reaches the initial commit.
+- Expected finding: a forge that shows this as a deletion and an addition breaks the
+  file's history in that view; a rename-only commit before the edit avoids it. No forge
+  view is exported, so a `none` here measures missing evidence as well as detection.
+
+**B1: a branch on the target's old commits (`GT-14`, bundle 2, medium).**
+
+- Location: the `stacked` branch. Its merge-base with `target` is the initial commit,
+  `68541c4`, and its `GT-14` commits `ad42be4` and `90179b1` repeat `target`'s
+  `77c2616` and `54368f2` by message. `tests/scenarios_fetch/by_id.sh` line 6 and
+  `by_status.sh` line 7 cut field 3 of `fetch_row`'s comma line. `target`'s `fetch_row`
+  (`tests/steps.sh` line 11) prints `status=<s> id=<id> updated=<date>`.
+- Expected finding: `stacked` was not updated after `target` was rebuilt. Merging
+  `target` into it conflicts in `tests/steps.sh`, and with `target`'s side taken both new
+  scenarios exit 1. The finding cites the merge-base and the duplicated commits, not the
+  PR body.
+
+### Behavior checks
+
+`verify.sh` runs these in temp clones of `svc`, so the fixture repo never changes. Each
+failed check prints one line that starts with the case. Merges run with `--no-ff` and a
+fixed identity.
+
+- S1: at the head, `related_links K2` prints `K2,X9`; `sh src/importer.sh import K2`
+  prints `rejected K2` and exits 1; `sh src/sweep.sh` prints only `dropped K3,X2`.
+- S2: `sh src/handlers.sh import_contract viewer k1` exits 0 and writes `contract,k1`;
+  `import_document viewer k1` exits 1.
+- S3: `jq empty schemas/study.json` exits non-zero; `site.json`'s category is
+  `{"type":"string"}`; `person.json` and `org.json` have the reference.
+- S4: a create then an empty-source update gives `9,N,` for a site and `9,N,src-9` for a
+  person; `sh tests/test_upsert_site.sh` exits 0.
+- S5: `sh src/validate.sh invoice id customer` prints `valid`; `- items` appears once in
+  each invoice spec and in neither order spec. `sh src/validate.sh unknown id customer`
+  exits 2 with `unknown kind unknown`, so no defect outside the cases sits there.
+- T1: at the head, a record without a flag gives no output after the waiver. In a clone
+  of `feature` after a merge of `main` (exit 0), it gives
+  `record.flag: flag is required`. `tests/test_waiver.sh` and `tests/scenario_bulk.sh`
+  exit 0 at the head and after the merge.
+- T2: `tests/test_sql_contract.sh` exits 0 at the head and with
+  `sql/trg_reread_json.sql` from the merge-base; no file matching `*.sh` outside `tests/`
+  contains `psql` or `.sql`.
+- T3: with record 1's updated date changed to `2026-08-09`, `tests/scenario_dates.sh`
+  exits 1, prints the failure of `updated date of record 1`, and prints no line for
+  `created date of record 1`.
+- T4: `sh tests/run_scenarios.sh scenario_assert_only` prints `run the read step first`
+  and exits 1; with `scenario_read_active` first it exits 0.
+- T5: `ENV=qa sh tests/run_scenarios.sh report_read report_audit` prints the
+  accounts-file error, `FAIL report_read`, and `skip scenario_report_audit`, and exits 1;
+  under `ENV=dev` both pass.
+- C1: a 3-record batch with no cache file exits 1 and leaves `records.csv` unchanged, with
+  no staging file left; a batch of three records without an office, with a directory in
+  place of the cache, exits 0 and imports all three.
+- C2: with `require_flag=yes` and `require_office=no`, `4,Edsger,yes,north,` is imported
+  at the head; at the merge-base the same batch exits 1 with `office_code is required`.
+- C3: `step_fetch_record 1` prints `expected 1 row, got 0` and fails; with
+  `APP_TENANT=acme` it prints `fetched record 1`.
+- H1 and H2: the literal lines above, by `grep -n`.
+- R1: over a journal holding `003_records_pk.sh`, the head's `migrate.sh` prints
+  `rebuilt pk` and `applied 003_records_pk_and_columns.sh`. An older install with
+  `pk: id` ends with `pk: id,type`.
+- R2: the two rename lines and scores above. In a clone of `main`, a merge of
+  `gt-11-lookup` exits 0, and a merge of `feature` after it exits non-zero with
+  `migrations/f_lookup_gt11.sh` and `migrations/f_lookup_gt12.sh` unmerged. With both
+  files kept, running `f_lookup_gt11.sh` then `f_lookup_gt12.sh` leaves one `lookup:`
+  line, `lookup: select id from audit where lower(hrn) = lower(?)`.
+- R3: `face5b6`'s `f_rank_gt13.sh` has no `score is not null`, the head's has one; over
+  the thread's journal, the head's `migrate.sh` prints no `defined rank` line.
+- B2: the rename line and score above, and `git log --follow` lists `d2cb15c` then
+  `68541c4`.
+- B1: the merge-base and `target...stacked` above; a merge of `target` into a clone of
+  `stacked` exits non-zero with `tests/steps.sh` unmerged; with `target`'s side of that
+  file, both `tests/scenarios_fetch/*.sh` exit 1; at the `stacked` head both exit 0.
+- Isolation: after the checks, the five branch heads and `svc`'s status are as built.
+
+### Verify
+
+```sh
+A="git -C $F/svc"
+$A merge-base main feature                  # 08081290881379bc6b7cfcd97a951b602513cf07
+$A merge-base target stacked                # 68541c48ed0e097c448180e9405c6a5b57b2a788
+$A log --format=%h 0808129..main            # a1dfff3 732d4ba
+$A diff --shortstat main...feature          # 32 files changed, 266 insertions(+), 19 deletions(-)
+$A diff --shortstat target...stacked        # 3 files changed, 30 insertions(+), 2 deletions(-)
+$A rev-parse --abbrev-ref HEAD              # feature
+$A status --porcelain                       # no output
+ls $F/exports                               # GT-0.md to GT-10.md, GT-12.md to GT-14.md, PR-1.md, PR-2.md
+sh tests/fixture/verify.sh $F/manifest.json ground-truth    # verify ground-truth: ok
 ```

@@ -29,6 +29,13 @@ jobs:
           printf '[merge]\n\tff = only\n' > "$RUNNER_TEMP/hostile.gitconfig"
           m=$(sh tests/fixture/build.sh patterns)
           GIT_CONFIG_GLOBAL="$RUNNER_TEMP/hostile.gitconfig" sh tests/fixture/verify.sh "$m" patterns
+      - name: build and verify fixture ground-truth
+        run: m=$(sh tests/fixture/build.sh ground-truth) && sh tests/fixture/verify.sh "$m" ground-truth
+      - name: verify fixture ground-truth under a hostile global git config
+        run: |
+          printf '[merge]\n\tff = only\n' > "$RUNNER_TEMP/hostile.gitconfig"
+          m=$(sh tests/fixture/build.sh ground-truth)
+          GIT_CONFIG_GLOBAL="$RUNNER_TEMP/hostile.gitconfig" sh tests/fixture/verify.sh "$m" ground-truth
 
   scripts:
     name: scripts (${{ matrix.os }})
