@@ -446,3 +446,44 @@ are unchanged. Nothing else forced.
     `--invert-paths`); for a single commit, copying the files may be simpler than importing it (inference).
 12. **`.gitignore`, `.github/dependabot.yml`, `LICENSE` choice** are not in the decided root list; handled in section 1 (merge,
     keep with the github-actions entry as the useful one, bridge file as root).
+
+## 5. The rename from recode to ccx, 2026-10-04 (issue 15, release 0.2.0)
+
+Built after the source-repo map above and kept apart from it: the sections above cover
+the four source repos only. The PR holds four kinds of commit, in this order, and moves
+and string renames never share one.
+
+### 5.1 Moves (`git mv`, one commit)
+
+```
+plugins/recode/                         -> plugins/ccx/
+plugins/recode-loop/                    -> plugins/ccx-loop/
+plugins/recode-loop/skills/recode-loop/ -> plugins/ccx-loop/skills/ccx-loop/
+plugins/recode-codex/                   -> plugins/ccx-codex/
+plugins/recode/scripts/recode.mjs       -> plugins/ccx/scripts/ccx.mjs
+tests/recode/                           -> tests/ccx/
+```
+
+### 5.2 String rules (one commit, ordered, applied by a script kept outside the repository)
+
+```
+s#RECODE_#CCX_#g
+s#recode#ccx#g          (lowercase only; covers recode-loop, recode-codex, recode.mjs,
+                         .recode/, .recode.json, specs/recode, -recode-, recode:house-rules,
+                         recode@reimagine-code, and every allowed-tools rule with its Bash line)
+```
+
+Applied to every tracked file except the dated records: `docs/history/`,
+`docs/decisions.md`, this file, `docs/implementation-plan-v0.1.0.md`, `CHANGELOG.md`, and
+the "Record of runs" in `docs/acceptance.md`, which keeps its text from its heading on.
+The one edit that is not a rename: `tests/rules/rules.test.mjs` holds byte offsets that
+move by 3 for each marker, so the CRLF block test's literals changed with the strings.
+`AGENTS.md`, `NOTICE`, and the architecture and requirements docs took the same rules.
+
+### 5.3 What is put back by behavior commits, not by rules
+
+The old marker `recode:house-rules` in `rules.mjs` and `suite.mjs`; `recode-loop@reimagine-code`
+and `recode@reimagine-code` in the old-plugin lists in `suite.mjs`; `.recode.json` in the
+loop skill; the catalog's `renames` keys; and the root README's "From recode 0.1.x" section.
+Lint lists each in `OLD_NAME_LITERALS` for its file, and its check 10 rejects `recode` in
+any other shipped file.

@@ -12,7 +12,7 @@ them, and the design names what changes if a spike fails.
 
 ## Shape
 
-ccx is one repository that is two plugin catalogs: a Claude Code marketplace and a
+reimagine-code is one repository that is two plugin catalogs: a Claude Code marketplace and a
 Codex marketplace, both named `reimagine-code`. It replaces four repos: codex-lite-cc
 (the bridge), claude-codex-loop (the loop), the general half of codex-code-review, and
 repo-docs. The audit plugin (claude-codex-audit) joins in a later release.
@@ -367,7 +367,8 @@ ships.
 ## Versions, tags, and dependencies
 
 - **ccx family in lockstep.** `ccx`, `ccx-loop`, and the Codex `ccx` share one
-  version, starting at 0.1.0. This is the suite version that the changelog and the
+  version, starting at 0.1.0 under their earlier names and at 0.2.0 as `ccx` (the rename of
+  `docs/decisions.md` Part 11). This is the suite version that the changelog and the
   Claude catalog's `metadata.version` carry.
 - **repo-docs on its own line.** It continues from 0.1.1 to 0.1.2: a new home, no change
   in behavior.
@@ -454,8 +455,11 @@ ships.
   in that repo, so no import carries them. They exist only on the author's disk. They are
   copied by hand into `docs/history/claude-codex-loop/`.
 - **Old plugins.** Setup lists, with uninstall commands: on Claude Code, `codex-lite`,
-  `ccl`, and `repo-docs` from their old marketplaces; on Codex, `codex-code-review`,
-  `codex-code-review-general`, and `repo-docs` from an old marketplace. It never lists
+  `ccl`, and `repo-docs` from their old marketplaces, and `recode-loop` then `recode`
+  from this one; on Codex, `codex-code-review`, `codex-code-review-general`, and
+  `repo-docs` from an old marketplace, and `recode` from this one. The Claude catalog's
+  `renames` map moves `recode` and `recode-loop` installs to `ccx` and `ccx-loop`, so
+  setup finds the Claude ones only after a move that did not happen. It never lists
   the audit plugin, which stays separate. Running old and new together duplicates the
   bridge hook and the review skills.
 - **Audit plugin.** It calls the bridge as `codex-lite:ask` and finds it by the

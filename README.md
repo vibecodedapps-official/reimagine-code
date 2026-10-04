@@ -68,6 +68,49 @@ marketplace. In Claude Code, `/ccx:setup` lists each old plugin it finds on eith
 host, with the command that removes it. It runs none of them. Every renamed command and
 path is listed under Breaking in the [changelog](CHANGELOG.md).
 
+### From recode 0.1.x
+
+Release 0.2.0 renamed `recode` to `ccx` and `recode-loop` to `ccx-loop`, on Claude Code
+and on Codex. The marketplace and the repository keep the name `reimagine-code`.
+
+On Claude Code, the catalog tells Claude Code to move your install, so you do not
+uninstall anything. The move happens the first time you run a plugin command or start a
+session after the marketplace updates. It renames the plugins in your enabled list and
+keeps the loop's `codex` option, but it drops the install records. `claude plugin list`
+then shows neither plugin until you install them under the new names:
+
+```
+/plugin install ccx@reimagine-code
+/plugin install ccx-loop@reimagine-code
+```
+
+Run the second line only if you used the loop. Installing the loop alone also installs
+`ccx`. After that:
+
+- If you chose the output style, select it again as `ccx:Concise Plain`. The setting
+  keeps pointing at the old style name, which no longer exists.
+- If you pasted setup's allow rule into your settings, paste the new one from
+  `/ccx:setup`. It names the renamed script.
+- If you added the house rules, run `/ccx:rules` once. It reads the block the old command
+  wrote and rewrites it under the new marker, after the usual diff. `/ccx:rules
+  --remove` also takes out the old block.
+- The plugin data directory is not carried over, so the rules state starts empty. If
+  `/recode:rules` created your `CLAUDE.md`, `/ccx:rules --remove` leaves it empty
+  instead of deleting it, and a rules text you declined can raise the session notice
+  again. You can delete the old directory, `~/.claude/plugins/data/recode-reimagine-code/`.
+- In a repository with `.recode.json`, rename it to `.ccx.json`; the loop stops with
+  `blocked` until you do. A `.recode/` line in `.git/info/exclude` can be deleted.
+
+On Codex there is no rename. Add the new plugin, then remove the old one:
+
+```
+codex plugin add ccx@reimagine-code
+codex plugin remove recode@reimagine-code
+```
+
+Once the catalog dropped `recode`, `codex plugin list` no longer shows it, but your
+`config.toml` keeps its table, and `codex plugin remove` still deletes it.
+
 ## Uninstall
 
 If you added the house rules, run `/ccx:rules --remove` first. It takes the block out

@@ -22,6 +22,9 @@ codex plugin add ccx@reimagine-code
 Or run `/plugins` in Codex, find the reimagine-code marketplace, and install `ccx`.
 Then ask Codex to "run the general-code-review skill" on a change.
 
+If you had this plugin under its earlier name, remove that entry once `ccx` works:
+`codex plugin remove recode@reimagine-code`.
+
 If you installed the skills from the codex-code-review marketplace before, remove that
 copy first, so each skill name exists once:
 

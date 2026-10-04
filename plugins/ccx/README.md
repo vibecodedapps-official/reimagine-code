@@ -301,7 +301,9 @@ file only when you agree to that file.
   with `<!-- ccx:house-rules end -->`. Your text outside it is kept byte for byte,
   including line endings, a byte order mark, and whether the file ends with a newline.
   Edit the rules by moving lines below the end marker: a block edited by hand is reported
-  and left as it is.
+  and left as it is. A block written under the plugin's earlier name is read too: the
+  session notice names it, `/ccx:rules` rewrites it under this marker, and `--remove`
+  takes it out.
 - **Backups.** Before a change to an existing file, it is copied to
   `<file>.ccx-backup-<YYYYMMDDHHMMSS>`, the time in UTC. If the file changed after the diff was shown,
   nothing is written and the command asks you to run it again.
