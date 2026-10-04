@@ -458,3 +458,87 @@ Fixture changes after the run, both in exports, with commit ids unchanged: `GT-2
 the importer's behavior as above, and the journal in `PR-1`'s thread is in the order
 `migrate.sh` writes. Pass two had noted the old order, which weakened C38's inference
 but not its finding. A run on the current fixture may differ on S1's decoy and R3.
+
+## Run with the test keys (2026-10-04)
+
+The second run found 15 of the 20 cases, all in pass one. It missed S4, which the first
+run found, and the same four as before. It counted no decoy. Two runs are two samples,
+not a rate, and the fixture changed between them, so this run checks that the reverted
+test runs work in a full audit and lose nothing; it does not measure a gain.
+
+It ran the same command and settings as the run above, with `manifest-revert.json` in
+place of `manifest.json`, from the `svc` checkout of a fresh
+`sh tests/fixture/build.sh ground-truth` build from `ab62625` (the same feature and
+stacked heads). The snapshot held only `.claude-plugin`, `agents`, `commands`, and
+`skills` from `ab62625` (#22), archived outside the repo; the stream's init line named it
+as the only `cca` plugin. `plugin_version` still reads `0.6.0`, so the snapshot commit is
+what tells the two runs apart. Codex ran stage 6.
+
+Run `2026-10-04-1205-svc-pr-1`, started 16:04:56Z, stage 8 ended 17:15:13Z, ended
+`reported`, verdict `not ready`, 45 items (4 high, 18 medium, 18 low, 4 note, 5
+contested, 1 dismissed), every stage complete but 2 and 3 (not applicable). The session
+reported a cost of $59.34 (`total_cost_usd`), against $57.66 for the first run. Agent
+tokens in `usage.md` sum to 2,947,778 over 21 launches, against 2,768,909 over 20; one
+launch went over the agent cap, was stopped before it wrote anything, and was requeued.
+Stage 1 took about 8 minutes, against 6.
+
+| Case | First run: final item | This run: final item |
+|---|---|---|
+| S1 | C3, medium | C2, counts at high (contested, high and medium) |
+| S2 | C1, high | C1, high, `verified fact` |
+| S3 | C5, medium; misses that `study.json` is invalid JSON | C6, medium; its recommended change removes `study.json`'s trailing comma |
+| S4 | C9, low | none |
+| S5 | C6, medium | C7, medium |
+| T1 | C11, medium, names `a1dfff3`; C12 for the tests | C16, medium, names `a1dfff3`; C17 for the tests |
+| T2 | C18, medium; C19, low | C20, medium; C24, low |
+| T3 | C29, low | C32, low |
+| T4 | C28, low | C28, counts at medium (contested, medium and low) |
+| T5 | C27, counts at medium (contested); C31, low | C29, counts at medium (contested, medium and low); C35, low |
+| C1 | C14, high; the silent-off half only | C13, high; the silent-off half only |
+| C2 | none | none |
+| C3 | C26, medium | C27, counts at high (contested, high and medium) |
+| H1 | none | none |
+| H2 | C34, note | C33, low, `convention` |
+| R1 | none | none |
+| R2 | C39, medium | C37, medium |
+| R3 | C38, medium, `unverified assumption`, live check | C36, medium, `unverified assumption`, live check |
+| B2 | none | none |
+| B1 | C32, medium | C31, counts at medium (contested, medium and low); C30, medium |
+
+What the run said where it missed: for S4, `records-OT5` compares `upsert_site` with
+`upsert_person` and `upsert_org`, notes that only the site update writes the incoming
+`source_id`, and calls that no defect under the sibling rule; `records-F4` (C9, low)
+calls the two identical branches a dead check that changes no behavior. For C1's other
+half, H1, R1, and B2, `bulk-rules-OK1`, `harness-OK6`, `migrations-OK4`, and
+`migrations-OK5` say what the first run's matching OK entries said. C2: C14 and C19 cover
+the settings change, but no item says the `office_code` rule now follows
+`require_office`.
+
+Decoys: no item says `K3` should still be rejected; `import-api-OK4` calls importing it
+GT-2's behavior. That follows the `GT-2` export fixed after the first run, so it is not a
+result of the test keys. C4 (low) is a different point: an unlisted target or an
+unreadable targets file now imports the record. The masked password
+(`tests-hygiene-OK8`), `health`, and `scenario_report_audit` were not counted. The claims
+check marked 5 of the 14 claims false and 1 contested.
+
+The reverted test runs:
+
+- Stage 1 wrote `revert/svc.md` with the verdicts `tests/fixture/expected.md` gives, and
+  removed its copies: `revert-work/` was empty after the run. The report's Coverage
+  lists the verdict counts, the three test-code paths kept but not run, and that the
+  commands ran with the user's environment.
+- Pass one cited the result file in 5 of its 9 scopes, pass two in 7 of 9, and the late
+  adversary in its own file. C15 (medium, `verified fact`), that no test shows the bulk
+  import follows the settings, cites the run: `test_imports_the_batch` passes in both
+  copies (`revert/svc.md:149` and `:240`). The first run's C16 made the same point by
+  reading.
+- `tests-hygiene-OK6` shows the limit of reverting by path: every SQL file goes back to
+  the merge-base, so `tests/test_sql_contract.sh` fails in the reverted copy, and the run
+  cannot show T2's point that the trigger change has no check. C20 found T2 by reading.
+- The read-only check passed after every stage. Stages 4 and 5 each accepted one ignored
+  file, `.test-output/results.txt`, written by an agent's `sh run-tests.sh` in the `svc`
+  checkout, as in the first run.
+
+One more departure, not from the test keys: an adversary noted that the brief says
+`README.md` exists at each head, while the `svc-2` head has none; the first run's brief
+says the same, unnoticed. The run recorded it in `brief_errata`.
