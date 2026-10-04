@@ -16,7 +16,7 @@ name a plugin are rerun under the new names and recorded here.
    Command: `/ccx:setup`, then `/ccx:ask` with a short question, then
    `/ccx:implement` from a test skill that asks for a one-line edit. Expected: setup
    reports the Codex version and login, and an allow rule that names the installed
-   `ccx` path (before 0.1.2, also an Edit rule for the `ccx-reimagine-code` data
+   `ccx` path (before 0.1.2, also an Edit rule for the plugin's data
    directory); ask prints Codex's answer; implement edits the scratch repository and its
    footer shows the change. Covers R9 and R15. Rerun when a bridge command, the setup
    report, or the data directory changes. Run 2026-10-03, setup rerun 2026-10-04; see the

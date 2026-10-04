@@ -1,4 +1,4 @@
-# Requirements: ccx v0.1.0
+# Requirements: v0.1.0
 
 Drafted 2026-10-03 alongside [architecture.md](architecture.md) and the
 [implementation plan](implementation-plan-v0.1.0.md). Where this document and the
@@ -92,7 +92,7 @@ requirement below changes it. The audit plugin is not part of v0.1.0.
 
 15. **Diagnostics.** `/ccx:setup` keeps the codex-lite 0.9.0 report: Codex version,
     login, Windows sandbox mode, the write probe, and the allow rules for the new data
-    directory. It writes no file. Check: test; acceptance. Since ccx 0.1.2
+    directory. It writes no file. Check: test; acceptance. Since 0.1.2
     (2026-10-04), setup prints only the Bash rule; `docs/decisions.md` Part 8 says why.
 16. **Old plugins.** Setup lists any installed `codex-lite`, `ccl`, or `repo-docs` from
     their old Claude marketplaces, and any enabled `codex-code-review-general`,
@@ -169,7 +169,7 @@ requirement below changes it. The audit plugin is not part of v0.1.0.
 34. **Content.** The core text is the ask-first line plus the Working, Code, Tests, Done,
     and Ask first sections of forge-ops `claude/CLAUDE.md` at its `main` when M3 starts,
     byte for byte, with that commit recorded. Check: review at import; afterwards this
-    repository is the source. ccx 0.1.3 synced it to forge-ops 9faabda on 2026-10-04;
+    repository is the source. Release 0.1.3 synced it to forge-ops 9faabda on 2026-10-04;
     `docs/decisions.md` Part 9.
 35. **Options.** `core` is on by default. `windows` is offered only when the command runs
     on Windows and is on by default there. `writing` is off by default. On a rerun the

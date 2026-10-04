@@ -75,7 +75,8 @@ and on Codex. The marketplace and the repository keep the name `reimagine-code`.
 
 On Claude Code, the catalog tells Claude Code to move your install, so you do not
 uninstall anything. The move happens the first time you run a plugin command or start a
-session after the marketplace updates. It renames the plugins in your enabled list and
+session after the marketplace updates, which you can start with
+`/plugin marketplace update reimagine-code`. It renames the plugins in your enabled list and
 keeps the loop's `codex` option, but it drops the install records. `claude plugin list`
 then shows neither plugin until you install them under the new names:
 
@@ -101,9 +102,11 @@ Run the second line only if you used the loop. Installing the loop alone also in
 - In a repository with `.recode.json`, rename it to `.ccx.json`; the loop stops with
   `blocked` until you do. A `.recode/` line in `.git/info/exclude` can be deleted.
 
-On Codex there is no rename. Add the new plugin, then remove the old one:
+On Codex there is no rename. Update the marketplace, add the new plugin, then remove the
+old one:
 
 ```
+codex plugin marketplace upgrade reimagine-code
 codex plugin add ccx@reimagine-code
 codex plugin remove recode@reimagine-code
 ```

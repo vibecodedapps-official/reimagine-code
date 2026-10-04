@@ -1,4 +1,4 @@
-# Architecture: ccx v0.1.0
+# Architecture: v0.1.0
 
 Drafted 2026-10-03 from the pre-planning handoff of 2026-10-02, an inventory of the four
 source repos on 2026-10-03, and a read of the Claude Code docs and the Codex 0.159.2
@@ -448,7 +448,7 @@ ships.
 - **Pinned sources.** codex-lite-cc `2b2454d`, claude-codex-loop `16b8ee7`,
   codex-code-review `f5c7687`, repo-docs `83b14a2`. The house rules, style, and chat
   block come from forge-ops `main` when M3 starts, recorded in the PR; it was `948ce5f`
-  on 2026-10-03, which added two rules after the 2026-10-02 handoff. ccx 0.1.3 synced
+  on 2026-10-03, which added two rules after the 2026-10-02 handoff. Release 0.1.3 synced
   the core rules to `9faabda` on 2026-10-04 (`docs/decisions.md` Part 9).
 - **Untracked design docs.** claude-codex-loop's `SPEC.md`, `docs/architecture.md`,
   `docs/build-plan-v0.1.0.md`, and `docs/spec-amendments-draft.md` are excluded from git
