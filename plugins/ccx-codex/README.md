@@ -1,9 +1,9 @@
-# recode for Codex
+# ccx for Codex
 
 General code review skills for Codex, adapted from the code-review skills in the
 [openai/codex](https://github.com/openai/codex/tree/main/.codex/skills) repository for
 use on any repository. It is the Codex part of the reimagine-code suite. The Claude Code
-plugin named `recode` is a different plugin, the Codex bridge.
+plugin named `ccx` is a different plugin, the Codex bridge.
 
 The plugin contains five skills. `general-code-review` is the orchestrator: it runs one
 subagent per companion skill and returns every finding. The companions are
@@ -16,10 +16,10 @@ In Codex:
 
 ```sh
 codex plugin marketplace add vibecodedapps-official/reimagine-code
-codex plugin add recode@reimagine-code
+codex plugin add ccx@reimagine-code
 ```
 
-Or run `/plugins` in Codex, find the reimagine-code marketplace, and install `recode`.
+Or run `/plugins` in Codex, find the reimagine-code marketplace, and install `ccx`.
 Then ask Codex to "run the general-code-review skill" on a change.
 
 If you installed the skills from the codex-code-review marketplace before, remove that

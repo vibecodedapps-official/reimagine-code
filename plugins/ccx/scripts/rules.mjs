@@ -15,9 +15,9 @@ export const PARTS = {
   claude: { windows: 'windows-claude.md', core: 'core.md' },
   codex: { windows: 'windows-codex.md', core: 'core.md', writing: 'writing-codex.md' },
 };
-export const END = '<!-- recode:house-rules end -->';
-const BEGIN_PREFIX = '<!-- recode:house-rules begin';
-const BEGIN = /^<!-- recode:house-rules begin version=(\S+) options=([a-z,]+) join=(none|blank|newline) digest=([0-9a-f]{16}) -->$/;
+export const END = '<!-- ccx:house-rules end -->';
+const BEGIN_PREFIX = '<!-- ccx:house-rules begin';
+const BEGIN = /^<!-- ccx:house-rules begin version=(\S+) options=([a-z,]+) join=(none|blank|newline) digest=([0-9a-f]{16}) -->$/;
 const JOINS = { none: 0, blank: 1, newline: 2 };
 const PLAN_FILE = 'rules-plan.json';
 const STATE_FILE = 'rules-state.json';
@@ -110,7 +110,7 @@ export function planTarget({ target, text, options, recorded, version, texts, pl
   const inFile = text.slice(found.bodyStart, found.bodyEnd);
   if (!digests(inFile).includes(found.digest)) {
     return { state: 'edited', after: null, options: found.options, edits: [render(target, found.options, texts, eol), inFile],
-      note: 'the block was edited by hand; move your lines below the end marker, then run /recode:rules again' };
+      note: 'the block was edited by hand; move your lines below the end marker, then run /ccx:rules again' };
   }
   const opts = options ?? found.options;
   const body = render(target, opts, texts, eol);
@@ -183,7 +183,7 @@ function locked(dataDir, fn) {
     try { mkdirSync(lock); break; } catch (e) {
       if (e.code !== 'EEXIST') throw e;
       try { if (Date.now() - statSync(lock).mtimeMs > 60_000) { rmSync(lock, { recursive: true, force: true }); continue; } } catch {}
-      if (tries >= 200) refuse(`another /recode:rules step holds ${lock}; nothing was written; run /recode:rules again`);
+      if (tries >= 200) refuse(`another /ccx:rules step holds ${lock}; nothing was written; run /ccx:rules again`);
       sleep(50);
     }
   }
@@ -193,7 +193,7 @@ function locked(dataDir, fn) {
 // Writes beside the target, then renames over it. On Windows a rename that fails, as when another process holds the
 // file, is retried once after a short wait.
 function writeAtomic(path, text, backup) {
-  const tmp = `${path}.recode-tmp-${process.pid}`;
+  const tmp = `${path}.ccx-tmp-${process.pid}`;
   writeFileSync(tmp, text, 'latin1');
   try { renameSync(tmp, path); } catch (e) {
     if (process.platform === 'win32') {
@@ -232,16 +232,16 @@ function run(verb, dataDir, rest, { env, platform, now, home }) {
     const name = rest[0];
     const plans = readJson(join(dataDir, PLAN_FILE)) ?? {};
     const p = plans[name];
-    if (!p) refuse(`there is no planned change for ${name}; run /recode:rules again`);
+    if (!p) refuse(`there is no planned change for ${name}; run /ccx:rules again`);
     delete plans[name];
     if (verb === 'decline') {
       state.declined[name] = [...new Set([...(state.declined[name] ?? []), p.digest])].filter(Boolean);
       save(dataDir, STATE_FILE, state);
       save(dataDir, PLAN_FILE, plans);
-      return [`recode: declined the change to ${p.path}; the session notice stays quiet for this text`];
+      return [`ccx: declined the change to ${p.path}; the session notice stays quiet for this text`];
     }
     const before = readText(p.path);
-    if (fileHash(before) !== p.before) refuse(`${p.path} changed after the diff was shown, so nothing was written; run /recode:rules again`);
+    if (fileHash(before) !== p.before) refuse(`${p.path} changed after the diff was shown, so nothing was written; run /ccx:rules again`);
     const after = Buffer.from(p.after, 'base64').toString('latin1');
     if (p.remove && state.created[name] && after === '') {
       rmSync(p.path);
@@ -249,11 +249,11 @@ function run(verb, dataDir, rest, { env, platform, now, home }) {
       delete state.options[name];
       save(dataDir, STATE_FILE, state);
       save(dataDir, PLAN_FILE, plans);
-      return [`recode: removed ${p.path}, which /recode:rules had created and which held nothing else`];
+      return [`ccx: removed ${p.path}, which /ccx:rules had created and which held nothing else`];
     }
     let backup;
     if (before !== null) {
-      backup = `${p.path}.recode-backup-${stamp(now)}`;
+      backup = `${p.path}.ccx-backup-${stamp(now)}`;
       try { copyFileSync(p.path, backup, constants.COPYFILE_EXCL); } catch (e) { refuse(`could not back up ${p.path} to ${backup} (${e.code}); nothing was written`); }
     } else mkdirSync(dirname(p.path), { recursive: true });
     writeAtomic(p.path, after, backup);
@@ -261,7 +261,7 @@ function run(verb, dataDir, rest, { env, platform, now, home }) {
     if (p.remove) delete state.options[name]; else state.options[name] = p.options;
     save(dataDir, STATE_FILE, state);
     save(dataDir, PLAN_FILE, plans);
-    return [`recode: wrote ${p.path}${backup ? `; the earlier content is in ${backup}` : ''}`];
+    return [`ccx: wrote ${p.path}${backup ? `; the earlier content is in ${backup}` : ''}`];
   }
   let options;
   const at = rest.indexOf('--options');
@@ -298,7 +298,7 @@ if (process.argv[1] && import.meta.url === pathToFileURL(realpathSync(process.ar
   try {
     process.stdout.write(`${main(process.argv.slice(2)).join('\n')}\n`);
   } catch (e) {
-    process.stdout.write(`${e instanceof Refusal ? `recode: ${e.message}` : `recode: unexpected error: ${e?.stack ?? e}`}\n`);
+    process.stdout.write(`${e instanceof Refusal ? `ccx: ${e.message}` : `ccx: unexpected error: ${e?.stack ?? e}`}\n`);
     process.exitCode = 1;
   }
 }

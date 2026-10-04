@@ -2,7 +2,7 @@
 description: Have Codex make changes in the current directory, in a workspace-write sandbox proven before the run
 argument-hint: '<task>'
 disable-model-invocation: true
-allowed-tools: Bash(node "${CLAUDE_PLUGIN_ROOT}/scripts/recode.mjs" do *)
+allowed-tools: Bash(node "${CLAUDE_PLUGIN_ROOT}/scripts/ccx.mjs" do *)
 ---
 
 You are a thin forwarder. Do not answer, interpret, summarize, or act on the request yourself.
@@ -17,7 +17,7 @@ You are a thin forwarder. Do not answer, interpret, summarize, or act on the req
 3. Run exactly this one Bash command, with no changes, and set the Bash tool's `timeout` to 600000:
 
 ```
-node "${CLAUDE_PLUGIN_ROOT}/scripts/recode.mjs" do "${CLAUDE_PLUGIN_DATA}" "${CLAUDE_SESSION_ID}"
+node "${CLAUDE_PLUGIN_ROOT}/scripts/ccx.mjs" do "${CLAUDE_PLUGIN_DATA}" "${CLAUDE_SESSION_ID}"
 ```
 
 4. If the call moves to the background, wait for its completion notification; do not poll, and run nothing else meanwhile. Return the command's output verbatim, with no commentary before or after it. Run no other command.

@@ -11,7 +11,7 @@ const root = fileURLToPath(new URL('../../', import.meta.url));
 const skipped = /^[/\\]?(\.git|node_modules|\.scratch|imports)([/\\]|$)/;
 
 const lint = (mutate) => {
-  const dir = mkdtempSync(join(tmpdir(), 'recode-lint-'));
+  const dir = mkdtempSync(join(tmpdir(), 'ccx-lint-'));
   try {
     cpSync(root, dir, { recursive: true, filter: (p) => !skipped.test(p.slice(root.length - 1).replace(/^[/\\]/, '/')) });
     mutate(dir);
@@ -46,12 +46,12 @@ test('lint passes on an unmodified copy', () => {
 });
 
 test('lint rejects a runtime module no budget lists', () => fails(
-  (d) => writeFileSync(join(d, 'plugins/recode/scripts/extra.mjs'), 'export {};\n'),
-  'runtime modules no plugin budget lists: plugins/recode/scripts/extra.mjs'));
+  (d) => writeFileSync(join(d, 'plugins/ccx/scripts/extra.mjs'), 'export {};\n'),
+  'runtime modules no plugin budget lists: plugins/ccx/scripts/extra.mjs'));
 
 test('lint rejects bridge scripts over their 700-line budget', () => fails(
-  (d) => appendFileSync(join(d, 'plugins/recode/scripts/codex.mjs'), '\n'.repeat(700)),
-  'plugins/recode: codex.mjs + recode.mjs total ', ' lines, budget is 700'));
+  (d) => appendFileSync(join(d, 'plugins/ccx/scripts/codex.mjs'), '\n'.repeat(700)),
+  'plugins/ccx: codex.mjs + ccx.mjs total ', ' lines, budget is 700'));
 
 test('lint rejects a plugin directory with no row in its table', () => fails(
   (d) => { mkdirSync(join(d, 'plugins/foo')); writeFileSync(join(d, 'plugins/foo/x.md'), 'x\n'); },
@@ -70,114 +70,114 @@ test('lint rejects a catalog metadata.version other than the suite version', () 
   '.claude-plugin/marketplace.json: metadata.version 9.9.9 differs from the suite version'));
 
 test('lint rejects a catalog source that does not exist, and the plugin it no longer lists', () => fails(
-  (d) => editJson(d, '.claude-plugin/marketplace.json', (j) => { j.plugins.find((e) => e.name === 'recode').source = './plugins/nope'; }),
-  '.claude-plugin/marketplace.json: recode: source ./plugins/nope does not exist',
-  '.claude-plugin/marketplace.json: no entry for plugins/recode'));
+  (d) => editJson(d, '.claude-plugin/marketplace.json', (j) => { j.plugins.find((e) => e.name === 'ccx').source = './plugins/nope'; }),
+  '.claude-plugin/marketplace.json: ccx: source ./plugins/nope does not exist',
+  '.claude-plugin/marketplace.json: no entry for plugins/ccx'));
 
 test('lint rejects a catalog entry whose version differs from its manifest', () => fails(
-  (d) => editJson(d, '.claude-plugin/marketplace.json', (j) => { j.plugins.find((e) => e.name === 'recode').version = '9.9.9'; }),
-  '.claude-plugin/marketplace.json: entry recode 9.9.9 differs from plugins/recode manifest recode '));
+  (d) => editJson(d, '.claude-plugin/marketplace.json', (j) => { j.plugins.find((e) => e.name === 'ccx').version = '9.9.9'; }),
+  '.claude-plugin/marketplace.json: entry ccx 9.9.9 differs from plugins/ccx manifest ccx '));
 
 test('lint rejects a suite plugin off the suite version', () => fails(
   (d) => {
-    editJson(d, 'plugins/recode/.claude-plugin/plugin.json', (j) => { j.version = '9.9.9'; });
-    editJson(d, '.claude-plugin/marketplace.json', (j) => { j.plugins.find((e) => e.name === 'recode').version = '9.9.9'; });
+    editJson(d, 'plugins/ccx/.claude-plugin/plugin.json', (j) => { j.version = '9.9.9'; });
+    editJson(d, '.claude-plugin/marketplace.json', (j) => { j.plugins.find((e) => e.name === 'ccx').version = '9.9.9'; });
   },
-  'plugins/recode: version 9.9.9 differs from the suite version'));
+  'plugins/ccx: version 9.9.9 differs from the suite version'));
 
 test('lint rejects a root README without a plugin install line', () => fails(
-  (d) => dropLine(d, 'README.md', '/plugin install recode@reimagine-code'),
-  'README.md install block lacks the line: /plugin install recode@reimagine-code'));
+  (d) => dropLine(d, 'README.md', '/plugin install ccx@reimagine-code'),
+  'README.md install block lacks the line: /plugin install ccx@reimagine-code'));
 
 test('lint rejects a non-ASCII byte in a shipped file', () => fails(
-  (d) => writeFileSync(join(d, 'plugins/recode/x.md'), 'plain\ncaf\u00e9\n'),
-  'plugins/recode/x.md:2: non-ASCII byte'));
+  (d) => writeFileSync(join(d, 'plugins/ccx/x.md'), 'plain\ncaf\u00e9\n'),
+  'plugins/ccx/x.md:2: non-ASCII byte'));
 
 test('lint rejects codex-lite in any case in a shipped file', () => fails(
-  (d) => writeFileSync(join(d, 'plugins/recode/x.md'), 'See Codex_Lite.\n'),
-  'plugins/recode/x.md:1: old name /codex[-_]lite/'));
+  (d) => writeFileSync(join(d, 'plugins/ccx/x.md'), 'See Codex_Lite.\n'),
+  'plugins/ccx/x.md:1: old name /codex[-_]lite/'));
 
 test('lint rejects the word ccl in a shipped file', () => fails(
-  (d) => writeFileSync(join(d, 'plugins/recode/x.md'), 'ok\nLike CCL did.\n'),
-  'plugins/recode/x.md:2: old name /\\bccl\\b/'));
+  (d) => writeFileSync(join(d, 'plugins/ccx/x.md'), 'ok\nLike CCL did.\n'),
+  'plugins/ccx/x.md:2: old name /\\bccl\\b/'));
 
 test('lint rejects the old loop marketplace name in a shipped file', () => fails(
-  (d) => writeFileSync(join(d, 'plugins/recode/x.md'), 'vibecodedapps-claude-codex-loop\n'),
-  'plugins/recode/x.md:1: old name /vibecodedapps-claude-codex-loop/'));
+  (d) => writeFileSync(join(d, 'plugins/ccx/x.md'), 'vibecodedapps-claude-codex-loop\n'),
+  'plugins/ccx/x.md:1: old name /vibecodedapps-claude-codex-loop/'));
 
 test('lint rejects a plugin directory with no LICENSE', () => fails(
-  (d) => rmSync(join(d, 'plugins/recode/LICENSE')),
-  'plugins/recode/LICENSE: missing or not the Apache-2.0 license'));
+  (d) => rmSync(join(d, 'plugins/ccx/LICENSE')),
+  'plugins/ccx/LICENSE: missing or not the Apache-2.0 license'));
 
 test('lint rejects a .gitattributes that drops an LF rule', () => fails(
   (d) => dropLine(d, '.gitattributes', '*.sh text eol=lf'),
   '.gitattributes lacks the line: *.sh text eol=lf'));
 
 test('lint rejects rules.mjs over its 400-line budget', () => fails(
-  (d) => appendFileSync(join(d, 'plugins/recode/scripts/rules.mjs'), '\n'.repeat(400)),
-  'plugins/recode: rules.mjs total ', ' lines, budget is 400'));
+  (d) => appendFileSync(join(d, 'plugins/ccx/scripts/rules.mjs'), '\n'.repeat(400)),
+  'plugins/ccx: rules.mjs total ', ' lines, budget is 400'));
 
 test('lint rejects a rules command the model can invoke', () => fails(
-  (d) => dropLine(d, 'plugins/recode/commands/rules.md', 'disable-model-invocation: true'),
-  'plugins/recode/commands/rules.md: disable-model-invocation must be set'));
+  (d) => dropLine(d, 'plugins/ccx/commands/rules.md', 'disable-model-invocation: true'),
+  'plugins/ccx/commands/rules.md: disable-model-invocation must be set'));
 
 test('lint rejects hooks without the SessionStart notice', () => fails(
-  (d) => editJson(d, 'plugins/recode/hooks/hooks.json', (j) => { delete j.hooks.SessionStart; }),
-  'plugins/recode/hooks/hooks.json must declare exactly these hooks'));
+  (d) => editJson(d, 'plugins/ccx/hooks/hooks.json', (j) => { delete j.hooks.SessionStart; }),
+  'plugins/ccx/hooks/hooks.json must declare exactly these hooks'));
 
 test('lint rejects repo-docs hooks that skip the PowerShell tool', () => fails(
   (d) => editJson(d, 'plugins/repo-docs/hooks/hooks.json', (j) => { j.hooks.PreToolUse.pop(); }),
   'plugins/repo-docs/hooks/hooks.json must declare exactly these hooks'));
 
 test('lint rejects missing chat instructions', () => fails(
-  (d) => rmSync(join(d, 'plugins/recode/chat/instructions.md')),
-  'plugins/recode/chat/instructions.md: missing'));
+  (d) => rmSync(join(d, 'plugins/ccx/chat/instructions.md')),
+  'plugins/ccx/chat/instructions.md: missing'));
 
 test('lint rejects chat instructions with a second fenced block', () => fails(
-  (d) => appendFileSync(join(d, 'plugins/recode/chat/instructions.md'), '\n```\nmore\n```\n'),
-  'plugins/recode/chat/instructions.md: must hold exactly one fenced block, found 4 fence lines'));
+  (d) => appendFileSync(join(d, 'plugins/ccx/chat/instructions.md'), '\n```\nmore\n```\n'),
+  'plugins/ccx/chat/instructions.md: must hold exactly one fenced block, found 4 fence lines'));
 
 test('lint rejects a chat block over 5,000 characters', () => fails(
   (d) => {
-    const p = join(d, 'plugins/recode/chat/instructions.md');
+    const p = join(d, 'plugins/ccx/chat/instructions.md');
     const s = readFileSync(p, 'utf8');
     const close = s.lastIndexOf('\n```');
     writeFileSync(p, `${s.slice(0, close)}\n${'x'.repeat(2000)}${s.slice(close)}`);
   },
-  'plugins/recode/chat/instructions.md: the block is ', ", over ChatGPT's 5,000"));
+  'plugins/ccx/chat/instructions.md: the block is ', ", over ChatGPT's 5,000"));
 
 test('lint rejects a loop dependency range with a caret', () => fails(
-  (d) => editJson(d, 'plugins/recode-loop/.claude-plugin/plugin.json', (j) => { j.dependencies = [{ name: 'recode', version: '^0.1.0' }]; }),
-  'plugins/recode-loop/.claude-plugin/plugin.json: dependencies must hold', 'found "^0.1.0"'));
+  (d) => editJson(d, 'plugins/ccx-loop/.claude-plugin/plugin.json', (j) => { j.dependencies = [{ name: 'ccx', version: '^0.1.0' }]; }),
+  'plugins/ccx-loop/.claude-plugin/plugin.json: dependencies must hold', 'found "^0.1.0"'));
 
 test('lint rejects a loop dependency floor above the suite version', () => fails(
-  (d) => editJson(d, 'plugins/recode-loop/.claude-plugin/plugin.json', (j) => { j.dependencies = [{ name: 'recode', version: '>=0.2.0 <1.0.0' }]; }),
+  (d) => editJson(d, 'plugins/ccx-loop/.claude-plugin/plugin.json', (j) => { j.dependencies = [{ name: 'ccx', version: '>=0.2.0 <1.0.0' }]; }),
   'with the floor at or below 0.1.3; found ">=0.2.0 <1.0.0"'));
 
-test('lint rejects a loop with no recode dependency', () => fails(
-  (d) => editJson(d, 'plugins/recode-loop/.claude-plugin/plugin.json', (j) => { delete j.dependencies; }),
-  'plugins/recode-loop/.claude-plugin/plugin.json: dependencies must hold', 'found null'));
+test('lint rejects a loop with no ccx dependency', () => fails(
+  (d) => editJson(d, 'plugins/ccx-loop/.claude-plugin/plugin.json', (j) => { delete j.dependencies; }),
+  'plugins/ccx-loop/.claude-plugin/plugin.json: dependencies must hold', 'found null'));
 
 test('lint rejects a bridge version gate in the loop', () => fails(
-  (d) => appendFileSync(join(d, 'plugins/recode-loop/skills/recode-loop/tiers.md'), 'Codex needs recode 0.9.0 or later.\n'),
-  'plugins/recode-loop/skills/recode-loop/tiers.md:', 'bridge version gate /\\b0\\.[89]\\.0\\b/'));
+  (d) => appendFileSync(join(d, 'plugins/ccx-loop/skills/ccx-loop/tiers.md'), 'Codex needs ccx 0.9.0 or later.\n'),
+  'plugins/ccx-loop/skills/ccx-loop/tiers.md:', 'bridge version gate /\\b0\\.[89]\\.0\\b/'));
 
-test('lint rejects a loop lookup of the installed recode', () => fails(
-  (d) => appendFileSync(join(d, 'plugins/recode-loop/skills/recode-loop/SKILL.md'), 'Take the entry whose id starts with recode@.\n'),
-  'plugins/recode-loop/skills/recode-loop/SKILL.md:', 'bridge version gate /\\brecode@/'));
+test('lint rejects a loop lookup of the installed ccx', () => fails(
+  (d) => appendFileSync(join(d, 'plugins/ccx-loop/skills/ccx-loop/SKILL.md'), 'Take the entry whose id starts with ccx@.\n'),
+  'plugins/ccx-loop/skills/ccx-loop/SKILL.md:', 'bridge version gate /\\bccx@/'));
 
 test('lint allows the old config name only in the loop skill that checks for it', () => fails(
-  (d) => appendFileSync(join(d, 'plugins/recode-loop/README.md'), 'Rename .ccl.json to .recode.json.\n'),
-  'plugins/recode-loop/README.md:', 'old name /\\bccl\\b/'));
+  (d) => appendFileSync(join(d, 'plugins/ccx-loop/README.md'), 'Rename .ccl.json to .ccx.json.\n'),
+  'plugins/ccx-loop/README.md:', 'old name /\\bccl\\b/'));
 
 test('lint rejects a loop command that does not read the codex option', () => fails(
   (d) => {
-    const p = join(d, 'plugins/recode-loop/commands/plan.md');
+    const p = join(d, 'plugins/ccx-loop/commands/plan.md');
     const s = readFileSync(p, 'utf8');
     assert.ok(s.includes('`${user_config.codex}`'), 'plan.md lacks the option');
     writeFileSync(p, s.replace('`${user_config.codex}`', '`true`'));
   },
-  'plugins/recode-loop/commands/plan.md: must read the codex option as `${user_config.codex}`'));
+  'plugins/ccx-loop/commands/plan.md: must read the codex option as `${user_config.codex}`'));
 
 test('lint rejects a codex catalog with another name', () => fails(
   (d) => editJson(d, '.agents/plugins/marketplace.json', (j) => { j.name = 'codex-code-review'; }),
@@ -185,13 +185,13 @@ test('lint rejects a codex catalog with another name', () => fails(
 
 test('lint rejects a codex catalog entry that is not available on install', () => fails(
   (d) => editJson(d, '.agents/plugins/marketplace.json', (j) => { j.plugins[0].policy.installation = 'NOT_AVAILABLE'; }),
-  '.agents/plugins/marketplace.json: recode: policy must be installation AVAILABLE and authentication ON_INSTALL'));
+  '.agents/plugins/marketplace.json: ccx: policy must be installation AVAILABLE and authentication ON_INSTALL'));
 
 test('lint rejects a codex catalog that lists a claude-only plugin', () => fails(
   (d) => editJson(d, '.agents/plugins/marketplace.json', (j) => {
-    j.plugins.push({ name: 'recode-loop', source: { source: 'local', path: './plugins/recode-loop' }, policy: { installation: 'AVAILABLE', authentication: 'ON_INSTALL' } });
+    j.plugins.push({ name: 'ccx-loop', source: { source: 'local', path: './plugins/ccx-loop' }, policy: { installation: 'AVAILABLE', authentication: 'ON_INSTALL' } });
   }),
-  '.agents/plugins/marketplace.json: recode-loop: source ./plugins/recode-loop is not a Codex plugin in PLUGINS'));
+  '.agents/plugins/marketplace.json: ccx-loop: source ./plugins/ccx-loop is not a Codex plugin in PLUGINS'));
 
 test('lint rejects a codex catalog without repo-docs', () => fails(
   (d) => editJson(d, '.agents/plugins/marketplace.json', (j) => { j.plugins = j.plugins.filter((e) => e.name !== 'repo-docs'); }),
@@ -199,32 +199,32 @@ test('lint rejects a codex catalog without repo-docs', () => fails(
 
 test('lint rejects a codex catalog entry named apart from its manifest', () => fails(
   (d) => editJson(d, '.agents/plugins/marketplace.json', (j) => { j.plugins[0].name = 'codex-code-review-general'; }),
-  '.agents/plugins/marketplace.json: entry codex-code-review-general differs from plugins/recode-codex manifest recode'));
+  '.agents/plugins/marketplace.json: entry codex-code-review-general differs from plugins/ccx-codex manifest ccx'));
 
 test('lint rejects the codex manifest on another schema', () => fails(
-  (d) => editJson(d, 'plugins/recode-codex/plugin.json', (j) => { j.$schema = 'https://agent-plugins.org/schemas/1.1.0/plugin.schema.json'; }),
-  'plugins/recode-codex/plugin.json: $schema must be https://agent-plugins.org/schemas/1.0.0/plugin.schema.json'));
+  (d) => editJson(d, 'plugins/ccx-codex/plugin.json', (j) => { j.$schema = 'https://agent-plugins.org/schemas/1.1.0/plugin.schema.json'; }),
+  'plugins/ccx-codex/plugin.json: $schema must be https://agent-plugins.org/schemas/1.0.0/plugin.schema.json'));
 
-test('lint rejects the codex recode off the suite version', () => fails(
-  (d) => editJson(d, 'plugins/recode-codex/plugin.json', (j) => { j.version = '0.2.0'; }),
-  'plugins/recode-codex: version 0.2.0 differs from the suite version 0.1.3 in package.json'));
+test('lint rejects the codex ccx off the suite version', () => fails(
+  (d) => editJson(d, 'plugins/ccx-codex/plugin.json', (j) => { j.version = '0.2.0'; }),
+  'plugins/ccx-codex: version 0.2.0 differs from the suite version 0.1.3 in package.json'));
 
 test('lint rejects repo-docs manifests with different versions', () => fails(
   (d) => editJson(d, 'plugins/repo-docs/.codex-plugin/plugin.json', (j) => { j.version = '0.1.1'; }),
   'plugins/repo-docs/.codex-plugin/plugin.json: version 0.1.1 differs from 0.1.3 in .claude-plugin/plugin.json'));
 
 test('lint rejects the codex plugin without its NOTICE', () => fails(
-  (d) => rmSync(join(d, 'plugins/recode-codex/NOTICE')),
-  'plugins/recode-codex/NOTICE: missing, or without the upstream NOTICE text'));
+  (d) => rmSync(join(d, 'plugins/ccx-codex/NOTICE')),
+  'plugins/ccx-codex/NOTICE: missing, or without the upstream NOTICE text'));
 
 test('lint rejects a review skill without its provenance comment', () => fails(
   (d) => {
-    const p = join(d, 'plugins/recode-codex/skills/general-code-review-testing/SKILL.md');
+    const p = join(d, 'plugins/ccx-codex/skills/general-code-review-testing/SKILL.md');
     const s = readFileSync(p, 'utf8');
     assert.ok(s.includes('<!-- Modified. Adapted from openai/codex '), 'the skill lacks its comment');
     writeFileSync(p, s.split('\n').filter((l) => !l.startsWith('<!-- Modified. Adapted from openai/codex ')).join('\n'));
   },
-  'plugins/recode-codex/skills/general-code-review-testing/SKILL.md: lacks its provenance comment'));
+  'plugins/ccx-codex/skills/general-code-review-testing/SKILL.md: lacks its provenance comment'));
 
 test('lint rejects a changelog without a dated heading for the suite version', () => fails(
   (d) => {
@@ -246,17 +246,17 @@ const tagged = (d, ...tags) => {
 };
 
 test('lint passes on a tagged copy with no change since its tags', () => {
-  const r = lint((d) => tagged(d, 'recode--v0.1.3', 'recode-loop--v0.1.3', 'repo-docs--v0.1.3'));
+  const r = lint((d) => tagged(d, 'ccx--v0.1.3', 'ccx-loop--v0.1.3', 'repo-docs--v0.1.3'));
   assert.equal(r.status, 0, r.out);
 });
 
 test('lint rejects a change to a tagged plugin that keeps its version', () => fails(
-  (d) => { tagged(d, 'recode--v0.1.3'); appendFileSync(join(d, 'plugins/recode/README.md'), 'More.\n'); },
-  'plugins/recode: changed since recode--v0.1.3, so its version must be above 0.1.3; found 0.1.3'));
+  (d) => { tagged(d, 'ccx--v0.1.3'); appendFileSync(join(d, 'plugins/ccx/README.md'), 'More.\n'); },
+  'plugins/ccx: changed since ccx--v0.1.3, so its version must be above 0.1.3; found 0.1.3'));
 
-test('lint holds the codex recode to the bridge tag', () => fails(
-  (d) => { tagged(d, 'recode--v0.1.3'); appendFileSync(join(d, 'plugins/recode-codex/README.md'), 'More.\n'); },
-  'plugins/recode-codex: changed since recode--v0.1.3, so its version must be above 0.1.3; found 0.1.3'));
+test('lint holds the codex ccx to the bridge tag', () => fails(
+  (d) => { tagged(d, 'ccx--v0.1.3'); appendFileSync(join(d, 'plugins/ccx-codex/README.md'), 'More.\n'); },
+  'plugins/ccx-codex: changed since ccx--v0.1.3, so its version must be above 0.1.3; found 0.1.3'));
 
 test('lint compares a change with the highest tag by number', () => fails(
   (d) => { tagged(d, 'repo-docs--v0.1.9', 'repo-docs--v0.1.10'); appendFileSync(join(d, 'plugins/repo-docs/README.md'), 'More.\n'); },

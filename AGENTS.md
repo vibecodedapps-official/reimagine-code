@@ -1,7 +1,7 @@
 # AGENTS.md
 
 reimagine-code is one repository that publishes Claude Code and Codex plugins: the
-`recode` bridge, the `recode-loop` loop, the Codex `recode` review skills, and repo-docs.
+`ccx` bridge, the `ccx-loop` loop, the Codex `ccx` review skills, and repo-docs.
 It is mid-migration from four source repos toward v0.1.0.
 
 ## Commands

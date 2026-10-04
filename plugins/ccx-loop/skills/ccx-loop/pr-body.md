@@ -75,7 +75,7 @@ Post at Step 7.4, once per source issue, after the PR is open. Post it for `Clos
 too, so the issue records the evidence. Never post one before the plan is final.
 
 ```
-Status from the recode run <run-id>: <complete | partial | blocked>
+Status from the ccx run <run-id>: <complete | partial | blocked>
 
 PR: <the PR in this issue's repository, then each sibling PR>
 

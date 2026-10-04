@@ -1,6 +1,6 @@
 {
   "$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
-  "name": "recode",
+  "name": "ccx",
   "version": "0.1.3",
   "description": "A generalized adaptation of the openai/codex code-review skills for use on any repository.",
   "author": {

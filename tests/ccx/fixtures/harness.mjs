@@ -5,7 +5,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-export const SCRIPT = fileURLToPath(new URL('../../../plugins/recode/scripts/recode.mjs', import.meta.url));
+export const SCRIPT = fileURLToPath(new URL('../../../plugins/ccx/scripts/ccx.mjs', import.meta.url));
 export const FAKE = fileURLToPath(new URL('./fake-codex.mjs', import.meta.url));
 export const ID = '5f0c8a4e-9d1b-4c2a-8e7f-3b6d2a1c0e9f';
 // A second Claude session id, for tests that check two sessions keep separate saved threads.
@@ -30,7 +30,7 @@ export const git = (cwd, ...args) => execFileSync('git', ['-c', 'user.email=t@ex
 
 // A repository with one commit, a data directory, and an outside directory holding the probe target.
 export function scratch() {
-  const root = realpathSync(mkdtempSync(join(tmpdir(), 'recode-test-')));
+  const root = realpathSync(mkdtempSync(join(tmpdir(), 'ccx-test-')));
   const s = { root, repo: join(root, 'repo'), data: join(root, 'data'), plain: join(root, 'plain'), target: join(root, 'outside', 'probe') };
   for (const d of [s.repo, s.data, s.plain, join(root, 'outside')]) mkdirSync(d);
   writeFileSync(join(s.repo, 'tracked.txt'), 'one\n');
@@ -46,7 +46,7 @@ export function cli(s, argv, { request, input, env = {}, cwd = s.repo } = {}) {
   const t0 = Date.now();
   const r = spawnSync(process.execPath, [SCRIPT, ...argv], {
     cwd, input, encoding: 'utf8', timeout: 60_000, maxBuffer: 64 << 20,
-    env: { ...process.env, RECODE_CODEX_BIN: FAKE, RECODE_PROBE_TARGET: s.target, RECODE_TIMEOUT_MS: '',
+    env: { ...process.env, CCX_CODEX_BIN: FAKE, CCX_PROBE_TARGET: s.target, CCX_TIMEOUT_MS: '',
       FAKE_CODEX: '', FAKE_CODEX_ARGV: join(s.root, 'argv.jsonl'), FAKE_CODEX_CWD: join(s.root, 'cwd'), FAKE_CODEX_STDIN: join(s.root, 'stdin'), FAKE_CODEX_PIDS: join(s.root, 'pids'), ...env },
   });
   return { status: r.status, stdout: r.stdout, stderr: r.stderr, ms: Date.now() - t0 };
@@ -64,5 +64,5 @@ export async function dead(pid) {
   for (let i = 0; i < 20 && alive(pid); i++) await new Promise((r) => setTimeout(r, 100));
   return !alive(pid);
 }
-export const probeLeftovers = (s) => [existsSync(s.target), readdirSync(s.repo).filter((n) => n.startsWith('.recode-probe-'))];
+export const probeLeftovers = (s) => [existsSync(s.target), readdirSync(s.repo).filter((n) => n.startsWith('.ccx-probe-'))];
 export const withScratch = (f) => async () => { const s = scratch(); try { await f(s); } finally { rmSync(s.root, { recursive: true, force: true }); } };

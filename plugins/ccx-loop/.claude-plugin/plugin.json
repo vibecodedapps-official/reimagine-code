@@ -1,5 +1,5 @@
 {
-  "name": "recode-loop",
+  "name": "ccx-loop",
   "version": "0.1.3",
   "description": "Run a tiered plan, review, implement, review, publish loop for one unit of work, with Claude orchestrating, Codex implementing, and Codex and Claude reviewing.",
   "license": "Apache-2.0",
@@ -8,7 +8,7 @@
   },
   "repository": "https://github.com/vibecodedapps-official/reimagine-code",
   "dependencies": [
-    { "name": "recode", "version": ">=0.1.0 <1.0.0" }
+    { "name": "ccx", "version": ">=0.1.0 <1.0.0" }
   ],
   "userConfig": {
     "codex": {

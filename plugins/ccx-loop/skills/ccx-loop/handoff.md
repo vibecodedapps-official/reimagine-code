@@ -5,7 +5,7 @@ commit of its own. It says when the run writes a handoff and an audit manifest, 
 and in what shape. Both are written from the run's record, never from memory.
 
 The handoff format's home is the cca plugin's `skills/cca/handoff.md`. This file restates
-only what recode-loop needs. The result must pass the cca plugin's `handoff.sh check`. To find the
+only what ccx-loop needs. The result must pass the cca plugin's `handoff.sh check`. To find the
 script, run `claude plugin list --json` and take the entry whose `id` starts with `cca@`:
 the script is `<installPath>/skills/cca/scripts/handoff.sh`, where `installPath` is that
 entry's. cca is supported only when that script exists, which is cca 0.2.0 or later. Run
@@ -36,7 +36,7 @@ written: no commit from this run". When the run left changes and cca is supporte
 session can write one after the user commits; otherwise it says that `/cca:handoff`
 needs cca 0.2.0 or later. Never commit to make a handoff possible.
 
-Both files go in `.recode/<run-id>/`: `handoff.md` and `cca-manifest.json`. They are never
+Both files go in `.ccx/<run-id>/`: `handoff.md` and `cca-manifest.json`. They are never
 committed. Never overwrite a file this run did not write.
 
 ## Sources
@@ -173,7 +173,7 @@ One `### D<n>` per decision record, n from 1. Keys, in order: `ticket`, `decisio
   one entry is `chosen:`.
 - `decided_by`, by the record's who decided: `role: session user` for `user`; `role:
   session user (plan approval)` for `plan approval`; `checkpoint (recommended option
-  taken)` for `review`; `not recorded` for `run`. Never `person:`, since recode-loop does not
+  taken)` for `review`; `not recorded` for `run`. Never `person:`, since ccx-loop does not
   record the user's name, and never a model, agent, or tool.
 - `recorded_at`: `url <link>` when the decision was published, else `checkpoint: <the
   step>`. The audit cannot open a `checkpoint:` pointer.
@@ -194,7 +194,7 @@ One `### R<n>` per Deferred item, n from 1. Keys, in order: `ticket`, `type`, `s
 
 ## Manifest
 
-`.recode/<run-id>/cca-manifest.json` is written beside the handoff. It holds one bundle per
+`.ccx/<run-id>/cca-manifest.json` is written beside the handoff. It holds one bundle per
 line of `## Bundles`:
 
 - `repo`: the absolute path, as in the handoff.
@@ -235,7 +235,7 @@ generated: 2026-10-01T09:30:00Z
 
 ## Bundles
 
-- widget-app: repo /home/dev/widget-app; pr github:acme/widget-app#31; branch recode-loop/sync-retry; base origin/main
+- widget-app: repo /home/dev/widget-app; pr github:acme/widget-app#31; branch ccx-loop/sync-retry; base origin/main
 
 ## Tickets
 
@@ -290,6 +290,6 @@ The manifest for that run:
   "bundles": [
     {"repo": "/home/dev/widget-app", "pr": "github:acme/widget-app#31", "tickets": ["github:acme/widget-app#12"]}
   ],
-  "claims": ["/home/dev/widget-app/.recode/2026-10-01-12/handoff.md"]
+  "claims": ["/home/dev/widget-app/.ccx/2026-10-01-12/handoff.md"]
 }
 ```

@@ -7,13 +7,13 @@ import { existsSync, mkdirSync, mkdtempSync, rmSync, symlinkSync, unlinkSync, wr
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { targets } from '../../plugins/recode/scripts/rules.mjs';
-import { codexEnabled, notice, oldPluginReport, staleTargets } from '../../plugins/recode/scripts/suite.mjs';
+import { targets } from '../../plugins/ccx/scripts/rules.mjs';
+import { codexEnabled, notice, oldPluginReport, staleTargets } from '../../plugins/ccx/scripts/suite.mjs';
 
-const SCRIPT = fileURLToPath(new URL('../../plugins/recode/scripts/suite.mjs', import.meta.url));
+const SCRIPT = fileURLToPath(new URL('../../plugins/ccx/scripts/suite.mjs', import.meta.url));
 const TEXTS = { 'core.md': 'C1\nC2\n', 'windows-claude.md': 'WC\n', 'windows-codex.md': 'WX\n', 'writing-codex.md': 'WR\n' };
-const END = '<!-- recode:house-rules end -->';
-const block = (options, digest, body) => `<!-- recode:house-rules begin version=0.0.1 options=${options} join=none digest=${digest} -->\n${body}${END}\n`;
+const END = '<!-- ccx:house-rules end -->';
+const block = (options, digest, body) => `<!-- ccx:house-rules begin version=0.0.1 options=${options} join=none digest=${digest} -->\n${body}${END}\n`;
 const NONE = { options: {}, created: {}, declined: {} };
 
 // The fields `claude plugin list --json` printed on Claude Code 2.1.284, less its paths and dates. A disabled plugin is
@@ -21,7 +21,7 @@ const NONE = { options: {}, created: {}, declined: {} };
 const CLAUDE_LIST = JSON.stringify([
   { id: 'codex-lite@vibecodedapps-codex-lite', version: '0.9.0', scope: 'user', enabled: true },
   { id: 'cca@vibecodedapps-claude-codex-audit', version: '0.3.0', scope: 'user', enabled: true },
-  { id: 'recode@reimagine-code', version: '0.1.0', scope: 'user', enabled: true },
+  { id: 'ccx@reimagine-code', version: '0.1.0', scope: 'user', enabled: true },
   { id: 'repo-docs@repo-docs', version: '0.1.1', scope: 'user', enabled: false },
 ]);
 const CODEX_TOML = [
@@ -33,7 +33,7 @@ const CODEX_TOML = [
   '[plugins."repo-docs@repo-docs"]',
   'enabled = false',
   '',
-  '[plugins."recode@reimagine-code"]',
+  '[plugins."ccx@reimagine-code"]',
   'enabled = true # the new one',
   '',
   '[projects."/work"]',
@@ -42,8 +42,8 @@ const CODEX_TOML = [
 ].join('\n');
 
 test('codexEnabled lists each [plugins."<id>"] table with enabled = true, in LF or CRLF', () => {
-  assert.deepEqual(codexEnabled(CODEX_TOML), ['codex-code-review-general@codex-code-review', 'recode@reimagine-code']);
-  assert.deepEqual(codexEnabled(CODEX_TOML.replace(/\n/g, '\r\n')), ['codex-code-review-general@codex-code-review', 'recode@reimagine-code']);
+  assert.deepEqual(codexEnabled(CODEX_TOML), ['codex-code-review-general@codex-code-review', 'ccx@reimagine-code']);
+  assert.deepEqual(codexEnabled(CODEX_TOML.replace(/\n/g, '\r\n')), ['codex-code-review-general@codex-code-review', 'ccx@reimagine-code']);
   assert.deepEqual(codexEnabled(''), []);
 });
 
@@ -58,7 +58,7 @@ test('R16: the report lists each old plugin with the command that removes it, an
 
 test('R16: with no old plugins the report says so, and a list that could not be read is named', () => {
   assert.deepEqual(oldPluginReport('[]', null), ['old plugins: none found']);
-  assert.deepEqual(oldPluginReport(JSON.stringify([{ id: 'recode@reimagine-code' }]), '[plugins."repo-docs@repo-docs"]\nenabled = false\n'),
+  assert.deepEqual(oldPluginReport(JSON.stringify([{ id: 'ccx@reimagine-code' }]), '[plugins."repo-docs@repo-docs"]\nenabled = false\n'),
     ['old plugins: none found']);
   assert.deepEqual(oldPluginReport(null, null), [
     'old plugins: the Claude plugin list could not be read, so Claude plugins were not checked', 'old plugins: none found']);
@@ -71,7 +71,7 @@ test('R16: with no old plugins the report says so, and a list that could not be 
 
 function sandbox(fn) {
   return () => {
-    const root = mkdtempSync(join(tmpdir(), 'recode-suite-'));
+    const root = mkdtempSync(join(tmpdir(), 'ccx-suite-'));
     const s = { root, claudeDir: join(root, 'claude'), codexDir: join(root, 'codex'), data: join(root, 'data'), home: join(root, 'home') };
     for (const d of [s.claudeDir, s.codexDir, s.home]) mkdirSync(d);
     s.claude = join(s.claudeDir, 'CLAUDE.md');
@@ -122,11 +122,11 @@ test('R45: a line ending change or a legacy CRLF digest does not hide a stale bl
   assert.deepEqual(staleTargets(all(), TEXTS, { ...NONE, declined: { claude: ['d9ccd27017096bcc'] } }), []);
 }));
 
-test('R45: the notice is one line naming the files and /recode:rules, and nothing when none is stale', () => {
+test('R45: the notice is one line naming the files and /ccx:rules, and nothing when none is stale', () => {
   assert.deepEqual(JSON.parse(notice(['/h/.claude/CLAUDE.md'])),
-    { systemMessage: "recode: the house rules in /h/.claude/CLAUDE.md are older than this plugin's; run /recode:rules to update them" });
+    { systemMessage: "ccx: the house rules in /h/.claude/CLAUDE.md are older than this plugin's; run /ccx:rules to update them" });
   assert.deepEqual(JSON.parse(notice(['/a/CLAUDE.md', '/b/AGENTS.md'])),
-    { systemMessage: "recode: the house rules in /a/CLAUDE.md and /b/AGENTS.md are older than this plugin's; run /recode:rules to update them" });
+    { systemMessage: "ccx: the house rules in /a/CLAUDE.md and /b/AGENTS.md are older than this plugin's; run /ccx:rules to update them" });
   assert.equal(notice([]), '');
   assert.equal(notice(['/a/CLAUDE.md']).split('\n').length, 2);
 });
@@ -135,7 +135,7 @@ test('R45: session-start prints the notice for a stale block, writes nothing, an
   writeFileSync(s.claude, `mine\n\n${block('core', '6d3e610aaf815551', 'old rules\n').replace('join=none', 'join=blank')}`);
   const r = s.spawn('session-start', s.data);
   assert.deepEqual(JSON.parse(r.stdout),
-    { systemMessage: `recode: the house rules in ${s.claude} are older than this plugin's; run /recode:rules to update them` });
+    { systemMessage: `ccx: the house rules in ${s.claude} are older than this plugin's; run /ccx:rules to update them` });
   assert.equal(r.status, 0);
   assert.equal(existsSync(s.data), false);
 }));
@@ -149,7 +149,7 @@ test('R45: session-start runs when its path goes through a symlink, as under a l
     const r = spawnSync(process.execPath, [join(linked, 'scripts', 'suite.mjs'), 'session-start', s.data],
       { env: { ...process.env, ...s.env, HOME: s.home, USERPROFILE: s.home }, encoding: 'utf8' });
     assert.deepEqual(JSON.parse(r.stdout),
-      { systemMessage: `recode: the house rules in ${s.claude} are older than this plugin's; run /recode:rules to update them` });
+      { systemMessage: `ccx: the house rules in ${s.claude} are older than this plugin's; run /ccx:rules to update them` });
     assert.equal(r.status, 0);
   } finally {
     unlinkSync(linked);

@@ -30,17 +30,17 @@ const walk = (dir, skip = () => false) => {
 // catalogs: the catalogs that list it. family: versioned in lockstep with the suite version in package.json.
 // budgets: the only runtime modules the plugin may hold, in groups, each with its line limit.
 const PLUGINS = [
-  { dir: "plugins/recode", catalogs: ["claude"], family: true, budgets: [
-    { files: ["scripts/codex.mjs", "scripts/recode.mjs"], max: 700 }, { files: ["scripts/rules.mjs"], max: 400 }, { files: ["scripts/suite.mjs"], max: 200 },
+  { dir: "plugins/ccx", catalogs: ["claude"], family: true, budgets: [
+    { files: ["scripts/codex.mjs", "scripts/ccx.mjs"], max: 700 }, { files: ["scripts/rules.mjs"], max: 400 }, { files: ["scripts/suite.mjs"], max: 200 },
   ] },
-  { dir: "plugins/recode-loop", catalogs: ["claude"], family: true, budgets: [] },
-  { dir: "plugins/recode-codex", catalogs: ["codex"], family: true, budgets: [] },
+  { dir: "plugins/ccx-loop", catalogs: ["claude"], family: true, budgets: [] },
+  { dir: "plugins/ccx-codex", catalogs: ["codex"], family: true, budgets: [] },
   { dir: "plugins/repo-docs", catalogs: ["claude", "codex"], family: false, budgets: [] },
 ];
 // Old names a shipped file may still contain, by repository-relative path: the migration literals of R7.
 const OLD_NAME_LITERALS = {
-  "plugins/recode/scripts/suite.mjs": ["codex-lite@vibecodedapps-codex-lite", "ccl@vibecodedapps-claude-codex-loop"],
-  "plugins/recode-loop/skills/recode-loop/SKILL.md": [".ccl.json"],
+  "plugins/ccx/scripts/suite.mjs": ["codex-lite@vibecodedapps-codex-lite", "ccl@vibecodedapps-claude-codex-loop"],
+  "plugins/ccx-loop/skills/ccx-loop/SKILL.md": [".ccl.json"],
 };
 
 // 1. Syntax of every module.
@@ -115,22 +115,22 @@ if (readme !== null && market && repos.length === 1) {
 // 4. Only do, setup and rules are hidden from the model; ask, review and implement must stay visible so a plain-words request, or a skill's delegation, can reach them.
 const hidden = { ask: false, review: false, implement: false, do: true, setup: true, rules: true };
 for (const [name, want] of Object.entries(hidden)) {
-  const s = read(`plugins/recode/commands/${name}.md`);
+  const s = read(`plugins/ccx/commands/${name}.md`);
   if (s === null) continue;
   const front = s.split(/\r?\n---\r?\n/)[0];
   const has = /^disable-model-invocation:\s*true\s*$/m.test(front);
-  if (has !== want) fail(`plugins/recode/commands/${name}.md: disable-model-invocation must be ${want ? "set" : "absent"}`);
+  if (has !== want) fail(`plugins/ccx/commands/${name}.md: disable-model-invocation must be ${want ? "set" : "absent"}`);
 }
 
 // 5. The plugin's two hooks, each run once in exec form with the data directory as an argument: UserPromptSubmit as
-// node <plugin root>/scripts/recode.mjs hook, and SessionStart, at startup only, as node <plugin root>/scripts/suite.mjs session-start.
-const hooks = json("plugins/recode/hooks/hooks.json");
+// node <plugin root>/scripts/ccx.mjs hook, and SessionStart, at startup only, as node <plugin root>/scripts/suite.mjs session-start.
+const hooks = json("plugins/ccx/hooks/hooks.json");
 if (hooks) {
   const want = {
-    UserPromptSubmit: [{ hooks: [{ type: "command", command: "node", args: ["${CLAUDE_PLUGIN_ROOT}/scripts/recode.mjs", "hook", "${CLAUDE_PLUGIN_DATA}"] }] }],
+    UserPromptSubmit: [{ hooks: [{ type: "command", command: "node", args: ["${CLAUDE_PLUGIN_ROOT}/scripts/ccx.mjs", "hook", "${CLAUDE_PLUGIN_DATA}"] }] }],
     SessionStart: [{ matcher: "startup", hooks: [{ type: "command", command: "node", args: ["${CLAUDE_PLUGIN_ROOT}/scripts/suite.mjs", "session-start", "${CLAUDE_PLUGIN_DATA}"] }] }],
   };
-  if (!isDeepStrictEqual(hooks.hooks, want)) fail(`plugins/recode/hooks/hooks.json must declare exactly these hooks: ${JSON.stringify(want)}`);
+  if (!isDeepStrictEqual(hooks.hooks, want)) fail(`plugins/ccx/hooks/hooks.json must declare exactly these hooks: ${JSON.stringify(want)}`);
 }
 // repo-docs' one hook, before each Bash and each PowerShell tool call: Claude Code on Windows runs commands through either.
 const docsHooks = json("plugins/repo-docs/hooks/hooks.json");
@@ -160,28 +160,28 @@ if (stems.length) {
 const endTurn = "that output is your whole reply: add nothing after it, run no other command, and end your turn.";
 const resume = "If you invoked this command as one step of a larger request, such as a plan to converge or findings to address, continue with that request's remaining steps after the output, using Codex's answer as input.";
 const step4 = ["ask", "review", "implement"].map((name) => {
-  const s = read(`plugins/recode/commands/${name}.md`);
+  const s = read(`plugins/ccx/commands/${name}.md`);
   if (s === null) return null;
   // Step 4 runs from its "4. " line to the next blank line, joined, so a wrapped step still matches.
   const text = s.match(/^4\. .*(?:\r?\n(?!\s*\r?$).*)*/m)?.[0].replace(/\s*\r?\n\s*/g, " ") ?? "";
   for (const want of [endTurn, resume]) {
-    if (!text.includes(want)) fail(`plugins/recode/commands/${name}.md: step 4 lacks the sentence: ${want}`);
+    if (!text.includes(want)) fail(`plugins/ccx/commands/${name}.md: step 4 lacks the sentence: ${want}`);
   }
   return text;
 });
-if (step4.every((t) => t !== null) && !step4.every((t) => t === step4[0])) fail("plugins/recode/commands/ask.md, review.md and implement.md: step 4 differs between the files");
+if (step4.every((t) => t !== null) && !step4.every((t) => t === step4[0])) fail("plugins/ccx/commands/ask.md, review.md and implement.md: step 4 differs between the files");
 
 // 8. ask, review, implement and do write the request file first and read it only after a failed Write: the script deletes the file after
 // every run, so a read-first step fails on almost every call. Any other failed Write stops the command: running the script
 // then would send a leftover request file, possibly an earlier task, to Codex.
 const stop = "If the Write failed for any other reason, or the second Write fails, stop: report the failure and do not run step 3.";
 for (const name of ["ask", "review", "implement", "do"]) {
-  const s = read(`plugins/recode/commands/${name}.md`);
+  const s = read(`plugins/ccx/commands/${name}.md`);
   if (s === null) continue;
-  if (!/^1\. With the Write tool, /m.test(s)) fail(`plugins/recode/commands/${name}.md: step 1 must be the Write of the request file`);
+  if (!/^1\. With the Write tool, /m.test(s)) fail(`plugins/ccx/commands/${name}.md: step 1 must be the Write of the request file`);
   const step2 = s.match(/^2\. If that Write failed .*$/m)?.[0] ?? "";
-  if (!step2) fail(`plugins/recode/commands/${name}.md: step 2 must be the Read after a failed Write`);
-  else if (!step2.includes(stop)) fail(`plugins/recode/commands/${name}.md: step 2 lacks the sentence: ${stop}`);
+  if (!step2) fail(`plugins/ccx/commands/${name}.md: step 2 must be the Read after a failed Write`);
+  else if (!step2.includes(stop)) fail(`plugins/ccx/commands/${name}.md: step 2 lacks the sentence: ${stop}`);
 }
 
 // 9. Shipped files are ASCII (R6).
@@ -219,29 +219,29 @@ if (attrs !== null) {
 }
 
 // 13. The chat instructions hold one fenced block that fits ChatGPT's 5,000-character cap, counted as the file's header says (R47).
-const chat = read("plugins/recode/chat/instructions.md");
-if (chat === null) fail("plugins/recode/chat/instructions.md: missing");
+const chat = read("plugins/ccx/chat/instructions.md");
+if (chat === null) fail("plugins/ccx/chat/instructions.md: missing");
 else {
   const fences = chat.split(/\r?\n/).map((l, i) => (l === "```" ? i : -1)).filter((i) => i >= 0);
   const block = fences.length === 2 ? chat.split(/\r?\n/).slice(fences[0] + 1, fences[1]).map((l) => `${l}\n`).join("") : null;
-  if (block === null) fail(`plugins/recode/chat/instructions.md: must hold exactly one fenced block, found ${fences.length} fence lines`);
-  else if (block.length > 5000) fail(`plugins/recode/chat/instructions.md: the block is ${block.length} characters, over ChatGPT's 5,000`);
+  if (block === null) fail(`plugins/ccx/chat/instructions.md: must hold exactly one fenced block, found ${fences.length} fence lines`);
+  else if (block.length > 5000) fail(`plugins/ccx/chat/instructions.md: the block is ${block.length} characters, over ChatGPT's 5,000`);
 }
 
-// 14. recode-loop depends on recode with the range >=<floor> <1.0.0, its floor at or below the suite version (R18).
-const loopManifest = json("plugins/recode-loop/.claude-plugin/plugin.json");
+// 14. ccx-loop depends on ccx with the range >=<floor> <1.0.0, its floor at or below the suite version (R18).
+const loopManifest = json("plugins/ccx-loop/.claude-plugin/plugin.json");
 if (loopManifest && pkg) {
   const deps = Array.isArray(loopManifest.dependencies) ? loopManifest.dependencies : [];
-  const range = deps.find((d) => d?.name === "recode")?.version;
+  const range = deps.find((d) => d?.name === "ccx")?.version;
   const floor = typeof range === "string" ? range.match(/^>=(\d+)\.(\d+)\.(\d+) <1\.0\.0$/)?.slice(1).map(Number) : null;
   const suite = String(pkg.version).split(".").map(Number);
   const above = floor && (floor[0] - suite[0] || floor[1] - suite[1] || floor[2] - suite[2]) > 0;
-  if (!floor || above) fail(`plugins/recode-loop/.claude-plugin/plugin.json: dependencies must hold { "name": "recode", "version": ">=<floor> <1.0.0" } with the floor at or below ${pkg.version}; found ${JSON.stringify(range ?? null)}`);
+  if (!floor || above) fail(`plugins/ccx-loop/.claude-plugin/plugin.json: dependencies must hold { "name": "ccx", "version": ">=<floor> <1.0.0" } with the floor at or below ${pkg.version}; found ${JSON.stringify(range ?? null)}`);
 }
 
 // 15. No loop text reads the bridge's installed version or compares it to the old gates, 0.8.0 and 0.9.0: the dependency range covers both (R19).
-const gates = [/\b0\.[89]\.0\b/, /\brecode@/];
-for (const p of shipped.filter((f) => rel(f).startsWith("plugins/recode-loop/"))) {
+const gates = [/\b0\.[89]\.0\b/, /\bccx@/];
+for (const p of shipped.filter((f) => rel(f).startsWith("plugins/ccx-loop/"))) {
   readFileSync(p, "utf8").split("\n").forEach((l, i) => {
     const hit = gates.find((re) => re.test(l));
     if (hit) fail(`${rel(p)}:${i + 1}: bridge version gate /${hit.source}/: ${l.trim()}`);
@@ -249,7 +249,7 @@ for (const p of shipped.filter((f) => rel(f).startsWith("plugins/recode-loop/"))
 }
 
 // 16. Each loop command applies the codex plugin option to its no-codex flag (R21).
-for (const f of ["run", "plan"].map((n) => `plugins/recode-loop/commands/${n}.md`)) {
+for (const f of ["run", "plan"].map((n) => `plugins/ccx-loop/commands/${n}.md`)) {
   const text = read(f);
   if (text !== null && !text.includes("`${user_config.codex}`")) fail(`${f}: must read the codex option as \`\${user_config.codex}\``);
 }
@@ -282,14 +282,14 @@ for (const pl of codexRows) {
   const c = manifests.get(pl.dir);
   if (m && c && m.version !== c.version) fail(`${p}: version ${m.version} differs from ${c.version} in .claude-plugin/plugin.json`);
 }
-const notice = existsSync(join(root, "plugins/recode-codex/NOTICE")) ? readFileSync(join(root, "plugins/recode-codex/NOTICE"), "utf8") : "";
-if (!/The upstream NOTICE file reads:\s+OpenAI Codex\s+Copyright 2025 OpenAI/.test(notice)) fail("plugins/recode-codex/NOTICE: missing, or without the upstream NOTICE text");
-for (const p of shipped.filter((f) => /^plugins\/recode-codex\/skills\/[^/]+\/SKILL\.md$/.test(rel(f)))) {
+const notice = existsSync(join(root, "plugins/ccx-codex/NOTICE")) ? readFileSync(join(root, "plugins/ccx-codex/NOTICE"), "utf8") : "";
+if (!/The upstream NOTICE file reads:\s+OpenAI Codex\s+Copyright 2025 OpenAI/.test(notice)) fail("plugins/ccx-codex/NOTICE: missing, or without the upstream NOTICE text");
+for (const p of shipped.filter((f) => /^plugins\/ccx-codex\/skills\/[^/]+\/SKILL\.md$/.test(rel(f)))) {
   if (!readFileSync(p, "utf8").split("\n").some((l) => l.startsWith("<!-- Modified. Adapted from openai/codex "))) fail(`${rel(p)}: lacks its provenance comment`);
 }
 
 // 18. main is the release ref: once a plugin has a <name>--v<version> tag, a change under its directory since its highest tag
-// needs a version above that tag (R49). The Codex recode shares its name, and so its tags, with the bridge. The rule needs the
+// needs a version above that tag (R49). The Codex ccx shares its name, and so its tags, with the bridge. The rule needs the
 // tags, so a shallow clone fails it; outside a git work tree, as in the lint tests' copies, it does not apply.
 const git = (...args) => spawnSync("git", args, { cwd: root, encoding: "utf8" });
 const below = (a, b) => { const x = a.split(".").map(Number), y = b.split(".").map(Number); return x[0] - y[0] || x[1] - y[1] || x[2] - y[2]; };

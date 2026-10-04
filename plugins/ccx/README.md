@@ -1,4 +1,4 @@
-# recode
+# ccx
 
 A small Claude Code plugin that hands a task to the Codex CLI, runs it once, and prints what
 it said. It also keeps a set of house rules in your Claude and Codex instruction files, and
@@ -9,7 +9,7 @@ daemon, no background jobs of its own.
 
 ```
 /plugin marketplace add vibecodedapps-official/reimagine-code
-/plugin install recode@reimagine-code
+/plugin install ccx@reimagine-code
 ```
 
 Installs track `main`. A change to the plugin reaches `main` only with a higher version.
@@ -34,7 +34,7 @@ Installs track `main`. A change to the plugin reaches `main` only with a higher 
   Use `"elevated"` instead if you have admin rights and have accepted Codex's one-time
   elevated sandbox setup. Without this setting, Codex's sandbox denies every write and every
   command, even inside the working directory. `do` and `implement` refuse to run, and `ask` and `review`
-  run with a warning. `/recode:setup` reports the value it found. The plugin also reads
+  run with a warning. `/ccx:setup` reports the value it found. The plugin also reads
   `windows.sandbox = "..."` at the top level of the file and `windows = { sandbox = "..." }`.
 
 ## Commands
@@ -48,13 +48,13 @@ every run and probe, because `--ignore-user-config` would otherwise drop it.
 
 | Command | Runs | Sandbox |
 | --- | --- | --- |
-| `/recode:ask [--model <name>] [--resume <thread id>] [--timeout <seconds>] <question>`, or `--resume` alone on the first line and the question below it | `codex exec <flags> -`, or `codex exec resume <thread id> <flags> -` with `--resume`, plus `--model <name>` if given, the question on stdin | `read-only` |
-| `/recode:review [--base <ref>] [--model <name>] [--timeout <seconds>]` | `codex exec review <flags>` with `--uncommitted`, or `--base <ref>` (the net difference from the merge base of `<ref>` and `HEAD` to the working tree, tracked files only), plus `--model <name>` if given | `read-only` |
-| `/recode:do <task>` | `codex exec <flags> -`, the task on stdin | `workspace-write` |
-| `/recode:implement [--model <name>] [--timeout <seconds>] [--cwd <absolute path>] <task>`, with `--cwd` last and alone on its line, the task below it | as `do`, plus `--model <name>` if given, run in `--cwd` if given | `workspace-write` |
-| `/recode:setup` | `codex --version`, `codex login status`, and the sandbox probe; on Windows it also reports the Codex sandbox mode. Then it lists the old plugins this suite replaces | `workspace-write`, probe only |
+| `/ccx:ask [--model <name>] [--resume <thread id>] [--timeout <seconds>] <question>`, or `--resume` alone on the first line and the question below it | `codex exec <flags> -`, or `codex exec resume <thread id> <flags> -` with `--resume`, plus `--model <name>` if given, the question on stdin | `read-only` |
+| `/ccx:review [--base <ref>] [--model <name>] [--timeout <seconds>]` | `codex exec review <flags>` with `--uncommitted`, or `--base <ref>` (the net difference from the merge base of `<ref>` and `HEAD` to the working tree, tracked files only), plus `--model <name>` if given | `read-only` |
+| `/ccx:do <task>` | `codex exec <flags> -`, the task on stdin | `workspace-write` |
+| `/ccx:implement [--model <name>] [--timeout <seconds>] [--cwd <absolute path>] <task>`, with `--cwd` last and alone on its line, the task below it | as `do`, plus `--model <name>` if given, run in `--cwd` if given | `workspace-write` |
+| `/ccx:setup` | `codex --version`, `codex login status`, and the sandbox probe; on Windows it also reports the Codex sandbox mode. Then it lists the old plugins this suite replaces | `workspace-write`, probe only |
 
-`/recode:rules` runs no Codex; see [House rules](#house-rules).
+`/ccx:rules` runs no Codex; see [House rules](#house-rules).
 
 `ask` and `review` are visible to Claude, so a request in plain words such as "dispatch Codex
 to review this" or "ask Codex whether ..." invokes them. The request is then what Claude
@@ -68,7 +68,7 @@ answer, the output is the whole reply.
 `implement` is visible to Claude too, but only for a change that a skill you invoked delegates
 to Codex as one of its steps. A request typed in plain words, even one that names Codex, is
 not a delegation: asked to have Codex change files, Claude tells you to type
-`/recode:do <task>`.
+`/ccx:do <task>`.
 `do`, `setup` and `rules` are hidden from Claude and run only when you type the command.
 
 This is a tradeoff. Before `implement`, no Codex write happened unless you typed a command. Now
@@ -123,7 +123,7 @@ starts a new thread, and a `--resume` in the text is part of the task. The task 
 after the options; an empty task is refused. For example:
 
 ```
-/recode:implement --timeout 900 --cwd /work/my repo-wt
+/ccx:implement --timeout 900 --cwd /work/my repo-wt
 Add a subtract function to math.mjs, with a test.
 ```
 
@@ -144,7 +144,7 @@ could not be read; a crash of the plugin itself, before or after the turn, is `f
 review found nothing. The exit code is 0 for `ok` and 1 otherwise. A result with no `status:`
 line was cut off, by the Bash tool's timeout or a kill, and is incomplete. The plugin does not
 tell model, login or sandbox failures apart: Codex reports them as prose, which the
-`recode: the run failed:` line carries. `setup` prints no status line.
+`ccx: the run failed:` line carries. `setup` prints no status line.
 
 `ask` and `review` run from the top of the repository, whatever directory the shell is in; `do` and `implement` run from the shell's directory, or from `--cwd` for `implement`, which bounds where they can write; `review` runs from the top of the repository holding its `--cwd`, if given. `ask` and
 `review` also print a line saying the sandbox has no network. `do` and `implement` also print `HEAD` before
@@ -174,7 +174,7 @@ claiming the host cannot sandbox.
 The probe proves confinement, not capability. A host can confine writes correctly and still
 be unable to run any command inside the sandbox, and then Codex may report work it could not
 do. `ask` and `review` do not probe; their `read-only` mode is requested, not verified. If a
-result looks wrong, run `/recode:setup`.
+result looks wrong, run `/ccx:setup`.
 
 ## Limits and known behaviour
 
@@ -187,7 +187,7 @@ result looks wrong, run `/recode:setup`.
 - `do` and `implement` have no network. They cannot install packages, fetch dependencies or call an API.
 - `ask` and `review` have no network either, so Codex cannot read an issue, a pull request or a
   web page, and the commands forward a request unchanged without fetching anything. A typed
-  `/recode:ask Evaluate issue #12` sends `#12` to Codex as it is. Fetch it before you run
+  `/ccx:ask Evaluate issue #12` sends `#12` to Codex as it is. Fetch it before you run
   `ask`, and save it under a directory the repository already ignores, so
   `review --uncommitted` does not review it as a change. Check the directory with
   `git check-ignore`, then, if `.scratch/` is ignored, run
@@ -246,11 +246,11 @@ thread id instead; a word that is not a valid id (one with a `;` or a `?`, for e
 refused before Codex runs. For example:
 
 ```
-/recode:ask --resume <thread id> What about the second objection?
+/ccx:ask --resume <thread id> What about the second objection?
 ```
 
 ```
-/recode:ask --resume
+/ccx:ask --resume
 What about the second objection?
 ```
 
@@ -283,7 +283,7 @@ sessions from other agents; use that.
 
 ## House rules
 
-`/recode:rules` adds one marked block of rules to your Claude `CLAUDE.md` and your Codex
+`/ccx:rules` adds one marked block of rules to your Claude `CLAUDE.md` and your Codex
 `AGENTS.md`, and keeps it up to date. Before each change it shows a diff, and it changes a
 file only when you agree to that file.
 
@@ -295,27 +295,27 @@ file only when you agree to that file.
   shell rules; it is offered only on Windows and is on by default there. `writing` adds
   Codex's Writing section to the Codex file; in Claude Code the same rules come from the
   output style. The first run asks which to use, and later runs keep that choice.
-  `/recode:rules --options core,writing` changes it.
+  `/ccx:rules --options core,writing` changes it.
 - **The block.** It starts with
-  `<!-- recode:house-rules begin version=... options=... join=... digest=... -->` and ends
-  with `<!-- recode:house-rules end -->`. Your text outside it is kept byte for byte,
+  `<!-- ccx:house-rules begin version=... options=... join=... digest=... -->` and ends
+  with `<!-- ccx:house-rules end -->`. Your text outside it is kept byte for byte,
   including line endings, a byte order mark, and whether the file ends with a newline.
   Edit the rules by moving lines below the end marker: a block edited by hand is reported
   and left as it is.
 - **Backups.** Before a change to an existing file, it is copied to
-  `<file>.recode-backup-<YYYYMMDDHHMMSS>`, the time in UTC. If the file changed after the diff was shown,
+  `<file>.ccx-backup-<YYYYMMDDHHMMSS>`, the time in UTC. If the file changed after the diff was shown,
   nothing is written and the command asks you to run it again.
-- **Removing.** `/recode:rules --remove` takes the block out, with the empty lines it
+- **Removing.** `/ccx:rules --remove` takes the block out, with the empty lines it
   added in front. A file the command created, holding nothing else, is deleted.
 - **Declining.** Saying no to a change is recorded, so the session notice stays quiet for
-  that text. Typing `/recode:rules` offers it again.
+  that text. Typing `/ccx:rules` offers it again.
 - **Imports.** An `@` import line in `CLAUDE.md` may pull in the same rules. The command
   names it and leaves it alone.
 
 When a plugin update changes the rules, a new session shows one line naming the file and
-`/recode:rules`. A version change that leaves the rules as they were shows nothing.
+`/ccx:rules`. A version change that leaves the rules as they were shows nothing.
 
-The output style is selected with `/output-style` as `recode:Concise Plain`. The same
+The output style is selected with `/output-style` as `ccx:Concise Plain`. The same
 writing rules for claude.ai and ChatGPT are in [chat/instructions.md](chat/instructions.md).
 Nothing installs them: paste the block into each app's settings.
 
@@ -326,7 +326,7 @@ case, the hook adds a short routing note to Claude's context: use `ask` for ques
 critiques, `review` only for diffs, put options before the question in any order (a model
 choice as `--model <name>`, and for a follow-up in the same Codex thread `--resume <thread id>`
 or a bare `--resume` followed by a line break or another option), send file changes to
-`/recode:do`, except that a skill which delegates implementation to Codex uses
+`/ccx:do`, except that a skill which delegates implementation to Codex uses
 `implement`, and do not run Codex directly. A prompt that starts with a slash command
 (a slash and a command name, then a space or the end) gets no note, whichever plugin the
 command belongs to, because a typed command already routes itself; a prompt that starts with
@@ -351,7 +351,7 @@ plain words. This was seen on 2026-09-26 on Claude Code 2.1.280 in headless auto
 "dispatch codex to review my changes against main" and "ask codex what math.mjs exports".
 
 This works without an Edit rule for the plugin's data directory, and fails with one.
-`/recode:setup` printed such a rule before 0.1.2; if you added it, remove it. With it, the
+`/ccx:setup` printed such a rule before 0.1.2; if you added it, remove it. With it, the
 request file's Write fails in auto mode with "The server-side auto mode classifier gave no
 verdict". This was seen in 3 of 3 runs on 2026-10-04 on Claude Code 2.1.288 on macOS, and
 the same runs without the rule passed. On Windows, with Claude Code 2.1.283, a headless
@@ -370,7 +370,7 @@ This was seen on 2026-10-04 for the rule on macOS and Windows, and for a hook re
 `allow` on macOS. So a headless run in default mode stops at that Write; for unattended
 calls, use auto mode as described above.
 
-`/recode:setup` prints an allow rule for default mode as a JSON string, ready to paste into
+`/ccx:setup` prints an allow rule for default mode as a JSON string, ready to paste into
 `permissions.allow`; it adds none itself. It covers the script call when Claude invoked the
 command. The rule names the installed version's path, so update it after each release. It
 has no `*` in the path, because Claude Code's `*` would also match another plugin's
@@ -409,17 +409,17 @@ modes are skipped. The Windows-only tests cover how the plugin finds Codex on `P
 
 Test-only environment variables, read once at startup:
 
-- `RECODE_CODEX_BIN`: path to the Codex executable.
-- `RECODE_TIMEOUT_MS`: replaces the sixty-minute run limit and the thirty-second limit on
+- `CCX_CODEX_BIN`: path to the Codex executable.
+- `CCX_TIMEOUT_MS`: replaces the sixty-minute run limit and the thirty-second limit on
   every other process. An `ask`, `review` or `implement` `--timeout` still wins for the Codex turn.
-- `RECODE_PROBE_TARGET`: the file the sandbox probe tries to write outside the working
-  directory. Defaults to `~/.recode-sandbox-probe-<pid>`, one file per run.
+- `CCX_PROBE_TARGET`: the file the sandbox probe tries to write outside the working
+  directory. Defaults to `~/.ccx-sandbox-probe-<pid>`, one file per run.
 
 To try a change by hand, start Claude Code from a scratch git repository with the working
 tree loaded as a plugin:
 
 ```
-claude --plugin-dir /path/to/reimagine-code/plugins/recode
+claude --plugin-dir /path/to/reimagine-code/plugins/ccx
 ```
 
 The repository's `docs/acceptance.md` lists the checks that need a live session or the real Codex CLI, and when to run them.

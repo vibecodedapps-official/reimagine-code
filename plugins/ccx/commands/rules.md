@@ -1,5 +1,5 @@
 ---
-description: Add, update, or remove the recode house rules in your Claude CLAUDE.md and Codex AGENTS.md, showing each change before it is made
+description: Add, update, or remove the ccx house rules in your Claude CLAUDE.md and Codex AGENTS.md, showing each change before it is made
 argument-hint: "[--remove | --options core,windows,writing]"
 disable-model-invocation: true
 allowed-tools: Bash(node "${CLAUDE_PLUGIN_ROOT}/scripts/rules.mjs" *)
@@ -31,4 +31,4 @@ They must be empty, exactly `--remove`, or `--options` followed by a comma-separ
    - if the user agreed: `node "${CLAUDE_PLUGIN_ROOT}/scripts/rules.mjs" apply "${CLAUDE_PLUGIN_DATA}" <target>`
    - otherwise: `node "${CLAUDE_PLUGIN_ROOT}/scripts/rules.mjs" decline "${CLAUDE_PLUGIN_DATA}" <target>`
 
-4. Show each apply or decline output verbatim. If `writing` is among the options, say that in Claude Code the Writing rules come from the output style, selected with `/output-style` as `recode:Concise Plain`. Say that the same writing rules for claude.ai and ChatGPT are in `${CLAUDE_PLUGIN_ROOT}/chat/instructions.md`, which nothing installs: the user pastes its block into each app's settings.
+4. Show each apply or decline output verbatim. If `writing` is among the options, say that in Claude Code the Writing rules come from the output style, selected with `/output-style` as `ccx:Concise Plain`. Say that the same writing rules for claude.ai and ChatGPT are in `${CLAUDE_PLUGIN_ROOT}/chat/instructions.md`, which nothing installs: the user pastes its block into each app's settings.

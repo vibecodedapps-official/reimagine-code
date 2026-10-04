@@ -5,10 +5,10 @@
   },
   "plugins": [
     {
-      "name": "recode",
+      "name": "ccx",
       "source": {
         "source": "local",
-        "path": "./plugins/recode-codex"
+        "path": "./plugins/ccx-codex"
       },
       "policy": {
         "installation": "AVAILABLE",

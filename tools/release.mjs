@@ -1,6 +1,6 @@
 #!/usr/bin/env node
-// Sets one component's version in every manifest and catalog entry that carries it, and for recode, when --floor is given,
-// the floor of recode-loop's dependency range. Then runs lint, which checks that the copies agree, the range, and the
+// Sets one component's version in every manifest and catalog entry that carries it, and for ccx, when --floor is given,
+// the floor of ccx-loop's dependency range. Then runs lint, which checks that the copies agree, the range, and the
 // changelog heading. Tagging stays with `claude plugin tag`.
 import { spawnSync } from "node:child_process";
 import { readFileSync, writeFileSync } from "node:fs";
@@ -9,11 +9,11 @@ import { fileURLToPath } from "node:url";
 import { isDeepStrictEqual } from "node:util";
 
 const root = fileURLToPath(new URL("..", import.meta.url));
-const usage = "usage: node tools/release.mjs recode <version> [--floor <version>]\n       node tools/release.mjs repo-docs <version>";
+const usage = "usage: node tools/release.mjs ccx <version> [--floor <version>]\n       node tools/release.mjs repo-docs <version>";
 const semver = /^\d+\.\d+\.\d+$/;
 const [component, version, flag, floor, ...extra] = process.argv.slice(2);
-const valid = ["recode", "repo-docs"].includes(component) && semver.test(version ?? "") && !extra.length
-  && (flag === undefined || (component === "recode" && flag === "--floor" && semver.test(floor ?? "")));
+const valid = ["ccx", "repo-docs"].includes(component) && semver.test(version ?? "") && !extra.length
+  && (flag === undefined || (component === "ccx" && flag === "--floor" && semver.test(floor ?? "")));
 if (!valid) {
   console.error(usage);
   process.exit(2);
@@ -24,18 +24,18 @@ if (!valid) {
 const topVersion = [/^ {2}"version": "[^"]*"/m, `  "version": "${version}"`];
 const setVersion = (j) => { j.version = version; };
 const edits = {
-  recode: [
+  ccx: [
     ["package.json", setVersion, [topVersion]],
-    ["plugins/recode/.claude-plugin/plugin.json", setVersion, [topVersion]],
-    ["plugins/recode-loop/.claude-plugin/plugin.json", (j) => {
+    ["plugins/ccx/.claude-plugin/plugin.json", setVersion, [topVersion]],
+    ["plugins/ccx-loop/.claude-plugin/plugin.json", (j) => {
       j.version = version;
-      const dep = floor && j.dependencies?.find((d) => d?.name === "recode");
+      const dep = floor && j.dependencies?.find((d) => d?.name === "ccx");
       if (dep) dep.version = `>=${floor} <1.0.0`;
-    }, [topVersion, ...(floor ? [[/("name": "recode", "version": ")[^"]*"/, `$1>=${floor} <1.0.0"`]] : [])]],
-    ["plugins/recode-codex/plugin.json", setVersion, [topVersion]],
+    }, [topVersion, ...(floor ? [[/("name": "ccx", "version": ")[^"]*"/, `$1>=${floor} <1.0.0"`]] : [])]],
+    ["plugins/ccx-codex/plugin.json", setVersion, [topVersion]],
     [".claude-plugin/marketplace.json", (j) => {
       j.metadata.version = version;
-      for (const e of j.plugins) if (e.name === "recode" || e.name === "recode-loop") e.version = version;
+      for (const e of j.plugins) if (e.name === "ccx" || e.name === "ccx-loop") e.version = version;
     }],
   ],
   "repo-docs": [
@@ -64,5 +64,5 @@ for (const [file, change, lines] of edits) {
   out.push([file, after]);
 }
 for (const [file, after] of out) writeFileSync(join(root, file), after);
-console.log(`release: ${component} ${version}${floor ? `, recode range >=${floor} <1.0.0` : ""}: ${out.map(([f]) => f).join(", ")}`);
+console.log(`release: ${component} ${version}${floor ? `, ccx range >=${floor} <1.0.0` : ""}: ${out.map(([f]) => f).join(", ")}`);
 process.exit(spawnSync(process.execPath, [join(root, "tools", "lint.mjs")], { stdio: "inherit" }).status ?? 1);

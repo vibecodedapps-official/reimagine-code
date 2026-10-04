@@ -13,9 +13,9 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 
-The bridge in plugins/recode is an independent implementation. It contains no
+The bridge in plugins/ccx is an independent implementation. It contains no
 source code from openai/codex-plugin-cc or vibecodedapps-official/codex-plugin-cc.
 Those projects informed the design.
 
-The skills in plugins/recode-codex are adapted from openai/codex. Their own NOTICE
+The skills in plugins/ccx-codex are adapted from openai/codex. Their own NOTICE
 file in that directory carries the upstream attribution.

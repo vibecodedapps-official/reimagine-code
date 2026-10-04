@@ -28,7 +28,7 @@ export function staleTargets(all, texts, state) {
 }
 
 export const notice = (paths) => (paths.length
-  ? `${JSON.stringify({ systemMessage: `recode: the house rules in ${paths.join(' and ')} are older than this plugin's; run /recode:rules to update them` })}\n`
+  ? `${JSON.stringify({ systemMessage: `ccx: the house rules in ${paths.join(' and ')} are older than this plugin's; run /ccx:rules to update them` })}\n`
   : '');
 
 // Plugin ids enabled in a Codex config.toml: each [plugins."<id>"] table with enabled = true.
@@ -76,7 +76,7 @@ if (process.argv[1] && import.meta.url === pathToFileURL(realpathSync(process.ar
     const codexDir = process.env.CODEX_HOME || join(homedir(), '.codex');
     process.stdout.write(`${oldPluginReport(listClaudePlugins(), readText(join(codexDir, 'config.toml'))).join('\n')}\n`);
   } else {
-    process.stdout.write('recode: use session-start <dataDir> or old-plugins\n');
+    process.stdout.write('ccx: use session-start <dataDir> or old-plugins\n');
     process.exitCode = 1;
   }
 }

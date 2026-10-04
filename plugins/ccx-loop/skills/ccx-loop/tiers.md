@@ -13,10 +13,10 @@ never a reviewer.
 | Role | Default | Fallback when the default is unavailable |
 |---|---|---|
 | Orchestrator and primary reviewer | The session's current Claude model (Opus or Fable) | none, the run stops |
-| Codex reviewer, `gpt-6.1-sol` | Skill tool, `recode:ask` or `recode:review`, model `gpt-6.1-sol` | Agent tool, model `opus` |
-| Codex reviewer, `gpt-6-astra` | Skill tool, `recode:ask` or `recode:review`, model `gpt-6-astra` | Agent tool, model `fable`; on an error from that call, model `opus` |
+| Codex reviewer, `gpt-6.1-sol` | Skill tool, `ccx:ask` or `ccx:review`, model `gpt-6.1-sol` | Agent tool, model `opus` |
+| Codex reviewer, `gpt-6-astra` | Skill tool, `ccx:ask` or `ccx:review`, model `gpt-6-astra` | Agent tool, model `fable`; on an error from that call, model `opus` |
 | Claude reviewer (Step 5, every tier) | Skill tool, `code-review`, at the tier's level; in a worktree run, an Opus subagent for the worktree as `worktree.md` describes, and in Multi-repo mode, an Opus subagent for each additional repository, as `multi-repo.md` describes | none; if the skill is not listed when the stage starts, the run ends in `blocked` |
-| Implementer, Codex | Skill tool, `recode:implement`, model per the tier table | Agent tool, model `sonnet` |
+| Implementer, Codex | Skill tool, `ccx:implement`, model per the tier table | Agent tool, model `sonnet` |
 | Implementer, Opus | Agent tool model `opus`, at high, xhigh, and max tier, when the Opus criteria apply to the slice | on a tool error from an `opus` call, `sonnet`, and the error is recorded |
 
 Rules for roles:
@@ -25,11 +25,11 @@ Rules for roles:
   A bare id such as `sol`, `astra`, or `luna` fails on a ChatGPT account. Pass the full id
   on every Codex call, including `--resume` follow-ups. On every reviewer call, also pass
   `--timeout` from the Codex budget.
-- Codex is reached only through the Skill tool, with `recode:ask` for plans and
-  questions, `recode:review` for diffs, and `recode:implement` for implementers.
+- Codex is reached only through the Skill tool, with `ccx:ask` for plans and
+  questions, `ccx:review` for diffs, and `ccx:implement` for implementers.
   Never run the `codex` CLI directly.
-- An implementer call to `recode:implement` passes `--timeout` in seconds: the smaller
-  of the subagent budget and the remaining run budget, capped at 3600, because recode
+- An implementer call to `ccx:implement` passes `--timeout` in seconds: the smaller
+  of the subagent budget and the remaining run budget, capped at 3600, because ccx
   refuses a larger value. Log the cap and the value passed in `run.md`. The Codex budget
   does not apply to it. There is no `--resume` for `implement`: every call starts a new
   thread.
@@ -151,7 +151,7 @@ see Step 3.7 and Step 4.3 in `SKILL.md`.
 The slice's effective model is the chosen model (the tier's Codex model, or `opus`), or
 `sonnet` after an implementer swap (see Rules for roles). Every later call for that
 slice, in Step 4.3, Step 5.3, and CI repair, uses the effective model. For a Codex slice
-each later call is a fresh `recode:implement` call at its effective model, never
+each later call is a fresh `ccx:implement` call at its effective model, never
 resumed, given the findings and the slice's current diff. For an Opus or Sonnet slice,
 the agent is continued or fresh, including a fresh agent replacing one that ran inside a
 Workflow. The single fix after the Step 4 cap stays the orchestrator's.

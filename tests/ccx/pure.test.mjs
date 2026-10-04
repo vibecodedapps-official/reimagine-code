@@ -6,7 +6,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import {
   buildArgv, readStream, decideProbe, validateRequestId, requestedLine, resumeLine, parseAskArgs, parseImplementArgs, parseReviewArgs, PROBE_SCRIPT, windowsSandboxSetting,
-} from '../../plugins/recode/scripts/codex.mjs';
+} from '../../plugins/ccx/scripts/codex.mjs';
 
 const ONE_LINER = 'try{require("fs").writeFileSync(process.argv[1],"x");process.exit(0)}catch(e){' +
   'process.stderr.write(String(e&&e.code));process.exit(e&&(e.code==="EPERM"||e.code==="EACCES")?42:9)}';
@@ -102,15 +102,15 @@ test('setup: login status', () => {
 });
 
 test('sandbox probe, positive control', () => {
-  assert.deepEqual(buildArgv('sandbox', { execPath: '/opt/node/bin/node', target: '/repo/.recode-probe-a1/probe' }), [
+  assert.deepEqual(buildArgv('sandbox', { execPath: '/opt/node/bin/node', target: '/repo/.ccx-probe-a1/probe' }), [
     'sandbox', '-c', 'sandbox_mode="workspace-write"', '-c', 'approval_policy="never"', '--',
-    '/opt/node/bin/node', '-e', ONE_LINER, '/repo/.recode-probe-a1/probe']);
+    '/opt/node/bin/node', '-e', ONE_LINER, '/repo/.ccx-probe-a1/probe']);
 });
 
 test('sandbox probe, negative control', () => {
-  assert.deepEqual(buildArgv('sandbox', { execPath: '/opt/node/bin/node', target: '/home/u/.recode-sandbox-probe' }), [
+  assert.deepEqual(buildArgv('sandbox', { execPath: '/opt/node/bin/node', target: '/home/u/.ccx-sandbox-probe' }), [
     'sandbox', '-c', 'sandbox_mode="workspace-write"', '-c', 'approval_policy="never"', '--',
-    '/opt/node/bin/node', '-e', ONE_LINER, '/home/u/.recode-sandbox-probe']);
+    '/opt/node/bin/node', '-e', ONE_LINER, '/home/u/.ccx-sandbox-probe']);
 });
 
 test('buildArgv refuses a review value that would read as an option', () => {
@@ -536,7 +536,7 @@ test('review arguments: --timeout given more than once is refused, in either spe
 const probe = (target) => spawnSync(process.execPath, ['-e', PROBE_SCRIPT, target], { encoding: 'utf8' });
 
 test('probe one-liner: 0 on a write that lands, 9 and the code otherwise', () => {
-  const dir = mkdtempSync(join(tmpdir(), 'recode-pure-'));
+  const dir = mkdtempSync(join(tmpdir(), 'ccx-pure-'));
   try {
     assert.equal(probe(join(dir, 'f')).status, 0);
     assert.equal(existsSync(join(dir, 'f')), true);
@@ -547,7 +547,7 @@ test('probe one-liner: 0 on a write that lands, 9 and the code otherwise', () =>
 
 test('probe one-liner: 42 and the code on a denied write',
   { skip: (process.platform === 'win32' || process.getuid?.() === 0) && 'needs a POSIX non-root user' }, () => {
-    const dir = mkdtempSync(join(tmpdir(), 'recode-pure-'));
+    const dir = mkdtempSync(join(tmpdir(), 'ccx-pure-'));
     try {
       chmodSync(dir, 0o500);
       const denied = probe(join(dir, 'f'));
