@@ -260,3 +260,43 @@ scratch profiles, with recode 0.1.0 and 0.1.1 installed from GitHub.
    `realpathSync(process.argv[1])`, the same resolution Node applies. `recode.mjs` has
    no such check and is unchanged. A test per script runs it through a linked folder,
    a junction on Windows so it needs no extra rights.
+
+## Part 10: M7 step 2, the cutover on each machine, 2026-10-04
+
+Run on macOS with Claude Code 2.1.288 and codex-cli 0.159.2, and on a personal Windows
+11 machine with Claude Code 2.1.287 and codex-cli 0.160.0, in the author's real profiles,
+with recode 0.1.3. `docs/acceptance.md` has both records.
+
+1. **The work machine is out of the gate.** Decided by the author on 2026-10-04. It has
+   no forge-ops checkout, and its `CLAUDE.md` and `AGENTS.md` are kept by hand on
+   purpose. It may adopt the block from a brief without the forge-ops steps, with its own
+   lines below the end marker, but runs no gate. R59's rules check, against a file with
+   local overrides below the block, ran on the personal Windows machine instead: its
+   Codex file keeps a Links section there, and `/recode:rules` read `current` and
+   changed nothing. forge-ops' second change waits only for machines that import its
+   files.
+2. **The loop asks before publishing once the house rules are in the user's file.** The
+   rules' Ask first list covers commits, pushes, PRs, and comments, so a headless run on
+   each machine ended with the question, and a `--resume` reply let it publish. Scratch
+   profiles without the rules never showed this. It is the rules working, not a defect.
+3. **Auto mode refuses some step 2 actions.** Removing the old text from the home
+   files was denied as "Self-Modification", and the `--resume` that approves the
+   publish as "External System Writes". In a Windows dry run, changing a scratch Codex
+   `config.toml` and running `claude -p` with a scratch `CLAUDE_CONFIG_DIR` were denied
+   as "Security Weaken". Each went through after the author left auto mode and asked
+   for the same call again.
+4. **A hook check needs a repository that tracks an instruction file.** The repo-docs
+   hook reminds only where `git ls-files` finds an `AGENTS.md` or `CLAUDE.md`. The
+   first Codex check on macOS used a repository without one and got no message; the
+   same commit after adding a tracked `AGENTS.md`, nothing else changed, got it. On
+   Windows, Codex started from PowerShell needs `Git\bin` on the user `PATH`: without it
+   a commit got no message, and Git Bash hides the gap because it passes its own
+   `usr\bin` to child processes.
+5. **An old forge-ops checkout must not run its installer after step 2.** Before
+   forge-ops 0847634 (its PR 67), `claude/install.mjs` rewrites `~/.claude/CLAUDE.md` to
+   the one-line import, which erases the block. Each machine's checkout was confirmed at
+   or after 9faabda first; the Windows one was fast-forwarded from e5429ef.
+6. **A line-ending change makes the block read as edited by hand.** Found on Windows and
+   confirmed with `planTarget`: a block written into a CRLF file reads `current`, and
+   the same file converted to LF reads `edited`, so the block stops updating and the
+   session notice goes quiet. Tracked in issue 16.

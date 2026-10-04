@@ -265,19 +265,21 @@ Check:
 Each step is a separate ask.
 
 0. Prerequisite: the audit plugin calls the bridge as `recode`, done in the audit repo
-   as part of its 0.4.0 work. Until then `codex-lite` stays installed on every machine
-   that uses the audit.
+   in a release after 0.6.0, which still calls `codex-lite:ask`. Until then `codex-lite`
+   stays installed on every machine that uses the audit.
 1. forge-ops, first change: both installers stop writing the home instruction files,
    and its Claude settings and Codex config declare the new marketplace and plugins in
    place of the old ones. The policy files stay, so existing imports keep working
    (R58).
 2. On each machine: back up the home files, run `/recode:rules`, replace the one-line
    import with Local overrides below the block, confirm a quoted rule in a new session,
-   run the cutover gate (R59), then uninstall the old plugins (R60).
-3. forge-ops, second change, after every machine has moved: drop the policy files and
-   point its README here.
+   run the cutover gate (R59), then uninstall the old plugins (R60). The work machine
+   has no forge-ops and its files are kept by hand, so it may adopt the block without
+   the gate (`docs/decisions.md` Part 10).
+3. forge-ops, second change, after every machine that imports its files has moved: drop
+   the policy files and point its README here.
 4. Archive codex-lite-cc, claude-codex-loop, codex-code-review, and repo-docs as private
-   after every machine passes.
+   after every machine passes and none has `codex-lite` installed.
 
 ## Shipped files are self-contained
 

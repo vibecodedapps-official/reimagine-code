@@ -837,3 +837,73 @@ machine and reported here.
   standard Windows install path.
 - The copy of the Codex login was deleted afterward. The old Edit rule was left out of
   `claude-m6`'s `settings.json`, with the earlier file kept beside it.
+
+### 2026-10-04: M7 step 2, macOS
+
+macOS 27.0, Claude Code 2.1.288, codex-cli 0.159.2, Node 26.4.0. The author's real
+profiles, with forge-ops at 9faabda. `codex-lite` stays, because cca 0.6.0 still calls
+`codex-lite:ask`. The home files, both settings files, and the plugin lists were backed
+up with their sha256 first.
+
+- **Update and rules.** `recode` and `recode-loop` went from 0.1.2 to 0.1.3 on Claude
+  Code and `recode` on Codex. `/recode:rules --options core,writing` noted the forge-ops
+  import on line 1 of `CLAUDE.md`, showed both diffs, and wrote both blocks after "yes"
+  to each. The text above each block was then removed by hand: the import in
+  `CLAUDE.md`, and in `AGENTS.md` an old copy of forge-ops `codex/AGENTS.md` that lacked
+  only the cause-check rule. No local overrides: the rules parts equal forge-ops' files
+  apart from blank lines. `rules.mjs status` then read `current` for both.
+- **Quoted rule.** New `claude -p` and `codex exec -s read-only` sessions each quoted the
+  cause-check rule word for word. The old Codex copy lacked that rule, so the quote came
+  from the block.
+- **Gate: loop.** In a clone of `recode-accept-a`, headless `/recode-loop:run "neg in
+  math.mjs returns its input unchanged; ..." --effort low`. Codex reviewed the plan,
+  implemented through `recode:implement` with status ok, and reviewed the diff;
+  `code-review low` found nothing. The run asked before publishing, as the house rules
+  require; after a `--resume` yes it committed 0fc3741, opened PR 16 with CI green, and
+  posted the report comment.
+- **Gate: hook.** Codex: after trusting the hook in the TUI, a `codex exec` commit in a
+  scratch repository tracking `AGENTS.md` made 7dc9406, whose session file holds
+  "repo-docs: this command commits". The same commit in a repository without a tracked
+  instruction file got no message, as designed. Claude Code: after the old `repo-docs`
+  was removed, a `claude -p` commit in the same repository made 1b5e557, whose
+  transcript holds the message.
+- **Retired.** `ccl` and `repo-docs@repo-docs` with their marketplaces on Claude Code;
+  `codex-code-review-general` and the `codex-code-review` marketplace on Codex, which
+  left no `codex-code-review` entry in `config.toml`.
+
+### 2026-10-04: M7 step 2, Windows
+
+A personal Windows 11 machine, not the work machine. Claude Code 2.1.287, codex-cli
+0.160.0, Node 26.4.0, Git 2.55.0.windows.5. A session on that machine ran a brief and
+reported here, first as a dry run in scratch profiles, then on the real profile. Nothing
+was committed in this repository.
+
+- **Dry run.** Every step passed in scratch profiles, and the real home files kept their
+  hashes. It found forge-ops at e5429ef, behind 9faabda, and only `Git\cmd` on the
+  Windows `PATH`. Two scratch steps were denied in auto mode as "Security Weaken". The
+  loop opened PR 17, which the session then closed as agreed.
+- **Start of the real run.** Claude Code had `ccl` 0.10.0, `repo-docs@repo-docs` 0.1.1,
+  `codex-lite` 0.9.0, and `cca` 0.5.0; Codex had `codex-code-review-general` 0.1.0;
+  neither host had the `reimagine-code` marketplace. `CLAUDE.md` was the forge-ops
+  import and `AGENTS.md` equalled forge-ops `codex/AGENTS.md`, CRLF included. With the
+  author's approval, forge-ops was fast-forwarded to 9faabda, with no installer run, and
+  `C:\Program Files\Git\bin` was added to the user `PATH`.
+- **Install and rules.** The marketplace and the 0.1.3 plugins were added on both hosts.
+  `/recode:rules --options core,windows,writing` wrote both blocks after "yes" to each.
+  The text above each block was removed with Node, which keeps CRLF. `AGENTS.md` got a
+  `## Local overrides` section holding a Links section from an older backup, at the
+  author's choice; `CLAUDE.md` has none. New `claude -p` and `codex exec` sessions quoted
+  the cause-check rule.
+- **Gate: rules (R59).** On the real files, `status` and `plan` read `current` and
+  `change: none`, and both hashes were unchanged. In a scratch profile, a stale block
+  with a local overrides section below it was replaced, and the 36 bytes after the end
+  marker were unchanged (`cmp`).
+- **Gate: loop.** Codex `gpt-6-luna` implemented through `recode:implement` with status
+  ok and no fallback; commit fbfc0bf, PR 18 open with the `test` check passing and the
+  report comment posted.
+- **Gate: hook.** Codex, started from PowerShell with the new `PATH`: commit 578bba3,
+  with the message in its session file. Claude Code, after the old plugins were
+  removed: commit 2c5e1e9, with the message in its transcript.
+- **Retired.** `ccl`, `repo-docs@repo-docs`, `codex-code-review-general`, and their
+  marketplaces. `codex-lite` and `cca` stay.
+- **Found.** A CRLF block converted to LF reads as edited by hand (issue 16).

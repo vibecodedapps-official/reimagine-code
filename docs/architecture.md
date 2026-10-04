@@ -358,9 +358,9 @@ not repeat it.
 ### Local overrides
 
 Personal rules go below the end marker, under a heading the user chooses. The block never
-states a conflict order. On the author's work machine, the four toolkit phrases the
-2026-10-02 handoff lists move
-there so the block stays identical to what ships.
+states a conflict order. On the author's work machine, which has no forge-ops and whose
+files are kept by hand, its own lines go there, so the block stays identical to what
+ships.
 
 ## Versions, tags, and dependencies
 
@@ -458,8 +458,8 @@ there so the block stays identical to what ships.
   bridge hook and the review skills.
 - **Audit plugin.** It calls the bridge as `codex-lite:ask` and finds it by the
   `codex-lite@` plugin id on 33 lines. Uninstalling `codex-lite` breaks it until those
-  lines say `recode`. Decided 2026-10-03: the audit repo switches them to `recode` as
-  part of its 0.4.0 work, before cutover uninstalls `codex-lite`.
+  lines say `recode`. Decided 2026-10-03: the audit repo switches them to `recode` before
+  cutover uninstalls `codex-lite`. As of 0.6.0 it has not, so `codex-lite` stays.
 - **Cutover**, after release, in three steps so no machine is left without rules:
   1. forge-ops installers stop writing the home instruction files. Today
      `claude/install.mjs` rewrites `~/.claude/CLAUDE.md` to its one-line import whenever

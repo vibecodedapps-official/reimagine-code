@@ -269,9 +269,10 @@ v0.1.0 acceptance.
     forge-ops keeps its policy files until every machine has replaced its import, so no
     import points at a deleted file. These are changes in another repo, asked for
     separately.
-59. **Gate.** On each machine: one full loop run with Codex implementing and Claude
-    publishing; the repo-docs hook firing on both hosts; the rules command on the work
-    machine against a file with local overrides below the block.
+59. **Gate.** On each machine forge-ops manages: one full loop run with Codex
+    implementing and Claude publishing; the repo-docs hook firing on both hosts; the
+    rules command on a Windows machine against a file with local overrides below the
+    block. The work machine is out of the gate (`docs/decisions.md` Part 10).
 60. **Retire.** Old plugins are uninstalled on every machine, including Codex's
     `config.toml` entries. Old repos are archived private only after every machine
     passes.
