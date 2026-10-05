@@ -124,7 +124,7 @@ name a plugin are rerun under the new names and recorded here.
     exactly `ccx` and `repo-docs`, from `plugins/ccx-codex` and `plugins/repo-docs`,
     and they install at 0.1.0 and 0.1.2. Covers R2. Rerun when the Codex catalog or a
     Codex manifest changes. Run 2026-10-03, 2026-10-04 for 0.2.0 and 0.3.0, and
-    2026-10-05 for 0.3.1 from a local clone; see the records.
+    2026-10-05 for 0.3.1; see the records.
 12. **Code review on Codex.** Setup: as item 11, in a scratch git repository with
     `math.mjs`, `test.mjs`, and a `package.json` whose `test` script passes, then an
     uncommitted change that renames an export, gives `add` a third argument with a
@@ -1323,11 +1323,12 @@ the same sha256 after the runs as before.
     the second.
   - The comments, the snapshots under `specs/ccx/<run-id>/`, and cca's `handoff.sh
     check` were as for 0.3.0.
-- **Item 11 passed from a local clone.** In a new Codex home holding only the model,
+- **Item 11 passed.** In a new Codex home holding only the model,
   effort, sandbox, and approval settings, `codex plugin marketplace add` with the
   clone's path listed exactly `ccx` from `plugins/ccx-codex` and `repo-docs` from
-  `plugins/repo-docs`. They installed at 0.3.1 and 0.1.4 and showed as enabled. The
-  GitHub form waits for the release.
+  `plugins/repo-docs`. They installed at 0.3.1 and 0.1.4 and showed as enabled. After
+  the push, the same check passed from GitHub with `--ref fix/review-rounds`, credentials
+  off.
 - **Item 13 passed.** The audit read the skill from the installed 0.1.4 and reported the
   missing `docs/missing.md` as an error. After "Review hooks" and `t`, `config.toml`
   held a `trusted_hash` for each of the two hooks. The commit run's session file holds
