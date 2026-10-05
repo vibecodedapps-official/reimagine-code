@@ -245,7 +245,7 @@ function matchResume(s) {
   const rest = s.slice(m[0].length);
   if (rest[0] === '=') {
     const v = /^\S*/.exec(rest.slice(1))[0];
-    return { value: checkId(v), rest: s.slice(m[0].length + 1 + v.length + 1) };
+    return { value: checkId(v), rest: s.slice(m[0].length + 1 + v.length).replace(/^(?:\r?\n|[ \t])/, '') };
   }
   // Spaces or tabs, any number of them, then either a (possibly CRLF) newline or end of text: bare.
   const sp = /^[ \t]*/.exec(rest)[0];
@@ -254,7 +254,7 @@ function matchResume(s) {
   if (after === '' || nl) return { value: true, rest: s.slice(m[0].length + sp.length + (nl ? nl[0].length : 0)) };
   const token = /^\S*/.exec(after)[0];
   if (/^--(?:model|resume|timeout)(?:=|$)/.test(token)) return { value: true, rest: s.slice(m[0].length + sp.length) };
-  return { value: checkId(token), rest: s.slice(m[0].length + sp.length + token.length + 1) };
+  return { value: checkId(token), rest: s.slice(m[0].length + sp.length + token.length).replace(/^(?:\r?\n|[ \t])/, '') };
 }
 
 export function parseAskArgs(text) {

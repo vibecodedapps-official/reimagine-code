@@ -1,7 +1,7 @@
 // The entry script run end to end against a fake Codex that records what it was given. Git is real, in scratch repos.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { spawnSync } from 'node:child_process';
+import { spawn, spawnSync } from 'node:child_process';
 import { existsSync, mkdirSync, readdirSync, symlinkSync, utimesSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import {
@@ -220,6 +220,48 @@ test('a run past its deadline has its whole process group killed, grandchild inc
   assert.match(r.stdout, /\n\nccx: the run failed: timed out after 1 s; its process group was stopped\n/);
   assert.match(r.stdout, /\nstatus: timeout\n$/);
   assert.equal(await dead(pids(s)[0]), true);
+}));
+
+const processGroupCheck = spawnSync('ps', ['-o', 'ppid=', '-p', String(process.pid)]).error;
+for (const mode of ['hang', 'ignores-signals']) for (const signal of ['SIGINT', 'SIGTERM']) test(`ask ${mode} interrupted by ${signal} stops Codex and reports failure`,
+  { ...spawning, skip: spawning.skip || (mode === 'hang' && processGroupCheck && `process-group pid lookup unavailable: ${processGroupCheck.code}`) }, withScratch(async (s) => {
+  writeFileSync(join(s.data, `request-${ID}.txt`), 'q');
+  const bridge = spawn(process.execPath, [SCRIPT, 'ask', s.data, ID], {
+    cwd: s.repo, stdio: ['ignore', 'pipe', 'pipe'],
+    env: { ...process.env, CCX_CODEX_BIN: FAKE, CCX_TIMEOUT_MS: '1000', FAKE_CODEX: mode, FAKE_CODEX_PIDS: join(s.root, 'pids') },
+  });
+  let stdout = '';
+  bridge.stdout.on('data', (b) => { stdout += b; });
+  const ended = new Promise((resolve, reject) => { bridge.on('error', reject); bridge.on('exit', (code, sig) => resolve({ code, sig })); });
+  const closed = new Promise((resolve) => bridge.on('close', resolve));
+  const deadline = setTimeout(() => bridge.kill('SIGKILL'), 15_000);
+  let codexPid;
+  try {
+    for (let i = 0; i < 100 && !existsSync(join(s.root, 'pids')); i++) await new Promise((r) => setTimeout(r, 50));
+    assert.equal(existsSync(join(s.root, 'pids')), true, 'Codex fixture started');
+    const childPid = pids(s)[0];
+    if (mode === 'hang') {
+      const parent = spawnSync('ps', ['-o', 'ppid=', '-p', String(childPid)], { encoding: 'utf8' });
+      assert.equal(parent.status, 0, 'read Codex pid from its recorded child');
+      codexPid = Number(parent.stdout.trim());
+    } else codexPid = childPid;
+    assert.equal(bridge.kill(signal), true);
+    const result = await ended;
+    assert.equal(await dead(codexPid), true, 'Codex process stopped');
+    if (mode === 'hang') assert.equal(await dead(childPid), true, 'Codex child stopped');
+    await closed;
+    assert.equal(result.code, 1);
+    assert.equal(result.sig, null);
+    assert.match(stdout, /\nstatus: failed\n$/);
+    assert.doesNotMatch(stdout, /timed out|status: timeout/);
+  } finally {
+    clearTimeout(deadline);
+    bridge.kill('SIGKILL');
+    if (codexPid) try { process.kill(-codexPid, 'SIGKILL'); } catch {}
+    if (existsSync(join(s.root, 'pids'))) for (const pid of pids(s)) try { process.kill(pid, 'SIGKILL'); } catch {}
+    bridge.stdout.destroy(); bridge.stderr.destroy();
+    await ended;
+  }
 }));
 
 test('ask --timeout 1 with no environment override ends the turn after 1 s, and the flag does not reach Codex', spawning, withScratch(async (s) => {

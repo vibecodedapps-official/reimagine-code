@@ -7,8 +7,7 @@ import { existsSync, mkdtempSync, readFileSync, realpathSync, renameSync, rmSync
 import { createRequire } from 'node:module';
 import { homedir } from 'node:os';
 import { delimiter, dirname, isAbsolute, join, relative, sep } from 'node:path';
-import { NPM_WIN32, WINDOWS_SANDBOXES, buildArgv, decideProbe, parseAskArgs, parseImplementArgs, parseReviewArgs, readStream, requestedLine, resumeLine, validateRequestId,
-  validThreadId, windowsSandboxSetting } from './codex.mjs';
+import { NPM_WIN32, WINDOWS_SANDBOXES, buildArgv, decideProbe, parseAskArgs, parseImplementArgs, parseReviewArgs, readStream, requestedLine, resumeLine, validateRequestId, validThreadId, windowsSandboxSetting } from './codex.mjs';
 
 const started = Date.now();
 // Test-only seams, read once. CCX_TIMEOUT_MS replaces both deadlines below; an ask, review or implement --timeout wins for the turn.
@@ -47,8 +46,9 @@ function run(file, args, { ms, cwd, input, onStdout }) {
       if (done) return;
       done = true;
       timers.forEach(clearTimeout);
+      for (const signal of ['SIGINT', 'SIGTERM']) process.removeListener(signal, stop);
       if (child && POSIX) kill('SIGKILL');
-      res.stillRunning = !res.spawnError && child.exitCode === null && child.signalCode === null;
+      res.stillRunning = !res.spawnError && child.exitCode === null && child.signalCode === null; if (res.interrupted) res.code = 1;
       for (const s of [child.stdin, child.stdout, child.stderr]) s?.destroy();
       child.unref();
       res.stdout = Buffer.concat(stdout).toString('utf8');
@@ -68,13 +68,15 @@ function run(file, args, { ms, cwd, input, onStdout }) {
       later(2000, finish);
     });
     child.on('close', finish);
-    later(ms, () => {
-      if (child.exitCode !== null || child.signalCode !== null) return; // exited, and draining: not a timeout
-      res.timedOut = true;
+    const stop = (signal = true) => {
+      if (res.interrupted || child.exitCode !== null || child.signalCode !== null) return; // exited, and draining: not a timeout
+      res.interrupted = Boolean(signal); res.timedOut = !signal;
       kill('SIGINT'); // Codex stops the commands it runs in their own process groups on SIGINT; SIGTERM kills it and leaves them
       later(5000, () => kill('SIGKILL'));
       later(10_000, finish);
-    });
+    };
+    later(ms, () => stop(false));
+    for (const signal of ['SIGINT', 'SIGTERM']) process.on(signal, stop);
     if (child.stdin) {
       // EPIPE here means the child exited without reading its input; its exit status and stderr say why.
       child.stdin.on('error', () => {});

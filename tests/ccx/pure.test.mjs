@@ -527,6 +527,11 @@ test('ask arguments: a CRLF line ending after --model or --timeout is consumed w
   assert.deepEqual(parseAskArgs('--timeout=5\r\n\nq'), { model: undefined, resume: undefined, timeout: 5, question: '\nq' });
 });
 
+test('ask arguments: explicit resume IDs consume a whole CRLF delimiter in both spellings', () => {
+  assert.deepEqual(parseAskArgs('--resume t-9\r\nq'), { model: undefined, resume: 't-9', timeout: undefined, question: 'q' });
+  assert.deepEqual(parseAskArgs('--resume=t-9\r\nq'), { model: undefined, resume: 't-9', timeout: undefined, question: 'q' });
+});
+
 test('review arguments: --timeout given more than once is refused, in either spelling', () => {
   for (const text of ['--timeout 5 --timeout 6', '--timeout=5 --timeout 6', '--timeout 5 --timeout=5']) {
     assert.throws(() => parseReviewArgs(text), /^Error: --timeout given more than once; refused$/, text);

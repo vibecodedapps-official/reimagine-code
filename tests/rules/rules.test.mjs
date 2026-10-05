@@ -3,7 +3,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { spawn, spawnSync } from 'node:child_process';
-import { existsSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, rmSync, symlinkSync, unlinkSync, utimesSync, writeFileSync } from 'node:fs';
+import { chmodSync, lstatSync, linkSync, realpathSync, statSync, existsSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, rmSync, symlinkSync, unlinkSync, utimesSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -267,6 +267,12 @@ test('R33: with no Codex home, the Codex target is skipped and nothing is create
   assert.throws(() => s.run('apply', ['codex']), { message: 'there is no planned change for codex; run /ccx:rules again' });
   assert.equal(existsSync(s.codexDir), false);
   assert.deepEqual(readdirSync(s.root).sort(), ['claude', 'data', 'home']);
+  mkdirSync(s.codexDir);
+  s.run('plan');
+  rmSync(s.codexDir, { recursive: true });
+  assert.deepEqual(s.run('apply', ['codex']), [`target: codex ${s.codex}`,
+    `state: skipped; there is no Codex home at ${s.codexDir}, so nothing is written there`, 'change: none']);
+  assert.equal(existsSync(s.codexDir), false);
 }, { codex: false }));
 
 test('R33: with AGENTS.override.md in the Codex home, the Codex target is left alone', sandbox((s) => {
@@ -275,6 +281,12 @@ test('R33: with AGENTS.override.md in the Codex home, the Codex target is left a
   const out = s.run('plan');
   assert.equal(out.at(-2),
     `state: skipped; Codex reads ${join(s.codexDir, 'AGENTS.override.md')} instead of AGENTS.md, so the Codex file is left alone`);
+  assert.deepEqual(readdirSync(s.codexDir), ['AGENTS.override.md']);
+  rmSync(join(s.codexDir, 'AGENTS.override.md'));
+  s.run('plan');
+  put(join(s.codexDir, 'AGENTS.override.md'), 'override\n');
+  assert.deepEqual(s.run('apply', ['codex']), [`target: codex ${s.codex}`,
+    `state: skipped; Codex reads ${join(s.codexDir, 'AGENTS.override.md')} instead of AGENTS.md, so the Codex file is left alone`, 'change: none']);
   assert.deepEqual(readdirSync(s.codexDir), ['AGENTS.override.md']);
 }));
 
@@ -499,3 +511,54 @@ test('the script runs when its path goes through a symlink, as under a linked ~/
     unlinkSync(linked);
   }
 }));
+
+test('R33, R41, R42: apply and remove write through a target symlink', { skip: process.platform === 'win32' }, sandbox((s) => {
+  const managed = join(realpathSync(s.root), 'managed.md');
+  put(managed, 'managed line\n');
+  mkdirSync(s.claudeDir);
+  symlinkSync(managed, s.claude);
+  s.run('plan');
+  s.run('apply', ['claude']);
+  assert.equal(lstatSync(s.claude).isSymbolicLink(), true);
+  assert.ok(bytes(managed).includes('ccx:house-rules begin'));
+  assert.equal(bytes(`${managed}.ccx-backup-20261003120000`), 'managed line\n');
+  s.run('remove');
+  s.run('apply', ['claude'], { now: LATER });
+  assert.equal(lstatSync(s.claude).isSymbolicLink(), true);
+  assert.equal(bytes(managed), 'managed line\n');
+}));
+
+test('R41: apply refuses a hard-linked target without writing', sandbox((s) => {
+  put(s.claude, 'managed line\n');
+  const linked = join(s.root, 'managed.md');
+  linkSync(s.claude, linked);
+  s.run('plan');
+  assert.throws(() => s.run('apply', ['claude']), { message: `${s.claude} has multiple hard links, so nothing was written` });
+  assert.equal(bytes(s.claude), 'managed line\n');
+  assert.equal(bytes(linked), 'managed line\n');
+  assert.equal(statSync(s.claude).nlink, 2);
+  assert.deepEqual(readdirSync(s.claudeDir), ['CLAUDE.md']);
+}));
+
+test('R41: atomic replacement preserves existing permissions', { skip: process.platform === 'win32' }, sandbox((s) => {
+  put(s.claude, 'private instructions\n');
+  chmodSync(s.claude, 0o600);
+  s.run('plan');
+  s.run('apply', ['claude']);
+  assert.equal(statSync(s.claude).mode & 0o777, 0o600);
+}));
+
+test('R37, R40, R42: a BOM before the first block preserves offsets, updates and removal bytes', () => {
+  const current = `${BOM}${CORE_LF}`;
+  assert.equal(plan(current).state, 'current');
+  assert.equal(inspect(current).start, 3);
+  assert.equal(plan(current, { remove: true }).after, BOM);
+  const stale = `${BOM}${begin('core', 'none', '6d3e610aaf815551')}\nold rules\n${END}\n`;
+  assert.equal(plan(stale).state, 'stale');
+  assert.equal(plan(stale).after, `${BOM}${CORE_LF.replace('join=blank', 'join=none')}`);
+  assert.equal(plan(stale, { remove: true }).after, BOM);
+});
+
+test('R44: a BOM before the first import preserves the duplicate report', () => {
+  assert.deepEqual(imports(`${BOM}@~/extra.md\n`), ['1: @~/extra.md']);
+});
