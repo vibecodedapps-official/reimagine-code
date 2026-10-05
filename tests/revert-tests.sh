@@ -31,6 +31,9 @@
 # 11 argument and keys errors: exit 2 with one line; an existing work dir is left alone
 # 12 the patterns fixture               13 the ground-truth fixture
 # 14 an empty merge-base tree
+# 15 bg and wait: a run in the background (15a), a keys error with a stale .exit (15b), the
+#    deadline (15c), wait's window (15d), no run (15e), TERM to bg (15f), wrong arguments
+#    (15g), the deadline during a blocked git step (15h), KILL to bg (15i)
 #
 # Prints one line per mismatch, then `revert-tests test: ok` when there were none. Exit 0
 # when every case matches, otherwise 1.
@@ -513,7 +516,7 @@ fails 'revert-tests: keys: timeout must be whole seconds, 1 or more'
 case_id="case 11f"
 "$sh_bin" "$rt" > "$tmp/out" 2> "$tmp/err"
 rc=$?
-fails 'usage: revert-tests.sh run <repo> <base> <head> <keys file> <work dir> <result file>'
+fails 'usage: revert-tests.sh run|bg <repo> <base> <head> <keys file> <work dir> <result file>, or wait <result file>'
 
 # 14. An empty merge-base tree: the reverted copy holds the head's test file and none of
 # its production files, so a test that needs nothing passes in both copies.
@@ -526,6 +529,172 @@ commit feature main
 run "$R" "$run_keys"
 ok
 verdicts '- `tests/test_a.sh`: passes at head and without the change\n'
+
+# 15. bg and wait. bgstart <repo> <keys> starts bg in the background on main...feature
+# (sets bp); waitrun runs wait (sets rc, writes $tmp/out and $tmp/err); nosides checks
+# that wait removed .exit and .err.
+bgstart() {
+	printf '%b' "$2" > "$tmp/keys"
+	rm -f "$tmp/res"
+	wd=$root/rw
+	"$sh_bin" "$rt" bg "$1" main feature "$tmp/keys" "$wd" "$tmp/res" > "$tmp/bgout" 2>&1 &
+	bp=$!
+}
+waitrun() {
+	"$sh_bin" "$rt" wait "$tmp/res" > "$tmp/out" 2> "$tmp/err"
+	rc=$?
+}
+bgdone() {
+	wait "$bp"
+	b_rc=$?
+	[ "$b_rc" = "$1" ] || mismatch "$case_id: bg exit $b_rc, expected $1"
+	[ ! -s "$tmp/bgout" ] || mismatch "$case_id: bg printed [$(tr '\n' '|' < "$tmp/bgout")]"
+}
+nosides() {
+	[ ! -e "$tmp/res.exit" ] || mismatch "$case_id: .exit is left"
+	[ ! -e "$tmp/res.err" ] || mismatch "$case_id: .err is left"
+	[ ! -e "$tmp/res.exit.tmp" ] || mismatch "$case_id: .exit.tmp is left"
+}
+# started <pid file>: wait up to 20 seconds for a test file to record its pid.
+started() {
+	n=0
+	while [ ! -s "$RT_PIDS/$1" ] && [ "$n" -lt 100 ]; do
+		sleep 0.2
+		n=$((n + 1))
+	done
+	[ -s "$RT_PIDS/$1" ] || mismatch "$case_id: the test file did not start"
+}
+
+case_id="case 15a"
+mkrepo c15
+put 100644 README 'x\n'
+commit main
+put 100644 tests/test_a.sh 'exit 0\n'
+put 100644 tests/test_slow.sh 'echo $$ > "$RT_PIDS/slow"\nsleep 6\n'
+commit feature main
+bgstart "$R" 'command\tsh\nrun\ttests/test_a.sh\n'
+waitrun
+bgdone 0
+checkleft
+ok
+verdicts '- `tests/test_a.sh`: passes at head and without the change\n'
+nosides
+
+case_id="case 15b"
+printf '0\n' > "$tmp/res.exit"
+bgstart "$R" 'run\ttests/test_a.sh\n'
+n=0
+while [ ! -e "$tmp/res.err" ] && [ "$n" -lt 100 ]; do
+	sleep 0.2
+	n=$((n + 1))
+done
+waitrun
+bgdone 0
+checkleft
+fails 'revert-tests: keys: no command'
+nosides
+
+case_id="case 15c"
+REVERT_TESTS_DEADLINE=2
+export REVERT_TESTS_DEADLINE
+bgstart "$R" 'command\tsh\nrun\ttests/test_slow.sh\ntimeout\t60\n'
+unset REVERT_TESTS_DEADLINE
+waitrun
+bgdone 0
+checkleft
+fails 'revert-tests: stopped at the deadline of 2 seconds'
+nosides
+
+case_id="case 15d"
+bgstart "$R" 'command\tsh\nrun\ttests/test_slow.sh\n'
+started slow
+REVERT_TESTS_WAIT=2 "$sh_bin" "$rt" wait "$tmp/res" > "$tmp/out" 2> "$tmp/err"
+rc=$?
+[ "$rc" = 3 ] || mismatch "$case_id: first wait exit $rc, expected 3"
+printf 'revert-tests: still running\n' > "$tmp/exp"
+cmp -s "$tmp/exp" "$tmp/err" || mismatch "$case_id: first wait stderr [$(tr '\n' '|' < "$tmp/err")]"
+waitrun
+bgdone 0
+checkleft
+ok
+verdicts '- `tests/test_slow.sh`: passes at head and without the change\n'
+nosides
+
+case_id="case 15e"
+rm -f "$tmp/res"
+REVERT_TESTS_WAIT=2 "$sh_bin" "$rt" wait "$tmp/res" > "$tmp/out" 2> "$tmp/err"
+rc=$?
+fails "revert-tests: no run started for $tmp/res"
+
+case_id="case 15f"
+bgstart "$R" 'command\tsh\nrun\ttests/test_slow.sh\ntimeout\t60\n'
+started slow
+kill -TERM "$bp"
+bgdone 2
+n=0
+while [ -e "$wd" ] && [ "$n" -lt 75 ]; do
+	sleep 0.2
+	n=$((n + 1))
+done
+checkleft
+[ ! -e "$tmp/res.exit" ] || mismatch "$case_id: .exit was written"
+REVERT_TESTS_WAIT=2 "$sh_bin" "$rt" wait "$tmp/res" > "$tmp/out" 2> "$tmp/err"
+rc=$?
+[ "$rc" = 3 ] || mismatch "$case_id: wait exit $rc, expected 3"
+[ ! -e "$tmp/res" ] || mismatch "$case_id: a result file was written"
+rm -f "$tmp/res.err"
+
+case_id="case 15g"
+"$sh_bin" "$rt" bg "$R" main feature "$tmp/keys" "$root/rw" > "$tmp/out" 2> "$tmp/err"
+rc=$?
+fails 'usage: revert-tests.sh run|bg <repo> <base> <head> <keys file> <work dir> <result file>, or wait <result file>'
+nosides
+
+# 15h. The deadline while a git step blocks in the foreground: a git on PATH that sleeps in
+# rev-parse. TERM reaches the step through the child's group, so wait answers well before
+# the step's 60 seconds.
+case_id="case 15h"
+mkdir "$root/fakebin"
+real_git=$(command -v git)
+printf '#!/bin/sh\ncase " $* " in *" rev-parse "*) echo $$ > "$RT_PIDS/git"; sleep 60 ;; esac\nexec "%s" "$@"\n' \
+	"$real_git" > "$root/fakebin/git"
+chmod +x "$root/fakebin/git"
+fakebin=$root/fakebin
+if command -v cygpath > /dev/null 2>&1; then
+	fakebin=$(cygpath -u "$fakebin")
+fi
+printf '%b' 'command\tsh\nrun\ttests/test_a.sh\n' > "$tmp/keys"
+rm -f "$tmp/res"
+wd=$root/rw
+t0=$(date +%s)
+PATH=$fakebin:$PATH REVERT_TESTS_DEADLINE=5 "$sh_bin" "$rt" bg "$R" main feature "$tmp/keys" \
+	"$wd" "$tmp/res" > "$tmp/bgout" 2>&1 &
+bp=$!
+waitrun
+t1=$(date +%s)
+bgdone 0
+[ $((t1 - t0)) -lt 30 ] || mismatch "$case_id: wait took $((t1 - t0)) seconds"
+[ -s "$RT_PIDS/git" ] || mismatch "$case_id: the git step did not start"
+checkleft
+fails 'revert-tests: stopped at the deadline of 5 seconds'
+nosides
+
+# 15i. bg KILLed, as a harness ends a session's shells: the group's leader ends the run, so
+# no test process or work dir is left, and no .exit is written.
+case_id="case 15i"
+bgstart "$R" 'command\tsh\nrun\ttests/test_slow.sh\ntimeout\t60\n'
+started slow
+kill -KILL "$bp"
+wait "$bp" 2> /dev/null
+n=0
+while [ -e "$wd" ] && [ "$n" -lt 100 ]; do
+	sleep 0.2
+	n=$((n + 1))
+done
+checkleft
+[ ! -e "$tmp/res.exit" ] || mismatch "$case_id: .exit was written"
+[ ! -e "$tmp/res" ] || mismatch "$case_id: a result file was written"
+rm -f "$tmp/res.err"
 
 # 12. The patterns fixture: both files pass at the head only, and the reverted run of
 # tests/test_users.sh shows P18's test passing before the migration test fails.
