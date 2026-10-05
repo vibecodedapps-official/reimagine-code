@@ -348,7 +348,7 @@ with `mv -f`. Never edit either in place.
 
 ```json
 {
-  "plugin_version": "0.8.0",
+  "plugin_version": "0.8.1",
   "approvals": [ { "kind": "fetch", "target": "<repo name>:<remote>",
                    "decision": "approved", "time": "2026-09-30T14:15:00Z",
                    "commands": ["git -C <repo> fetch --no-tags --refmap= ..."] } ],
