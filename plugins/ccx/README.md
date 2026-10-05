@@ -157,7 +157,8 @@ could not be read; a crash of the plugin itself, before or after the turn, is `f
 review found nothing. The exit code is 0 for `ok` and 1 otherwise. A result with no `status:`
 line was cut off, by the Bash tool's timeout or a kill, and is incomplete. The plugin does not
 tell model, login or sandbox failures apart: Codex reports them as prose, which the
-`ccx: the run failed:` line carries. `setup` prints no status line.
+`ccx: the run failed:` line carries. `setup` prints no status line, except `status: refused`
+when a signal stops it.
 
 `ask` and `review` run from the top of the repository, whatever directory the shell is in; `do` and `implement` run from the shell's directory, or from `--cwd` for `implement`, which bounds where they can write; `review` runs from the top of the repository holding its `--cwd`, if given. `ask` and
 `review` also print a line saying the sandbox has no network. `do` and `implement` also print `HEAD` before

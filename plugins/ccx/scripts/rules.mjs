@@ -169,8 +169,8 @@ export function targets(env, home = homedir()) {
         : { path: resolved(join(codexDir, 'AGENTS.md')) },
   };
   if (!all.codex.skip && existsSync(all.claude.path) && existsSync(all.codex.path)) {
-    const a = statSync(all.claude.path), b = statSync(all.codex.path);
-    if (a.dev === b.dev && a.ino === b.ino) all.codex.skip = 'it is the same file as the Claude target, so the Codex file is left alone';
+    const a = statSync(all.claude.path, { bigint: true }), b = statSync(all.codex.path, { bigint: true });
+    if (a.ino !== 0n && a.dev === b.dev && a.ino === b.ino) all.codex.skip = 'it is the same file as the Claude target, so the Codex file is left alone';
   }
   return all;
 }

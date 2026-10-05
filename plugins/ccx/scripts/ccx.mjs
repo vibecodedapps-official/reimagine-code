@@ -25,7 +25,7 @@ const refuse = (message) => { throw new Refusal(message); };
 const secs = (ms) => `${ms / 1000} s`;
 const out = [];
 // The last line of every ask, review, do and implement result, decided by phase: refused before the task turn is attempted, failed
-// or timeout once it is, ok only when the run and all its reporting completed. Unset for setup, hook and unknown commands.
+// or timeout once it is, ok only when the run and all its reporting completed. Unset for hook, unknown commands and setup, unless a signal stops it.
 let status;
 // One saved thread id per Claude session, so a bare --resume never picks up another session's thread.
 const threadFile = (dataDir, id) => join(dataDir, `thread-${id}.txt`);

@@ -20,8 +20,8 @@ repos' own changelogs are kept under `docs/history/`.
 - Stopping `ask`, `do`, `implement`, or `review` with SIGINT or SIGTERM now stops Codex,
   and on macOS and Linux the commands it started, and ends with `status: failed`. A
   signal during the bridge's own git calls, or during `setup`'s checks, stops the run
-  before anything else starts. Before,
-  Codex kept running after the bridge was gone.
+  before anything else starts, with `status: refused`. Before, Codex kept running after
+  the bridge was gone.
 - `ask` with `--resume <id>` or `--resume=<id>` and a Windows line ending after the id
   forwards the question without a leading newline.
 - `/ccx:rules` says that `--options` replaces the options in use, so adding Codex's
