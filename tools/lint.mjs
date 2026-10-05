@@ -262,6 +262,28 @@ for (const p of shipped.filter((f) => rel(f).startsWith("plugins/ccx-loop/"))) {
   });
 }
 
+// Loop API commands must carry the hostname recorded at adoption.
+for (const p of shipped.filter((f) => rel(f).startsWith("plugins/ccx-loop/") && f.endsWith(".md"))) {
+  let fenced = false;
+  readFileSync(p, "utf8").split("\n").forEach((line, i) => {
+    if (/^\s*```/.test(line)) { fenced = !fenced; return; }
+    if (fenced) return;
+    const spans = line.split("`");
+    for (let j = 1; j < spans.length; j += 2) {
+      const span = spans[j];
+      if (!/(?:^|[\s;|&(])gh\s+api(?:\s|$)/.test(span)) continue;
+      if (j === spans.length - 1) {
+        fail(`${rel(p)}:${i + 1}: gh api span runs across lines`);
+        continue;
+      }
+      const command = span.match(/(?:^|[\s;|&(])gh\s+api\s+(.+)/)?.[1];
+      if (command && !/(?:^|\s)--hostname(?:=|\s+)[^\s]+/.test(command)) {
+        fail(`${rel(p)}:${i + 1}: gh api command must pass --hostname`);
+      }
+    }
+  });
+}
+
 // 16. Each loop command applies the codex plugin option to its no-codex flag (R21).
 for (const f of ["run", "plan"].map((n) => `plugins/ccx-loop/commands/${n}.md`)) {
   const text = read(f);

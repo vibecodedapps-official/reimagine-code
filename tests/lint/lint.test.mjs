@@ -333,3 +333,18 @@ test('lint compares a change with the highest tag by number', () => fails(
 test('lint rejects a shallow clone, which may lack the tags', () => fails(
   (d) => { tagged(d); writeFileSync(join(d, '.git', 'shallow'), git(d, 'rev-parse', 'HEAD')); },
   'R49: this clone is shallow, so release tags may be missing'));
+
+for (const [name, text, message] of [
+  ['a hostless loop API command', '`gh api repos/x/y`', 'gh api command must pass --hostname'],
+  ['a loop API span across lines', '`gh api\nrepos/x/y`', 'gh api span runs across lines'],
+]) {
+  test(`lint rejects ${name}`, () => fails(
+    (d) => appendFileSync(join(d, 'plugins/ccx-loop/skills/ccx-loop/ci-watch.md'), `${text}\n`),
+    'plugins/ccx-loop/skills/ccx-loop/ci-watch.md:', message));
+}
+
+test('lint accepts explicit loop API hosts and ignores prose and fenced commands', () => {
+  const r = lint((d) => appendFileSync(join(d, 'plugins/ccx-loop/skills/ccx-loop/ci-watch.md'),
+    '`gh api --hostname <host> repos/x/y`\n`gh api repos/x/y --hostname=<host>`\n`gh api`\n```\n`gh api repos/x/y`\n```\n'));
+  assert.equal(r.status, 0, r.out);
+});

@@ -458,8 +458,9 @@ ships.
   plugin changed since its highest `<name>--v<version>` tag carries a higher version,
   the Codex `ccx` against the bridge's tags, which share its name; the root README's
   install and uninstall blocks name every catalog plugin; cca's three `plugin_version`
-  literals equal its manifest version; and the changelog has a dated heading for the
-  suite version.
+  literals equal its manifest version; every `gh api` command in the loop's shipped text
+  passes `--hostname`, each in one backtick span on one line; and the changelog has a
+  dated heading for the suite version.
 - **Release** (`tools/release.mjs`): `ccx <version> [--floor <version>]`,
   `repo-docs <version>`, or `cca <version>` sets the version line in every manifest and
   catalog entry that carries it, with `--floor` the loop's dependency range, and for cca
