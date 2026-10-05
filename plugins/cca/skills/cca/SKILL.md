@@ -229,7 +229,8 @@ fallback produced a complete output for every scope.
 - `reported`: every applicable stage complete, and a report written.
 - `partial`: a report was written, but a stage failed or the budget ran out. The
   verdict is `audit incomplete`, never `ready to merge`. Print the resume command
-  `/cca:resume <run-id>`.
+  `/cca:resume <run-id>` only when the registry update succeeded; otherwise print the
+  manual entry per State files.
 - `blocked`: no report could be written, or the read-only check failed. Print the
   reason; keep every finished stage file.
 
@@ -299,6 +300,9 @@ and before writing that stage's final entry:
    `approvals` after the baseline explains it. Otherwise end the run `blocked` at once
    and show it.
 4. For each `ignored` line (exit 3), added, deleted, or changed:
+   - If the path is inside `<scratch>/cca/` of this run's primary repository and
+     outside this run's directory, accept it as another cca run's or a handoff's file
+     and list it that way in the check file. It needs no agent attribution in step 5.
    - If any agent with Bash (digester, mapper, auditor, adversary, or the stage 6
      fallback), in any stage, is running or has ended since the previous check (from
      the `agents` lists in `stages.json`), accept it provisionally, as pending.
@@ -312,8 +316,9 @@ and before writing that stage's final entry:
    pending.
 6. Write `baseline/<stage>-check.md`: the stage, the time, the repos checked, the
    result (`pass` or `blocked: <reason>`), the ignored-file differences accepted (each
-   with the agent and run that accounts for it, or `pending` with the agents it waits
-   on), or `none`, the `touched` lines as "touched, content unchanged" (for a path the
+   labeled as another cca run's or a handoff's file, or with the agent and run that accounts
+   for it, or `pending` with the agents it waits on), or `none`, the `touched` lines
+   as "touched, content unchanged" (for a path the
    brief lists as flagged, "touched, content not compared"), and the
    `note mtime precision: seconds` line when the check printed it (the report's
    Coverage repeats it from there). On pass, the out prefix of this check becomes the
@@ -330,9 +335,21 @@ no `_test` key, do not read that file.
 
 ### State files
 
-Write `stages.json` and `runs.json` only through a temporary file beside the
-destination (`stages.json.tmp`, `runs.json.tmp`), then rename it over the destination
-with `mv -f`. Never edit either in place.
+Write `stages.json` only through `stages.json.tmp` beside it, then rename it over
+the destination with `mv -f`. Never edit state files in place.
+
+For every `runs.json` update, create `${CLAUDE_PLUGIN_DATA}/runs.json.lock` with
+`mkdir` (no `-p`). While the lock exists, wait 5 seconds and retry; after a minute,
+ask the user whether a stale lock may be removed. Holding the lock, read `runs.json`
+afresh (or start an array when absent), write `runs.json.tmp` beside it, run `mv -f`
+to replace `runs.json`, then `rmdir` the lock.
+
+If creating the lock is refused or fails for a reason other than an existing lock,
+or writing or replacing the registry is refused or fails, go on. Release any lock this session acquired. Tell the user at once that `/cca:resume`
+and `/cca:act` cannot find this run. Record that limitation in `audit-brief.md` so
+the next report's Coverage repeats it. If the report is already finalized, include
+the limitation in the final reply. At the end, print the run's JSON entry to add by
+hand to the resolved absolute `runs.json` path, in place of a bare resume command.
 
 `${CLAUDE_PLUGIN_DATA}/runs.json` is a JSON array with one entry per run:
 

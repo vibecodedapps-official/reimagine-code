@@ -466,7 +466,7 @@ missing directory is created. Otherwise the run stops before stage 1 with
 directory, even when the manifest's `scratch` has changed since. The run id is
 `<YYYY-MM-DD-HHMM>-<slug>`, with a numeric suffix on collision. Every run is recorded in
 `runs.json` in cca's plugin data directory, so `/cca:resume` and `/cca:act` find it from
-any directory.
+any directory, unless Claude Code refuses the write, which the run reports.
 
 The run directory holds all state: the normalized `manifest.json`, `stages.json` (the
 only record of which stages are complete), `audit-brief.md`, `claims.md`, `groups.md`,
@@ -677,11 +677,10 @@ presented as exact.
 
 ## Pairing with ccx-loop
 
-The pairing is still manual: pass a `ccx-loop` run's `report.md` as a claims file
-(`--claims <path>`). A loop report is a prose claims file, and stage 1 types each
-sentence. `/cca:handoff` can run in any session, including one that ran the loop, and
-writes the typed form. Automatic chaining from the loop, and the loop writing a handoff
-itself, are not implemented; `skills/cca/handoff.md` is the format the loop could adopt.
+When a `ccx-loop` run has a commit of its own, it writes
+`.ccx/<run-id>/handoff.md` and `.ccx/<run-id>/cca-manifest.json` and suggests
+`/cca:audit "<absolute path of .ccx/<run-id>/cca-manifest.json>"`. The manifest carries
+the bundles and tickets, with the typed handoff as its claims.
 
 ## Development
 
@@ -707,13 +706,13 @@ Its checks live in `tests/cca/` of the reimagine-code repository. From its root,
 `npm test` runs every one of them through `tests/cca/sh.test.mjs`, and `npm run lint`
 runs the repository checks. Each can also run alone:
 
-- `sh tests/cca/cca/lint.sh`: checks the static parts (command and agent frontmatter, no agent
+- `sh tests/cca/lint.sh`: checks the static parts (command and agent frontmatter, no agent
   with Edit or NotebookEdit, every stage file the skill names exists).
-- `sh tests/cca/cca/fixture/build.sh <solo|solo-dirty|full|tokens|patterns|ground-truth>`:
+- `sh tests/cca/fixture/build.sh <solo|solo-dirty|full|tokens|patterns|ground-truth>`:
   builds a throwaway fixture in a temp directory and prints its manifest path. Expected
   outcomes are listed in `tests/cca/fixture/expected.md`. `ground-truth` plants the 20
   confirmed review findings of `tests/cca/fixture/ground-truth-cases.md`.
-- `sh tests/cca/cca/fixture/verify.sh <manifest path> [name]`: checks a built fixture against
+- `sh tests/cca/fixture/verify.sh <manifest path> [name]`: checks a built fixture against
   the key literals in `tests/cca/fixture/expected.md` and prints one line per mismatch. CI
   runs it after each build.
 - `sh tests/cca/readonly.sh`: runs `readonly.sh` against a `solo-dirty` fixture, one case per

@@ -266,7 +266,8 @@ never loses a finished one. With `--live`, it first imports approved live check 
    list: when the planned commands for a repo and remote are all in one recorded list
    for that target, they are not asked again; otherwise ask once, listing the new
    commands, and record a new approval entry.
-9. **Mark the run running.** Set the run's `state` in `runs.json` to `running`. A
+9. **Mark the run running.** Set the run's `state` in `runs.json` to `running` under
+   the lock per SKILL.md, State files. A
    resumed run has no budget; the original invocation's budget does not carry over.
 10. **Continue.** Go to the SKILL.md section for the first rerun stage and run every
    stage after it, with the same rules as an audit. When the first rerun stage is 2, 3,

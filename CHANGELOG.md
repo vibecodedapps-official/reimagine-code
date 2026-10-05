@@ -65,6 +65,30 @@ repos' own changelogs are kept under `docs/history/`.
 - The sh suites and fixtures run through `npm test` from `tests/cca/`. The records from
   before the move are under `docs/history/claude-codex-audit/`.
 - Released as 0.9.1; the move above shipped as 0.9.0.
+- The README's standalone check commands name `tests/cca/lint.sh`,
+  `tests/cca/fixture/build.sh`, and `tests/cca/fixture/verify.sh`. Before, each had an
+  extra `cca/` in its path and exited 127.
+- The README's pairing section describes the handoff `ccx-loop` writes, `handoff.md` and
+  `cca-manifest.json` under `.ccx/<run-id>/`, and the `/cca:audit` command it suggests.
+  Before, it said the pairing was manual and the loop wrote no handoff.
+- `/cca:handoff` prints a manifest for the session's bundles as a fenced JSON block when
+  it was given neither a manifest nor a PR as a URL or `github:owner/repo#n`, since
+  `/cca:audit` cannot learn the branch and base otherwise. Before, the printed command
+  stopped in stage 1 for want of a branch and base.
+- `/cca:handoff` copies check commands, paths, and commit subjects as recorded, tool
+  names included, and rewrites only prose that credits a model, agent, or tool with the
+  work. Before, the rule read as rewriting the commands too, so an auditor could not
+  reproduce a check.
+- Every `runs.json` update holds a `runs.json.lock` directory in the plugin data
+  directory and rereads the registry under it. Before, two audits running at once could
+  lose each other's entry, so `/cca:resume` and `/cca:act` could not find a run.
+- A refused or failed `runs.json` write no longer ends with a bare `/cca:resume <run-id>`
+  that cannot work: the run says at once that resume and act cannot find it, records
+  that in the brief so the report's Coverage repeats it, and prints the entry to add by
+  hand.
+- The read-only check accepts another cca run's or a handoff's file under the primary
+  repository's `<scratch>/cca/` and lists it as such. Before, two audits of the same
+  repository ended each other `blocked`.
 
 ### repo-docs
 

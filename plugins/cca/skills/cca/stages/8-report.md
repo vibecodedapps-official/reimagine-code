@@ -289,10 +289,14 @@ Outputs: `report.md`, `claims-verdicts.md`, and `work-items.jsonl`. The format o
     `["report.md", "claims-verdicts.md", "work-items.jsonl"]`.
 
 13. **Update `${CLAUDE_PLUGIN_DATA}/runs.json`:** set this run's `state` to the terminal
-    state, writing a temporary file beside it and renaming it.
+    state under the lock per SKILL.md, State files. On refusal or failure, continue
+    with that section's warning, brief and final-reply limitation, and manual entry.
 
 14. **Print and stop:** the absolute path of `report.md`, the verdict, and the terminal
-    state. For `partial`, also print `/cca:resume <run-id>`. Nothing runs after this;
+    state. For `partial`, also print `/cca:resume <run-id>` only when the registry
+    update succeeded. For any terminal state when the registry update failed, print
+    the JSON entry and resolved registry path for manual addition per SKILL.md,
+    State files instead of a bare resume command. Nothing runs after this;
     `/cca:act` is a separate command.
 
 ## `claims-verdicts.md`
