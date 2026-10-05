@@ -251,7 +251,7 @@ Enforcement:
    command's output, never from memory or from arithmetic on earlier entries. Elapsed time
    is the difference between the Step 0 start and the latest recorded time, minus each
    question wait, all from recorded outputs. Record the budget in force and its source in
-   `run.md` at Step 0.5, and again when Step 1.6 sets the tier, Step 4.5 raises it, or a
+   `run.md` at Step 0.5, and again when Step 1.6 sets the tier, Step 3.5 or Step 4.5 raises it, or a
    session instruction changes it.
 2. Pass a per-call budget to the tool where the tool takes a timeout: Bash `timeout` (in
    milliseconds) for checks, `--timeout` (in seconds) for Codex, including
@@ -1034,8 +1034,12 @@ Runs only when `confirm-plan` is true and the run is not plan-only. Otherwise go
    commit stays the one fetched in Step 0.2: the default branch moving during the wait
    changes nothing.
 4. A requested change is recorded in `inputs.md` as an ad-hoc input. Rerun Step 1.3's
-   verification on the changed input, then apply the risk floor without re-estimating
-   effort; the tier never falls below the one already chosen. Update the plan and choose
+   verification on the changed input. When the planning snapshot is not the base commit,
+   also verify the changed input against the base commit with Step 3.7.1's read-only
+   method. Then apply the risk floor without re-estimating effort; the tier never falls
+   below the one already chosen.
+   When the tier rises and no explicit run budget is set, the budget becomes the new
+   tier's default from that point; record it in `run.md`. Update the plan and choose
    each slice's implementer again under `tiers.md`, and judge its higher-risk rule again.
    It gets one more Step 3 round, inside the cap of 3 that Step 3 and Step 3.7.1 share.
    That round follows Step 3 items 2 to 6: an open blocking objection at the cap ends in
