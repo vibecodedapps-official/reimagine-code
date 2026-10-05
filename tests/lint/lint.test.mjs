@@ -49,9 +49,9 @@ test('lint rejects a runtime module no budget lists', () => fails(
   (d) => writeFileSync(join(d, 'plugins/ccx/scripts/extra.mjs'), 'export {};\n'),
   'runtime modules no plugin budget lists: plugins/ccx/scripts/extra.mjs'));
 
-test('lint rejects bridge scripts over their 700-line budget', () => fails(
+test('lint rejects bridge scripts over their 710-line budget', () => fails(
   (d) => appendFileSync(join(d, 'plugins/ccx/scripts/codex.mjs'), '\n'.repeat(700)),
-  'plugins/ccx: codex.mjs + ccx.mjs total ', ' lines, budget is 700'));
+  'plugins/ccx: codex.mjs + ccx.mjs total ', ' lines, budget is 710'));
 
 test('lint rejects a plugin directory with no row in its table', () => fails(
   (d) => { mkdirSync(join(d, 'plugins/foo')); writeFileSync(join(d, 'plugins/foo/x.md'), 'x\n'); },
@@ -177,7 +177,7 @@ test('lint rejects a loop dependency range with a caret', () => fails(
 
 test('lint rejects a loop dependency floor above the suite version', () => fails(
   (d) => editJson(d, 'plugins/ccx-loop/.claude-plugin/plugin.json', (j) => { j.dependencies = [{ name: 'ccx', version: '>=0.4.0 <1.0.0' }]; }),
-  'with the floor at or below 0.3.1; found ">=0.4.0 <1.0.0"'));
+  'with the floor at or below 0.3.2; found ">=0.4.0 <1.0.0"'));
 
 test('lint rejects a loop with no ccx dependency', () => fails(
   (d) => editJson(d, 'plugins/ccx-loop/.claude-plugin/plugin.json', (j) => { delete j.dependencies; }),
@@ -259,7 +259,7 @@ test('lint rejects the codex manifest on another schema', () => fails(
 
 test('lint rejects the codex ccx off the suite version', () => fails(
   (d) => editJson(d, 'plugins/ccx-codex/plugin.json', (j) => { j.version = '0.4.0'; }),
-  'plugins/ccx-codex: version 0.4.0 differs from the suite version 0.3.1 in package.json'));
+  'plugins/ccx-codex: version 0.4.0 differs from the suite version 0.3.2 in package.json'));
 
 test('lint rejects repo-docs manifests with different versions', () => fails(
   (d) => editJson(d, 'plugins/repo-docs/.codex-plugin/plugin.json', (j) => { j.version = '0.1.1'; }),
@@ -282,10 +282,10 @@ test('lint rejects a changelog without a dated heading for the suite version', (
   (d) => {
     const p = join(d, 'CHANGELOG.md');
     const s = readFileSync(p, 'utf8');
-    assert.match(s, /^## 0\.3\.1 - \d{4}-\d{2}-\d{2}$/m, 'the changelog lacks the heading');
-    writeFileSync(p, s.replace(/^## 0\.3\.1 - \d{4}-\d{2}-\d{2}$/m, '## Unreleased'));
+    assert.match(s, /^## 0\.3\.2 - \d{4}-\d{2}-\d{2}$/m, 'the changelog lacks the heading');
+    writeFileSync(p, s.replace(/^## 0\.3\.2 - \d{4}-\d{2}-\d{2}$/m, '## Unreleased'));
   },
-  'CHANGELOG.md: no heading "## 0.3.1 - <YYYY-MM-DD>" for the suite version'));
+  'CHANGELOG.md: no heading "## 0.3.2 - <YYYY-MM-DD>" for the suite version'));
 
 // The copy becomes a git repository with one commit, tagged as each named release.
 const git = (cwd, ...args) => execFileSync('git', ['-c', 'user.email=t@example.com', '-c', 'user.name=t', '-c', 'commit.gpgsign=false', '-c', 'tag.gpgsign=false', ...args],
@@ -298,17 +298,17 @@ const tagged = (d, ...tags) => {
 };
 
 test('lint passes on a tagged copy with no change since its tags', () => {
-  const r = lint((d) => tagged(d, 'ccx--v0.3.1', 'ccx-loop--v0.3.1', 'repo-docs--v0.1.4'));
+  const r = lint((d) => tagged(d, 'ccx--v0.3.2', 'ccx-loop--v0.3.2', 'repo-docs--v0.1.4'));
   assert.equal(r.status, 0, r.out);
 });
 
 test('lint rejects a change to a tagged plugin that keeps its version', () => fails(
-  (d) => { tagged(d, 'ccx--v0.3.1'); appendFileSync(join(d, 'plugins/ccx/README.md'), 'More.\n'); },
-  'plugins/ccx: changed since ccx--v0.3.1, so its version must be above 0.3.1; found 0.3.1'));
+  (d) => { tagged(d, 'ccx--v0.3.2'); appendFileSync(join(d, 'plugins/ccx/README.md'), 'More.\n'); },
+  'plugins/ccx: changed since ccx--v0.3.2, so its version must be above 0.3.2; found 0.3.2'));
 
 test('lint holds the codex ccx to the bridge tag', () => fails(
-  (d) => { tagged(d, 'ccx--v0.3.1'); appendFileSync(join(d, 'plugins/ccx-codex/README.md'), 'More.\n'); },
-  'plugins/ccx-codex: changed since ccx--v0.3.1, so its version must be above 0.3.1; found 0.3.1'));
+  (d) => { tagged(d, 'ccx--v0.3.2'); appendFileSync(join(d, 'plugins/ccx-codex/README.md'), 'More.\n'); },
+  'plugins/ccx-codex: changed since ccx--v0.3.2, so its version must be above 0.3.2; found 0.3.2'));
 
 test('lint compares a change with the highest tag by number', () => fails(
   (d) => { tagged(d, 'repo-docs--v0.1.9', 'repo-docs--v0.1.10'); appendFileSync(join(d, 'plugins/repo-docs/README.md'), 'More.\n'); },

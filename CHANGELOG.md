@@ -3,7 +3,11 @@
 One changelog for the suite. Each release has a subsection per component. The source
 repos' own changelogs are kept under `docs/history/`.
 
-## Unreleased
+## 0.3.2 - 2026-10-05
+
+### ccx (Codex)
+
+- Version 0.3.2, to stay in step with `ccx`. No change.
 
 ### cca
 
