@@ -7,9 +7,9 @@
 # JSON newlines delimit commands, and JSON tabs delimit words.
 word="('[^']*'|\"[^\"]*\"|[^[:space:];&|()\"'])+"
 options="(--[[:alnum:]-]+(=$word)?|-[[:alnum:]]+)"
-sed -nE 's/.*"command"[[:space:]]*:[[:space:]]*"((\\.|[^"\\])*)".*/"\1/p' |
+sed -nE 's/.*"command"[[:space:]]*:[[:space:]]*"((\\.|[^"\\])*)".*/\1/p' |
   sed 's/\\\\/_/g; s/\\n/;/g; s/\\t/ /g; s/\\"/"/g' |
-  grep -Eq "(^|[\";&|(])[[:space:]]*((env|sudo|[[:alpha:]_][[:alnum:]_]*=$word)[[:space:]]+)*(bash[[:space:]]+-c[[:space:]]+')?git(\\.exe)?([[:space:]]+($options|(-C|-c|--git-dir|--work-tree|--namespace|--config-env)[[:space:]]+$word))*[[:space:]]+commit([[:space:];&|()\"']|$)" ||
+  grep -Eq "(^|[;&|(])[[:space:]]*((env|sudo|[[:alpha:]_][[:alnum:]_]*=$word)[[:space:]]+)*((bash|sh|zsh)[[:space:]]+-(c|lc)[[:space:]]+['\"])?git(\\.exe)?([[:space:]]+($options|(-C|-c|--git-dir|--work-tree|--namespace|--config-env)[[:space:]]+$word))*[[:space:]]+commit([[:space:];&|()\"']|$)" ||
   exit 0
 # The index sees a nested file and a file staged for this commit. The hook cannot tell
 # whether the user asked for a first instruction file; the skill triggers on that case.

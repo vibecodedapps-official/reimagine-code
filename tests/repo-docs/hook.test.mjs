@@ -71,3 +71,13 @@ const others = [
 for (const [name, input] of others) test(`A1-U5-2: stays quiet for ${name}`, { skip }, (t) => {
   assert.equal(run(repository(t), input), '');
 });
+for (const command of ['echo "git commit"', 'git log --grep="git commit"', 'gh pr create --body "git commit"', "echo 'git commit'"]) {
+  test(`A3-U5-1: stays quiet for ${command}`, { skip }, (t) => {
+    assert.equal(run(repository(t), JSON.stringify({ tool_input: { command } })), '');
+  });
+}
+for (const command of ['bash -c "git commit"', "sh -c 'git commit'", "bash -lc 'git commit'"]) {
+  test(`A3-U5-1: reminds for ${command}`, { skip }, (t) => {
+    assert.equal(run(repository(t), JSON.stringify({ tool_input: { command } })), reminder);
+  });
+}
