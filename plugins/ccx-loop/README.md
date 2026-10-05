@@ -78,6 +78,11 @@ The reimagine-code repository is the marketplace. In Claude Code:
 Installing the loop also installs `ccx`. Claude Code keeps `ccx` inside the version
 range the loop declares, and refuses to disable it while the loop is enabled.
 
+Updating `ccx-loop` does not update `ccx`, so update both, as the suite's
+[update steps](../../README.md#update) show. Then restart Claude Code, run `/ccx:setup`
+again, and use the allow rule it prints, because the old rule names the previous version's
+path.
+
 To try a local clone without installing it, load both plugins, because the loop calls
 `ccx`:
 

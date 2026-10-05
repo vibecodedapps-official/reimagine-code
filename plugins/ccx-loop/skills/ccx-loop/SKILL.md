@@ -156,8 +156,13 @@ Carve-outs:
    issue the remaining Step 0 commands one at a time.
 
    The same holds for a Codex implementer call that returns `failed` or no status line,
-   because it may have written part of its slice. Before its retry, or the Sonnet
-   fallback after a second failure:
+   because it may have written part of its slice. So before every Codex implementer or
+   fix call, including a retry or CI repair, record `git status --porcelain
+   --untracked-files=all` without `--ignored` in a separate snapshot under
+   `.ccx/<run-id>/`, and save the current `git diff` of tracked and intent-to-add paths to
+   a patch file there. Keep each call's snapshot and patch. After a call that returns
+   `failed` or no status line, before its retry or the Sonnet fallback after a second
+   failure:
    - The previous call must have returned its output, in the foreground or as a background
      completion notification, since ccx ends the Codex process when its turn ends
      or the Bash call times out. A call whose output never arrives is a budget expiry: end
@@ -176,11 +181,16 @@ Carve-outs:
      therefore not retried and gets no Sonnet fallback: end the run in `blocked` naming
      the possible surviving process. On POSIX the runner stops the process group, so the
      returned output is the evidence.
-   - Read the tree state from the footer or `git status`. A path there that the slice
-     does not own is reverted before the retry: `git checkout -- <path>` for a tracked
-     file, delete for an untracked one, and log each in `run.md`, so no other slice's
-     implementer meets an edit it did not make. Then give the next call the current diff
-     with the same slice prompt.
+   - Compare `git status --porcelain --untracked-files=all` and the current diff with
+     that call's snapshot and patch. Never touch an ignored (`!!`) path or anything
+     under `.ccx/`. Cleanup applies only outside the slice to a status line new or
+     different from the snapshot. For a path clean before the call, restore a tracked
+     file with `git checkout -- <path>` or delete an untracked, non-ignored file. If a
+     path was already dirty or intent-to-add before the call and now differs from its
+     saved state or patch, end in `blocked` naming it; never run `git checkout --` on
+     it. Check the saved patch even when its status line is unchanged. Leave unchanged
+     earlier work alone. Log each cleanup action or block in `run.md`. Then give the
+     next call the current diff with the same slice prompt.
 
    The threshold stays two failures in a row. Step 4.2 item 4 applies this rule.
 
@@ -1103,8 +1113,9 @@ If the run is plan-only, stop here at every tier. Print the plan. It is already 
       the slice written, so the preconditions of Approval scope item 6 apply before any
       retry or fallback: the previous call returned its output; it did not say Codex may
       still be running; on Windows a `failed` call, or one with no status line, ends the
-      run in `blocked` instead; and you have read the tree state and reverted any path
-      outside the slice. Then retry once as a fresh `ccx:implement`
+      run in `blocked` instead; and you have compared the pre-call snapshot and patch
+      and completed only the safe cleanup in Approval scope item 6, with no block.
+      Then retry once as a fresh `ccx:implement`
       call with the same slice prompt and the slice's current diff. A second `failed` or
       no status line in a row, with the same preconditions met, falls back to `sonnet`
       with the same prompt and the current diff: the slice's effective model becomes

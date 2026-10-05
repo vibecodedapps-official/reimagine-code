@@ -27,6 +27,21 @@ repos' own changelogs are kept under `docs/history/`.
   run with `--ignore-user-config`. It also gives update steps, and says that updating
   `ccx-loop` does not update `ccx`.
 
+### ccx-loop
+
+- A failed Codex implementer or fix call is cleaned up against a snapshot taken before
+  the call. Only paths that call changed outside its slice are restored, ignored paths and
+  `.ccx/` are never touched, and a path that was already changed before the call ends the
+  run in `blocked`. Before, the cleanup could revert earlier slices' work and delete
+  ignored files such as `.env`.
+- The CI watch compares the PR head with the commit the run pushed, at every poll and
+  before it reports green, and ends in `blocked` on a mismatch. Before, a push by someone
+  else during the watch could be reported as `done`.
+- The CI watch reads every page of active rules, commit statuses, and workflow runs.
+  Before, a required check or a failing status past the first 30 was missed.
+- The README and the catalog entry say that updating `ccx-loop` does not update `ccx`, and
+  that one reviewer, Codex or Claude, reviews a run.
+
 ### ccx (Codex)
 
 - Version 0.3.1, to stay in step with `ccx`. No change.

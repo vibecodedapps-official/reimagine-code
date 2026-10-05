@@ -21,7 +21,7 @@
     {
       "name": "ccx-loop",
       "source": "./plugins/ccx-loop",
-      "description": "Run a tiered plan, review, implement, review, publish loop for one unit of work, with Claude orchestrating, Codex implementing, and Codex and Claude reviewing.",
+      "description": "Run a tiered plan, review, implement, review, publish loop for one unit of work, with Claude orchestrating, Codex implementing, and Codex or Claude reviewing.",
       "version": "0.3.1"
     },
     {
