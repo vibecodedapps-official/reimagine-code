@@ -234,7 +234,7 @@ Added 2026-10-05, when claude-codex-audit 0.8.1 at `eed9fba` joined the suite as
     the manifest version, and the release tool sets them. Check: lint; release record.
 62. **Behavior carried over.** The commands `audit`, `resume`, `act`, and `handoff`, the
     five agents, the skill, and the eight sh scripts behave at the import as cca 0.8.1
-    with the bridge names changed; every later change is a `### cca` line in
+    with the bridge names changed; every later change is a line under `### cca` in
     `CHANGELOG.md`. Every sh suite and fixture build of the source repository runs through
     `npm test`, from `tests/cca/`, on the three CI systems, plus mawk on Ubuntu. Check:
     test; acceptance for a run.

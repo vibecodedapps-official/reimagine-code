@@ -245,8 +245,8 @@ name a plugin are rerun under the new names and recorded here.
     ends `partial` with verdict `audit incomplete` and prints a `/cca:resume <run-id>`
     line; `stages.json` records `plugin_version` `0.9.1`; the fixture repository's
     `git status --porcelain` is unchanged by the run. Covers R61 and R62. Rerun when a
-    cca command, the skill, the catalog entry, or the plugin version changes. Not yet
-    run.
+    cca command, the skill, the catalog entry, or the plugin version changes. Run
+    2026-10-05 for 0.9.0; see the records.
 22. **cca second opinion through ccx.** Setup: as item 21, with `ccx` installed from
     this catalog, Codex logged in, and the `patterns` fixture. Command: `/cca:audit
     <manifest> --effort low`; then uninstall `ccx` and run `/cca:resume <run-id> --from 6`.

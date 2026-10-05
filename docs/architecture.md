@@ -124,6 +124,9 @@ lint, so the `ccx--v<version>` tag names one commit for both.
 
 ## Components
 
+Each section describes its component as it joined the suite; later changes are in
+`CHANGELOG.md`.
+
 ### ccx (Claude)
 
 Behavior carries over from codex-lite 0.9.0 unchanged except for names.
