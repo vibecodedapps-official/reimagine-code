@@ -161,7 +161,11 @@ requirement below changes it. The audit plugin is not part of v0.1.0.
     Check: lint for `disable-model-invocation: true`.
 33. **Targets.** It reads and writes only `CLAUDE.md` in `$CLAUDE_CONFIG_DIR` (else
     `~/.claude`), `AGENTS.md` in `$CODEX_HOME` (else `~/.codex`), their backups, and its
-    data directory. It creates the Claude file if missing. It never creates the Codex
+    data directory. A symlinked target is written at the file it points to, with its
+    backup and temporary file beside that file; a hard-linked target or a link to a
+    missing file is refused; a Codex target that is the same file as the Claude target
+    is skipped; the target's permissions are kept.
+    It creates the Claude file if missing. It never creates the Codex
     home or anything in it when that directory is absent. When `AGENTS.override.md`
     exists in the Codex home, it reports that Codex reads that file instead and leaves
     the Codex target alone. It never edits `settings.json`. Depends on spike M0.7.

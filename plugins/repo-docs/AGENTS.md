@@ -28,7 +28,7 @@ same commit run from a `mktemp -d` directory prints nothing.
   `@AGENTS.md`, and this directory has none.
 - One hook, `hooks/pre-commit.sh`, runs before each `Bash` tool call on Claude Code and
   Codex, and each `PowerShell` tool call on Claude Code. When the command runs
-  `git commit` and the git index of the working directory holds an `AGENTS.md` or
+  `git commit` and the git index at the work-tree root holds an `AGENTS.md` or
   `CLAUDE.md`, it adds a reminder to run the audit; it never blocks the command, reads
   only stdin and that index, and never writes a file. No other hook.
 - One authoritative version, in `.claude-plugin/plugin.json`. `.codex-plugin/plugin.json`

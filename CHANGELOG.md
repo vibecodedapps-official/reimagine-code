@@ -3,6 +3,65 @@
 One changelog for the suite. Each release has a subsection per component. The source
 repos' own changelogs are kept under `docs/history/`.
 
+## 0.3.1 - 2026-10-05
+
+### ccx
+
+- `/ccx:rules` writes through a symlinked `CLAUDE.md` or `AGENTS.md` to the file it
+  points to, so the link survives. Before, apply replaced the link with a regular file.
+  A target with more than one hard link, or a link to a missing file, is refused, and
+  nothing is written. When `CLAUDE.md` and `AGENTS.md` are the same file, the Codex
+  target is skipped.
+- `/ccx:rules` keeps the target file's permissions. Before, a `0600` file became `0644`.
+- `/ccx:rules` skips the Codex file at apply time when the Codex home was removed, or an
+  `AGENTS.override.md` was added, after the diff was shown. Before, it wrote anyway.
+- `/ccx:rules` reads a block or an import on the first line of a file that starts with a
+  UTF-8 byte order mark. Before, such a block read as malformed.
+- Stopping `ask`, `do`, `implement`, or `review` with SIGINT or SIGTERM now stops Codex,
+  and on macOS and Linux the commands it started, and ends with `status: failed`. A
+  signal during the bridge's git calls before the Codex turn, or during `setup`'s
+  checks, stops the run before anything else starts, with `status: refused`. Before,
+  Codex kept running after the bridge was gone.
+- `ask` with `--resume <id>` or `--resume=<id>` and a Windows line ending after the id
+  forwards the question without a leading newline.
+- `/ccx:rules` says that `--options` replaces the options in use, so adding Codex's
+  Writing section takes `--options core,writing`. Before, `--options writing` read as an
+  addition and removed the core rules.
+- The README says the sandbox probe reads your Codex configuration; only the Codex turns
+  run with `--ignore-user-config`. It also gives update steps, and says that updating
+  `ccx-loop` does not update `ccx`.
+
+### ccx-loop
+
+- A failed Codex implementer or fix call is cleaned up against a snapshot taken before
+  the call. Only paths that call changed outside its slice are restored, ignored paths and
+  `.ccx/` are never touched, and a path that was already changed before the call ends the
+  run in `blocked`, as does an untracked file outside the slice whose content changed.
+  Before, the cleanup could revert earlier slices' work and delete ignored files such as
+  `.env`.
+- The CI watch compares the PR head with the commit the run pushed, at every poll and
+  before it reports green, and ends in `blocked` on a mismatch. Before, a push by someone
+  else during the watch could be reported as `done`. The cca manifest names the PR only
+  when its live remote head is the run's commit.
+- The CI watch reads every page of active rules, commit statuses, and workflow runs.
+  Before, a required check or a failing status past the first 30 was missed.
+- The README and the catalog entry say that updating `ccx-loop` does not update `ccx`, and
+  that one reviewer, Codex or Claude, reviews a run.
+
+### ccx (Codex)
+
+- Version 0.3.1, to stay in step with `ccx`. No change.
+
+### repo-docs
+
+- Released as 0.1.4.
+- The commit reminder now fires for a commit made from a subdirectory of the repository.
+  Before, it looked for instruction files only below the current directory.
+- The reminder fires only when the command itself runs `git commit`, including with git
+  options such as `-C` with a quoted or Windows path, after `cd`, or in PowerShell.
+  Before, it also fired for commands that only mentioned it, such as
+  `git log --grep commit` or a commit message in a PR body.
+
 ## 0.3.0 - 2026-10-04
 
 ### ccx

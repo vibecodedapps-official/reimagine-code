@@ -415,3 +415,55 @@ narrower need for `code-review`, and the multi-repo rules.
 9. **The suite moves to 0.3.0 together.** `tools/release.mjs` keeps one suite version, so
    `ccx` and the Codex `ccx` move with no change, as at earlier releases. The loop's
    range stays `>=0.2.0 <1.0.0`.
+
+## Part 13: ccx 0.3.1, the review rounds, 2026-10-05
+
+1. **`/ccx:rules` writes through a symlinked target instead of refusing it.** Apply
+   wrote a temporary file and renamed it over the target, which turned a symlinked
+   `CLAUDE.md` or `AGENTS.md` into a regular file and left the link's target unchanged.
+   A `~/.claude/CLAUDE.md` linked into a dotfiles repository is a supported setup, and
+   the R45 tests run through a linked `~/.claude`, so refusing links would break those
+   users. The target is resolved once where targets are computed, so the hash, backup,
+   temporary file, and rename all land on the file the link points to, and the link
+   stays a link. Paths through a linked config directory stay as given.
+2. **A hard-linked target and a link to a missing file are refused.** A rename cannot
+   keep a hard link, and a link to a missing file has no file to write through to;
+   running again gives the same result, so the refusal says what is wrong instead of
+   asking for another run. When the Codex target is the same file as the Claude target,
+   compared by device and inode with bigint stats so that large NTFS file ids do not
+   collide, the Codex target is skipped. Two plans for one file made each apply stale the
+   other. The Windows side of that comparison is not yet checked by a run.
+3. **A signal stops the bridge's run before anything else starts.** On SIGINT or SIGTERM
+   the bridge stops Codex's process group and ends `status: failed`. A git call before the
+   turn, or one of `setup`'s checks, that a signal interrupts is a refusal, so no Codex
+   turn or later check starts, and the run ends `status: refused`. `setup` printed no
+   status line before; it now prints one only in this case, an addition to its output.
+   The check reads the interrupted call's own result, not a process-wide flag: a flag
+   made a signal during a `do` turn drop the tree footer.
+4. **The loop cleans up a failed Codex call against a snapshot taken before it.** The
+   earlier rule reverted every path outside the slice, which could undo an earlier
+   slice's work and delete ignored files such as `.env`. Before every Codex implementer
+   or fix call, the run saves the status, the diff, and the hashes of untracked files as
+   `pre-<n>.status`, `.patch`, and `.hashes`. After a failure, only a path that was clean
+   before the call and changed outside the slice is restored; a path that was already
+   changed, or an untracked file whose content changed, ends the run in `blocked`.
+5. **The CI watch and the cca manifest read the live remote head.** `git ls-remote`
+   does not update the tracking ref, so a push by someone else during the watch could be
+   judged green on a head without the run's commits. The watch compares the live head
+   with the commit the run pushed at every poll, and the manifest names the PR only when
+   they match.
+6. **In the repo-docs hook, a quote is never a command boundary, and wrappers are matched
+   explicitly.** Three fix rounds swung between false positives (`echo "git commit"`)
+   and false negatives (`git -c user.name="A B" commit`), each round's boundary reopening
+   the other's cases. The boundary is now the start of the command or `;`, `&`, `|`, or
+   `(`, and `bash`, `sh`, or `zsh` with `-c` or `-lc` and a quote is matched as a
+   wrapper. Some forms stay quiet, such as `pwsh -Command`, `cmd /c`, and `if git commit`,
+   and some quoted separators still remind; these are listed as known limitations. A
+   missed reminder costs one audit prompt and never blocks a commit.
+7. **The bridge stays at 700 lines by joining statements, for now.** `ccx.mjs` plus
+   `codex.mjs` were at the R14 limit, and three fixes each needed a line, so three lines
+   of `ccx.mjs` now hold two statements each. Raising the limit is the author's call.
+8. **A shared rules plan replaced by another session stays a known limitation.** By the
+   author's choice. A clean fix needs `apply` to carry a plan token, which changes its
+   command line, and refusing while a plan is pending would block re-planning after a
+   decline.

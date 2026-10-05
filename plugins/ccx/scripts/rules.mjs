@@ -3,7 +3,7 @@
 // user's Claude CLAUDE.md and Codex AGENTS.md. Everything above main() is pure: it takes file text, options and rule texts.
 // Files are read and written as latin1, so every byte outside the block, a BOM or a stray non-UTF-8 byte included, survives.
 import { createHash } from 'node:crypto';
-import { constants, copyFileSync, existsSync, mkdirSync, readFileSync, realpathSync, renameSync, rmSync, statSync, writeFileSync } from 'node:fs';
+import { chmodSync, constants, lstatSync, copyFileSync, existsSync, mkdirSync, readFileSync, realpathSync, renameSync, rmSync, statSync, writeFileSync } from 'node:fs';
 import { homedir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
@@ -62,7 +62,7 @@ const beginLine = (version, options, join, body) =>
 // Finds the block. Line numbers in a malformed report are 1-based.
 export function inspect(text) {
   const begins = [], ends = [];
-  let at = 0, n = 0;
+  let at = text.startsWith('\u00ef\u00bb\u00bf') ? 3 : 0, n = 0;
   while (at < text.length) {
     const nl = text.indexOf('\n', at);
     const next = nl < 0 ? text.length : nl + 1;
@@ -134,7 +134,8 @@ export function imports(text) {
   let at = 0;
   text.split('\n').forEach((l, i) => {
     const inside = found.kind === 'block' && at >= found.start && at < found.end;
-    if (!inside && /^@\S/.test(l)) lines.push(`${i + 1}: ${l.replace(/\r$/, '')}`);
+    const line = i === 0 ? l.replace(/^\u00ef\u00bb\u00bf/, '') : l;
+    if (!inside && /^@\S/.test(line)) lines.push(`${i + 1}: ${line.replace(/\r$/, '')}`);
     at += l.length + 1;
   });
   return lines;
@@ -159,13 +160,19 @@ export function diff(before, after, from, to) {
 export function targets(env, home = homedir()) {
   const claudeDir = env.CLAUDE_CONFIG_DIR || join(home, '.claude');
   const codexDir = env.CODEX_HOME || join(home, '.codex');
-  return {
-    claude: { path: join(claudeDir, 'CLAUDE.md') },
+  const resolved = (path) => existsSync(path) && lstatSync(path).isSymbolicLink() ? realpathSync(path) : path;
+  const all = {
+    claude: { path: resolved(join(claudeDir, 'CLAUDE.md')) },
     codex: !existsSync(codexDir) ? { path: join(codexDir, 'AGENTS.md'), skip: `there is no Codex home at ${codexDir}, so nothing is written there` }
       : existsSync(join(codexDir, 'AGENTS.override.md'))
         ? { path: join(codexDir, 'AGENTS.md'), skip: `Codex reads ${join(codexDir, 'AGENTS.override.md')} instead of AGENTS.md, so the Codex file is left alone` }
-        : { path: join(codexDir, 'AGENTS.md') },
+        : { path: resolved(join(codexDir, 'AGENTS.md')) },
   };
+  if (!all.codex.skip && existsSync(all.claude.path) && existsSync(all.codex.path)) {
+    const a = statSync(all.claude.path, { bigint: true }), b = statSync(all.codex.path, { bigint: true });
+    if (a.ino !== 0n && a.dev === b.dev && a.ino === b.ino) all.codex.skip = 'it is the same file as the Claude target, so the Codex file is left alone';
+  }
+  return all;
 }
 
 const ROOT = fileURLToPath(new URL('..', import.meta.url));
@@ -200,6 +207,7 @@ function locked(dataDir, fn) {
 function writeAtomic(path, text, backup) {
   const tmp = `${path}.ccx-tmp-${process.pid}`;
   writeFileSync(tmp, text, 'latin1');
+  if (existsSync(path)) chmodSync(tmp, statSync(path).mode & 0o777);
   try { renameSync(tmp, path); } catch (e) {
     if (process.platform === 'win32') {
       sleep(500);
@@ -245,8 +253,11 @@ function run(verb, dataDir, rest, { env, platform, now, home }) {
       save(dataDir, PLAN_FILE, plans);
       return [`ccx: declined the change to ${p.path}; the session notice stays quiet for this text`];
     }
+    if (all[name]?.skip) { save(dataDir, PLAN_FILE, plans); return report(name, all[name], { after: null }); }
     const before = readText(p.path);
+    if (lstatSync(p.path, { throwIfNoEntry: false })?.isSymbolicLink()) refuse(`${p.path} is a symbolic link that points to a missing file, so nothing was written`);
     if (fileHash(before) !== p.before) refuse(`${p.path} changed after the diff was shown, so nothing was written; run /ccx:rules again`);
+    if (before !== null && statSync(p.path).nlink > 1) refuse(`${p.path} has multiple hard links, so nothing was written`);
     const after = Buffer.from(p.after, 'base64').toString('latin1');
     if (p.remove && state.created[name] && after === '') {
       rmSync(p.path);

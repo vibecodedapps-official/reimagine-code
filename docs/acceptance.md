@@ -20,7 +20,7 @@ name a plugin are rerun under the new names and recorded here.
    directory); ask prints Codex's answer; implement edits the scratch repository and its
    footer shows the change. Covers R9 and R15. Rerun when a bridge command, the setup
    report, or the data directory changes. Run 2026-10-03, setup rerun 2026-10-04, and run
-   2026-10-04 for 0.2.0; see the records.
+   2026-10-04 for 0.2.0 and 2026-10-05 for 0.3.1; see the records.
 2. **codex-lite items under the new names.** Setup: as each item says, in scratch
    profiles. Command: items 1, 5, 8, 11, 12, 16, 17, 18, and 19 of
    `docs/history/codex-lite-cc/acceptance.md`, the items that name the plugin or its
@@ -37,7 +37,8 @@ name a plugin are rerun under the new names and recorded here.
    session quotes the rule; after removal each file equals its backup byte for byte; with
    no Codex home the Codex target is reported as skipped and no directory is created.
    Covers R33, R38, R41, and R42. Rerun when `rules.mjs`, the rules command, or a rules
-   file changes. Run 2026-10-03, and 2026-10-04 for 0.1.3 and 0.2.0; see the records.
+   file changes. Run 2026-10-03, 2026-10-04 for 0.1.3 and 0.2.0, and 2026-10-05 for
+   0.3.1; see the records.
 4. **Staleness notice and decline.** Setup: as item 3, with this block after the text
    of `CLAUDE.md` and an empty line, whose digest matches its body: begin line
    `<!-- ccx:house-rules begin version=0.0.1 options=core join=blank digest=6d3e610aaf815551 -->`,
@@ -92,8 +93,8 @@ name a plugin are rerun under the new names and recorded here.
    removal; the declined plan ends `plan-only`; the `--continue` run works on that
    branch; the `--repo` run changes both repositories. Covers ccl items 16, 65, 72, and
    172 under the new names, and the local parts of R22. Rerun when Step 0, Step 7, or an
-   artifact path changes. Run 2026-10-03, and 2026-10-04 for 0.2.0 and 0.3.0; see the
-   records.
+   artifact path changes. Run 2026-10-03, 2026-10-04 for 0.2.0 and 0.3.0, and
+   2026-10-05 for 0.3.1; see the records.
 9. **Loop runs that publish.** Setup: a throwaway GitHub repository with issue #1, a
    one-line bug, and a passing `npm test`; a second one on the same host for the
    multi-repo run; Codex logged in. Command: `/ccx-loop:run #1 --effort low`; then
@@ -101,7 +102,8 @@ name a plugin are rerun under the new names and recorded here.
    an open PR. Expected: Codex implements and Claude publishes a PR that closes #1;
    with `"commit": true` the snapshot lands in `specs/ccx/<run-id>/`; each item's own
    result. Covers the rest of R22 and R25. Rerun when Step 7 or the CI watch changes. Run
-   2026-10-03, and 2026-10-04 for 0.2.0 and 0.3.0; see the records.
+   2026-10-03, 2026-10-04 for 0.2.0 and 0.3.0, and 2026-10-05 for 0.3.1; see the
+   records.
 10. **ccl items under the new names.** The list was drawn 2026-10-03 at the start of M4
     from `docs/history/claude-codex-loop/acceptance.md`: of its 174 items, 58 name a
     renamed string, 35 of them only through bridge calls. The items rerun hinge on a
@@ -121,8 +123,8 @@ name a plugin are rerun under the new names and recorded here.
     add repo-docs@reimagine-code`. Expected: the `reimagine-code` marketplace lists
     exactly `ccx` and `repo-docs`, from `plugins/ccx-codex` and `plugins/repo-docs`,
     and they install at 0.1.0 and 0.1.2. Covers R2. Rerun when the Codex catalog or a
-    Codex manifest changes. Run 2026-10-03, and 2026-10-04 for 0.2.0 and 0.3.0; see the
-    records.
+    Codex manifest changes. Run 2026-10-03, 2026-10-04 for 0.2.0 and 0.3.0, and
+    2026-10-05 for 0.3.1; see the records.
 12. **Code review on Codex.** Setup: as item 11, in a scratch git repository with
     `math.mjs`, `test.mjs`, and a `package.json` whose `test` script passes, then an
     uncommitted change that renames an export, gives `add` a third argument with a
@@ -145,7 +147,7 @@ name a plugin are rerun under the new names and recorded here.
     commit goes ahead and its session file holds the hook's message starting "repo-docs:
     this command commits". Without `< /dev/null`, `codex exec` waits for input and never
     starts. Covers R30 on Codex. Rerun when the skill or the hook changes. Run
-    2026-10-03; see the record.
+    2026-10-03, and 2026-10-05 for 0.1.4; see the records.
 14. **repo-docs on Claude Code.** Setup: a scratch profile with this repository's
     catalog added and `repo-docs` installed; a copy of item 13's repository before its
     commit. Command: `claude -p "Use repo-docs to audit this repository's
@@ -155,7 +157,8 @@ name a plugin are rerun under the new names and recorded here.
     ahead, and the session transcript under the profile's `projects/` holds a
     `hook_additional_context` attachment for that Bash call, starting "repo-docs: this
     command commits". The stream output does not show hook context. Covers R30 on Claude
-    Code. Rerun when the skill or the hook changes. Run 2026-10-03; see the record.
+    Code. Rerun when the skill or the hook changes. Run 2026-10-03, and 2026-10-05 for
+    0.1.4; see the records.
 15. **repo-docs on this repository.** Setup: as item 14. Command: `claude -p "Use
     repo-docs to audit this repository's instructions. This is a read-only audit: change
     no file."` at this repository's root. Expected: no errors, and `git status`
@@ -163,14 +166,16 @@ name a plugin are rerun under the new names and recorded here.
     `CLAUDE_CONFIG_DIR` set elsewhere, `~/.claude/CLAUDE.md` loads as a project file for
     a repository under the home directory, and `AGENTS.md` does not, so that check is
     made in the author's own profile. Covers R31. Rerun when the hub, a file under
-    `plugins/repo-docs/`, or the skill changes. Run 2026-10-03; see the record.
+    `plugins/repo-docs/`, or the skill changes. Run 2026-10-03, and 2026-10-05 for
+    0.1.4; see the records.
 
 16. **Always-on cost.** Setup: a logged-in scratch profile with this repository's
     catalog added from `main` and `ccx-loop` and `repo-docs` installed. Command:
     `claude plugin details <plugin>@reimagine-code` for `ccx` and `ccx-loop`.
     Expected: "Always-on" at most 1,300 tokens for `ccx` and at most 510 for
     `ccx-loop`. Covers R8. Rerun at each release. Run 2026-10-03 for 0.1.0, and
-    2026-10-04 for 0.1.1, 0.1.2, 0.1.3, 0.2.0, and 0.3.0; see the records.
+    2026-10-04 for 0.1.1, 0.1.2, 0.1.3, 0.2.0, and 0.3.0, and 2026-10-05 for 0.3.1
+    before the merge; see the records.
 17. **Tags.** Setup: the release commit on `main`. Command: `claude plugin tag --push`
     on `plugins/ccx`, then `plugins/ccx-loop`, then `plugins/repo-docs`; then
     `git ls-remote --tags origin`. Expected: each tag command checks the manifest against
@@ -228,7 +233,7 @@ name a plugin are rerun under the new names and recorded here.
 
     Rerun when the tier table, the higher-risk rule, or the Claude review contract
     changes. Run 2026-10-04 for 0.3.0, except the late switch, which could not be
-    staged; see the record.
+    staged then or in two tries on 2026-10-05; see the records.
 
 ## Record of runs
 
@@ -1266,3 +1271,85 @@ the same sha256 after the run as before.
   - The copy of the Codex login was deleted afterward.
 - **Not rerun.** Item 19: the bridge's spawn code, the rules command, and the hook did
   not change.
+
+### 2026-10-05: ccx 0.3.1, before the merge
+
+macOS 27.0, Claude Code 2.1.289, codex-cli 0.160.0, Node 26.4.0. The runs installed the
+suite from a local clone of `fix/review-rounds` at dfdb503, with the three tags made in
+the clone only, into the M4 profile, which was restored afterward. Installing the loop
+printed "(+ 1 dependency: ccx)", and `ccx` 0.3.1, `ccx-loop` 0.3.1, and `repo-docs`
+0.1.4 were installed. Git credentials were off for every item except item 9. The runs
+were headless, in auto mode, with copies of the Codex login that were deleted
+afterward. No permission denial occurred. The real `~/.claude` and `~/.codex` files had
+the same sha256 after the runs as before.
+
+- **Item 16 passed before the release.** About 1,268 always-on tokens for `ccx`, 504 for
+  `ccx-loop`, and 169 for `repo-docs`, as for 0.3.0.
+- **Item 1 passed.** `/ccx:setup` reported codex-cli 0.160.0, the ChatGPT login, and a
+  proven `workspace-write` sandbox. Its allow rule named the clone's
+  `plugins/ccx/scripts/ccx.mjs`, because a catalog from a local folder runs the plugin
+  from that folder; the clone and the cache copy were identical. `/ccx:ask` printed "51"
+  and `status: ok`. A test skill's `ccx:implement` changed one line of `math.mjs`, and
+  the footer showed ` M math.mjs` and `status: ok`.
+- **Item 3 passed.** Both diffs were shown and asked about separately. A new session
+  quoted "Before adding a dependency, once per package, with the reason." After
+  `--remove`, each file equaled its original and its first backup (`cmp`). With the Codex
+  home missing, status showed `codex: skipped` and no folder was created.
+  - **New in 0.3.1.** Through the installed `rules.mjs`, a symlinked target got its block
+    in the file the link points to, the link stayed a link, and the backup sat beside
+    that file; removal restored it exactly. A `CLAUDE.md` with mode 600 kept mode 600
+    after apply and removal, and so did its backups.
+- **Signals from Claude Code.** A test command that records the signal it gets showed
+  SIGTERM in each case that sent one. A Bash call that reached its 5 s timeout moved to
+  the background with no signal, and got SIGTERM only when the session ended. With
+  `CLAUDE_CODE_DISABLE_BACKGROUND_TASKS=1`, the timeout sent SIGTERM, exit 143. A
+  background task stopped with `TaskStop` got SIGTERM. So the bridge's SIGTERM handling
+  covers what Claude Code sends.
+- **Item 8 passed.** All seven cases under `--no-codex` ended as the item expects. No
+  run made a Codex call, and no `pre-<n>.*` file was written.
+- **Item 9 passed.** In `vibecodedapps-dev/recode-accept-a` and `recode-accept-b`, four
+  runs on new issues a#33 to a#36 and b#9, each in a fresh clone, all ended `done` with
+  CI green.
+  - The Codex run opened PR 37, with `gpt-6-astra` reviewing the plan and the diff and
+    `gpt-6.1-sol` implementing. It wrote `pre-1.status`, `pre-1.patch`, and
+    `pre-1.hashes`, empty on a clean tree, and `run.md` recorded the call's checkout. The
+    cca manifest named the PR, whose live head was the run's commit.
+  - The `--no-codex` run opened PR 38 and wrote no snapshot.
+  - The `--no-codex --continue t114` run worked in `<parent>/r3-ccx-2026-10-05-35` and
+    posted to PR 5. Its issue asked for a missing function, because earlier runs had
+    already fixed every bug on `t114`.
+  - The `--repo` run opened PR 39 in `a` and PR 10 in `b`, each closing its own issue and
+    referring to the other's. It wrote `pre-1` for the first checkout and `pre-2` for
+    the second.
+  - The comments, the snapshots under `specs/ccx/<run-id>/`, and cca's `handoff.sh
+    check` were as for 0.3.0.
+- **Item 11 passed.** In a new Codex home holding only the model,
+  effort, sandbox, and approval settings, `codex plugin marketplace add` with the
+  clone's path listed exactly `ccx` from `plugins/ccx-codex` and `repo-docs` from
+  `plugins/repo-docs`. They installed at 0.3.1 and 0.1.4 and showed as enabled. After
+  the push, the same check passed from GitHub with `--ref fix/review-rounds`, credentials
+  off.
+- **Item 13 passed.** The audit read the skill from the installed 0.1.4 and reported the
+  missing `docs/missing.md` as an error. After "Review hooks" and `t`, `config.toml`
+  held a `trusted_hash` for each of the two hooks. The commit run's session file holds
+  the reminder starting "repo-docs: this command commits".
+- **Item 14 passed.** The audit called the Skill tool with `repo-docs:repo-docs` and
+  reported the missing spoke. The commit's transcript holds a `hook_additional_context`
+  attachment with the reminder. New in 0.1.4, `echo "git commit"` got no reminder, and
+  `git -C "./" commit` got one.
+- **Item 15 passed.** The audit reported no errors and changed no file. Its session check
+  failed in the scratch profile, as in M5. This repository's session in the author's own
+  profile, the same day, loaded `AGENTS.md` as project instructions.
+- **Item 20, the late switch, could not be staged.** Two tries hid a check that failed
+  unless the new function moved to its own imported module. The loop read the check's
+  source in Step 0, the second time after decoding it, and planned the module up front,
+  so each run was higher-risk from the plan. Both ended `prepared` with Claude
+  `code-review low`, and both wrote the `pre-1.*` snapshot before the Codex implementer.
+- **Observed.** Two loop runs read a file in the real `~/.claude`: `settings.json` in one
+  and `CLAUDE.md` in another, while scanning for instructions. Neither wrote there.
+- **Not rerun.** Item 2: how a request reaches Codex, the sandbox flags, and the footer
+  did not change, except the footer of a run stopped by a signal, which the tests cover.
+  codex-cli moved from 0.159.2 to 0.160.0, and items 1, 9, and 13 ran on it.
+  Items 4 to 7, 10, and 12: `suite.mjs`, the hooks of `ccx`, the style, the loop's
+  dependencies, Step 0, and the Codex skills did not change. Items 17 and 18 wait for the
+  tags. Item 19 waits for a Windows run of the pushed branch.

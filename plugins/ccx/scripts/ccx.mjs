@@ -7,8 +7,7 @@ import { existsSync, mkdtempSync, readFileSync, realpathSync, renameSync, rmSync
 import { createRequire } from 'node:module';
 import { homedir } from 'node:os';
 import { delimiter, dirname, isAbsolute, join, relative, sep } from 'node:path';
-import { NPM_WIN32, WINDOWS_SANDBOXES, buildArgv, decideProbe, parseAskArgs, parseImplementArgs, parseReviewArgs, readStream, requestedLine, resumeLine, validateRequestId,
-  validThreadId, windowsSandboxSetting } from './codex.mjs';
+import { NPM_WIN32, WINDOWS_SANDBOXES, buildArgv, decideProbe, parseAskArgs, parseImplementArgs, parseReviewArgs, readStream, requestedLine, resumeLine, validateRequestId, validThreadId, windowsSandboxSetting } from './codex.mjs';
 
 const started = Date.now();
 // Test-only seams, read once. CCX_TIMEOUT_MS replaces both deadlines below; an ask, review or implement --timeout wins for the turn.
@@ -26,7 +25,7 @@ const refuse = (message) => { throw new Refusal(message); };
 const secs = (ms) => `${ms / 1000} s`;
 const out = [];
 // The last line of every ask, review, do and implement result, decided by phase: refused before the task turn is attempted, failed
-// or timeout once it is, ok only when the run and all its reporting completed. Unset for setup, hook and unknown commands.
+// or timeout once it is, ok only when the run and all its reporting completed. Unset for hook, unknown commands and setup, unless a signal stops it.
 let status;
 // One saved thread id per Claude session, so a bare --resume never picks up another session's thread.
 const threadFile = (dataDir, id) => join(dataDir, `thread-${id}.txt`);
@@ -47,8 +46,9 @@ function run(file, args, { ms, cwd, input, onStdout }) {
       if (done) return;
       done = true;
       timers.forEach(clearTimeout);
+      for (const signal of ['SIGINT', 'SIGTERM']) process.removeListener(signal, stop);
       if (child && POSIX) kill('SIGKILL');
-      res.stillRunning = !res.spawnError && child.exitCode === null && child.signalCode === null;
+      res.stillRunning = !res.spawnError && child.exitCode === null && child.signalCode === null; if (res.interrupted) res.code = 1;
       for (const s of [child.stdin, child.stdout, child.stderr]) s?.destroy();
       child.unref();
       res.stdout = Buffer.concat(stdout).toString('utf8');
@@ -68,13 +68,15 @@ function run(file, args, { ms, cwd, input, onStdout }) {
       later(2000, finish);
     });
     child.on('close', finish);
-    later(ms, () => {
-      if (child.exitCode !== null || child.signalCode !== null) return; // exited, and draining: not a timeout
-      res.timedOut = true;
+    const stop = (signal = true) => {
+      if (res.interrupted || child.exitCode !== null || child.signalCode !== null) return; // exited, and draining: not a timeout
+      res.interrupted = Boolean(signal); res.timedOut = !signal;
       kill('SIGINT'); // Codex stops the commands it runs in their own process groups on SIGINT; SIGTERM kills it and leaves them
       later(5000, () => kill('SIGKILL'));
       later(10_000, finish);
-    });
+    };
+    later(ms, () => stop(false));
+    for (const signal of ['SIGINT', 'SIGTERM']) process.on(signal, stop);
     if (child.stdin) {
       // EPIPE here means the child exited without reading its input; its exit status and stderr say why.
       child.stdin.on('error', () => {});
@@ -85,7 +87,7 @@ function run(file, args, { ms, cwd, input, onStdout }) {
 
 // For commands that normally take milliseconds: failing to start or missing the deadline is a refusal naming them.
 async function local(name, file, args, cwd, ms = LOCAL_MS) {
-  const r = await run(file, args, { ms, cwd });
+  const r = await run(file, args, { ms, cwd }); if (r.interrupted) throw Object.assign(new Refusal(`${name} was interrupted`), { interrupted: true });
   if (r.spawnError) refuse(`could not start ${name}: ${r.spawnError.message}`);
   if (r.timedOut) refuse(`${name} did not finish within ${secs(ms)}${r.stillRunning ? `; it may still be running as pid ${r.pid}` : ' and was stopped'}`);
   return r;
@@ -318,7 +320,7 @@ async function setup() {
       ok &&= pass;
       out.push(`${label}: ${text}`);
     } catch (e) {
-      if (!(e instanceof Refusal)) throw e;
+      if (!(e instanceof Refusal)) throw e; if (e.interrupted) { status = 'refused'; throw e; }
       ok = false;
       out.push(`${label}: ccx: ${e.message}`);
     }

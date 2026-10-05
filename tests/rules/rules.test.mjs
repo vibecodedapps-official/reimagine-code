@@ -3,7 +3,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { spawn, spawnSync } from 'node:child_process';
-import { existsSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, rmSync, symlinkSync, unlinkSync, utimesSync, writeFileSync } from 'node:fs';
+import { chmodSync, lstatSync, linkSync, realpathSync, statSync, existsSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, rmSync, symlinkSync, unlinkSync, utimesSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -236,7 +236,7 @@ const LATER = new Date('2026-10-03T12:00:01Z');
 const SHIPPED = loadTexts();
 
 function sandbox(fn, { codex = true } = {}) {
-  return async () => {
+  return async (t) => {
     const root = mkdtempSync(join(tmpdir(), 'ccx-rules-'));
     const s = { root, claudeDir: join(root, 'claude'), codexDir: join(root, 'codex'), data: join(root, 'data'), home: join(root, 'home') };
     s.claude = join(s.claudeDir, 'CLAUDE.md');
@@ -246,7 +246,7 @@ function sandbox(fn, { codex = true } = {}) {
     if (codex) mkdirSync(s.codexDir);
     s.run = (verb, rest = [], { now = AT, platform = 'linux' } = {}) => main([verb, s.data, ...rest], { env: s.env, platform, now, home: s.home });
     s.state = () => JSON.parse(readFileSync(join(s.data, 'rules-state.json'), 'utf8'));
-    try { return await fn(s); } finally { rmSync(root, { recursive: true, force: true }); }
+    try { return await fn(s, t); } finally { rmSync(root, { recursive: true, force: true }); }
   };
 }
 const bytes = (path) => readFileSync(path, 'latin1');
@@ -267,6 +267,12 @@ test('R33: with no Codex home, the Codex target is skipped and nothing is create
   assert.throws(() => s.run('apply', ['codex']), { message: 'there is no planned change for codex; run /ccx:rules again' });
   assert.equal(existsSync(s.codexDir), false);
   assert.deepEqual(readdirSync(s.root).sort(), ['claude', 'data', 'home']);
+  mkdirSync(s.codexDir);
+  s.run('plan');
+  rmSync(s.codexDir, { recursive: true });
+  assert.deepEqual(s.run('apply', ['codex']), [`target: codex ${s.codex}`,
+    `state: skipped; there is no Codex home at ${s.codexDir}, so nothing is written there`, 'change: none']);
+  assert.equal(existsSync(s.codexDir), false);
 }, { codex: false }));
 
 test('R33: with AGENTS.override.md in the Codex home, the Codex target is left alone', sandbox((s) => {
@@ -275,6 +281,12 @@ test('R33: with AGENTS.override.md in the Codex home, the Codex target is left a
   const out = s.run('plan');
   assert.equal(out.at(-2),
     `state: skipped; Codex reads ${join(s.codexDir, 'AGENTS.override.md')} instead of AGENTS.md, so the Codex file is left alone`);
+  assert.deepEqual(readdirSync(s.codexDir), ['AGENTS.override.md']);
+  rmSync(join(s.codexDir, 'AGENTS.override.md'));
+  s.run('plan');
+  put(join(s.codexDir, 'AGENTS.override.md'), 'override\n');
+  assert.deepEqual(s.run('apply', ['codex']), [`target: codex ${s.codex}`,
+    `state: skipped; Codex reads ${join(s.codexDir, 'AGENTS.override.md')} instead of AGENTS.md, so the Codex file is left alone`, 'change: none']);
   assert.deepEqual(readdirSync(s.codexDir), ['AGENTS.override.md']);
 }));
 
@@ -301,7 +313,7 @@ test('R35, R46: the writing option adds the shipped Writing section to the Codex
   assert.equal(codexBody, `${SHIPPED['core.md']}\n${SHIPPED['writing-codex.md']}${END}\n`);
   assert.equal(bytes(s.claude).split('\n').slice(1).join('\n'), `${SHIPPED['core.md']}${END}\n`);
   assert.match(bytes(s.codex).split('\n')[0],
-    /^<!-- ccx:house-rules begin version=0\.3\.0 options=core,writing join=none digest=[0-9a-f]{16} -->$/);
+    /^<!-- ccx:house-rules begin version=0\.3\.1 options=core,writing join=none digest=[0-9a-f]{16} -->$/);
 }));
 
 test('R37: plan writes nothing for current, edited and malformed targets', sandbox((s) => {
@@ -349,7 +361,7 @@ test('R41: an existing file is backed up with the time in its name, and no tempo
     [`ccx: wrote ${s.claude}; the earlier content is in ${s.claude}.ccx-backup-20261003120000`]);
   assert.deepEqual(readdirSync(s.claudeDir).sort(), ['CLAUDE.md', 'CLAUDE.md.ccx-backup-20261003120000']);
   assert.equal(bytes(`${s.claude}.ccx-backup-20261003120000`), 'mine\n');
-  assert.ok(bytes(s.claude).startsWith('mine\n\n<!-- ccx:house-rules begin version=0.3.0 options=core join=blank digest='));
+  assert.ok(bytes(s.claude).startsWith('mine\n\n<!-- ccx:house-rules begin version=0.3.1 options=core join=blank digest='));
   assert.deepEqual(s.state().created, {});
   assert.deepEqual(readdirSync(s.data).sort(), ['rules-plan.json', 'rules-state.json']);
 }));
@@ -499,3 +511,102 @@ test('the script runs when its path goes through a symlink, as under a linked ~/
     unlinkSync(linked);
   }
 }));
+
+test('R33, R41, R42: apply and remove write through a target symlink', { skip: process.platform === 'win32' }, sandbox((s) => {
+  const managed = join(realpathSync(s.root), 'managed.md');
+  put(managed, 'managed line\n');
+  mkdirSync(s.claudeDir);
+  symlinkSync(managed, s.claude);
+  s.run('plan');
+  s.run('apply', ['claude']);
+  assert.equal(lstatSync(s.claude).isSymbolicLink(), true);
+  assert.ok(bytes(managed).includes('ccx:house-rules begin'));
+  assert.equal(bytes(`${managed}.ccx-backup-20261003120000`), 'managed line\n');
+  s.run('remove');
+  s.run('apply', ['claude'], { now: LATER });
+  assert.equal(lstatSync(s.claude).isSymbolicLink(), true);
+  assert.equal(bytes(managed), 'managed line\n');
+}));
+
+test('A2-U2-1: apply refuses a dangling target symlink without writing', { skip: process.platform === 'win32' }, sandbox((s, t) => {
+  const missing = join(s.root, 'missing.md');
+  mkdirSync(s.claudeDir);
+  try { symlinkSync(missing, s.claude); } catch (e) { if (e.code === 'EPERM') { t.skip('symlinks are not permitted'); return; } throw e; }
+  s.run('plan');
+  assert.throws(() => s.run('apply', ['claude']), { message: `${s.claude} is a symbolic link that points to a missing file, so nothing was written` });
+  assert.equal(lstatSync(s.claude).isSymbolicLink(), true);
+  assert.equal(existsSync(missing), false);
+  assert.deepEqual(readdirSync(s.claudeDir), ['CLAUDE.md']);
+}));
+
+test('O2-U2-1: a Codex target linked to the Claude target is skipped', { skip: process.platform === 'win32' }, sandbox((s, t) => {
+  const shared = join(realpathSync(s.root), 'shared.md');
+  put(shared, 'shared instructions\n');
+  mkdirSync(s.claudeDir);
+  try { symlinkSync(shared, s.claude); symlinkSync(shared, s.codex); } catch (e) { if (e.code === 'EPERM') { t.skip('symlinks are not permitted'); return; } throw e; }
+  const out = s.run('plan', ['--options', 'core,writing']);
+  assert.deepEqual(out.slice(-3), [`target: codex ${shared}`,
+    'state: skipped; it is the same file as the Claude target, so the Codex file is left alone', 'change: none']);
+  s.run('apply', ['claude']);
+  assert.equal(s.run('status')[1], `codex: skipped ${shared}`);
+  assert.equal(s.run('status')[0], `claude: current ${shared} options=core,writing`);
+  assert.throws(() => s.run('apply', ['codex']), { message: 'there is no planned change for codex; run /ccx:rules again' });
+  assert.equal(lstatSync(s.claude).isSymbolicLink(), true);
+  assert.equal(lstatSync(s.codex).isSymbolicLink(), true);
+  assert.equal(bytes(`${shared}.ccx-backup-20261003120000`), 'shared instructions\n');
+  assert.equal(bytes(shared).includes('## Writing'), false);
+}));
+
+test('A3-U2-1: a Codex target linked through a linked Claude config directory is skipped', { skip: process.platform === 'win32' }, sandbox((s, t) => {
+  const managed = join(realpathSync(s.root), 'dotfiles', 'claude');
+  const shared = join(managed, 'CLAUDE.md');
+  put(shared, 'shared instructions\n');
+  try { symlinkSync(managed, s.claudeDir); symlinkSync(shared, s.codex); } catch (e) { if (e.code === 'EPERM') { t.skip('symlinks are not permitted'); return; } throw e; }
+  assert.equal(targets(s.env, s.home).codex.skip, 'it is the same file as the Claude target, so the Codex file is left alone');
+  const out = s.run('plan', ['--options', 'core,writing']);
+  assert.deepEqual(out.slice(-3), [`target: codex ${shared}`,
+    'state: skipped; it is the same file as the Claude target, so the Codex file is left alone', 'change: none']);
+  assert.equal(targets(s.env, s.home).claude.path, s.claude);
+  s.run('apply', ['claude']);
+  assert.deepEqual(s.run('status').slice(0, 2), [`claude: current ${s.claude} options=core,writing`, `codex: skipped ${shared}`]);
+  assert.throws(() => s.run('apply', ['codex']), { message: 'there is no planned change for codex; run /ccx:rules again' });
+  assert.equal(lstatSync(s.claudeDir).isSymbolicLink(), true);
+  assert.equal(lstatSync(s.codex).isSymbolicLink(), true);
+  assert.equal(bytes(`${shared}.ccx-backup-20261003120000`), 'shared instructions\n');
+  assert.equal(bytes(shared).includes('## Writing'), false);
+}));
+
+test('R41: apply refuses a hard-linked target without writing', sandbox((s) => {
+  put(s.claude, 'managed line\n');
+  const linked = join(s.root, 'managed.md');
+  linkSync(s.claude, linked);
+  s.run('plan');
+  assert.throws(() => s.run('apply', ['claude']), { message: `${s.claude} has multiple hard links, so nothing was written` });
+  assert.equal(bytes(s.claude), 'managed line\n');
+  assert.equal(bytes(linked), 'managed line\n');
+  assert.equal(statSync(s.claude).nlink, 2);
+  assert.deepEqual(readdirSync(s.claudeDir), ['CLAUDE.md']);
+}));
+
+test('R41: atomic replacement preserves existing permissions', { skip: process.platform === 'win32' }, sandbox((s) => {
+  put(s.claude, 'private instructions\n');
+  chmodSync(s.claude, 0o600);
+  s.run('plan');
+  s.run('apply', ['claude']);
+  assert.equal(statSync(s.claude).mode & 0o777, 0o600);
+}));
+
+test('R37, R40, R42: a BOM before the first block preserves offsets, updates and removal bytes', () => {
+  const current = `${BOM}${CORE_LF}`;
+  assert.equal(plan(current).state, 'current');
+  assert.equal(inspect(current).start, 3);
+  assert.equal(plan(current, { remove: true }).after, BOM);
+  const stale = `${BOM}${begin('core', 'none', '6d3e610aaf815551')}\nold rules\n${END}\n`;
+  assert.equal(plan(stale).state, 'stale');
+  assert.equal(plan(stale).after, `${BOM}${CORE_LF.replace('join=blank', 'join=none')}`);
+  assert.equal(plan(stale, { remove: true }).after, BOM);
+});
+
+test('R44: a BOM before the first import preserves the duplicate report', () => {
+  assert.deepEqual(imports(`${BOM}@~/extra.md\n`), ['1: @~/extra.md']);
+});

@@ -16,7 +16,8 @@ read, which workflows apply, what passes, and how to poll. Item 5, CI repair, st
         base branch the run recorded for the PR: the default branch for a PR this run
         opened, and the base branch Step 0.2 recorded with `continue`. Do not read the
         `/protection` endpoint, which returns 404 without admin rights.
-        `gh api repos/{owner}/{repo}/rules/branches/<base>` gives the active rules, including
+        `gh api "repos/{owner}/{repo}/rules/branches/<base>?per_page=100" --paginate`
+        gives the active rules, including
         organization rulesets: its `required_status_checks` rules add required checks and its
         `workflows` rules name required workflows by file path and repository. A required check
         is a name and, when set, the app that must report it.
@@ -26,16 +27,26 @@ read, which workflows apply, what passes, and how to poll. Item 5, CI repair, st
         poll. A missing `merge_commit_sha` is read again on the next poll. A base branch
         other than `<base>` means the PR was retargeted, so the required checks read above
         no longer apply: end in `blocked` at once, naming both branches.
+        Record the commit SHA this run last pushed for each PR. At every poll and again
+        before declaring CI green or not applicable, compare that SHA with the remote
+        head from `git ls-remote --heads <remote> refs/heads/<branch>` and with
+        `headRefOid`. A remote-head mismatch ends in `blocked`, naming both SHAs.
+        A stale `headRefOid` within the 2 minutes after a push that item 4 leaves unjudged
+        is pending; after those 2 minutes it is a mismatch.
+        Judge results only when `headRefOid` equals the commit this run last pushed.
       - Results, for the head commit and the test merge commit:
         `gh api "repos/{owner}/{repo}/commits/<sha>/check-runs?filter=latest&per_page=100"`
         (page on when `total_count` exceeds 100) and
-        `gh api repos/{owner}/{repo}/commits/<sha>/status`, which gives the latest status per
+        `gh api "repos/{owner}/{repo}/commits/<sha>/status?per_page=100" --paginate`,
+        which gives the latest status per
         context. Only the latest result counts: the latest status per context, and the latest
         attempt of each check run within its own check suite, so same-named checks from
         different workflows are judged separately. Earlier attempts are report history only.
-      - Required workflows: `gh api "repos/{owner}/{repo}/actions/runs?head_sha=<head sha>"`,
+      - Required workflows:
+        `gh api "repos/{owner}/{repo}/actions/runs?head_sha=<head sha>&per_page=100" --paginate`,
         comparing each run's `path` and repository with the rule's workflow file path and
         `repository_id`.
+      Read every page of active rules, statuses, and workflow runs before evaluating CI.
       Read both commits again after every push.
    2. A workflow applies to the PR when it triggers on pull requests, its `branches`,
       `branches-ignore`, `paths`, and `paths-ignore` filters match the PR's base branch and

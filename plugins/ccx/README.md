@@ -14,6 +14,17 @@ daemon, no background jobs of its own.
 
 Installs track `main`. A change to the plugin reaches `main` only with a higher version.
 
+To update:
+
+```
+claude plugin marketplace update reimagine-code
+claude plugin update ccx@reimagine-code
+```
+
+Restart Claude Code, then run `/ccx:setup` again and use the allow rule it prints. The
+old rule names the previous version's path. Updating `ccx-loop` does not update `ccx`.
+See the suite's [update steps](../../README.md#update) for the other plugins and Codex.
+
 ## Requirements
 
 - Node 22 or later.
@@ -39,12 +50,14 @@ Installs track `main`. A change to the plugin reaches `main` only with a higher 
 
 ## Commands
 
-Every Codex run gets the same safety flags: `--json --ignore-user-config
+Every Codex turn gets the same safety flags: `--json --ignore-user-config
 -c approval_policy="never" -c sandbox_mode="<mode>"`. Codex never asks for approval, your
-Codex config file is not read, and the sandbox mode is set on the command line. No command
-requests full access. On Windows there is one exception: the plugin reads the `[windows]`
+Codex config file is not read for these turns, and the sandbox mode is set on the command
+line. No command requests full access. The sandbox probe runs `codex sandbox` with your
+Codex configuration plus `-c sandbox_mode="workspace-write"` and
+`-c approval_policy="never"`. On Windows, the plugin reads the `[windows]`
 `sandbox` value from your Codex config and passes it as `-c windows.sandbox="<value>"` on
-every run and probe, because `--ignore-user-config` would otherwise drop it.
+every turn and probe, because `--ignore-user-config` would otherwise drop it from turns.
 
 | Command | Runs | Sandbox |
 | --- | --- | --- |
@@ -144,7 +157,8 @@ could not be read; a crash of the plugin itself, before or after the turn, is `f
 review found nothing. The exit code is 0 for `ok` and 1 otherwise. A result with no `status:`
 line was cut off, by the Bash tool's timeout or a kill, and is incomplete. The plugin does not
 tell model, login or sandbox failures apart: Codex reports them as prose, which the
-`ccx: the run failed:` line carries. `setup` prints no status line.
+`ccx: the run failed:` line carries. `setup` prints no status line, except `status: refused`
+when a signal stops it.
 
 `ask` and `review` run from the top of the repository, whatever directory the shell is in; `do` and `implement` run from the shell's directory, or from `--cwd` for `implement`, which bounds where they can write; `review` runs from the top of the repository holding its `--cwd`, if given. `ask` and
 `review` also print a line saying the sandbox has no network. `do` and `implement` also print `HEAD` before
