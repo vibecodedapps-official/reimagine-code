@@ -1,0 +1,87 @@
+name: checks
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  checks:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - name: lint
+        run: sh tests/lint.sh
+      - name: build and verify fixture solo
+        run: m=$(sh tests/fixture/build.sh solo) && sh tests/fixture/verify.sh "$m" solo
+      - name: build and verify fixture solo-dirty
+        run: m=$(sh tests/fixture/build.sh solo-dirty) && sh tests/fixture/verify.sh "$m" solo-dirty
+      - name: build and verify fixture full
+        run: m=$(sh tests/fixture/build.sh full) && sh tests/fixture/verify.sh "$m" full
+      - name: build and verify fixture tokens
+        run: m=$(sh tests/fixture/build.sh tokens) && sh tests/fixture/verify.sh "$m" tokens
+      - name: build and verify fixture patterns
+        run: m=$(sh tests/fixture/build.sh patterns) && sh tests/fixture/verify.sh "$m" patterns
+      - name: verify fixture patterns under a hostile global git config
+        run: |
+          printf '[merge]\n\tff = only\n' > "$RUNNER_TEMP/hostile.gitconfig"
+          m=$(sh tests/fixture/build.sh patterns)
+          GIT_CONFIG_GLOBAL="$RUNNER_TEMP/hostile.gitconfig" sh tests/fixture/verify.sh "$m" patterns
+      - name: build and verify fixture ground-truth
+        run: m=$(sh tests/fixture/build.sh ground-truth) && sh tests/fixture/verify.sh "$m" ground-truth
+      - name: verify fixture ground-truth under a hostile global git config
+        run: |
+          printf '[merge]\n\tff = only\n' > "$RUNNER_TEMP/hostile.gitconfig"
+          m=$(sh tests/fixture/build.sh ground-truth)
+          GIT_CONFIG_GLOBAL="$RUNNER_TEMP/hostile.gitconfig" sh tests/fixture/verify.sh "$m" ground-truth
+
+  scripts:
+    name: scripts (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@v5
+      - name: jq
+        run: jq --version
+      - name: readonly
+        run: |
+          readlink -f "$(command -v awk)" || command -v awk
+          sh tests/readonly.sh
+      - name: handoff
+        run: sh tests/handoff.sh
+      - name: work-items
+        run: sh tests/work-items.sh
+      - name: working-tree
+        run: sh tests/working-tree.sh
+      - name: live
+        run: sh tests/live.sh
+      - name: memory
+        run: sh tests/memory.sh
+      - name: ledger
+        run: sh tests/ledger.sh
+      - name: revert-tests
+        run: sh tests/revert-tests.sh
+      - name: awk tests with mawk
+        if: matrix.os == 'ubuntu-latest'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y mawk
+          mkdir -p "$RUNNER_TEMP/mawk-bin"
+          ln -sf "$(command -v mawk)" "$RUNNER_TEMP/mawk-bin/awk"
+          PATH="$RUNNER_TEMP/mawk-bin:$PATH"
+          awk -W version 2>&1 | head -n 1
+          sh tests/handoff.sh
+          sh tests/readonly.sh
+          sh tests/live.sh
+          sh tests/memory.sh
+          sh tests/ledger.sh
+          sh tests/working-tree.sh
+          sh tests/revert-tests.sh
