@@ -293,7 +293,11 @@ Claude's Writing rules are the output style, not part of the block.
   reports that and leaves the Codex target alone.
 
 Nothing else is read or written, apart from the plugin's data directory and backups next
-to the targets. Repo-level instruction files belong to repo-docs.
+to the targets or the files they point to. A symlinked target is written at the file it
+points to, with its backup and temporary file beside that file; a hard-linked target or
+a link to a missing file is refused; a Codex target that is the same file as the Claude
+target is skipped; the target's permissions are kept. Repo-level instruction files
+belong to repo-docs.
 
 ### Block format
 
