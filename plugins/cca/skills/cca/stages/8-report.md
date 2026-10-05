@@ -271,10 +271,10 @@ Outputs: `report.md`, `claims-verdicts.md`, and `work-items.jsonl`. The format o
    on failure:
 
    ```
-   hex=$( (sha256sum <run dir>/report.body.tmp 2>/dev/null || shasum -a 256 <run dir>/report.body.tmp) | cut -d' ' -f1)
+   hex=$( (sha256sum "<run dir>/report.body.tmp" 2>/dev/null || shasum -a 256 "<run dir>/report.body.tmp") | cut -d' ' -f1)
    case $hex in ''|*[!0-9a-f]*) printf 'no sha-256 hex: %s\n' "$hex" >&2; exit 1 ;; esac
    [ ${#hex} -eq 64 ] || { printf 'no sha-256 hex: %s\n' "$hex" >&2; exit 1; }
-   { printf 'revision: sha256:%s\n' "$hex"; cat <run dir>/report.body.tmp; } > <run dir>/report.md
+   { printf 'revision: sha256:%s\n' "$hex"; cat "<run dir>/report.body.tmp"; } > "<run dir>/report.md"
    ```
 
    The Write tool is never used for `report.md`, and the file is not edited after this
@@ -294,7 +294,8 @@ Outputs: `report.md`, `claims-verdicts.md`, and `work-items.jsonl`. The format o
 
 13. **Update `${CLAUDE_PLUGIN_DATA}/runs.json`:** set this run's `state` to the terminal
     state under the lock per SKILL.md, State files. On refusal or failure, continue
-    with that section's warning, brief and final-reply limitation, and manual entry.
+    with that section's warning, stage-entry, usage, and final-reply limitation,
+    and manual entry.
 
 14. **Print and stop:** the absolute path of `report.md`, the verdict, and the terminal
     state. For `partial`, also print `/cca:resume <run-id>` only when the registry

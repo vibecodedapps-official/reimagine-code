@@ -64,7 +64,6 @@ repos' own changelogs are kept under `docs/history/`.
   version is an input of every stage.
 - The sh suites and fixtures run through `npm test` from `tests/cca/`. The records from
   before the move are under `docs/history/claude-codex-audit/`.
-- Released as 0.9.1; the move above shipped as 0.9.0.
 - The README's standalone check commands name `tests/cca/lint.sh`,
   `tests/cca/fixture/build.sh`, and `tests/cca/fixture/verify.sh`. Before, each had an
   extra `cca/` in its path and exited 127.
@@ -82,21 +81,29 @@ repos' own changelogs are kept under `docs/history/`.
 - Every `runs.json` update holds a `runs.json.lock` directory in the plugin data
   directory and rereads the registry under it. Before, two audits running at once could
   lose each other's entry, so `/cca:resume` and `/cca:act` could not find a run.
-- A refused or failed `runs.json` write no longer ends with a bare `/cca:resume <run-id>`
-  that cannot work: the run says at once that resume and act cannot find it, records
-  that in the brief so the report's Coverage repeats it, and prints the entry to add by
+- A `runs.json.lock` is stale when the directory itself is older than a minute; the run
+  asks before removing one, and a headless run treats it as a refused lock. Before,
+  staleness was the waiter's own minute, so a lock held across a permission prompt
+  looked stale and a yes removed it.
+- A refused or failed `runs.json` write, or a refused release of the lock, no longer
+  ends with a bare `/cca:resume <run-id>` that cannot work: the run says at once that
+  resume and act cannot find it, records that in the brief during stage 1 or in the
+  stage's `stages.json` entry and `usage.md` afterward, and prints the entry to add by
   hand.
-- The read-only check accepts another cca run's or a handoff's file under the primary
+- The read-only check accepts another cca run's or a handoff's file under any audited
   repository's `<scratch>/cca/` and lists it as such. Before, two audits of the same
   repository ended each other `blocked`.
 - The report's revision hash falls back to `shasum -a 256` when `sha256sum` is absent,
   and the step stops, writing no `report.md`, unless it has a 64-character hex digest.
   Before, a PATH without `sha256sum` wrote `revision: sha256:` with no digest, which
   `live.sh check` and `/cca:act` then rejected.
-- A manifest `groups` entry whose slugged name is `tests`, `hygiene`, `tests-hygiene`,
-  `interactions`, `combined`, or `unticketed`, or that shares its slug with another
-  entry, stops the run before stage 1 with one line. Before, such a group wrote the
-  same scope files as a specialist scope and the ledger rejected its ids as duplicates.
+- A manifest `groups` name is slugged as the run id is: lowercased, with runs of other
+  characters turned into one `-`. A name that slugs to nothing, to `tests`, `hygiene`,
+  `tests-hygiene`, `interactions`, `combined`, or `unticketed`, to another entry's slug,
+  or to the `-topup` or `-maptopup` form of another entry's slug or a reserved name
+  stops the run before stage 1 with one line. Before, slugging only lowercased, so a
+  name with a space failed stage 5, and such a group wrote the same scope files as a
+  specialist scope or another group's top-up.
 - The late adversary runs at low tier when `live/findings.md` or `live/claims.md`
   exists, and at every tier its prompt names the live files and carried files that
   exist. Before, a claim-only live result at low launched no late adversary, and at
@@ -133,6 +140,7 @@ repos' own changelogs are kept under `docs/history/`.
 - `readonly.sh check` no longer fails when `find` cannot read an ignored directory, such
   as a `pgdata/` with mode 000, or when an ignored directory changes under it; the
   diagnostic still prints. Before, every check exited 2 and the run ended `blocked`.
+- Released as 0.9.1; the move shipped as 0.9.0.
 
 ### repo-docs
 

@@ -50,7 +50,8 @@ stage sections below say.
 
 The `allowed-tools` list above pre-approves read commands only. Export, snapshot,
 state-file, and probe commands (such as the export script, `rm -rf` and `mkdir` in the run
-directory, `stat`, `find`, `sha256sum`, `shasum`, `jq`, `awk`, `mv -f`, `wc -c`, `codex --version`,
+directory, the lock's `mkdir` and `rmdir`, `sleep`, `stat`, `find`,
+`sha256sum`, `shasum`, `jq`, `awk`, `mv -f`, `wc -c`, `codex --version`,
 and the `sh` runs of the scripts in `${CLAUDE_PLUGIN_ROOT}/skills/cca/scripts/`:
 `readonly.sh`, `handoff.sh`, `work-items.sh`, `working-tree.sh`, `live.sh`, and
 `ledger.sh`) follow the session's permission mode; tell the user once, before stage 1,
@@ -301,8 +302,9 @@ and before writing that stage's final entry:
    `approvals` after the baseline explains it. Otherwise end the run `blocked` at once
    and show it.
 4. For each `ignored` line (exit 3), added, deleted, or changed:
-   - If the path is inside `<scratch>/cca/` of this run's primary repository and
-     outside this run's directory, accept it as another cca run's or a handoff's file
+   - If the path is inside `<s>/cca/` of any audited repository, where `<s>` is
+     any directory D2 (stage 1) would choose there, and outside this run's
+     directory, accept it as another cca run's or a handoff's file
      and list it that way in the check file. It needs no agent attribution in step 5.
    - If any agent with Bash (digester, mapper, auditor, adversary, or the stage 6
      fallback), in any stage, is running or has ended since the previous check (from
@@ -340,17 +342,23 @@ Write `stages.json` only through `stages.json.tmp` beside it, then rename it ove
 the destination with `mv -f`. Never edit state files in place.
 
 For every `runs.json` update, create `${CLAUDE_PLUGIN_DATA}/runs.json.lock` with
-`mkdir` (no `-p`). While the lock exists, wait 5 seconds and retry; after a minute,
-ask the user whether a stale lock may be removed. Holding the lock, read `runs.json`
-afresh (or start an array when absent), write `runs.json.tmp` beside it, run `mv -f`
+`mkdir` (no `-p`). While the lock exists, wait 5 seconds and retry. Judge staleness
+by the lock directory itself being older than a minute (`find <lock> -maxdepth 0
+-mmin +1`, or its mtime), never by how long this session has waited. For a stale
+lock, ask the user whether it may be removed; in a headless session, treat it as
+a refused lock instead and go on with the manual-entry fallback below. Holding
+the lock, read `runs.json` afresh (or start an array when absent), write `runs.json.tmp` beside it, run `mv -f`
 to replace `runs.json`, then `rmdir` the lock.
 
 If creating the lock is refused or fails for a reason other than an existing lock,
-or writing or replacing the registry is refused or fails, go on. Release any lock this session acquired. Tell the user at once that `/cca:resume`
-and `/cca:act` cannot find this run. Record that limitation in `audit-brief.md` so
-the next report's Coverage repeats it. If the report is already finalized, include
-the limitation in the final reply. At the end, print the run's JSON entry to add by
-hand to the resolved absolute `runs.json` path, in place of a bare resume command.
+or writing or replacing the registry, or removing the lock with `rmdir`, is refused
+or fails, go on. Release any lock this session acquired; a refused or failed
+release follows this same warning and manual-entry fallback. Tell the user at once
+that `/cca:resume` and `/cca:act` cannot find this run. Record that limitation in `audit-brief.md`
+only at D6, while stage 1 still writes the brief, so the report's Coverage repeats
+it. After stage 1, record it in the stage's `stages.json` entry and `usage.md`,
+never by editing the brief. Include the limitation in the final reply. At the
+end, print the run's JSON entry to add by hand to the resolved absolute `runs.json` path, in place of a bare resume command.
 
 `${CLAUDE_PLUGIN_DATA}/runs.json` is a JSON array with one entry per run:
 

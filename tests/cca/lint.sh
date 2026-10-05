@@ -51,10 +51,11 @@
 #   allowed-tools pattern. Not checked: a span that runs across lines, and lines inside
 #   ``` fenced code blocks. A self-test runs the check on fixed sample lines first and
 #   fails when its result differs from the expected one; an awk failure also fails.
-# - Outside ``` fences, sha256sum lines under skills/cca/ (except scripts/)
-#   also name shasum; patch git diff spans with a three-dot range under skills/cca/
-#   (except scripts/) and agents/ pass --no-ext-diff, excluding --numstat and
-#   --name-only. Fixed sample self-tests run first; awk failure fails each check.
+# - sha256sum lines, including fenced lines, under skills/cca/ (except scripts/)
+#   also name shasum; outside ``` fences, patch git diff spans with a three-dot
+#   range under skills/cca/ (except scripts/) and agents/ pass --no-ext-diff,
+#   excluding --numstat and --name-only. Fixed sample self-tests run first; awk
+#   failure fails each check.
 # - The converged item shape, the ``` fenced block whose first line is
 #   `## C<n>: <title>`, appears in agents/merger.md and in
 #   skills/cca/stages/7-converge.md, and the two blocks are the same after leading
@@ -357,7 +358,7 @@ done
 text_spans() {
 	awk -v kind="$1" '
 		/^[ \t]*```/ { fence = !fence; next }
-		fence { next }
+		kind == "patch" && fence { next }
 		{
 			bad = 0
 			if (kind == "hash" && /sha256sum/ && !/shasum/) bad = 1
@@ -388,7 +389,7 @@ SAMPLE
 for kind in hash patch; do
 	if text_spans "$kind" < "$tmp/text-sample" > "$tmp/text-got"; then
 		text_got=$(tr '\n' ' ' < "$tmp/text-got")
-		case $kind in hash) text_expected='1: ' ;; patch) text_expected='3: 4: 12: ' ;; esac
+		case $kind in hash) text_expected='1: 10: ' ;; patch) text_expected='3: 4: 12: ' ;; esac
 		[ "$text_got" = "$text_expected" ] || fail "tests/cca/lint.sh: $kind self-test: got lines $text_got"
 	else
 		fail "tests/cca/lint.sh: $kind self-test did not run"

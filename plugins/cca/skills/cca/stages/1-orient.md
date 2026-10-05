@@ -41,11 +41,18 @@ step 1c, right after the baseline, for the same reason.
    - Bundle names: the repo directory's base name, lowercased, with `-2`, `-3` added
      when two bundles share it. `<bundle>` in file names below is this name.
      References and sources of truth keep their `name`, slugged the same way.
-   - Each custom `groups[].name`: slug it by the bundle-name rule. Before stage 1,
-     stop with one line `groups: <name> is a reserved scope name` when its slug is
-     `tests`, `hygiene`, `tests-hygiene`, `interactions`, `combined`, or `unticketed`.
-     When two entries share a slug, stop with one line
-     `groups: <a> and <b> share the slug <s>`. Reject these names; never rename them.
+   - Each custom `groups[].name`: slug it as D3 slugs the run id, but with no length
+     cap: lowercase, with runs of characters outside `a-z0-9` turned into one `-`.
+     Before stage 1, stop with one line `groups: <name> slugs to nothing` when its
+     slug is empty; stop with one line `groups: <name> is a reserved scope name` when
+     its slug is `tests`, `hygiene`, `tests-hygiene`, `interactions`, `combined`, or
+     `unticketed`. When two entries share a slug, stop with one line
+     `groups: <a> and <b> share the slug <s>`. When a slug equals `<scope>-topup`
+     or `<scope>-maptopup`, where `<scope>` is another entry's slug or a reserved
+     scope name, stop with
+     one line `groups: <name> collides with the top-up files of <scope>`.
+     `cross-cutting` is not reserved: the manifest's `groups` key replaces the merge
+     that produces it. Reject these names; never rename them.
    - Ticket and PR ids to `github:owner/repo#n` or `file:<absolute path>`. A short id
      such as `#159` is accepted only when the bundle's repo has exactly one GitHub
      remote (`git -C <repo> remote -v`); otherwise stop with
@@ -688,8 +695,9 @@ Group ids are lowercase slugs: a ticket's group is `<bundle>-<ticket number or f
 name>`; the fixed groups are `unticketed` and `cross-cutting`.
 
 With a manifest `groups` key, it replaces the derivation, the extraction, and the
-merge: each entry is a group whose id is its slugged `name`; its globs are relative to the entry's
-`repo`; a file matching two entries goes to both with a note; changed files no entry
+merge: each entry is a group whose id is its `name` slug validated in section A step 3;
+its globs are relative to the entry's `repo`; a file matching two entries goes to both
+with a note; changed files no entry
 matches go to `unticketed`. Skip to the format below.
 
 Otherwise derive, per bundle:

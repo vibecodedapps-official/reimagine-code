@@ -229,7 +229,9 @@ are relative to the manifest's directory.
   `*.test.*`, `*.spec.*`, and `*Test.*`), `test_setup` (a command run once in each copy
   first, such as `npm ci`; without it a copy holds tracked files only), and
   `test_timeout` (seconds per command, default 300). At most 20 files and 30 minutes run
-  per bundle. Setting `test_command` is your consent to run the bundle's own commands:
+  per bundle. A partial clone (`--filter`) stops stage 1 with
+  `revert-tests: partial clones are not supported`. Setting `test_command` is your
+  consent to run the bundle's own commands:
   they run with your environment and credentials, as a test run in your checkout does,
   in copies under cca's data directory that are removed afterwards. Set it only for a
   suite that reaches no live system, and have `test_setup` install into the copy (a
@@ -257,7 +259,11 @@ are relative to the manifest's directory.
 - **`groups`.** Optional review groups, each with a `name`, a `repo`, and `files` globs
   relative to that repo. When present, it replaces the groups cca would derive. A file
   matching two entries goes to both with a note; changed files no entry matches go to an
-  `unticketed` group.
+  `unticketed` group. Each name is lowercased, with runs of characters outside `a-z0-9`
+  turned into one `-`, and the run stops before stage 1 if the slug is empty, is a reserved scope name
+  (`tests`, `hygiene`, `tests-hygiene`, `interactions`, `combined`, `unticketed`),
+  is shared by two entries, or equals `<scope>-topup` or `<scope>-maptopup`, where
+  `<scope>` is another entry's slug or a reserved scope name.
 - **`questions`.** `"default"` for the four default questions, or a path to a questions
   file, as for `--questions`.
 - **`models`.** Per-role model overrides, as for `--models`.
@@ -491,13 +497,13 @@ The run stops by printing the report path, the verdict, and the terminal state.
 During `/cca:audit` and `/cca:resume`, nothing changes an audited repo's tracked files,
 untracked non-ignored files, the index, branches, tags, stashes, config, or remotes. An
 audited repo is every bundle, reference, and source of truth. The only writes are the
-run directory, `runs.json`, ccx's own request and thread files in its data
-directory, and an explicit `git fetch --no-tags --refmap=` into remote-tracking refs after you
+run directory, `runs.json`, the `runs.json.lock` directory and temporary file beside
+`runs.json`, ccx's own request and thread files in its data directory, and an explicit `git fetch --no-tags --refmap=` into remote-tracking refs after you
 approve the listed commands (a remote configured with `remote.<name>.prune` may also
 delete stale remote-tracking refs). A bundle with `test_command` adds the copies its
 stage 1 test run makes under cca's data directory, removed when it ends, and whatever
 those test commands write outside the audited repos; the report discloses both. An
-ignored file written by a check run that an agent logged is allowed and reported. That attribution is self-reported: it rests on the
+ignored file written by a run that an agent logged is allowed and reported. That attribution is self-reported: it rests on the
 agent's own `runs:` list, and it is repo-level, so any logged run in a repo accounts for
 any ignored-file change in that repo.
 
