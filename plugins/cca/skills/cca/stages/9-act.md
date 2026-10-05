@@ -27,7 +27,7 @@ commit sha is logged there (step 7).
    1. Find the run in `runs.json`. Stage 8 wrote `report.md` as the line
       `revision: sha256:<hex>`, one LF, then the body bytes. Recompute the revision over
       the same bytes, with Bash, never through the Read tool's text:
-      `tail -n +2 report.md | sha256sum`. Compare it with the hex on the first line
+      `tail -n +2 report.md | { sha256sum 2>/dev/null || shasum -a 256; }`. Compare it with the hex on the first line
       (`head -n 1 report.md`). If they differ, the report was edited: stop and say
       so.
    2. Every item id must name an item in the report. An unknown id stops act; no id is

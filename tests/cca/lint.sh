@@ -51,6 +51,10 @@
 #   allowed-tools pattern. Not checked: a span that runs across lines, and lines inside
 #   ``` fenced code blocks. A self-test runs the check on fixed sample lines first and
 #   fails when its result differs from the expected one; an awk failure also fails.
+# - Outside ``` fences, sha256sum lines under skills/cca/ (except scripts/)
+#   also name shasum; patch git diff spans with a three-dot range under skills/cca/
+#   (except scripts/) and agents/ pass --no-ext-diff, excluding --numstat and
+#   --name-only. Fixed sample self-tests run first; awk failure fails each check.
 # - The converged item shape, the ``` fenced block whose first line is
 #   `## C<n>: <title>`, appears in agents/merger.md and in
 #   skills/cca/stages/7-converge.md, and the two blocks are the same after leading
@@ -347,6 +351,57 @@ for f in $(listed '^(agents|skills|commands)/'); do
 	tr -d '\r' < "$f" | gh_spans api > "$tmp/grep" ||
 		fail "$f: gh host check (api) did not run"
 	hits "$f" "gh api names no host; add --hostname <host>" < "$tmp/grep"
+done
+
+# Hash portability and deterministic patch spans.
+text_spans() {
+	awk -v kind="$1" '
+		/^[ \t]*```/ { fence = !fence; next }
+		fence { next }
+		{
+			bad = 0
+			if (kind == "hash" && /sha256sum/ && !/shasum/) bad = 1
+			if (kind == "patch") {
+				n = split($0, a, "`")
+				for (i = 2; i < n; i += 2)
+					if (a[i] ~ /git[ \t]+(-C[ \t]+[^`]+[ \t]+)?diff[ \t]/ &&
+					    a[i] ~ /\.\.\./ && a[i] !~ /--(numstat|name-only)/ &&
+					    a[i] !~ /--no-ext-diff/) bad = 1
+			}
+			if (bad) print NR ":"
+		}'
+}
+cat > "$tmp/text-sample" <<'SAMPLE'
+`sha256sum file`
+`sha256sum file || shasum -a 256 file`
+`git diff <base>...<head>`
+`git -C <repo> diff <base>...<head>`
+`git diff --no-ext-diff <base>...<head>`
+`git diff --numstat <base>...<head>`
+`git -C <repo> diff --name-only <base>...<head>`
+`git diff --cached`
+```sh
+`sha256sum file` and `git diff <base>...<head>`
+```
+`x` then `git diff a...b` and `git diff c...d`
+SAMPLE
+for kind in hash patch; do
+	if text_spans "$kind" < "$tmp/text-sample" > "$tmp/text-got"; then
+		text_got=$(tr '\n' ' ' < "$tmp/text-got")
+		case $kind in hash) text_expected='1: ' ;; patch) text_expected='3: 4: 12: ' ;; esac
+		[ "$text_got" = "$text_expected" ] || fail "tests/cca/lint.sh: $kind self-test: got lines $text_got"
+	else
+		fail "tests/cca/lint.sh: $kind self-test did not run"
+	fi
+done
+for f in $(listed '^(skills/cca/|agents/)'); do
+	case $f in skills/cca/scripts/*) continue ;; esac
+	case $f in skills/cca/*)
+		text_spans hash < "$f" > "$tmp/grep" || fail "$f: hash portability check did not run"
+		hits "$f" "sha256sum line lacks shasum fallback" < "$tmp/grep" ;;
+	esac
+	text_spans patch < "$f" > "$tmp/grep" || fail "$f: patch diff check did not run"
+	hits "$f" "patch git diff lacks --no-ext-diff" < "$tmp/grep"
 done
 
 # The converged item shape is the same in the merger's file and in stage 7.

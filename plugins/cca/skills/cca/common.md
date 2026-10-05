@@ -30,11 +30,11 @@ These hold for every stage, for the orchestrator and every agent.
    removed when the step ends, and whatever a bundle's own test commands write outside
    every audited repo and the run directory, under the consent its `test_command` key
    gives, which the report discloses. Nothing else. An ignored
-   file written by a check run that an agent logged under its `runs:` heading is allowed
+   file written by a run that an agent logged under its `runs:` heading is allowed
    and reported, never silently.
 2. **Prevention and detection.** Agent tool lists exclude Edit and NotebookEdit. An
    agent with Bash runs only these commands: `git show`, `git log`,
-   `git diff <base>...<head>`, `git grep`, `git ls-files`, `rg`, `ls`,
+   `git diff --no-ext-diff --no-textconv --no-color <base>...<head>`, `git grep`, `git ls-files`, `rg`, `ls`,
    `git hash-object --no-filters` (never `-w`) for the `consumed:` hashes, `cat` of an
    exported file with `tail -c`, `head -c`, `wc -c`, `sed '$d'`, and one `awk`
    line-numbering stage for a digester's byte range, and, when a question needs a run in
@@ -228,10 +228,9 @@ script.
   target environment and reads the key it holds. Its results: the key is the file name,
   so the new name runs there and repeats the step, and the recommended change applies. A
   key the rename keeps: the new name does not run there. No entry: the new name runs
-  once there, with nothing to repeat. The query, the place, and the results hold no
-  semicolon, since the field is split at its semicolons; join outcomes with periods. The
-  recommended change guards the repeated step on its own result, or leaves the old name
-  alone and puts the needed steps in a new script.
+  once there, with nothing to repeat. The recommended change guards the repeated step
+  on its own result, or leaves the old name alone and puts the needed steps in a new
+  script.
 - A script you check and clear gets a `## Verified OK` line that names the guard, or says
   that each step's result is new to an install that ran the old name. Where the tier
   lets pass two attack Verified OK items, it counts such an item among the riskiest and
@@ -257,6 +256,8 @@ Each finding uses exactly this block:
 - live check: <query>; <where it runs>; <what each result changes>; or none
 - work-item impact: <ticket, acceptance criterion, or none>
 ```
+
+In the `live check` field, the query, the place, and the results hold no semicolon, since the report splits the field at its semicolons; join outcomes with periods.
 
 Ids and origin tags:
 

@@ -74,7 +74,7 @@ files in your chunk and any skipped binary files), and your output file
 ## Boundaries
 
 1. Never change any file except your output file.
-2. Bash runs only `git show`, `git log`, `git diff <base>...<head>`, `git grep`, `git ls-files`,
+2. Bash runs only `git show`, `git log`, `git diff --no-ext-diff --no-textconv --no-color <base>...<head>`, `git grep`, `git ls-files`,
    `rg`, `ls`, their `git -C <repo>` forms, and `git hash-object --no-filters <file>` for the
    `consumed:` list. For a byte-range chunk you may also pipe `git show` output, or
    `cat` of the one file under the export path, through `tail -c +<n>` and

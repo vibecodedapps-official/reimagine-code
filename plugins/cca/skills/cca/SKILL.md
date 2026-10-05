@@ -50,7 +50,7 @@ stage sections below say.
 
 The `allowed-tools` list above pre-approves read commands only. Export, snapshot,
 state-file, and probe commands (such as the export script, `rm -rf` and `mkdir` in the run
-directory, `stat`, `find`, `sha256sum`, `jq`, `awk`, `mv -f`, `wc -c`, `codex --version`,
+directory, `stat`, `find`, `sha256sum`, `shasum`, `jq`, `awk`, `mv -f`, `wc -c`, `codex --version`,
 and the `sh` runs of the scripts in `${CLAUDE_PLUGIN_ROOT}/skills/cca/scripts/`:
 `readonly.sh`, `handoff.sh`, `work-items.sh`, `working-tree.sh`, `live.sh`, and
 `ledger.sh`) follow the session's permission mode; tell the user once, before stage 1,
@@ -209,7 +209,8 @@ orient -+-> digest ------+
    starts per group once its barrier clears; early groups do not wait for late ones.
 4. Map-correction top-ups run in stage 5 and finish before stage 6 starts.
 5. Stage 6 starts when every group has finished pass two.
-6. Stage 7 runs the late adversary (medium and high, and low when `live/` lists ids) and
+6. Stage 7 runs the late adversary (medium and high, and low when `live/findings.md` or
+   `live/claims.md` exists) and
    the merger.
 7. Stage 8 always runs, even after a failed stage or an expired budget.
 

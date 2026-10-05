@@ -146,9 +146,9 @@ Outputs: `scope/<scope>.md` and `pass1/<scope>.md` for every pass-one scope.
       ending with `status: complete`.
    5. A top-up succeeded when the file ends with `status: complete`, has a top-up
       section, and keeps the earlier content: compare line by line, after stripping
-      CR from every line, the lines before the first top-up heading (`## Top-up`, or
-      `## top-up`) with the saved copy less its `status: complete` line, ignoring
-      trailing empty lines. On failure,
+      CR from every line, the saved copy less its final `status: complete` line and
+      trailing empty lines with the same number of leading lines of the new file.
+      A `## Top-up` or `## top-up` heading must follow those lines. On failure,
       restore the file from the saved copy and follow the auditor ladder with scope id
       `<scope>-topup` (a `_test.fail` entry naming that id or `any` applies). When the
       top-up scope fails, the scope still clears the barrier with its pass-one report,

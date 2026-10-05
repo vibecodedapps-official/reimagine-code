@@ -41,6 +41,11 @@ step 1c, right after the baseline, for the same reason.
    - Bundle names: the repo directory's base name, lowercased, with `-2`, `-3` added
      when two bundles share it. `<bundle>` in file names below is this name.
      References and sources of truth keep their `name`, slugged the same way.
+   - Each custom `groups[].name`: slug it by the bundle-name rule. Before stage 1,
+     stop with one line `groups: <name> is a reserved scope name` when its slug is
+     `tests`, `hygiene`, `tests-hygiene`, `interactions`, `combined`, or `unticketed`.
+     When two entries share a slug, stop with one line
+     `groups: <a> and <b> share the slug <s>`. Reject these names; never rename them.
    - Ticket and PR ids to `github:owner/repo#n` or `file:<absolute path>`. A short id
      such as `#159` is accepted only when the bundle's repo has exactly one GitHub
      remote (`git -C <repo> remote -v`); otherwise stop with
@@ -498,7 +503,7 @@ For each bundle, record:
 - the run-once list, for a bundle with `run_once` only. Patterns are repo-relative and
   follow git's glob pathspec rules (`*` does not cross `/`, `**` does). With the
   merge-base, base, and head shas known, list the changed files that match:
-  `git -C <repo> diff --name-status -M <base>...<head> -- ':(glob)<pattern>' ...`, one
+  `git -C <repo> diff --no-ext-diff --no-textconv --no-color --name-status -M <base>...<head> -- ':(glob)<pattern>' ...`, one
   pathspec per pattern, three dots as in step 4 (a `head: working-tree` bundle uses its
   built head sha the same way). The `-M` makes a rename show as `R` whatever the user's
   `diff.renames` setting is. In a three-dot diff the old side is the merge-base, so the
@@ -518,7 +523,7 @@ For every reference and source of truth with a `path`, record its pinned sha:
 
 For each bundle, write:
 
-- `diffs/<bundle>.diff`: `git -C <repo> diff <base>...<head>`.
+- `diffs/<bundle>.diff`: `git -C <repo> diff --no-ext-diff --no-textconv --no-color <base>...<head>`.
 - `diffs/<bundle>.stat`: `git -C <repo> diff --numstat <base>...<head>`, one file per
   line with added and deleted counts (`-` for binary files).
 
@@ -683,7 +688,7 @@ Group ids are lowercase slugs: a ticket's group is `<bundle>-<ticket number or f
 name>`; the fixed groups are `unticketed` and `cross-cutting`.
 
 With a manifest `groups` key, it replaces the derivation, the extraction, and the
-merge: each entry is a group named by its `name`; its globs are relative to the entry's
+merge: each entry is a group whose id is its slugged `name`; its globs are relative to the entry's
 `repo`; a file matching two entries goes to both with a note; changed files no entry
 matches go to `unticketed`. Skip to the format below.
 

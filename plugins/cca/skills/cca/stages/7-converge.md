@@ -9,7 +9,7 @@ Inputs: `ledger/5.md`, `ledger/6.md`, `audit-brief.md`, `common.md`, and the liv
 the stage entry with its hash, or `absent` when it does not exist. They exist only on a
 run resumed with live results; a claim-only result leaves `live/findings.md` absent.
 
-Outputs: `late/adversary.md` (medium and high, and low when `live/` lists ids),
+Outputs: `late/adversary.md` (medium and high, and low when `live/findings.md` or `live/claims.md` exists),
 `ledger/7.md`, `gate.md`,
 `ledger/slices/<group>.md` and `converged/<group>.md` (split mode only; a group split
 by size has `<group>-<k>` parts), and `converged.md`.
@@ -21,10 +21,12 @@ by size has `<group>-<k>` parts), and `converged.md`.
    hashes. Check the budget again before every launch in this stage; once it has
    expired, launch nothing more, let running agents finish, and go to stage 8.
 
-2. **Late adversary, at medium and high, and at low when `live/` lists ids.** At low it
-   runs for those live ids only (below). Launch one fresh `cca:adversary` with
+2. **Late adversary, at medium and high, and at low when `live/findings.md` or `live/claims.md` exists.** At low it
+   runs for those live ids and live true claims only (below). Launch one fresh `cca:adversary` with
    the Agent tool, in the background, never as a fork, with its `model` from `--models`
-   or the manifest, else the agent's default. The prompt holds the paths of
+   or the manifest, else the agent's default. At every tier the prompt names
+   `live/findings.md`, `live/claims.md`, and each carried file `live/findings.md`
+   names, whichever exist. The prompt holds the paths of
    `audit-brief.md`, `common.md`, `ledger/5.md`, and `ledger/6.md`, the output path
    `late/adversary.md`, and the path of the list of ids to challenge, which the script
    builds, so no id is typed into the prompt: `mkdir -p <run dir>/tmp`, then `sh
@@ -35,8 +37,8 @@ by size has `<group>-<k>` parts), and `converged.md`.
    - every finding the second opinion asked to restore, at medium and high;
    - every finding `live/findings.md` lists, with its live result and derivation (a
      carried `X<n>` or `L<n>` is read from its `live/carried/<id>.md`, the ledger may no
-     longer hold it); at low, these are the only ids, and the prompt also names
-     `live/findings.md` and the carried files; at every tier, the prompt names each
+     longer hold it); at low, these are the only finding ids; at every tier, the
+     prompt names each
      result copy of `live/findings.md` and `live/claims.md` (`live.md`, "Derivation"),
      when there is any, for the adversary to read in full;
    - under `## Claims challenged`, every claim `live/claims.md` derives
@@ -84,7 +86,7 @@ by size has `<group>-<k>` parts), and `converged.md`.
 
    then its own additions in the `common.md` schema with `origin: late`, each marked
    provisional. At low, write one line: "No late adversary at low tier; late additions
-   stay provisional." When `live/` lists ids at low, that line comes first and the
+   stay provisional." When `live/findings.md` or `live/claims.md` exists at low, that line comes first and the
    sections of the live ids follow it. If the late adversary failed, say so and list the
    ids it would have challenged, under a `## Late adversary failed` heading (so no finding
    section runs on into it).
@@ -156,7 +158,7 @@ by size has `<group>-<k>` parts), and `converged.md`.
    path of any complete earlier `converged.md` for the same ledger files, and the output
    path `converged.md`. The merger reads the ledger files and never edits them. It writes
    one item per distinct defect, in this shape, which `agents/merger.md` repeats word for
-   word, since the merger never reads this file (`tests/lint.sh` keeps the two the same):
+   word, since the merger never reads this file (`tests/cca/lint.sh` keeps the two the same):
 
    ```
    ## C<n>: <title>
@@ -312,7 +314,7 @@ by size has `<group>-<k>` parts), and `converged.md`.
 
 10. **Stage completion.** Stage 7 is `complete` when `ledger/7.md`, `gate.md`, and
     `converged.md` are written and pass the check (step 8, which needs `converged.md`), and the late adversary (at medium and
-    high, and at low when `live/` lists ids) succeeded; otherwise `failed`, and the run
+    high, and at low when `live/findings.md` or `live/claims.md` exists) succeeded; otherwise `failed`, and the run
     will end `partial`. A failed late adversary scope fails the stage but does not discard
     a `converged.md` that passed the check: stage 8 uses it.
 

@@ -89,6 +89,33 @@ repos' own changelogs are kept under `docs/history/`.
 - The read-only check accepts another cca run's or a handoff's file under the primary
   repository's `<scratch>/cca/` and lists it as such. Before, two audits of the same
   repository ended each other `blocked`.
+- The report's revision hash falls back to `shasum -a 256` when `sha256sum` is absent,
+  and the step stops, writing no `report.md`, unless it has a 64-character hex digest.
+  Before, a PATH without `sha256sum` wrote `revision: sha256:` with no digest, which
+  `live.sh check` and `/cca:act` then rejected.
+- A manifest `groups` entry whose slugged name is `tests`, `hygiene`, `tests-hygiene`,
+  `interactions`, `combined`, or `unticketed`, or that shares its slug with another
+  entry, stops the run before stage 1 with one line. Before, such a group wrote the
+  same scope files as a specialist scope and the ledger rejected its ids as duplicates.
+- The late adversary runs at low tier when `live/findings.md` or `live/claims.md`
+  exists, and at every tier its prompt names the live files and carried files that
+  exist. Before, a claim-only live result at low launched no late adversary, and at
+  medium and high the prompt never named `live/claims.md`, so a live `true, reproduced`
+  claim could end `not verified, not reproduced`.
+- A second barrier top-up passes the preservation check when the saved copy, less its
+  final `status: complete` line, equals the same number of leading lines of the new
+  file. Before, a correct second top-up failed the check, so the scope failed and the
+  run ended `partial`.
+- Every patch diff in the stage files and the agents' commands passes `--no-ext-diff
+  --no-textconv --no-color`. Before, a user's `diff.external` or `color.ui=always` put
+  tool output or escape codes in `diffs/<bundle>.diff`.
+- The rule that a live check's query, place, and results hold no semicolon sits in the
+  finding schema, where every finding reads it. Before, it sat only in the run-once
+  section, and a semicolon in any other finding's live check field was cut when the
+  report split the field.
+- The attribution rule in `common.md` says an ignored file written by a run an agent
+  logged is allowed and reported, matching `SKILL.md` and the README. Before, it said
+  "a check run".
 
 ### repo-docs
 

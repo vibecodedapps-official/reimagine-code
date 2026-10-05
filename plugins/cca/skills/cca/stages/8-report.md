@@ -266,16 +266,20 @@ Outputs: `report.md`, `claims-verdicts.md`, and `work-items.jsonl`. The format o
 
 9. **Revision line.** With Bash, compute the hash over the exact bytes of
    `report.body.tmp` and assemble `report.md` with a shell redirect, so no byte is
-   re-serialized:
+   re-serialized. Use absolute paths for `<run dir>` with no `cd`; stop unless
+   `hex` is exactly 64 lowercase hexadecimal characters, writing no `report.md`
+   on failure:
 
    ```
-   hex=$(sha256sum report.body.tmp | cut -d' ' -f1)
-   { printf 'revision: sha256:%s\n' "$hex"; cat report.body.tmp; } > report.md
+   hex=$( (sha256sum <run dir>/report.body.tmp 2>/dev/null || shasum -a 256 <run dir>/report.body.tmp) | cut -d' ' -f1)
+   case $hex in ''|*[!0-9a-f]*) printf 'no sha-256 hex: %s\n' "$hex" >&2; exit 1 ;; esac
+   [ ${#hex} -eq 64 ] || { printf 'no sha-256 hex: %s\n' "$hex" >&2; exit 1; }
+   { printf 'revision: sha256:%s\n' "$hex"; cat <run dir>/report.body.tmp; } > <run dir>/report.md
    ```
 
    The Write tool is never used for `report.md`, and the file is not edited after this
    step. The revision is the sha-256 of every byte after the first LF; stage 9
-   recomputes it with `tail -n +2 report.md | sha256sum`. Remove `report.body.tmp`.
+   recomputes it with `tail -n +2 report.md | { sha256sum 2>/dev/null || shasum -a 256; }`. Remove `report.body.tmp`.
 
 10. **Write `claims-verdicts.md`,** in the format below, carrying the revision `<hex>`
     from step 9. Write it with the Write tool; it is not hashed.
