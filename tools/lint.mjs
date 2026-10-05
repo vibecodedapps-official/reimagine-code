@@ -72,13 +72,17 @@ for (const pl of PLUGINS) {
 }
 
 // 3. The Claude catalog lists exactly the Claude plugins above, from sources that exist; each entry agrees with its manifest;
-// the suite's plugins share the suite version; and the root README install block names the marketplace and every plugin.
+// the suite's plugins share the suite version; and the root README install and uninstall blocks name every plugin.
 const pkg = json("package.json");
 const market = json(".claude-plugin/marketplace.json");
 const dirs = readdirSync(join(root, "plugins"), { withFileTypes: true }).filter((d) => d.isDirectory()).map((d) => `plugins/${d.name}`);
 for (const d of dirs) if (!PLUGINS.some((pl) => pl.dir === d)) fail(`${d}: no row in PLUGINS in tools/lint.mjs`);
 const claude = PLUGINS.filter((pl) => pl.catalogs.includes("claude"));
 const manifests = new Map(claude.map((pl) => [pl.dir, json(`${pl.dir}/.claude-plugin/plugin.json`)]));
+for (const [file, pattern] of [["SKILL.md", /"plugin_version": "([^"]+)"/], ["stages/1-orient.md", /`plugin_version` `([^`]+)`/], ["stages/resume.md", /for this release is `([^`]+)`/]]) {
+  const p = `plugins/cca/skills/cca/${file}`, s = read(p), version = manifests.get("plugins/cca")?.version;
+  if (s !== null && version !== undefined && s.match(pattern)?.[1] !== version) fail(`${p}: plugin_version ${s.match(pattern)?.[1] ?? "missing"} differs from the cca manifest version ${version}`);
+}
 if (market) {
   if (market.name !== "reimagine-code") fail(`.claude-plugin/marketplace.json: name must be reimagine-code, not ${market.name}`);
   if (!market.metadata?.description) fail(".claude-plugin/marketplace.json: metadata.description is missing, and claude plugin validate --strict requires it");
@@ -115,6 +119,10 @@ if (readme !== null && market && repos.length === 1) {
   const want = [`/plugin marketplace add ${repo}`, ...(market.plugins ?? []).map((e) => `/plugin install ${e.name}@${market.name}`)];
   for (const line of want) {
     if (!readme.split("\n").some((l) => l.trim() === line)) fail(`README.md install block lacks the line: ${line}`);
+  }
+  for (const e of market.plugins ?? []) {
+    const line = `/plugin uninstall ${e.name}@${market.name}`;
+    if (!readme.split("\n").some((l) => l.trim() === line)) fail(`README.md uninstall block lacks the line: ${line}`);
   }
 }
 

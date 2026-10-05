@@ -97,6 +97,22 @@ test('lint rejects a root README without a plugin install line', () => fails(
   (d) => dropLine(d, 'README.md', '/plugin install ccx@reimagine-code'),
   'README.md install block lacks the line: /plugin install ccx@reimagine-code'));
 
+test('lint rejects a root README without a plugin uninstall line', () => fails(
+  (d) => dropLine(d, 'README.md', '/plugin uninstall ccx@reimagine-code'),
+  'README.md uninstall block lacks the line: /plugin uninstall ccx@reimagine-code'));
+
+for (const file of ['SKILL.md', 'stages/1-orient.md', 'stages/resume.md']) {
+  const path = `plugins/cca/skills/cca/${file}`;
+  test(`lint rejects a cca plugin_version mismatch in ${file}`, () => fails(
+    (d) => {
+      const p = join(d, path);
+      const s = readFileSync(p, 'utf8');
+      assert.ok(s.includes('0.9.1'), `${path} lacks the version`);
+      writeFileSync(p, s.replace('0.9.1', '0.9.0'));
+    },
+    `${path}: plugin_version 0.9.0 differs from the cca manifest version 0.9.1`));
+}
+
 test('lint rejects a non-ASCII byte in a shipped file', () => fails(
   (d) => writeFileSync(join(d, 'plugins/ccx/x.md'), 'plain\ncaf\u00e9\n'),
   'plugins/ccx/x.md:2: non-ASCII byte'));
