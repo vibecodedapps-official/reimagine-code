@@ -1,7 +1,7 @@
 #!/bin/sh
 # readonly.sh: test skills/cca/scripts/readonly.sh against the solo-dirty fixture.
 #
-# Usage: sh tests/readonly.sh
+# Usage: sh tests/cca/readonly.sh
 #
 # Each case builds a fresh solo-dirty fixture (tests/fixture/build.sh), takes a baseline
 # snapshot, makes one change, runs `readonly.sh check`, and compares stdout, stderr, and
@@ -41,7 +41,7 @@
 set -u
 
 here=$(cd "$(dirname "$0")" && pwd)
-ro=$here/../skills/cca/scripts/readonly.sh
+ro=$here/../../plugins/cca/skills/cca/scripts/readonly.sh
 sh_bin=${RO_SH:-sh}
 # Every temporary path, the fixtures and run directories included, lives under one root,
 # removed as one quoted path, so a temp path that holds a space cannot split the cleanup.

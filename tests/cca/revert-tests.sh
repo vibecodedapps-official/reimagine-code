@@ -2,7 +2,7 @@
 # revert-tests.sh: test skills/cca/scripts/revert-tests.sh on repos built inline and on the
 # patterns and ground-truth fixtures.
 #
-# Usage: sh tests/revert-tests.sh
+# Usage: sh tests/cca/revert-tests.sh
 #
 # Each inline repo is built with plumbing (hash-object, update-index, write-tree,
 # commit-tree), with a pinned identity and date, so a symlink, a submodule, and a path with
@@ -41,7 +41,7 @@
 set -u
 
 here=$(cd "$(dirname "$0")" && pwd)
-rt=$here/../skills/cca/scripts/revert-tests.sh
+rt=$here/../../plugins/cca/skills/cca/scripts/revert-tests.sh
 sh_bin=${RT_SH:-sh}
 
 GIT_CONFIG_GLOBAL=/dev/null

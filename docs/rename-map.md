@@ -559,7 +559,10 @@ every command flag. These are the interfaces `ccx-loop` and recorded runs depend
 
 - `tests/cca/{handoff,ledger,live,memory,work-items}.sh`:
   `root=$(cd "$(dirname "$0")/.." && pwd)` becomes `/../..`, and
-  `$root/skills/cca/scripts/<x>.sh` becomes `$root/plugins/cca/skills/cca/scripts/<x>.sh`.
+  `$root/skills/cca/scripts/<x>.sh` becomes `$root/plugins/cca/skills/cca/scripts/<x>.sh`;
+  in `handoff.sh:34` and `memory.sh:52`, `$root/tests/fixture/build.sh` becomes
+  `$root/tests/cca/fixture/build.sh` (missed on the first pass; both suites reported
+  "the solo fixture did not build" and exited 1 until it was fixed).
 - `tests/cca/{readonly,revert-tests,working-tree}.sh`: `$here/../skills/cca/scripts/`
   becomes `$here/../../plugins/cca/skills/cca/scripts/`.
 - `tests/cca/fixture/verify.sh:724`: `"$(dirname "$0")/../.."` becomes `/../../..` with

@@ -1,7 +1,7 @@
 #!/bin/sh
 # working-tree.sh: test skills/cca/scripts/working-tree.sh against the solo fixture.
 #
-# Usage: sh tests/working-tree.sh
+# Usage: sh tests/cca/working-tree.sh
 #
 # The solo fixture is built once (tests/fixture/build.sh); each case works on a fresh copy
 # of its app repo, or on a repo built inline with a pinned identity and commit date, so
@@ -49,8 +49,8 @@
 set -u
 
 here=$(cd "$(dirname "$0")" && pwd)
-wt=$here/../skills/cca/scripts/working-tree.sh
-ro=$here/../skills/cca/scripts/readonly.sh
+wt=$here/../../plugins/cca/skills/cca/scripts/working-tree.sh
+ro=$here/../../plugins/cca/skills/cca/scripts/readonly.sh
 sh_bin=${WT_SH:-sh}
 
 GIT_CONFIG_GLOBAL=/dev/null

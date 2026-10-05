@@ -1,4 +1,4 @@
-# claude-codex-audit (cca)
+# cca
 
 A Claude Code plugin that takes a finished bundle of work (one or many pull requests, in
 one or many repos) and tries to break it before merge. Every stage is adversarial and
@@ -17,9 +17,8 @@ the tickets, and the code. It runs the repo's local tests and lint where it can 
 exported tree). It sees runtime behavior only through live check results you supply in a
 `--live` file.
 
-cca is the pair of [ccl](https://github.com/vibecodedapps-official/claude-codex-loop)
-(claude-codex-loop): ccl builds and publishes one unit of work, cca audits what was
-built, across units.
+cca is the pair of `ccx-loop`: the loop builds and publishes one unit of work, cca
+audits what was built, across units.
 
 Built against Claude Code 2.1.284. The static checks, fixture builds, and one budget-0 run
 have passed, and `docs/acceptance.md` records five full multi-agent audit runs on the
@@ -40,24 +39,24 @@ have passed, and `docs/acceptance.md` records five full multi-agent audit runs o
   files); the report then says the forge was not queried.
 - `jq` for `/cca:resume --live`, on any forge. Without it, the import stops before it
   keeps anything.
-- Optional: the Codex CLI and the `codex-lite` plugin, 0.7.0 or later, for the second
-  opinion. codex-lite runs Codex from the session's repository root, with no network
+- Optional: the Codex CLI and the `ccx` plugin, 0.1.0 or later, for the second
+  opinion. ccx runs Codex from the session's repository root, with no network
   access.
 
 ## Install
 
-The repo is its own marketplace. In Claude Code:
+In Claude Code:
 
 ```
-/plugin marketplace add vibecodedapps-official/claude-codex-audit
-/plugin install cca@vibecodedapps-claude-codex-audit
+/plugin marketplace add vibecodedapps-official/reimagine-code
+/plugin install cca@reimagine-code
 ```
 
 To try a local clone without installing it:
 
 ```
-git clone https://github.com/vibecodedapps-official/claude-codex-audit.git
-claude --plugin-dir <path-to-clone>
+git clone https://github.com/vibecodedapps-official/reimagine-code.git
+claude --plugin-dir <path-to-clone>/plugins/cca
 ```
 
 ## Before the first run
@@ -248,7 +247,7 @@ are relative to the manifest's directory.
   replaces the default, and the brief states the order used. Each is pinned to a sha in
   stage 1.
 - **`claims`.** One or more files to verify, such as the build session's summary or a
-  ccl run's `report.md`, or a handoff written by `/cca:handoff`. Claims are never a source
+  `ccx-loop` run's `report.md`, or a handoff written by `/cca:handoff`. Claims are never a source
   of truth. `--claims` adds to these. See Handoff and claims.
 - **`scratch`.** An ignored directory inside the primary repo, under any name, where the
   run directory goes, to keep it in the repo. See Run directory.
@@ -428,7 +427,7 @@ count. An incomplete audit says `audit incomplete` and never `ready to merge`.
 | Domain mapper (stage 3) | `cca:mapper` agent, Opus | as for the digester |
 | Auditor (stage 4) | `cca:auditor` agent, Opus | as for the digester |
 | Adversary (stage 5) | `cca:adversary` agent, Opus, fresh context | as for the digester |
-| Second opinion (stage 6) | Codex `gpt-6.1-sol` through codex-lite | `cca:adversary` on Fable, else Opus |
+| Second opinion (stage 6) | Codex `gpt-6.1-sol` through ccx | `cca:adversary` on Fable, else Opus |
 | Merger (stage 7) | `cca:merger` agent, Sonnet | the orchestrator |
 
 A fallback swaps who fills a role; it never removes a stage. Every swap is named in the
@@ -491,7 +490,7 @@ The run stops by printing the report path, the verdict, and the terminal state.
 During `/cca:audit` and `/cca:resume`, nothing changes an audited repo's tracked files,
 untracked non-ignored files, the index, branches, tags, stashes, config, or remotes. An
 audited repo is every bundle, reference, and source of truth. The only writes are the
-run directory, `runs.json`, codex-lite's own request and thread files in its data
+run directory, `runs.json`, ccx's own request and thread files in its data
 directory, and an explicit `git fetch --no-tags --refmap=` into remote-tracking refs after you
 approve the listed commands (a remote configured with `remote.<name>.prune` may also
 delete stale remote-tracking refs). A bundle with `test_command` adds the copies its
@@ -591,8 +590,8 @@ check too.
 
 ## Codex is optional
 
-The second opinion (stage 6) goes to Codex through codex-lite when the Codex CLI and
-codex-lite are installed. Without them, with `--no-codex`, or when a Codex call is
+The second opinion (stage 6) goes to Codex through ccx when the Codex CLI and
+ccx are installed. Without them, with `--no-codex`, or when a Codex call is
 refused, times out, or fails twice, the role is swapped to a fresh `cca:adversary` agent on Fable, else Opus,
 given the same request (one launch per batch of at most 60 mandatory ids). The swap is named in the
 report. Stage 6 always runs.
@@ -606,7 +605,7 @@ otherwise Codex reads the file by path. Over the cap, the follow-up is not sent 
 stage 6 fails.
 
 Codex reads a file outside every repo, such as a run directory in the plugin's data
-directory, by absolute path. That read was verified on Windows with codex-lite's elevated
+directory, by absolute path. That read was verified on Windows with ccx's elevated
 sandbox only (`docs/decisions.md`, "Absolute-path Codex requests"); on Linux and macOS it
 relies on Codex's documented read-only policy. To stay clear of it, keep the run
 directory inside a repo: use an ignored in-repo scratch directory, or the manifest
@@ -671,16 +670,16 @@ resume command. cca prints elapsed time and agents run at each stage boundary.
 `usage.md` records per stage the agents run, their requested models, wall-clock time,
 and tokens as reported in each agent's completion notification. Every token number is
 labeled with its source; the scope of that number is not documented by the platform,
-and the label says so. Codex usage through codex-lite is "not reported". No total is
+and the label says so. Codex usage through ccx is "not reported". No total is
 presented as exact.
 
-## Pairing with ccl
+## Pairing with ccx-loop
 
-The pairing is still manual: pass a ccl run's `report.md` as a claims file
-(`--claims <path>`). A ccl report is a prose claims file, and stage 1 types each sentence.
-`/cca:handoff` can run in any session, including one that ran ccl, and writes the typed
-form. Automatic chaining from ccl, and ccl writing a handoff itself, are not implemented;
-`skills/cca/handoff.md` is the format ccl could adopt.
+The pairing is still manual: pass a `ccx-loop` run's `report.md` as a claims file
+(`--claims <path>`). A loop report is a prose claims file, and stage 1 types each
+sentence. `/cca:handoff` can run in any session, including one that ran the loop, and
+writes the typed form. Automatic chaining from the loop, and the loop writing a handoff
+itself, are not implemented; `skills/cca/handoff.md` is the format the loop could adopt.
 
 ## Development
 
@@ -702,46 +701,48 @@ files and templates, and five agent definitions. The scripts are:
   copy of the merge-base with the test code at its head state, and writes a verdict per
   file.
 
-Its checks are:
+Its checks live in `tests/cca/` of the reimagine-code repository. From its root,
+`npm test` runs every one of them through `tests/cca/sh.test.mjs`, and `npm run lint`
+runs the repository checks. Each can also run alone:
 
-- `sh tests/lint.sh`: checks the static parts (command and agent frontmatter, no agent
+- `sh tests/cca/cca/lint.sh`: checks the static parts (command and agent frontmatter, no agent
   with Edit or NotebookEdit, every stage file the skill names exists).
-- `sh tests/fixture/build.sh <solo|solo-dirty|full|tokens|patterns|ground-truth>`:
+- `sh tests/cca/cca/fixture/build.sh <solo|solo-dirty|full|tokens|patterns|ground-truth>`:
   builds a throwaway fixture in a temp directory and prints its manifest path. Expected
-  outcomes are listed in `tests/fixture/expected.md`. `ground-truth` plants the 20
-  confirmed review findings of `tests/fixture/ground-truth-cases.md`.
-- `sh tests/fixture/verify.sh <manifest path> [name]`: checks a built fixture against
-  the key literals in `tests/fixture/expected.md` and prints one line per mismatch. CI
+  outcomes are listed in `tests/cca/fixture/expected.md`. `ground-truth` plants the 20
+  confirmed review findings of `tests/cca/fixture/ground-truth-cases.md`.
+- `sh tests/cca/cca/fixture/verify.sh <manifest path> [name]`: checks a built fixture against
+  the key literals in `tests/cca/fixture/expected.md` and prints one line per mismatch. CI
   runs it after each build.
-- `sh tests/readonly.sh`: runs `readonly.sh` against a `solo-dirty` fixture, one case per
+- `sh tests/cca/readonly.sh`: runs `readonly.sh` against a `solo-dirty` fixture, one case per
   kind of difference, and compares output and exit status with literals.
-- `sh tests/handoff.sh`: runs `handoff.sh` on the fixture handoff and on valid and broken
+- `sh tests/cca/handoff.sh`: runs `handoff.sh` on the fixture handoff and on valid and broken
   copies, and compares claims, commits, and error lines with literals.
-- `sh tests/work-items.sh`: runs `work-items.sh` on a valid file and broken copies. It
+- `sh tests/cca/work-items.sh`: runs `work-items.sh` on a valid file and broken copies. It
   needs `jq`; without it, it prints a note and exits 0.
-- `sh tests/working-tree.sh`: runs `working-tree.sh` on copies of the solo fixture and on
+- `sh tests/cca/working-tree.sh`: runs `working-tree.sh` on copies of the solo fixture and on
   inline repos, with literal shas and refusal lines.
-- `sh tests/live.sh`: runs `live.sh` `check` on a valid `--live` file and broken copies,
+- `sh tests/cca/live.sh`: runs `live.sh` `check` on a valid `--live` file and broken copies,
   then each bookkeeping mode in a fresh run directory.
-- `sh tests/memory.sh`: runs `memory.sh find` on the solo fixture's verdicts and on inline
+- `sh tests/cca/memory.sh`: runs `memory.sh find` on the solo fixture's verdicts and on inline
   verdicts files that cover each key grammar.
-- `sh tests/ledger.sh`: runs `ledger.sh` on inline ledger inputs and compares each op's
+- `sh tests/cca/ledger.sh`: runs `ledger.sh` on inline ledger inputs and compares each op's
   output and exit status with literals.
-- `sh tests/revert-tests.sh`: runs `revert-tests.sh` on inline repos (each change status,
+- `sh tests/cca/revert-tests.sh`: runs `revert-tests.sh` on inline repos (each change status,
   odd paths, timeouts, caps, setup failures, an interrupt, and a run in the background
   through `bg` and `wait`) and on the `patterns` and
   `ground-truth` fixtures, and compares each verdict with a literal.
 
-CI runs a `checks` job (lint, then a fixture build and verify for `solo`, `solo-dirty`,
-`full`, `tokens`, `patterns`, and `ground-truth`) and a `scripts` job that runs the readonly, handoff, work-items,
-working-tree, live, memory, ledger, and revert-tests tests on Linux, macOS, and Windows
-(under Git Bash). On Linux the default `awk` is gawk, and a second step runs the
-awk-using tests (handoff, readonly, live, memory, working-tree, ledger, and revert-tests)
-with mawk first on `PATH` as `awk`. macOS runs them with its own BSD awk.
+CI runs them on Linux, macOS, and Windows (under Git Bash), each fixture build and
+verify once with a hostile global git config, and on Linux a second time with mawk
+first on `PATH` as `awk`, since the default there is gawk. macOS runs them with its own
+BSD awk.
 
-Acceptance results are recorded in `docs/acceptance.md` and design decisions in
-`docs/decisions.md`. On Windows, run the scripts under Git Bash.
+Acceptance results are recorded in the repository's `docs/acceptance.md`, and the
+records and decisions from before the plugin joined reimagine-code are kept under
+`docs/history/claude-codex-audit/`. On Windows, run the scripts under Git Bash.
 
 ## License
 
-Apache-2.0. See `LICENSE` and `NOTICE`.
+Apache-2.0. See [LICENSE](LICENSE), and the NOTICE file at the root of the reimagine-code
+repository.

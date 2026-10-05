@@ -1,20 +1,20 @@
 #!/bin/sh
 # handoff.sh: tests for skills/cca/scripts/handoff.sh.
 #
-# Usage: sh tests/handoff.sh
+# Usage: sh tests/cca/handoff.sh
 #
 # Builds the solo fixture, takes its handoff.md as the valid file, and compares the
 # output and exit status of `detect`, `check`, `claims`, and `commits` with literals.
 # Each broken case is a copy of the valid file with one edit, written in a temp
 # directory. The literal line numbers below are the line numbers of the fixture's
-# handoff.md (tests/fixture/build.sh): change the handoff and these move with it.
+# handoff.md (tests/cca/fixture/build.sh): change the handoff and these move with it.
 #
 # Prints one line per mismatch and `handoff test: ok` on success; exits 1 on any
 # mismatch.
 set -u
 
-root=$(cd "$(dirname "$0")/.." && pwd)
-hs=$root/skills/cca/scripts/handoff.sh
+root=$(cd "$(dirname "$0")/../.." && pwd)
+hs=$root/plugins/cca/skills/cca/scripts/handoff.sh
 
 tmp=$(mktemp -d)
 trap 'rm -rf "$tmp"' EXIT
@@ -31,7 +31,7 @@ fail() {
 
 # The fixture builder makes its own temp directory; point it inside $tmp so the one trap
 # removes it.
-if ! m=$(TMPDIR=$tmp sh "$root/tests/fixture/build.sh" solo); then
+if ! m=$(TMPDIR=$tmp sh "$root/tests/cca/fixture/build.sh" solo); then
 	echo "handoff test: the solo fixture did not build"
 	exit 1
 fi

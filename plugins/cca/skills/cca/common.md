@@ -21,7 +21,7 @@ These hold for every stage, for the orchestrator and every agent.
    audited repo's tracked files, untracked non-ignored files, the index, branches, tags,
    stashes, config, or remotes. "Audited repo" means every bundle, reference, and source
    of truth. Allowed writes: the run directory; cca's data directory (`runs.json`);
-   codex-lite's own request and thread files in codex-lite's data directory, written
+   ccx's own request and thread files in ccx's data directory, written
    when cca calls it; `git fetch` into remote-tracking refs, after the user approves it
    once per run; and, for a bundle with `head: working-tree`, the loose git objects that
    `working-tree.sh build` writes in the repo's object store (stage 1 step 1c, and resume

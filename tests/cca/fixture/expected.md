@@ -123,7 +123,7 @@ commit ids differ.
 | `D2` | whether a deactivated user can be reactivated is left for later; `options: none recorded`; `decided_by: not recorded`; `recorded_at: not recorded`; `status: deferred` | An open deferral with no owner |
 | `R1` | ticket `APP-6`, bundle `app`, "add accepts a second row with an id that already exists", rank 1, `include`, reason "the bundle introduced it when it changed add_user" | Predates the bundle |
 
-`sh skills/cca/scripts/handoff.sh claims $F/handoff.md` prints these 11 claims, 4 `code`,
+`sh plugins/cca/skills/cca/scripts/handoff.sh claims $F/handoff.md` prints these 11 claims, 4 `code`,
 2 `verification`, 2 `decision`, 1 `scope`, 2 `status`. Fields are separated by one tab,
 written `<TAB>` here:
 
@@ -141,7 +141,7 @@ scope<TAB>raised/R1<TAB>app<TAB>APP-6<TAB>53<TAB>APP-6: Add accepts a second row
 status<TAB>raised/R1/fields<TAB>app<TAB>APP-6<TAB>53<TAB>APP-6: type Bug; state New; iteration none; owner none
 ```
 
-`sh skills/cca/scripts/handoff.sh commits $F/handoff.md` prints
+`sh plugins/cca/skills/cca/scripts/handoff.sh commits $F/handoff.md` prints
 `app<TAB>9c5f77c<TAB>APP-1<TAB>23` and `app<TAB>0c23936<TAB>APP-1<TAB>24`.
 
 Expected audit outcomes, each only when the stage that judges it completes:

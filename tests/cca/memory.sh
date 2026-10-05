@@ -1,7 +1,7 @@
 #!/bin/sh
 # memory.sh: tests for skills/cca/scripts/memory.sh.
 #
-# Usage: sh tests/memory.sh
+# Usage: sh tests/cca/memory.sh
 #
 # Builds the solo fixture and runs `find` on its claims-verdicts.md against a temp memory
 # directory, then on inline verdicts files that cover each key grammar, the boundary rule,
@@ -11,8 +11,8 @@
 # Prints one line per mismatch and `memory test: ok` on success; exits 1 on any mismatch.
 set -u
 
-root=$(cd "$(dirname "$0")/.." && pwd)
-ms=$root/skills/cca/scripts/memory.sh
+root=$(cd "$(dirname "$0")/../.." && pwd)
+ms=$root/plugins/cca/skills/cca/scripts/memory.sh
 
 tmp=$(mktemp -d)
 trap 'rm -rf "$tmp"' EXIT
@@ -49,7 +49,7 @@ errmsg() {
 
 # ---------------------------------------------------------------------------
 # The fixture's claims-verdicts.md against a small memory directory.
-if ! m=$(TMPDIR=$tmp sh "$root/tests/fixture/build.sh" solo); then
+if ! m=$(TMPDIR=$tmp sh "$root/tests/cca/fixture/build.sh" solo); then
 	echo "memory test: the solo fixture did not build"
 	exit 1
 fi

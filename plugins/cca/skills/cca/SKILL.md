@@ -121,7 +121,7 @@ mean, in addition:
    `${CLAUDE_PLUGIN_DATA}/revert-work/<run id>/`, which `revert-tests.sh` removes, and
    runs the bundle's own test commands there, which may write outside the run directory
    as a test run does (hard rule 1).
-3. You call Codex only through the Skill tool, `codex-lite:ask`, with
+3. You call Codex only through the Skill tool, `ccx:ask`, with
    `--model <full id>` and `--timeout <seconds>`, plus `--resume <thread id>` for the
    one allowed follow-up. You never run the `codex` CLI except `codex --version`.
 4. You never ask for live-data access during a run and never run a live query
@@ -149,7 +149,7 @@ Approvals recorded in `stages.json` are not asked again.
 | Domain mapper (stage 3) | `cca:mapper`, opus | as for the digester |
 | Auditor (stage 4, top-ups) | `cca:auditor`, opus | as for the digester |
 | Adversary (stages 5 and 7) | `cca:adversary`, opus, fresh context | as for the digester |
-| Second opinion (stage 6) | Codex, `--codex-model` (default `gpt-6.1-sol`), through `codex-lite:ask` | `cca:adversary` on fable, else opus, launched once per batch, each given its Codex request; also for the batches of ids that neither the Codex request nor its follow-up carried (a partial swap) |
+| Second opinion (stage 6) | Codex, `--codex-model` (default `gpt-6.1-sol`), through `ccx:ask` | `cca:adversary` on fable, else opus, launched once per batch, each given its Codex request; also for the batches of ids that neither the Codex request nor its follow-up carried (a partial swap) |
 | Merger (stage 7) | `cca:merger`, sonnet | you merge |
 
 An agent **fails** when it returns an error, or when its output file lacks
@@ -162,7 +162,7 @@ Handle each failure by role:
 | merger | you merge, a swap | stage 7 fails | none |
 | second-opinion fallback (fable), each batch | relaunch on opus | stage 6 fails | none |
 
-Codex transport retries (codex-lite status `failed` or missing) are separate and come
+Codex transport retries (ccx status `failed` or missing) are separate and come
 before the swap to the fallback; stage 6's file has them. A swap changes who fills a
 role; it never removes a stage. Record every swap in the stage's `swaps` list in
 `stages.json` with the role, the scope, from, to, and the reason, and name it in the
@@ -421,7 +421,7 @@ with `mv -f`. Never edit either in place.
 Write `usage.md` at each stage boundary from `stages.json`: per stage, each agent's
 type, scope, requested model, wall-clock (from `duration_ms`, or started and ended),
 and tokens labeled "task notification, subagent_tokens; scope not documented". A
-number the notification did not carry, and every Codex call through codex-lite, says
+number the notification did not carry, and every Codex call through ccx, says
 "not reported". Any sum is labeled "sum of reported numbers, not exact"; no total is
 presented as exact.
 
@@ -458,7 +458,7 @@ writes `ledger/inventory.txt`, and builds `ledger/5.md` with `ledger.sh`.
 
 Read `${CLAUDE_PLUGIN_ROOT}/skills/cca/stages/6-second-opinion.md` when stage 5 is complete or failed. It
 builds the Codex request from `${CLAUDE_PLUGIN_ROOT}/skills/cca/codex-request.md`, calls
-`codex-lite:ask`, handles status and swaps, and writes `ledger/6.md`. The request names
+`ccx:ask`, handles status and swaps, and writes `ledger/6.md`. The request names
 every input copy and audited source by absolute path, so Codex opens them wherever the
 run directory is; only the follow-up, a file `codex/followup.md`, carries inline text,
 and its text is passed in the call itself when an input went unacknowledged.

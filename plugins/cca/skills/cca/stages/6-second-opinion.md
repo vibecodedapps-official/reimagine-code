@@ -1,4 +1,4 @@
-# Stage 6: second opinion (Codex through `codex-lite:ask`)
+# Stage 6: second opinion (Codex through `ccx:ask`)
 
 The orchestrator's procedure for stage 6. The preamble in `${CLAUDE_PLUGIN_ROOT}/skills/cca/SKILL.md` and the
 run's `common.md` apply throughout. The request's content, order, answer cap, sentinel
@@ -42,10 +42,10 @@ for each batch `<k>` it answers, numbered from 2 (step 9).
    - Otherwise check availability. Run `codex --version`; if it does not exit 0, swap
      to the fallback with the reason "codex --version failed". Run
      `claude plugin list --json` with Bash and take the `version` of the entry whose id
-     starts with `codex-lite@`; it must be 0.7.0 or later. If the command fails, the
+     starts with `ccx@`; it must be 0.1.0 or later. If the command fails, the
      entry is absent, or the version cannot be read, swap to the fallback with the
-     reason "codex-lite not installed or version unreadable"; if it is older than 0.7.0,
-     swap with the reason "codex-lite <version> is older than 0.7.0". On any swap here,
+     reason "ccx not installed or version unreadable"; if it is older than 0.1.0,
+     swap with the reason "ccx <version> is older than 0.1.0". On any swap here,
      build the request (step 4), then go to step 11. Record both versions in the stage
      entry. The orchestrator never runs the `codex` CLI for anything else.
 
@@ -123,15 +123,15 @@ for each batch `<k>` it answers, numbered from 2 (step 9).
         (a Codex follow-up carried the second, or the fallback was launched for a
         further batch), else false.
 
-5. **Check the session's repository.** codex-lite runs Codex from the top of the git
+5. **Check the session's repository.** ccx runs Codex from the top of the git
    repository that contains the session's directory, and the orchestrator cannot move
    it. Run `git rev-parse --show-toplevel` in the session's directory. If the session's
-   directory is not in a git repository, send the request anyway; codex-lite refuses,
+   directory is not in a git repository, send the request anyway; ccx refuses,
    and step 7 swaps. The request has one form, so the run directory's location and the
    request's size change nothing here: Codex reads the inputs and sources by the
    absolute paths the request names.
 
-6. **Call Codex** with the Skill tool, skill `codex-lite:ask`, options first:
+6. **Call Codex** with the Skill tool, skill `ccx:ask`, options first:
 
    ```
    --model <model> --timeout <timeout> Read "<absolute path of codex/request.md>" and answer as it asks.
@@ -143,7 +143,7 @@ for each batch `<k>` it answers, numbered from 2 (step 9).
    follow-up call (step 8); once a call is made, wait for its completion notification
    without polling or any other tool call.
 
-7. **Parse the result.** codex-lite ends its output with a line `status: <value>`, where
+7. **Parse the result.** ccx ends its output with a line `status: <value>`, where
    the value is `ok`, `failed`, `refused`, or `timeout`, and prints a line
    `thread <id>` when a thread started. Take the last `status:` line and the `thread`
    line. Then:
@@ -152,7 +152,7 @@ for each batch `<k>` it answers, numbered from 2 (step 9).
    |---|---|
    | `ok` | continue to step 8 |
    | `failed`, or no status line | retry once as a fresh call with the same arguments; on a second `failed` or missing status, swap to the fallback with the reason "codex failed twice" |
-   | `refused` | do not retry; swap to the fallback, recording codex-lite's message as the reason |
+   | `refused` | do not retry; swap to the fallback, recording ccx's message as the reason |
    | `timeout` | swap to the fallback with the reason "codex timeout after <timeout> s" |
 
    A fresh retry is not a follow-up.
@@ -197,7 +197,7 @@ for each batch `<k>` it answers, numbered from 2 (step 9).
      `codex/followup.md` in bytes (`wc -c`). The cap is 450,000 bytes, or
      `_test.inline_cap_bytes` when set. Over the cap, the follow-up is not sent and
      stage 6 fails as below; no diff is dropped. Then call the Skill tool,
-     `codex-lite:ask`, in one of two forms, with the options `--model <model> --timeout
+     `ccx:ask`, in one of two forms, with the options `--model <model> --timeout
      <timeout> --resume <thread id>` first:
      - Every input was acknowledged (only positions are missing or a second batch is
        due): Codex has shown that it reads the run directory, so the call is by path,
@@ -227,7 +227,7 @@ for each batch `<k>` it answers, numbered from 2 (step 9).
    or the follow-up asked for and still missing after the follow-up is handled in step
    10. Ids neither carried are not part of the follow-up: step 11 launches them.
 
-9. **Save the answer verbatim** in `codex/response.md`: the codex-lite output as
+9. **Save the answer verbatim** in `codex/response.md`: the ccx output as
    returned, unchanged, written at step 8 before the missing ids are computed. A
    follow-up's output is appended after a line
    `--- follow-up, thread <id> ---`. The fallback batches of step 4.3 are known once
@@ -352,7 +352,7 @@ for each batch `<k>` it answers, numbered from 2 (step 9).
     written and passes `check --through 6 --stage6 complete`; otherwise `failed`, and the run will end `partial`.
 
 13. **Read-only check.** Run the check in `${CLAUDE_PLUGIN_ROOT}/skills/cca/SKILL.md` and write
-    `baseline/6-check.md`. codex-lite's own request and thread files in its data
+    `baseline/6-check.md`. ccx's own request and thread files in its data
     directory are allowed writes.
 
 14. **Write the stage 6 entry last,** once the check has passed, per the preamble, with:
@@ -366,7 +366,7 @@ for each batch `<k>` it answers, numbered from 2 (step 9).
     "sentinels": { "ledger/5.md": "<token>", "live/findings.md": "<token>" },
     "codex": { "called": true, "form": "path", "thread": "<id>", "status": "ok",
                "retried": false, "follow_up": false, "unacknowledged": [],
-               "codex_version": "<text>", "codex_lite_version": "<text>" },
+               "codex_version": "<text>", "ccx_version": "<text>" },
     "missing_positions": [],
     "batched": false
     ```

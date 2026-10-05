@@ -721,7 +721,7 @@ esac
 # kind from handoff.sh equals the literals there. manifest-working-tree.json exists too.
 case $name in
 solo | solo-dirty)
-	hs=$(cd "$(dirname "$0")/../.." && pwd)/skills/cca/scripts/handoff.sh
+	hs=$(cd "$(dirname "$0")/../../.." && pwd)/plugins/cca/skills/cca/scripts/handoff.sh
 	for f in handoff.md manifest-handoff.json manifest-scratch.json claims-verdicts.md \
 		claims-verdicts-stale.md manifest-working-tree.json; do
 		[ -f "$F/$f" ] || fail "$f is missing"

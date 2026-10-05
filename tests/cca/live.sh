@@ -1,7 +1,7 @@
 #!/bin/sh
 # live.sh: tests for skills/cca/scripts/live.sh.
 #
-# Usage: sh tests/live.sh
+# Usage: sh tests/cca/live.sh
 #
 # Part 1 writes a report whose first line is the SHA-256 of its body (the hex is a
 # literal, computed once from the body below), a valid live file, and broken copies of
@@ -23,8 +23,8 @@ if ! command -v jq >/dev/null 2>&1; then
 	exit 0
 fi
 
-root=$(cd "$(dirname "$0")/.." && pwd)
-lv=$root/skills/cca/scripts/live.sh
+root=$(cd "$(dirname "$0")/../.." && pwd)
+lv=$root/plugins/cca/skills/cca/scripts/live.sh
 LS=${LIVE_SH:-sh}
 
 tmp=$(mktemp -d)

@@ -1,7 +1,7 @@
 #!/bin/sh
 # ledger.sh: tests for skills/cca/scripts/ledger.sh.
 #
-# Usage: sh tests/ledger.sh
+# Usage: sh tests/cca/ledger.sh
 #
 # Builds an inline run directory in a temp dir (three pass-one scopes, a failed pass-one
 # file, a failed and a not-run pass two, a top-up, a second opinion, a late adversary, and
@@ -11,8 +11,8 @@
 # Prints one line per mismatch and `ledger test: ok` on success; exits 1 on any mismatch.
 set -u
 
-root=$(cd "$(dirname "$0")/.." && pwd)
-ls=$root/skills/cca/scripts/ledger.sh
+root=$(cd "$(dirname "$0")/../.." && pwd)
+ls=$root/plugins/cca/skills/cca/scripts/ledger.sh
 
 tmp=$(mktemp -d)
 trap 'rm -rf "$tmp"' EXIT

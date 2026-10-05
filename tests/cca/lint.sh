@@ -1,16 +1,16 @@
 #!/bin/sh
 # lint.sh: static checks for the cca plugin files.
 #
-# Usage: sh tests/lint.sh [root]
+# Usage: sh tests/cca/lint.sh [root]
 #
-# root defaults to $LINT_ROOT, else the repository that holds this script. Use it to
-# lint a copy, for example a copy of the tree with Edit added to an agent's tools,
-# which must fail.
+# root defaults to $LINT_ROOT, else plugins/cca in the repository that holds this
+# script. Use it to lint a copy, for example a copy of the plugin with Edit added to
+# an agent's tools, which must fail.
 #
-# File list: inside a git work tree whose top level is root, `git ls-files --cached
-# --others --exclude-standard` (tracked files plus new files that are not ignored, so
-# files a change adds count before they are staged), keeping only files that exist.
-# Outside a git work tree, every file under root except .git/.
+# File list: inside a git work tree, `git ls-files --cached --others
+# --exclude-standard` run from root (tracked files plus new files that are not
+# ignored, so files a change adds count before they are staged), keeping only files
+# that exist. Outside a git work tree, every file under root except .git/.
 #
 # Checks:
 # - commands/audit.md, resume.md, act.md, handoff.md exist; every commands/*.md has
@@ -26,8 +26,8 @@
 # - skills/cca/handoff.md, skills/cca/live.md, and skills/cca/work-items.md exist.
 # - Every scripts/<name>.sh path that a file under skills/ or commands/ mentions
 #   exists under skills/cca/scripts/.
-# - .claude-plugin/plugin.json and marketplace.json parse as JSON (node, else
-#   python3, else skipped with a note).
+# - .claude-plugin/plugin.json parses as JSON (node, else python3, else skipped with
+#   a note). The catalog that lists the plugin is checked by tools/lint.mjs.
 # - No file under .claude-plugin/, commands/, skills/, agents/, docs/, or README.md
 #   mentions the three planning documents that preceded the implementation. The three
 #   documents themselves are not scanned, so the check holds before and after they
@@ -61,7 +61,7 @@
 
 set -u
 
-root=${1:-${LINT_ROOT:-$(cd "$(dirname "$0")/.." && pwd)}}
+root=${1:-${LINT_ROOT:-$(cd "$(dirname "$0")/../../plugins/cca" && pwd)}}
 cd "$root" 2>/dev/null || {
 	echo "lint: cannot enter root $root"
 	exit 1
@@ -80,8 +80,8 @@ tmp=$(mktemp -d)
 trap 'rm -rf "$tmp"' EXIT
 files=$tmp/files
 
-cdup=$(git rev-parse --show-cdup 2>/dev/null) && in_git=1 || in_git=0
-if [ "$in_git" = 1 ] && [ -z "$cdup" ]; then
+git rev-parse --is-inside-work-tree >/dev/null 2>&1 && in_git=1 || in_git=0
+if [ "$in_git" = 1 ]; then
 	git ls-files --cached --others --exclude-standard |
 		while IFS= read -r f; do [ -f "$f" ] && printf '%s\n' "$f"; done |
 		sort -u > "$files"
@@ -219,7 +219,7 @@ else
 	json_check() { return 0; }
 	note "neither node nor python3 found; JSON parse check skipped"
 fi
-for j in .claude-plugin/plugin.json .claude-plugin/marketplace.json; do
+for j in .claude-plugin/plugin.json; do
 	if grep -qx "$j" "$files"; then
 		json_check "$j" || fail "$j: does not parse as JSON"
 	else

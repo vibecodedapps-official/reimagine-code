@@ -1,7 +1,7 @@
 #!/bin/sh
 # work-items.sh: tests for skills/cca/scripts/work-items.sh.
 #
-# Usage: sh tests/work-items.sh
+# Usage: sh tests/cca/work-items.sh
 #
 # Writes a small report body, a claims.md, and a valid work-items.jsonl in a temp
 # directory, then compares the output and exit status of `check` with literals for the
@@ -15,8 +15,8 @@ if ! command -v jq >/dev/null 2>&1; then
 	exit 0
 fi
 
-root=$(cd "$(dirname "$0")/.." && pwd)
-ws=$root/skills/cca/scripts/work-items.sh
+root=$(cd "$(dirname "$0")/../.." && pwd)
+ws=$root/plugins/cca/skills/cca/scripts/work-items.sh
 
 tmp=$(mktemp -d)
 trap 'rm -rf "$tmp"' EXIT
