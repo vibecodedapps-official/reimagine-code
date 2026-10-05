@@ -32,7 +32,7 @@ repos' own changelogs are kept under `docs/history/`.
   commit too when the planning snapshot is another commit, then the risk floor, and
   chooses each slice's implementer again; the tier never falls, and when it rises with
   no explicit run budget the budget becomes the new tier's default. Before, it got only
-  one more review round, and a rise there kept the lower tier's budget.
+  one more review round.
 - Plan confirmation compares a local branch with the base commit only when the branch
   exists. Before, a run that continued a branch with no local branch of that name ended
   `blocked` there.
