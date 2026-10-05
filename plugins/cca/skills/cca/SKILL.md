@@ -63,7 +63,7 @@ the plugin's own directory, where the stage files and templates live. Use each p
 exactly as it appears in this file; neither is a shell variable. Read stage files and
 templates with the Read tool, never through Bash. Stage files name both literally;
 there each means the directory substituted here. In every Bash command, including the
-`mv` of `runs.json.tmp`, use the resolved absolute path, never the unexpanded text.
+`mv` of `runs.json.<owner>.tmp`, use the resolved absolute path, never the unexpanded text.
 
 ## Invocation block
 
@@ -112,7 +112,9 @@ mean, in addition:
    `usage.md`, and `report.md`. Agents read the run directory and the audited trees
    and write only their own output file.
 2. During audit and resume you write only inside the run directory and to
-   `${CLAUDE_PLUGIN_DATA}/runs.json`. You never run `git checkout`, `git switch`,
+   `${CLAUDE_PLUGIN_DATA}/runs.json`, its `runs.json.lock` directory (including
+   the owner directory), and its `runs.json.<owner>.tmp` temporary file. You never
+   run `git checkout`, `git switch`,
    `git reset`, `git stash`, `git worktree`, `git archive`, `git checkout-index`, or any
    command that writes to an audited repo, and you run `git fetch` only after the
    approval in stage 1. The one other write is `working-tree.sh build` for a bundle with
@@ -231,7 +233,7 @@ fallback produced a complete output for every scope.
 - `reported`: every applicable stage complete, and a report written.
 - `partial`: a report was written, but a stage failed or the budget ran out. The
   verdict is `audit incomplete`, never `ready to merge`. Print the resume command
-  `/cca:resume <run-id>` only when the registry update succeeded; otherwise print the
+  `/cca:resume <run-id>` when the run's entry is in `runs.json`; otherwise print the
   manual entry per State files.
 - `blocked`: no report could be written, or the read-only check failed. Print the
   reason; keep every finished stage file.
@@ -341,24 +343,57 @@ no `_test` key, do not read that file.
 Write `stages.json` only through `stages.json.tmp` beside it, then rename it over
 the destination with `mv -f`. Never edit state files in place.
 
-For every `runs.json` update, create `${CLAUDE_PLUGIN_DATA}/runs.json.lock` with
-`mkdir` (no `-p`). While the lock exists, wait 5 seconds and retry. Judge staleness
-by the lock directory itself being older than a minute (`find <lock> -maxdepth 0
--mmin +1`, or its mtime), never by how long this session has waited. For a stale
-lock, ask the user whether it may be removed; in a headless session, treat it as
-a refused lock instead and go on with the manual-entry fallback below. Holding
-the lock, read `runs.json` afresh (or start an array when absent), write `runs.json.tmp` beside it, run `mv -f`
-to replace `runs.json`, then `rmdir` the lock.
+For every `runs.json` update, use `<owner>` = `<run-id>-<HHMMSS>`, the run id
+and this invocation's start time in hours, minutes, and seconds, so a resume of the
+same run gets its own token. `<lock>` is `${CLAUDE_PLUGIN_DATA}/runs.json.lock`.
+Acquire with `mkdir <lock> && mkdir <lock>/<owner>` (no `-p`), never one `mkdir`
+with both operands: a failed first operand would plant this owner in another
+session's lock. While `mkdir <lock>` fails because the lock exists, wait 5 seconds
+and retry. An empty lock is mid-acquire or a crash leftover; judge it by age too.
 
-If creating the lock is refused or fails for a reason other than an existing lock,
-or writing or replacing the registry, or removing the lock with `rmdir`, is refused
-or fails, go on. Release any lock this session acquired; a refused or failed
-release follows this same warning and manual-entry fallback. Tell the user at once
-that `/cca:resume` and `/cca:act` cannot find this run. Record that limitation in `audit-brief.md`
-only at D6, while stage 1 still writes the brief, so the report's Coverage repeats
-it. After stage 1, record it in the stage's `stages.json` entry and `usage.md`,
-never by editing the brief. Include the limitation in the final reply. At the
-end, print the run's JSON entry to add by hand to the resolved absolute `runs.json` path, in place of a bare resume command.
+A lock is stale when the lock directory itself is older than about a minute by
+mtime: `find <lock> -maxdepth 0 -mmin +1` lists it after a minute on GNU `find`,
+after two on BSD and busybox `find`. Never judge by how long this session waited.
+For a stale lock, ask only when a user can answer in this session whether another
+cca audit or resume is running, including one waiting at a prompt. On "no", remove
+it with `rmdir <lock>/* <lock>` (`rmdir <lock>` when empty), then acquire. On "yes",
+keep the 5-second retries for five more minutes, then ask once more. A second
+"yes", or a user who declines removal, takes the registry-failure rule below.
+In a headless session, or when unsure whether a user can answer, treat a stale
+lock as refused at once.
+
+Holding the lock, read `runs.json` afresh with the Read tool (or start an array
+when absent), then write `<tmp>` = `${CLAUDE_PLUGIN_DATA}/runs.json.<owner>.tmp`,
+never a shared temporary file. Replace and release in one Bash command, every path
+absolute: `[ -d <lock>/<owner> ] && mv -f <tmp> <runs.json> && rmdir <lock>/<owner> <lock>`.
+A failed test is not an error: the lock was taken over while this session paused.
+Acquire again, reread, rewrite, and run the command again. On every failure path,
+release any lock this session holds with `rmdir <lock>/<owner> <lock>`; another
+session's lock holds its own owner directory, so this release cannot remove it.
+
+On any refused or failed registry update step (lock acquisition, the Read,
+temporary-file write, replace-and-release command, or a stale lock treated as
+refused), release any lock this session holds with `rmdir <lock>/<owner> <lock>`.
+A refused or failed release changes nothing below. Read `runs.json` with the Read
+tool and branch on this run's entry:
+
+- **Absent (D6's add failed, and nothing added it since):** tell the user at once
+  that `/cca:resume` and `/cca:act` cannot find this run. At D6, record the
+  limitation in `audit-brief.md`, which stage 1 still writes, so the report's
+  Coverage repeats it; after stage 1, record it in the stage's `stages.json` entry
+  and `usage.md`, never by editing the brief. Include it in the final reply. At the
+  end print the run's JSON entry to add by hand to the resolved absolute `runs.json`
+  path, in place of a bare resume command.
+- **Present with the old state (a later update failed):** say that `runs.json`
+  still shows the old state; keep printing `/cca:resume <run-id>`, with no manual
+  entry. Record the limitation in the stage's `stages.json` entry and `usage.md`
+  (at resume step 9, in the first rerun stage's entry), and in the final reply.
+  Never edit the brief.
+- **Present with the new state (replace succeeded, only release failed):** the
+  registry is correct. Report the lock's resolved absolute path and the command
+  that removes it, `rmdir <lock>/<owner> <lock>`, with absolute paths. Say that the
+  next registry update asks before removing it and that a headless session cannot
+  ask, so remove it by hand. Record no limitation.
 
 `${CLAUDE_PLUGIN_DATA}/runs.json` is a JSON array with one entry per run:
 

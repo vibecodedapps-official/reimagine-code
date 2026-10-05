@@ -267,8 +267,10 @@ never loses a finished one. With `--live`, it first imports approved live check 
    for that target, they are not asked again; otherwise ask once, listing the new
    commands, and record a new approval entry.
 9. **Mark the run running.** Set the run's `state` in `runs.json` to `running` under
-   the lock per SKILL.md, State files. A
-   resumed run has no budget; the original invocation's budget does not carry over.
+   the lock per SKILL.md, State files. On refusal or failure, continue per that
+   section, recording any limitation in the first rerun stage's `stages.json`
+   entry and `usage.md`. A resumed run has no budget; the original invocation's
+   budget does not carry over.
 10. **Continue.** Go to the SKILL.md section for the first rerun stage and run every
    stage after it, with the same rules as an audit. When the first rerun stage is 2, 3,
    or 4, launch every stage among 2, 3, and 4 that is being rerun together; a reused

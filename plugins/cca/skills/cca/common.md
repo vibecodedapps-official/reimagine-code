@@ -20,7 +20,9 @@ These hold for every stage, for the orchestrator and every agent.
 1. **Read-only boundary.** During `/cca:audit` and `/cca:resume`, nothing changes an
    audited repo's tracked files, untracked non-ignored files, the index, branches, tags,
    stashes, config, or remotes. "Audited repo" means every bundle, reference, and source
-   of truth. Allowed writes: the run directory; cca's data directory (`runs.json`);
+   of truth. Allowed writes: the run directory; cca's data directory (`runs.json`,
+   its `runs.json.lock` directory including the owner directory, and its
+   `runs.json.<owner>.tmp` temporary file);
    ccx's own request and thread files in ccx's data directory, written
    when cca calls it; `git fetch` into remote-tracking refs, after the user approves it
    once per run; and, for a bundle with `head: working-tree`, the loose git objects that

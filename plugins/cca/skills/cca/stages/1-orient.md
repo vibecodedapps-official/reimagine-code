@@ -297,7 +297,8 @@ missing), and only rewrite the stage 1 entry as `running` with its inputs.
    it as `manifest.json` in the run directory.
 6. Add the run to `${CLAUDE_PLUGIN_DATA}/runs.json` with `state: running` (read the
    array under the lock per SKILL.md, State files); on refusal or failure, continue
-   with that section's immediate warning, brief limitation, and manual-entry fallback.
+   per that section's three cases; if the entry is absent, use its immediate
+   warning, brief limitation, and manual-entry fallback.
 7. Write `stages.json` with `plugin_version` `0.9.1`, empty `approvals`, and a stage 1
    entry with status `running` and inputs: the hashes of `manifest.json`, each claims
    file, the questions file, and every `file:` ticket or PR export, and

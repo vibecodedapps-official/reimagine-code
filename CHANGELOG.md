@@ -81,17 +81,20 @@ repos' own changelogs are kept under `docs/history/`.
   work. Before, the rule read as rewriting the commands too, so an auditor could not
   reproduce a check.
 - Every `runs.json` update holds a `runs.json.lock` directory in the plugin data
-  directory and rereads the registry under it. Before, two audits running at once could
-  lose each other's entry, so `/cca:resume` and `/cca:act` could not find a run.
-- A `runs.json.lock` is stale when the directory itself is older than a minute; the run
-  asks before removing one, and a headless run treats it as a refused lock. Before,
-  staleness was the waiter's own minute, so a lock held across a permission prompt
-  looked stale and a yes removed it.
-- A refused or failed `runs.json` write, or a refused release of the lock, no longer
-  ends with a bare `/cca:resume <run-id>` that cannot work: the run says at once that
-  resume and act cannot find it, records that in the brief during stage 1 or in the
-  stage's `stages.json` entry and `usage.md` afterward, and prints the entry to add by
-  hand.
+  directory, with an owner directory inside it named for the run and the invocation,
+  rereads the registry under it, writes a per-owner temporary file, and replaces the
+  registry only while its owner directory is still there. A lock older than about a
+  minute is stale: the run asks whether another cca audit or resume is running before
+  removing it, and a headless run treats it as a refused lock. Before, two audits
+  running at once could lose each other's entry, so `/cca:resume` and `/cca:act` could
+  not find a run.
+- A refused or failed `runs.json` update no longer ends with a bare `/cca:resume <run-id>`
+  that cannot work. When the run's entry is missing, the run says at once that resume
+  and act cannot find it, records that in the brief during stage 1 or in the stage's
+  `stages.json` entry and `usage.md` afterward, and prints the entry to add by hand;
+  when the entry is present with its old state, it says so and keeps the resume command;
+  when only the lock's release failed, it prints the lock's path and the command that
+  removes it.
 - The read-only check accepts another cca run's or a handoff's file under any audited
   repository's `<scratch>/cca/` and lists it as such. Before, two audits of the same
   repository ended each other `blocked`.
@@ -99,13 +102,13 @@ repos' own changelogs are kept under `docs/history/`.
   and the step stops, writing no `report.md`, unless it has a 64-character hex digest.
   Before, a PATH without `sha256sum` wrote `revision: sha256:` with no digest, which
   `live.sh check` and `/cca:act` then rejected.
-- A manifest `groups` name is slugged as the run id is: lowercased, with runs of other
-  characters turned into one `-`. A name that slugs to nothing, to `tests`, `hygiene`,
-  `tests-hygiene`, `interactions`, `combined`, or `unticketed`, to another entry's slug,
-  or to the `-topup` or `-maptopup` form of another entry's slug or a reserved name
-  stops the run before stage 1 with one line. Before, slugging only lowercased, so a
-  name with a space failed stage 5, and such a group wrote the same scope files as a
-  specialist scope or another group's top-up.
+- A manifest `groups` name is slugged like the run id, with no length cap: lowercased,
+  with runs of other characters turned into one `-`. A name that slugs to nothing, to
+  `tests`, `hygiene`, `tests-hygiene`, `interactions`, `combined`, or `unticketed`, to
+  another entry's slug, or to the `-topup` or `-maptopup` form of another entry's slug
+  or a reserved name stops the run before stage 1 with one line. Before, the name was
+  used as given, so a name with a space failed stage 5, and a name equal to a specialist
+  scope or to another group's top-up wrote the same scope files.
 - The late adversary runs at low tier when `live/findings.md` or `live/claims.md`
   exists, and at every tier its prompt names the live files and carried files that
   exist. Before, a claim-only live result at low launched no late adversary, and at
