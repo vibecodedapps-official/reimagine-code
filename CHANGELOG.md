@@ -19,7 +19,8 @@ repos' own changelogs are kept under `docs/history/`.
   UTF-8 byte order mark. Before, such a block read as malformed.
 - Stopping `ask`, `do`, `implement`, or `review` with SIGINT or SIGTERM now stops Codex,
   and on macOS and Linux the commands it started, and ends with `status: failed`. A
-  signal during the bridge's own git calls stops the run before Codex starts. Before,
+  signal during the bridge's own git calls, or during `setup`'s checks, stops the run
+  before anything else starts. Before,
   Codex kept running after the bridge was gone.
 - `ask` with `--resume <id>` or `--resume=<id>` and a Windows line ending after the id
   forwards the question without a leading newline.

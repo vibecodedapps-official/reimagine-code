@@ -168,7 +168,10 @@ export function targets(env, home = homedir()) {
         ? { path: join(codexDir, 'AGENTS.md'), skip: `Codex reads ${join(codexDir, 'AGENTS.override.md')} instead of AGENTS.md, so the Codex file is left alone` }
         : { path: resolved(join(codexDir, 'AGENTS.md')) },
   };
-  if (!all.codex.skip && all.codex.path === all.claude.path) all.codex.skip = 'it is the same file as the Claude target, so the Codex file is left alone';
+  if (!all.codex.skip && existsSync(all.claude.path) && existsSync(all.codex.path)) {
+    const a = statSync(all.claude.path), b = statSync(all.codex.path);
+    if (a.dev === b.dev && a.ino === b.ino) all.codex.skip = 'it is the same file as the Claude target, so the Codex file is left alone';
+  }
   return all;
 }
 

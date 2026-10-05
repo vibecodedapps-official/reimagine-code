@@ -87,7 +87,7 @@ function run(file, args, { ms, cwd, input, onStdout }) {
 
 // For commands that normally take milliseconds: failing to start or missing the deadline is a refusal naming them.
 async function local(name, file, args, cwd, ms = LOCAL_MS) {
-  const r = await run(file, args, { ms, cwd }); if (r.interrupted) refuse(`${name} was interrupted`);
+  const r = await run(file, args, { ms, cwd }); if (r.interrupted) throw Object.assign(new Refusal(`${name} was interrupted`), { interrupted: true });
   if (r.spawnError) refuse(`could not start ${name}: ${r.spawnError.message}`);
   if (r.timedOut) refuse(`${name} did not finish within ${secs(ms)}${r.stillRunning ? `; it may still be running as pid ${r.pid}` : ' and was stopped'}`);
   return r;
@@ -320,7 +320,7 @@ async function setup() {
       ok &&= pass;
       out.push(`${label}: ${text}`);
     } catch (e) {
-      if (!(e instanceof Refusal)) throw e;
+      if (!(e instanceof Refusal)) throw e; if (e.interrupted) { status = 'refused'; throw e; }
       ok = false;
       out.push(`${label}: ccx: ${e.message}`);
     }

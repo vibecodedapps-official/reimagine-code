@@ -265,6 +265,35 @@ for (const [command, mode] of [['ask', 'hang'], ['ask', 'ignores-signals'], ['do
   }
 }));
 
+test('setup interrupted during version starts no later Codex check and refuses', spawning, withScratch(async (s) => {
+  const bridge = spawn(process.execPath, [SCRIPT, 'setup', s.data], {
+    cwd: s.repo, stdio: ['ignore', 'pipe', 'pipe'],
+    env: { ...process.env, CCX_CODEX_BIN: FAKE, CCX_PROBE_TARGET: s.target, FAKE_CODEX: 'version-ignores-signals',
+      FAKE_CODEX_ARGV: join(s.root, 'argv.jsonl'), FAKE_CODEX_PIDS: join(s.root, 'pids') },
+  });
+  let stdout = '';
+  bridge.stdout.on('data', (b) => { stdout += b; });
+  const ended = new Promise((resolve, reject) => { bridge.on('error', reject); bridge.on('close', (code) => resolve(code)); });
+  const deadline = setTimeout(() => bridge.kill('SIGKILL'), 15000);
+  try {
+    for (let i = 0; i < 100 && !existsSync(join(s.root, 'pids')); i++) await new Promise((r) => setTimeout(r, 50));
+    assert.equal(existsSync(join(s.root, 'pids')), true, 'Codex version check started');
+    assert.equal(bridge.kill('SIGTERM'), true);
+    const code = await ended;
+    assert.deepEqual(calls(s), [['--version']], 'interrupted setup must not run login or sandbox checks');
+    assert.match(stdout, /\nstatus: refused\n$/);
+    assert.doesNotMatch(stdout, /status: ok/);
+    assert.equal(code, 1);
+    assert.equal(await dead(pids(s)[0]), true, 'Codex version process stopped');
+  } finally {
+    clearTimeout(deadline);
+    bridge.kill('SIGKILL');
+    if (existsSync(join(s.root, 'pids'))) for (const pid of pids(s)) try { process.kill(pid, 'SIGKILL'); } catch {}
+    bridge.stdout.destroy(); bridge.stderr.destroy();
+    await ended;
+  }
+}));
+
 test('review interrupted during pre-turn git starts no Codex and refuses', spawning, withScratch(async (s) => {
   const monitor = join(s.root, 'fsmonitor');
   const marker = join(s.root, 'git-started');

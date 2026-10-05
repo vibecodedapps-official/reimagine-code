@@ -557,6 +557,25 @@ test('O2-U2-1: a Codex target linked to the Claude target is skipped', { skip: p
   assert.equal(bytes(shared).includes('## Writing'), false);
 }));
 
+test('A3-U2-1: a Codex target linked through a linked Claude config directory is skipped', { skip: process.platform === 'win32' }, sandbox((s, t) => {
+  const managed = join(realpathSync(s.root), 'dotfiles', 'claude');
+  const shared = join(managed, 'CLAUDE.md');
+  put(shared, 'shared instructions\n');
+  try { symlinkSync(managed, s.claudeDir); symlinkSync(shared, s.codex); } catch (e) { if (e.code === 'EPERM') { t.skip('symlinks are not permitted'); return; } throw e; }
+  assert.equal(targets(s.env, s.home).codex.skip, 'it is the same file as the Claude target, so the Codex file is left alone');
+  const out = s.run('plan', ['--options', 'core,writing']);
+  assert.deepEqual(out.slice(-3), [`target: codex ${shared}`,
+    'state: skipped; it is the same file as the Claude target, so the Codex file is left alone', 'change: none']);
+  assert.equal(targets(s.env, s.home).claude.path, s.claude);
+  s.run('apply', ['claude']);
+  assert.deepEqual(s.run('status').slice(0, 2), [`claude: current ${s.claude} options=core,writing`, `codex: skipped ${shared}`]);
+  assert.throws(() => s.run('apply', ['codex']), { message: 'there is no planned change for codex; run /ccx:rules again' });
+  assert.equal(lstatSync(s.claudeDir).isSymbolicLink(), true);
+  assert.equal(lstatSync(s.codex).isSymbolicLink(), true);
+  assert.equal(bytes(`${shared}.ccx-backup-20261003120000`), 'shared instructions\n');
+  assert.equal(bytes(shared).includes('## Writing'), false);
+}));
+
 test('R41: apply refuses a hard-linked target without writing', sandbox((s) => {
   put(s.claude, 'managed line\n');
   const linked = join(s.root, 'managed.md');
