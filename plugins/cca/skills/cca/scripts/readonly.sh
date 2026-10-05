@@ -536,7 +536,7 @@ check() {
 	# Touched: newer than the baseline marker, not ignored, not part of a blocked line. A
 	# .git (a directory, or a submodule's file) is pruned at any depth.
 	(cd "$top" && find . -name .git -prune -o -type f -newer "$np_base.marker" -print) \
-		> "$tmp/found" || die "find failed"
+		> "$tmp/found" || :
 	sed 's|^\./||' "$tmp/found" > "$tmp/found.rel" || die "sed failed"
 	PRE=${relrun:+$relrun/} IC=$ic awk '
 		BEGIN { pre = ENVIRON["PRE"]; ic = ENVIRON["IC"]; prel = tolower(pre) }

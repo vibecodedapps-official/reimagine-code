@@ -68,7 +68,7 @@
 #    set to the work dir, every GIT_* variable unset, the caller's LC_ALL, and stdin from
 #    /dev/null. Each command's deadline is the smaller of `timeout` and what is left of
 #    the bundle's cap, counted from the first command. The cap is 1800 seconds, or
-#    REVERT_TESTS_CAP when set (whole seconds; tests/revert-tests.sh sets it, so its time
+#    REVERT_TESTS_CAP when set (whole seconds; tests/cca/revert-tests.sh sets it, so its time
 #    cap case does not wait 30 minutes). Each command starts as a
 #    job under `set -m`, in its own process group. At the deadline the group gets TERM,
 #    then KILL 10 seconds later. Whether the command ends or times out, the group then
@@ -111,7 +111,8 @@ lc_val=${LC_ALL-}
 LC_ALL=C
 export LC_ALL
 GIT_OPTIONAL_LOCKS=0
-export GIT_OPTIONAL_LOCKS
+GIT_NO_LAZY_FETCH=1
+export GIT_OPTIONAL_LOCKS GIT_NO_LAZY_FETCH
 unset GIT_DIR GIT_WORK_TREE GIT_INDEX_FILE
 
 tab=$(printf '\t')
@@ -347,6 +348,10 @@ if [ ! -s "$w/path.pat" ]; then
 		die "cannot write in $work"
 fi
 
+if g config --get-regexp '^(remote\..*\.promisor|extensions\.partialclone)$' > /dev/null; then
+	die "partial clones are not supported"
+fi
+
 # Shas.
 head_sha=$(g rev-parse --verify --quiet "$head^{commit}") || die "not a commit: $head"
 base_sha=$(g rev-parse --verify --quiet "$base^{commit}") || die "not a commit: $base"
@@ -391,7 +396,7 @@ changed "$w/path.pat" exclude,glob > "$w/out.raw" || die "git diff-tree failed"
 pairs < "$w/out.raw" > "$w/outside" || die "cannot list the other paths"
 
 # Test-code paths, without the status: the files to run (at the head, matching `run`), the
-# rest present at the head, and those deleted at the head. A path holding a newline goes
+# rest present at the head, and those deleted at the head. A path holding a newline or tab goes
 # to the unwritable list.
 awk -F '\t' -v soh="$soh" -v rn="$w/rn" -v run="$w/torun.all" -v keep="$w/kept" \
 	-v del="$w/deleted" -v nl="$w/tc.nl" '
@@ -405,7 +410,7 @@ awk -F '\t' -v soh="$soh" -v rn="$w/rn" -v run="$w/torun.all" -v keep="$w/kept" 
 		t = index($0, "\t")
 		s = substr($0, 1, t - 1)
 		p = substr($0, t + 1)
-		if (index(p, soh) > 0) { print p > nl; next }
+		if (index(p, soh) > 0 || index(p, "\t") > 0) { print p > nl; next }
 		if (s == "D") print p > del
 		else if (p in r) print p > run
 		else print p > keep

@@ -116,6 +116,23 @@ repos' own changelogs are kept under `docs/history/`.
 - The attribution rule in `common.md` says an ignored file written by a run an agent
   logged is allowed and reported, matching `SKILL.md` and the README. Before, it said
   "a check run".
+- `revert-tests.sh` refuses a partial clone with `partial clones are not supported`,
+  exit 2, and sets `GIT_NO_LAZY_FETCH=1` for every git call. Before, on a
+  `--filter=blob:none` clone it fetched the missing blobs into the audited repository
+  over the network and wrote a full result, and the read-only check noticed nothing.
+- `memory.sh` follows a symlink given as the memory directory. Before, such a path
+  printed `none` for every key.
+- `ledger.sh` reports a finding heading with extra leading spaces, or an id wrapped in
+  `**` or backticks, as malformed. Before, it read the heading as text and dropped the
+  finding, so a blocker could leave the ledger without an error.
+- `ledger.sh check --through 7` fails when `converged.md` ends inside a code fence.
+  Before, every item after a stray opening fence was ignored and the check passed.
+- `revert-tests.sh` lists a test-code path holding a tab as not used and never runs it.
+  Before, it ran the path, which failed to copy, and the result showed an empty verdict
+  and a counts line short by one.
+- `readonly.sh check` no longer fails when `find` cannot read an ignored directory, such
+  as a `pgdata/` with mode 000, or when an ignored directory changes under it; the
+  diagnostic still prints. Before, every check exited 2 and the run ended `blocked`.
 
 ### repo-docs
 

@@ -17,7 +17,7 @@
 #      digits), or an id (APP-1, #12, AB#4567, owner/app#12). Nothing else is a key.
 #
 # Files read: every regular file under <dir> at any depth, outside any .git, that holds no
-# NUL byte (a binary file is skipped), found with find and sorted in the C locale. A file
+# NUL byte (a binary file is skipped), found with find -H and sorted in the C locale. A file
 # holds a key when one of its lines contains the key, compared literally, with neither a
 # letter nor a digit right before or after it, so APP-1 does not match APP-10 and 1 does
 # not match 12. A path that holds a newline is not supported.
@@ -62,7 +62,7 @@ done
 tmp=$(mktemp -d) || exit 2
 trap 'rm -rf "$tmp"' EXIT
 
-find "$dir" -name .git -prune -o -type f -print > "$tmp/found" || {
+find -H "$dir" -name .git -prune -o -type f -print > "$tmp/found" || {
 	echo "memory: cannot read directory $dir" >&2
 	exit 2
 }
