@@ -1,6 +1,11 @@
 # Changelog
 
-## Unreleased
+## 0.8.1 - 2026-10-05
+
+Fixes a headless run (`claude -p`) ending in stage 1 at the reverted test step. The step
+now runs in the background with waits in the foreground, so the session stays alive and
+the 30-minute cap per bundle is unchanged. No manifest key changes. A run started under
+0.8.0 or earlier reruns from stage 1 on resume.
 
 ### Fixed
 
