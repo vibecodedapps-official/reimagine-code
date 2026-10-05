@@ -126,6 +126,17 @@ if (readme !== null && market && repos.length === 1) {
   }
 }
 
+// Test paths in the cca README's code spans and fenced blocks must exist.
+const ccaReadme = read("plugins/cca/README.md");
+let ccaFence = false;
+ccaReadme?.split("\n").forEach((line, i) => {
+  if (/^\s*```/.test(line)) { ccaFence = !ccaFence; return; }
+  const code = ccaFence ? [line] : [...line.matchAll(/`([^`]+)`/g)].map((m) => m[1]);
+  for (const span of code) for (const [path] of span.matchAll(/\btests\/[\w./*-]+/g)) {
+    if (!path.includes("*") && !existsSync(join(root, path))) fail(`plugins/cca/README.md:${i + 1}: missing test path ${path}`);
+  }
+});
+
 // 4. Only do, setup and rules are hidden from the model; ask, review and implement must stay visible so a plain-words request, or a skill's delegation, can reach them.
 const hidden = { ask: false, review: false, implement: false, do: true, setup: true, rules: true };
 for (const [name, want] of Object.entries(hidden)) {

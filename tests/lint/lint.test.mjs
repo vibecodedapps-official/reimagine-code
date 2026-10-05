@@ -348,3 +348,14 @@ test('lint accepts explicit loop API hosts and ignores prose and fenced commands
     '`gh api --hostname <host> repos/x/y`\n`gh api repos/x/y --hostname=<host>`\n`gh api`\n```\n`gh api repos/x/y`\n```\n'));
   assert.equal(r.status, 0, r.out);
 });
+
+test('lint rejects a missing cca README test path in a backtick span', () => fails(
+  (d) => {
+    const p = join(d, 'plugins/cca/README.md');
+    writeFileSync(p, readFileSync(p, 'utf8').replace('tests/cca/lint.sh', 'tests/cca/missing.sh'));
+  },
+  'missing test path tests/cca/missing.sh'));
+
+test('lint rejects a missing cca README test path in a fenced block', () => fails(
+  (d) => appendFileSync(join(d, 'plugins/cca/README.md'), '\n```sh\nsh tests/cca/missing.sh\n```\n'),
+  'missing test path tests/cca/missing.sh'));
