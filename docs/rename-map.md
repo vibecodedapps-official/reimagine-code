@@ -487,3 +487,99 @@ and `recode@reimagine-code` in the old-plugin lists in `suite.mjs`; `.recode.jso
 loop skill; the catalog's `renames` keys; and the root README's "From recode 0.1.x" section.
 Lint lists each in `OLD_NAME_LITERALS` for its file, and its check 10 rejects `recode` in
 any other shipped file.
+
+## 6. The audit plugin, claude-codex-audit 0.8.1 into plugins/cca, 2026-10-05
+
+Built from `vibecodedapps-official/claude-codex-audit` at `eed9fba` (the 0.8.1 release
+merge), read with `git ls-tree` and `git grep` on 2026-10-05. The source tree is 63
+tracked files; no `scratch/` or `.cca/` path was ever committed (ran `git log --all
+--diff-filter=A`). Every shipped file is ASCII (ran a byte scan). The import is
+`git subtree add --prefix=imports/claude-codex-audit`, without squash, then one move
+commit and one rename commit, as the sections above did.
+
+### 6.1 Moves (`git mv` from `imports/claude-codex-audit/`, one commit)
+
+| Source | Target | Action and reason |
+|---|---|---|
+| `.claude-plugin/plugin.json` | `plugins/cca/.claude-plugin/plugin.json` | move; `repository` and `version` change in 6.2 and 6.3 |
+| `.claude-plugin/marketplace.json` | none | dropped; the root Claude catalog gets a `cca` entry with `source: ./plugins/cca` |
+| `.gitattributes` | none | dropped; the root file already keeps `*.sh` at LF |
+| `.github/workflows/checks.yml` | none | dropped; its steps become the node wrapper in `tests/cca/` plus one Ubuntu-only mawk step in `.github/workflows/ci.yml` |
+| `.gitignore` | root `.gitignore` | merge: the `.cca/` line; `scratch/` is covered by `.scratch/` |
+| `CHANGELOG.md` | `docs/history/claude-codex-audit/CHANGELOG.md` | history |
+| `LICENSE` | none | dropped: Apache text with an unfilled appendix; `plugins/cca/LICENSE` is a copy of the root file (R5) |
+| `NOTICE` | root `NOTICE` | merge: the first line is the repo name; the rest is the Apache boilerplate the root already has |
+| `README.md` | `plugins/cca/README.md` | edit (6.2 and 6.3) |
+| `agents/*.md` (5) | `plugins/cca/agents/` | move, unchanged |
+| `commands/*.md` (4) | `plugins/cca/commands/` | move, unchanged |
+| `docs/acceptance.md`, `docs/decisions.md` | `docs/history/claude-codex-audit/` | history, frozen verbatim; the live acceptance items for cca are drawn from it into `docs/acceptance.md` |
+| `skills/cca/**` (26) | `plugins/cca/skills/cca/` | move; edits in 6.2 |
+| `tests/*.sh` (9), `tests/fixture/**` (6) | `tests/cca/`, `tests/cca/fixture/` | move; path-depth edits in 6.3 |
+
+No file is executable (ran `git ls-tree -r`, no 100755), so no mode to keep.
+
+### 6.2 String renames (one commit, ordered)
+
+Applied to `plugins/cca/` and `tests/cca/` only, never to `docs/history/`:
+
+```
+s#https://github.com/vibecodedapps-official/claude-codex-audit#https://github.com/vibecodedapps-official/reimagine-code#g
+s#vibecodedapps-official/claude-codex-audit#vibecodedapps-official/reimagine-code#g
+s#cca@vibecodedapps-claude-codex-audit#cca@reimagine-code#g
+s#codex-lite:ask#ccx:ask#g
+s#codex-lite@#ccx@#g
+s#codex_lite_version#ccx_version#g      (one stage 6 ledger key, written only)
+s#codex-lite#ccx#g                      (bare rule last; 36 occurrences in the live files)
+```
+
+Hand edits in the same commit, because a rule reads badly or lint rejects the result:
+
+- `skills/cca/stages/6-second-opinion.md` step 3: the bridge floor `0.7.0` becomes
+  `0.1.0`, in the check and in both swap reasons. codex-lite 0.7.0 added the `status:`
+  line and `--timeout`, which every `ccx` carries (ccx 0.1.0 is codex-lite 0.9.0
+  renamed), so the floor is the oldest `ccx`.
+- `README.md:1` title `# claude-codex-audit (cca)` becomes `# cca`. Every word `ccl`
+  (ran `git grep -nwi ccl`: lines 20, 21, 251, 677 to 683, and no hit under `skills/`,
+  `commands/`, or `agents/`) becomes `ccx-loop`, and the old loop repository link goes,
+  because lint rule 10 rejects `\bccl\b`. The bare name `claude-codex-audit` is not
+  rejected (R7 lists `vibecodedapps-claude-codex-loop`, not the loop's bare repo name
+  either, and the loop README names its history directory), so rule 10 is unchanged.
+  The Requirements bullet says `ccx`, from this marketplace; the Install section names
+  this marketplace and `claude --plugin-dir <clone>/plugins/cca`; the Development
+  section runs `npm test` from the repository root and names
+  `docs/history/claude-codex-audit/` for the records, as the loop's README does; the
+  License line names the plugin directory's own copy and the root NOTICE.
+- `.claude-plugin/plugin.json`: `repository` takes the rule above.
+
+Not renamed: `cca`, `/cca:`, `cca:adversary`, `cca-manifest.json`, `cca-handoff: 1`,
+`.cca/`, `runs.json`, every ledger key but the one above, every report heading, and
+every command flag. These are the interfaces `ccx-loop` and recorded runs depend on.
+
+### 6.3 Edits forced by the move (in the rename commit, as section 3 did for M2)
+
+- `tests/cca/{handoff,ledger,live,memory,work-items}.sh`:
+  `root=$(cd "$(dirname "$0")/.." && pwd)` becomes `/../..`, and
+  `$root/skills/cca/scripts/<x>.sh` becomes `$root/plugins/cca/skills/cca/scripts/<x>.sh`.
+- `tests/cca/{readonly,revert-tests,working-tree}.sh`: `$here/../skills/cca/scripts/`
+  becomes `$here/../../plugins/cca/skills/cca/scripts/`.
+- `tests/cca/fixture/verify.sh:724`: `"$(dirname "$0")/../.."` becomes `/../../..` with
+  the `plugins/cca/` prefix.
+- `tests/cca/fixture/expected.md:126,144`: the two `sh skills/cca/scripts/handoff.sh`
+  commands in prose take the `plugins/cca/` prefix.
+- `tests/cca/lint.sh`: the root default becomes `$(dirname "$0")/../../plugins/cca`; the
+  file list uses `git ls-files` from any directory inside a work tree, not only its top
+  level, since `git ls-files` scopes to the current directory; and the
+  `.claude-plugin/marketplace.json` check goes, since the root catalog is checked by
+  `tools/lint.mjs`. Its header comment follows.
+- `plugins/cca/.claude-plugin/plugin.json`: `version` 0.8.1 becomes 0.9.0, with the
+  catalog entry, in the manifest commit, not here.
+
+### 6.4 New files, from no source
+
+The `cca` entry in `.claude-plugin/marketplace.json`; `plugins/cca/LICENSE` (copy of
+the root file); `tests/cca/sh.test.mjs`, the node wrapper that runs each sh suite and
+each fixture build and verify, with the hostile global git config cases, so `npm test`
+covers them; the `cca` branch of `tools/release.mjs` and the `plugins/cca` row of
+`tools/lint.mjs`; the Ubuntu-only mawk step in CI; the cca sections of
+`docs/requirements.md`, `docs/architecture.md`, `docs/decisions.md`, and
+`docs/acceptance.md`; and the `### cca` entry in `CHANGELOG.md`.
