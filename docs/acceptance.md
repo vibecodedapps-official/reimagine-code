@@ -175,14 +175,14 @@ name a plugin are rerun under the new names and recorded here.
     Expected: "Always-on" at most 1,300 tokens for `ccx` and at most 510 for
     `ccx-loop`. Covers R8. Rerun at each release. Run 2026-10-03 for 0.1.0, and
     2026-10-04 for 0.1.1, 0.1.2, 0.1.3, 0.2.0, and 0.3.0, and 2026-10-05 for 0.3.1
-    before the merge; see the records.
+    before and after the merge; see the records.
 17. **Tags.** Setup: the release commit on `main`. Command: `claude plugin tag --push`
     on `plugins/ccx`, then `plugins/ccx-loop`, then `plugins/repo-docs`; then
     `git ls-remote --tags origin`. Expected: each tag command checks the manifest against
     its catalog entry and pushes; the remote holds a `<plugin>--v<version>` tag for each
     plugin's new version, and no bare `v` tag. Covers R49. Rerun at each release. Run
-    2026-10-03 for 0.1.0, and 2026-10-04 for 0.1.1, 0.1.2, 0.1.3, 0.2.0, and 0.3.0;
-    see the records.
+    2026-10-03 for 0.1.0, 2026-10-04 for 0.1.1, 0.1.2, 0.1.3, 0.2.0, and 0.3.0, and
+    2026-10-05 for 0.3.1; see the records.
 18. **Install from GitHub.** Setup: on macOS and on Windows 11 with both CLIs from npm,
     new scratch profiles on each host. Command: the four lines of R3, then `claude plugin
     install ccx-loop@reimagine-code` and `codex plugin add
@@ -194,7 +194,8 @@ name a plugin are rerun under the new names and recorded here.
     macOS and Windows 2026-10-03 for 0.1.0, from the private repository. Run
     2026-10-04 for 0.1.1 on macOS, from the private repository and then the public one,
     and on Windows from the public one. Run 2026-10-04 for 0.1.2, 0.1.3, 0.2.0, and
-    0.3.0, each on macOS and Windows, from the public repository; see the records.
+    0.3.0, and 2026-10-05 for 0.3.1, each on macOS and Windows, from the public
+    repository; see the records.
 19. **Windows.** Setup: a Windows 11 machine with both CLIs from npm, the suite
     installed as in item 18, and a test repository checked out under a path that holds
     a space. Command: `/ccx:ask` and `/ccx:implement` with a one-line change;
@@ -203,8 +204,8 @@ name a plugin are rerun under the new names and recorded here.
     trusting the hook. Expected: the ask and implement succeed; the rules block is added
     with the file's CRLF endings kept, and still reads `current` in LF; the repo-docs
     hook adds its reminder on both hosts. Covers R53. Rerun when the bridge's spawn code,
-    the rules command, or the hook changes. Run 2026-10-03, and 2026-10-04 for 0.2.0;
-    see the records.
+    the rules command, or the hook changes. Run 2026-10-03, 2026-10-04 for 0.2.0, and
+    2026-10-05 for 0.3.1 except the symbolic links and a real Ctrl-C; see the records.
 20. **Reviewer routing.** Setup: scratch git repositories as in item 7, with a local bare
     `origin`; `ccx-loop` installed from this repository's catalog; Codex logged in.
     Command:
@@ -1352,4 +1353,100 @@ the same sha256 after the runs as before.
   codex-cli moved from 0.159.2 to 0.160.0, and items 1, 9, and 13 ran on it.
   Items 4 to 7, 10, and 12: `suite.mjs`, the hooks of `ccx`, the style, the loop's
   dependencies, Step 0, and the Codex skills did not change. Items 17 and 18 wait for the
-  tags. Item 19 waits for a Windows run of the pushed branch.
+  tags. Item 19 ran on Windows after the push; see the next record.
+
+### 2026-10-05: ccx 0.3.1, before the merge, Windows
+
+The personal Windows 11 machine, with the scratch CLIs from npm: Claude Code 2.1.283 and
+codex-cli 0.157.1, with Node 26.4.0 and Git 2.55.0.windows.5. The scratch profiles were
+`claude-m6` and `codex-m6`, with the suite installed from `fix/review-rounds` at
+d3ce17a. Git credentials were turned off, with `GIT_CONFIG_GLOBAL` set to an empty file
+in PowerShell. A session on that machine ran a brief and reported here. The real
+profile's five files had the same sha256 after the run as before.
+
+- **Install from the branch.** `claude plugin marketplace add` with
+  `#fix/review-rounds` recorded a `git` source with that ref. Installing `ccx-loop`
+  alone printed "(+ 1 dependency: ccx)" but installed `ccx` 0.3.0 from a4b7fd8, and
+  `claude plugin update ccx@reimagine-code` said `ccx` was "already at the latest
+  version satisfying >=0.2.0 <1.0.0". The dependency probably resolves through the
+  release tags, and `ccx--v0.3.1` did not exist yet; after the tags it resolved to 0.3.1
+  on both hosts. Installing `ccx` and then `ccx-loop` gave 0.3.1, 0.3.1, and 0.1.4 at
+  d3ce17a. Codex installed `ccx` 0.3.1 and `repo-docs` 0.1.4 with `--ref`.
+- **Item 19 passed for 0.3.1, except two parts.** The repository was
+  `C:\recode accept\ccx031\repo`.
+  - Setup proved `workspace-write` in 13 s, with one allow rule naming the 0.3.1
+    `scripts/ccx.mjs` with forward slashes. The ask printed "159" and `status: ok`. A
+    project skill's `ccx:implement` added one line to `math.mjs`, with ` M math.mjs` and
+    `status: ok`.
+  - The installed rules script kept all 90 line breaks of a CRLF `CLAUDE.md` as CRLF and
+    the text above the block, and after the file was converted to LF, `status` read
+    `current`.
+  - With the Codex `AGENTS.md` a hard link to the Claude `CLAUDE.md` (`mklink /H`),
+    `plan` read "state: skipped; it is the same file as the Claude target, so the Codex
+    file is left alone", and `apply claude` refused with "has multiple hard links, so
+    nothing was written", exit 1. Two different files both planned `absent` and
+    `ready`. This is the first Windows run of the same-file check.
+  - Codex made commit ee66e5e with the reminder in its session file, and Claude Code made
+    68ae12c and 5328e36, the second through `git -C "C:\recode accept\ccx031\repo"`,
+    each with the reminder from `PreToolUse:PowerShell`. `echo "git commit"` got none.
+    Auto mode, and then default mode, denied the Codex commit, so the user ran it.
+  - With `CLAUDE_CODE_DISABLE_BACKGROUND_TASKS=1` and a 20 s Bash timeout, Claude Code
+    stopped an ask with exit 143. No `codex` or bridge process was left after 5 s.
+  - **Not run.** The symbolic link cases, because `mklink` and Node's `symlinkSync`
+    lacked the privilege without Developer Mode. A real Ctrl-C and the bridge's last line
+    after it, which need an interactive session.
+  - The copies of the Codex login were deleted afterward.
+
+### 2026-10-05: release 0.3.1
+
+macOS 27.0, Claude Code 2.1.289, codex-cli 0.160.0, Node 26.4.0. The release commit was
+b09112e, the merge of PR 23. Git credentials were turned off for the GitHub runs. No
+permission denial occurred. The real `~/.claude` and `~/.codex` files had the same
+sha256 after the runs as before.
+
+- **Item 17 passed for 0.3.1.** The dry runs named `ccx--v0.3.1`, `ccx-loop--v0.3.1`,
+  and `repo-docs--v0.1.4`. `claude plugin tag --push` created and pushed all three at
+  b09112e, and the remote holds no bare `v` tag. Lint and tests on `main` passed.
+- **Update from GitHub.** In the M4 profile, with 0.3.0 installed from GitHub,
+  `claude plugin marketplace update reimagine-code` and `claude plugin update`, once per
+  plugin, moved `ccx-loop` and `ccx` from 0.3.0 to 0.3.1 and `repo-docs` from 0.1.3 to
+  0.1.4.
+- **Item 16 passed for 0.3.1.** About 1,268 always-on tokens for `ccx`, 504 for
+  `ccx-loop`, and 169 for `repo-docs`.
+- **Item 18 passed on macOS for 0.3.1, from the public repository.** `git ls-remote`
+  read `main` and the three tags at b09112e.
+  - In `claude-m6`, with the plugins and catalog removed and added again, installing
+    the loop alone printed "(+ 1 dependency: ccx)". `ccx-loop` 0.3.1, `ccx` 0.3.1, and
+    `repo-docs` 0.1.4 installed, each recording b09112e.
+  - In `codex-m6`, with the marketplace removed and added again, `ccx` 0.3.1 and
+    `repo-docs` 0.1.4 installed and showed as enabled, with the clone at b09112e.
+  - In the M4 profile, `/ccx:setup` reported the sandbox proven and one allow rule naming
+    the 0.3.1 `scripts/ccx.mjs`. Its old-plugins line named
+    `codex-code-review-general@codex-code-review`, which that profile's copy of the Codex
+    config enables. A headless `/ccx:ask` with "What is 17 times 3? Reply with the number
+    only." printed "51" and `status: ok`. The copy of the Codex login was deleted
+    afterward.
+- **Item 11 passed for 0.3.1.** In a new Codex home holding only the model, effort,
+  sandbox, and approval settings, and no login, `codex plugin marketplace add
+  vibecodedapps-official/reimagine-code` cloned b09112e. `codex plugin list` showed
+  exactly `ccx` and `repo-docs`, which installed at 0.3.1 and 0.1.4 and showed as enabled.
+
+### 2026-10-05: release 0.3.1, Windows
+
+The personal Windows 11 machine, with Claude Code 2.1.283, codex-cli 0.157.1, Node
+26.4.0, and Git 2.55.0.windows.5. Git credentials were turned off: `git config --list`
+printed nothing. A session on that machine ran a brief and reported here. The real
+profile's five files had the same sha256 after the run as before.
+
+- **Item 18 passed on Windows for 0.3.1, from the public repository.** `git ls-remote`
+  read `main` and the three tags at b09112e.
+  - In `claude-m6`, with the catalog removed and added again with no ref, installing the
+    loop alone printed "(+ 1 dependency: ccx)". `ccx-loop` 0.3.1, `ccx` 0.3.1, and
+    `repo-docs` 0.1.4 installed and were enabled, each recording b09112e. The install
+    finding of the run before the merge is gone.
+  - In `codex-m6`, with the marketplace added again with no ref, `ccx` 0.3.1 and
+    `repo-docs` 0.1.4 showed as installed and enabled, with the clone at b09112e.
+  - In the item 19 repository, headless `/ccx:setup` passed in 33 s: `workspace-write`
+    proven, one allow rule naming the 0.3.1 `scripts/ccx.mjs` with forward slashes, and
+    "old plugins: none found". `/ccx:ask` in auto mode printed "51" and `status: ok`.
+  - The copy of the Codex login was deleted afterward.
