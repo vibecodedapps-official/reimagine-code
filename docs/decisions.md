@@ -508,3 +508,14 @@ every plugin in the suite, so no step redirects other users from the old reposit
    bridge now lives here and `ccx` 0.3.1 already stops Codex on SIGTERM.
 7. **The review-rounds transport stays `recode` 0.1.3** on the author's real profile,
    which this work never changes; the user updates it to `ccx` when they choose.
+
+## Part 15: ccx 0.3.2, cca 0.9.1, and repo-docs 0.1.5, the second review rounds, 2026-10-05
+
+Decided during the second review-rounds run, under a plan the user approved before it
+started, with local commits, the loop acceptance runs, and the audit acceptance run
+pre-approved.
+
+1. **The bridge budget is 710 lines, and the three joined lines are split.** Part 13
+   item 7's "for now" ends here: the release preparation raised R14 to 710 and split
+   `ccx.mjs` lines 51, 90, and 323 (commit 33b84bf), with the author's approval in the
+   plan. At 0.3.2 the two scripts use 703 lines; lint prints the figure on every run.

@@ -132,7 +132,7 @@ Behavior carries over from codex-lite 0.9.0 unchanged except for names.
   `disable-model-invocation: true`, so they cost nothing until typed. New: `rules`, also
   `disable-model-invocation: true`.
 - **Scripts.** `ccx.mjs` (was `codex-lite.mjs`) and `codex.mjs` keep their 710-line
-  runtime budget and change only by renames; the budget has 3 lines of headroom today.
+  runtime budget; lint prints the lines used on every run.
   New code goes in two new modules with their own budgets: `rules.mjs` (house rules,
   pure file logic, spawns nothing) and `suite.mjs` (the old-plugin report and the
   SessionStart notice, which spawn `claude plugin list --json` or read files).
