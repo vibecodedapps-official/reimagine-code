@@ -19,7 +19,8 @@
 #   KILL 60 seconds later, and adds `revert-tests: stopped at the deadline of <n> seconds`
 #   to `.err`. On HUP, INT, or TERM it sends the group TERM and exits 2 without writing
 #   `.exit`. When `bg` is gone without a signal (KILL), the group's leader sends the group
-#   TERM within a second, and KILL 60 seconds later; `.exit` is not written.
+#   TERM within a second, unless the group had one already, and KILL 60 seconds later;
+#   `.exit` is not written.
 # - `wait` checks every 2 seconds for at most REVERT_TESTS_WAIT seconds (default 540).
 #   With `.exit` present, it prints the last line of `.err` that is not blank on stderr
 #   (or, with none and a status other than 0, `revert-tests: the run ended with status
@@ -153,13 +154,14 @@ if [ "${1:-}" = bg ]; then
 	bgpid=$$
 	set -m
 	(
-		trap : TERM
+		termed=
+		trap 'termed=1' TERM
 		bash "$0" run "$@" &
 		r=$!
 		n=0
 		while kill -0 "$r" 2> /dev/null; do
 			if ! kill -0 "$bgpid" 2> /dev/null; then
-				if [ "$n" -eq 0 ]; then
+				if [ "$n" -eq 0 ] && [ -z "$termed" ]; then
 					kill -TERM 0 2> /dev/null
 				elif [ "$n" -ge 60 ]; then
 					kill -KILL 0 2> /dev/null
@@ -261,8 +263,7 @@ live=
 wdog=
 renamed=
 cleanup() {
-	# A second TERM, as `bg`'s group gets one from `bg` and one from its leader, must not
-	# cut the cleanup short.
+	# A signal during the cleanup must not cut it short.
 	trap '' HUP INT TERM
 	if [ -n "$wdog" ]; then
 		kill "$wdog" 2> /dev/null
@@ -284,7 +285,7 @@ cleanup() {
 	fi
 }
 trap cleanup EXIT
-trap 'exit 2' HUP INT TERM
+trap 'trap "" HUP INT TERM; exit 2' HUP INT TERM
 
 mkdir -p "$work" || die "cannot create the work dir: $work"
 made=1

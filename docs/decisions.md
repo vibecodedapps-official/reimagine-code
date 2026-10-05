@@ -1265,9 +1265,12 @@ and ended its turn to wait for the completion notification. A headless session
   process group the shell started survives. A run that outlived its session could race a
   resumed stage 1, which deletes and reuses the same paths. So the group's leader is a
   small shell that checks `bg` every second and, once `bg` is gone, sends its own group
-  TERM, and KILL 60 seconds later. A TERM to `bg` then reaches `run` twice, from `bg` and
-  from the leader, and on Windows the second one cut `run`'s cleanup short and left the
-  work dir, so the cleanup now ignores HUP, INT, and TERM.
+  TERM, and KILL 60 seconds later. A TERM to `bg` also wakes the leader, which then
+  found `bg` gone and sent a second TERM about a millisecond after the first. That one
+  landed as `run`'s exit trap began and killed it before its cleanup, which left the work
+  dir and an orphaned test (a trace on two CPUs showed it; on CI it failed case 15f in
+  some runs). So the leader skips its TERM when the group already had one, and `run`'s
+  TERM trap ignores HUP, INT, and TERM before it exits.
 - **Not done.** Headless runs stay acceptance-only, so the README does not document
   `CLAUDE_CODE_PRINT_BG_WAIT_CEILING_MS`.
 - **Stage 6 has the same false sentence (#39).** codex-lite's `ask` runs its Bash call in
