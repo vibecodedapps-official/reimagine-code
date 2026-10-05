@@ -49,6 +49,11 @@ repos' own changelogs are kept under `docs/history/`.
 ### repo-docs
 
 - Released as 0.1.4.
+- The commit reminder now fires for a commit made from a subdirectory of the repository.
+  Before, it looked for instruction files only below the current directory.
+- The reminder fires only when the command itself runs `git commit`, including with git
+  options such as `-C`, after `cd`, or in PowerShell. Before, it also fired for commands
+  that only mentioned it, such as `git log --grep commit` or a commit message in a PR body.
 
 ## 0.3.0 - 2026-10-04
 
