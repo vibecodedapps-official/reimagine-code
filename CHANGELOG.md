@@ -20,6 +20,12 @@ repos' own changelogs are kept under `docs/history/`.
   running after the bridge was gone.
 - `ask` with `--resume <id>` or `--resume=<id>` and a Windows line ending after the id
   forwards the question without a leading newline.
+- `/ccx:rules` says that `--options` replaces the options in use, so adding Codex's
+  Writing section takes `--options core,writing`. Before, `--options writing` read as an
+  addition and removed the core rules.
+- The README says the sandbox probe reads your Codex configuration; only the Codex turns
+  run with `--ignore-user-config`. It also gives update steps, and says that updating
+  `ccx-loop` does not update `ccx`.
 
 ### ccx (Codex)
 

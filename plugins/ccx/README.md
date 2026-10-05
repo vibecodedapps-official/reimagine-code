@@ -14,6 +14,17 @@ daemon, no background jobs of its own.
 
 Installs track `main`. A change to the plugin reaches `main` only with a higher version.
 
+To update:
+
+```
+claude plugin marketplace update reimagine-code
+claude plugin update ccx@reimagine-code
+```
+
+Restart Claude Code, then run `/ccx:setup` again and use the allow rule it prints. The
+old rule names the previous version's path. Updating `ccx-loop` does not update `ccx`.
+See the suite's [update steps](../../README.md#update) for the other plugins and Codex.
+
 ## Requirements
 
 - Node 22 or later.
@@ -39,12 +50,14 @@ Installs track `main`. A change to the plugin reaches `main` only with a higher 
 
 ## Commands
 
-Every Codex run gets the same safety flags: `--json --ignore-user-config
+Every Codex turn gets the same safety flags: `--json --ignore-user-config
 -c approval_policy="never" -c sandbox_mode="<mode>"`. Codex never asks for approval, your
-Codex config file is not read, and the sandbox mode is set on the command line. No command
-requests full access. On Windows there is one exception: the plugin reads the `[windows]`
+Codex config file is not read for these turns, and the sandbox mode is set on the command
+line. No command requests full access. The sandbox probe runs `codex sandbox` with your
+Codex configuration plus `-c sandbox_mode="workspace-write"` and
+`-c approval_policy="never"`. On Windows, the plugin reads the `[windows]`
 `sandbox` value from your Codex config and passes it as `-c windows.sandbox="<value>"` on
-every run and probe, because `--ignore-user-config` would otherwise drop it.
+every turn and probe, because `--ignore-user-config` would otherwise drop it from turns.
 
 | Command | Runs | Sandbox |
 | --- | --- | --- |
