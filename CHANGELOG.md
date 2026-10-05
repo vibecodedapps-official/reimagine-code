@@ -68,6 +68,12 @@ repos' own changelogs are kept under `docs/history/`.
 
 ### repo-docs
 
+- Migrating a repository whose only instruction file is `.claude/CLAUDE.md` makes it the
+  root `AGENTS.md`, rewriting relative paths. Before, the text could be read as renaming
+  it in place to `.claude/AGENTS.md`, which Claude Code loads and Codex never does.
+- The adapter guidance no longer names Amazon Bedrock or disabled telemetry as sessions
+  that cannot read `AGENTS.md`; `references/platforms.md` version-qualifies them, with
+  the first session after an upgrade, and says to try a fresh session first.
 - Released as 0.1.5.
 
 ## 0.3.1 - 2026-10-05

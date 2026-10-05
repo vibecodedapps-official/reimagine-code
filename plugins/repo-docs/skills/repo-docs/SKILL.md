@@ -1,8 +1,8 @@
 ---
 name: repo-docs
 description: Use when editing AGENTS.md, CLAUDE.md, or a spoke the hub indexes; when
-  setting up a repo that has no instruction files or only a CLAUDE.md; when adding a
-  spoke, an adapter, or a pointer; before a commit or pull request; or after a batch of
+  setting up a repo that has no instruction files or only CLAUDE.md or .claude/CLAUDE.md;
+  when adding a spoke, an adapter, or a pointer; before a commit or pull request; or after a batch of
   feature work, to keep the hub and its spokes correct and progressively disclosed. Not
   for writing user-facing product docs, API references, or README content unrelated to
   agent instructions.
@@ -88,8 +88,8 @@ placement rule. A hub that has grown past these four sections is a finding.
   error or a finding, and end with a session verification: start a fresh session at the
   repo root and confirm the hub actually loaded.
 - **maintain**: applies changes, including first setup, a repo whose only instruction file
-  is a `CLAUDE.md`, and a repo with symlinked instruction files or an adapter with content
-  after the import, under the safeguards in `references/spokes.md`.
+  is `CLAUDE.md` or `.claude/CLAUDE.md`, and a repo with symlinked instruction files or an
+  adapter with content after the import, under the safeguards in `references/spokes.md`.
 
 ## Reference files
 

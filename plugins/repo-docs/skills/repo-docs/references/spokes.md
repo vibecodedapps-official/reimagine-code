@@ -15,7 +15,7 @@ Platform behavior named here is recorded, with its source, in `references/platfo
   such line is a finding.
 - The path is bare and relative to the repo root: no backticks, markdown link, trailing
   slash, or leading `@`. A leading `@` makes Claude Code import the file at launch.
-- A path with a space or `: ` cannot be expressed. Rename the file, the one move maintain
+- A path with a space or `: ` cannot be expressed. Rename the file, a move maintain
   mode proposes, or leave it unindexed with a finding.
 - The prose says what the spoke holds and when to read it. A directory spoke's condition
   reads "Read before editing under `<dir>/`", so a Codex session started at the root can
@@ -25,9 +25,9 @@ Platform behavior named here is recorded, with its source, in `references/platfo
 
 - Default: none. Claude Code reads `AGENTS.md` directly unless a `CLAUDE.md`,
   `.claude/CLAUDE.md`, or `CLAUDE.local.md` exists in or above the working directory.
-- Add adapters only when a session type in use cannot read `AGENTS.md` (an older Claude
-  Code, Amazon Bedrock, telemetry off, the built-in `agents-md` plugin off, or **Project
-  instructions** set to `claude-md`), or when someone needs a `CLAUDE.local.md`.
+- Add adapters only when a session in use cannot read `AGENTS.md` under the applicable
+  version or configuration conditions in `references/platforms.md`, or when someone
+  needs a `CLAUDE.local.md`. For a first session after an upgrade, try a fresh session.
 - All or nothing, since once any `CLAUDE.md` counts Claude Code reads only `CLAUDE.md`
   files: no tracked `CLAUDE.md`, or each is an adapter beside an `AGENTS.md` and each
   tracked `AGENTS.md` has one. A tracked `CLAUDE.md` test fixture leaves this to judgment.
@@ -54,12 +54,13 @@ Platform behavior named here is recorded, with its source, in `references/platfo
 
 ## Maintain-mode safeguards
 
-- Adopt existing file locations; a pointer beats a move. The one exception is a spoke
-  whose filename has a space or `: `. Upgrading never requires reorganizing a repo.
+- Adopt existing file locations; a pointer beats a move. Exceptions: a spoke whose
+  filename has a space or `: `, and moving the sole `.claude/CLAUDE.md` to the root hub.
 - Never rewrite dated or historical entries; append a correction. Repair inbound links in
   the same change that moves content. Never delete a real constraint to shorten a file.
-- A repo whose only instruction file is a `CLAUDE.md`: rename it `AGENTS.md`, move
-  Claude-only lines to `.claude/rules/`, add `## Spokes`, and no adapter unless required.
+- A repo whose only instruction file is `CLAUDE.md` or `.claude/CLAUDE.md`: make it the
+  root `AGENTS.md`, rewriting relative paths when it leaves `.claude/`. Move Claude-only
+  lines to `.claude/rules/`, add `## Spokes`, and no adapter unless required.
   An `@path` import is a Claude Code mechanism; make each one a pointer or inline it.
 - A repo with a symlinked `AGENTS.md` or `CLAUDE.md`, or a `CLAUDE.md` with content after
   the import, keeps its file locations; the first maintain run normalizes it. Replace
