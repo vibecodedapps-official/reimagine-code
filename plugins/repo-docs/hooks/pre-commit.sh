@@ -3,12 +3,12 @@
 # that tracks an AGENTS.md or CLAUDE.md, add a reminder to run the repo-docs audit. Reads
 # stdin and the git index at the work-tree root, never blocks the command, never
 # writes a file.
-# Keep only the command field; preserve quoted option arguments as single quotes.
+# Keep only the command field; preserve quoted option arguments.
 # JSON newlines delimit commands, and JSON tabs delimit words.
-word="('[^']*'|[^[:space:];&|()\"']+)"
+word="('[^']*'|\"[^\"]*\"|[^[:space:];&|()\"'])+"
 options="(--[[:alnum:]-]+(=$word)?|-[[:alnum:]]+)"
-sed "s/\\\\n/;/g; s/\\\\t/ /g; s/\\\\\"/'/g" |
-  sed -n 's/.*"command"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/"\1/p' |
+sed -nE 's/.*"command"[[:space:]]*:[[:space:]]*"((\\.|[^"\\])*)".*/"\1/p' |
+  sed 's/\\\\/_/g; s/\\n/;/g; s/\\t/ /g; s/\\"/"/g' |
   grep -Eq "(^|[\";&|(])[[:space:]]*((env|sudo|[[:alpha:]_][[:alnum:]_]*=$word)[[:space:]]+)*(bash[[:space:]]+-c[[:space:]]+')?git(\\.exe)?([[:space:]]+($options|(-C|-c|--git-dir|--work-tree|--namespace|--config-env)[[:space:]]+$word))*[[:space:]]+commit([[:space:];&|()\"']|$)" ||
   exit 0
 # The index sees a nested file and a file staged for this commit. The hook cannot tell

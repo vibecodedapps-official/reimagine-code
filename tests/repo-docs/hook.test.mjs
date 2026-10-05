@@ -51,6 +51,16 @@ const commits = [
 for (const [name, input] of commits) test(`A1-U5-2: reminds for ${name}`, { skip }, (t) => {
   assert.equal(run(repository(t), input), reminder);
 });
+for (const command of ['git -c user.name="Joe User" commit', 'git -C "O\'Brien" commit']) {
+  test(`A2-U5-1: reminds for ${command}`, { skip }, (t) => {
+    assert.equal(run(repository(t), JSON.stringify({ tool_input: { command } })), reminder);
+  });
+}
+for (const command of ['git -C C:\\tools\\repo commit', 'git -C C:\\new commit']) {
+  test(`O2-U5-1: reminds for ${command}`, { skip }, (t) => {
+    assert.equal(run(repository(t), JSON.stringify({ tool_input: { command } })), reminder);
+  });
+}
 const others = [
   ['git log --grep commit', '{"tool_input":{"command":"git log --grep commit"}}'],
   ['echo git commit', '{"tool_input":{"command":"echo git commit"}}'],
