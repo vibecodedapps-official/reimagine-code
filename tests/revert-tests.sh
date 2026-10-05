@@ -555,6 +555,27 @@ nosides() {
 	[ ! -e "$tmp/res.err" ] || mismatch "$case_id: .err is left"
 	[ ! -e "$tmp/res.exit.tmp" ] || mismatch "$case_id: .exit.tmp is left"
 }
+# wdgone: wait up to 75 seconds for the work dir to go. Past 15 seconds, report how long
+# it took, with the processes and `.err` as they were at 15 seconds.
+wdgone() {
+	n=0
+	w_ps=
+	w_err=
+	while [ -e "$wd" ] && [ "$n" -lt 375 ]; do
+		if [ "$n" -eq 75 ]; then
+			w_ps=$(ps -eo pid,pgid,ppid,stat,args 2> /dev/null | grep -E 'revert-tests|sleep' |
+				grep -v grep | tr '
+' '|')
+			w_err=$(tr '
+' '|' < "$tmp/res.err" 2> /dev/null)
+		fi
+		sleep 0.2
+		n=$((n + 1))
+	done
+	if [ "$n" -gt 75 ]; then
+		mismatch "$case_id: the work dir took $((n / 5)) seconds or more to go; at 15 seconds, .err [$w_err], processes [$w_ps]"
+	fi
+}
 # started <pid file>: wait up to 20 seconds for a test file to record its pid.
 started() {
 	n=0
@@ -631,11 +652,7 @@ bgstart "$R" 'command\tsh\nrun\ttests/test_slow.sh\ntimeout\t60\n'
 started slow
 kill -TERM "$bp"
 bgdone 2
-n=0
-while [ -e "$wd" ] && [ "$n" -lt 75 ]; do
-	sleep 0.2
-	n=$((n + 1))
-done
+wdgone
 checkleft
 [ ! -e "$tmp/res.exit" ] || mismatch "$case_id: .exit was written"
 REVERT_TESTS_WAIT=2 "$sh_bin" "$rt" wait "$tmp/res" > "$tmp/out" 2> "$tmp/err"
@@ -686,11 +703,7 @@ bgstart "$R" 'command\tsh\nrun\ttests/test_slow.sh\ntimeout\t60\n'
 started slow
 kill -KILL "$bp"
 wait "$bp" 2> /dev/null
-n=0
-while [ -e "$wd" ] && [ "$n" -lt 100 ]; do
-	sleep 0.2
-	n=$((n + 1))
-done
+wdgone
 checkleft
 [ ! -e "$tmp/res.exit" ] || mismatch "$case_id: .exit was written"
 [ ! -e "$tmp/res" ] || mismatch "$case_id: a result file was written"
