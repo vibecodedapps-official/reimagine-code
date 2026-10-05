@@ -170,9 +170,9 @@ const atRoot = (line) => DOTTED.exec(line) ?? inlinePairs(INLINE.exec(line)?.[1]
 function scanLine(raw, open) {
   for (let i = 0; i < raw.length;) {
     if (open) {
-      const end = raw.indexOf(open, i);
-      if (end < 0) break;
-      [i, open] = [end + 3, null];
+      while (i < raw.length && !raw.startsWith(open, i)) i += open === '"""' && raw[i] === '\\' ? 2 : 1;
+      if (i >= raw.length) break;
+      [i, open] = [i + 3, null];
     } else if (raw[i] === '#') return { open, cut: i };
     else if (raw.startsWith('"""', i) || raw.startsWith("'''", i)) [i, open] = [i + 3, raw.slice(i, i + 3)];
     else if (raw[i] === '"' || raw[i] === "'") {

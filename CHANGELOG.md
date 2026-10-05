@@ -5,6 +5,23 @@ repos' own changelogs are kept under `docs/history/`.
 
 ## 0.3.2 - 2026-10-05
 
+### ccx
+
+- `ask` and `review` run in a repository whose directory name ends in a space. Before,
+  the path lost its trailing spaces, so the bridge could not start Codex, or ran it in a
+  sibling checkout without the space.
+- The Windows sandbox setting is read from a `config.toml` in which an earlier multiline
+  string holds an escaped `\"""`. Before, such a file read as having no setting, so
+  setup's sandbox rows failed and `ask` and `review` ran without the sandbox flag.
+- `/ccx:rules` saves its plan as UTF-8, so a config directory with a non-ASCII name
+  works. Before, the plan held a corrupted path or invalid JSON, and apply refused, or
+  wrote under a wrong directory.
+- `/ccx:rules` shows UTF-8 text in its diffs and import notes as written. Before, an
+  accented letter showed as two garbled characters. The bytes written were always right.
+- `/ccx:rules` refuses `--options core, writing`, a list split by a space, instead of
+  silently dropping `writing`, and the command text says to write the list with no
+  spaces.
+
 ### ccx (Codex)
 
 - Version 0.3.2, to stay in step with `ccx`. No change.

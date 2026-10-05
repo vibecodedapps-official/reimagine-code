@@ -23,7 +23,7 @@ They must be empty, exactly `--remove`, or `--options` followed by a comma-separ
 
 2. Run one of these:
    - With `--remove`: `node "${CLAUDE_PLUGIN_ROOT}/scripts/rules.mjs" remove "${CLAUDE_PLUGIN_DATA}"`
-   - With `--options <list>`: `node "${CLAUDE_PLUGIN_ROOT}/scripts/rules.mjs" plan "${CLAUDE_PLUGIN_DATA}" --options <list>`. The list replaces the options in use; to keep the core rules and add Codex's Writing section, use `--options core,writing` (include `windows` too if you want to keep it).
+   - With `--options <list>`: `node "${CLAUDE_PLUGIN_ROOT}/scripts/rules.mjs" plan "${CLAUDE_PLUGIN_DATA}" --options <list>`. Write the comma-separated list with no spaces. The list replaces the options in use; to keep the core rules and add Codex's Writing section, use `--options core,writing` (include `windows` too if you want to keep it).
    - With no arguments, when step 1 printed `options recorded: yes`: `node "${CLAUDE_PLUGIN_ROOT}/scripts/rules.mjs" plan "${CLAUDE_PLUGIN_DATA}"`
    - With no arguments, when step 1 printed `options recorded: no`: ask the user which options to use, offering only those on the `options offered:` line. `core` is the rules themselves, on by default. `windows` is the Windows shell rules, on by default where it is offered. `writing` is off by default; it adds Codex's Writing section to the Codex file, and in Claude Code the same rules come from the output style. Then run the `--options` form with the chosen list.
 

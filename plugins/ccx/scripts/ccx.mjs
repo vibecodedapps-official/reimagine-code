@@ -270,7 +270,7 @@ async function main() {
   const top = await git(['-C', here, 'rev-parse', '--show-toplevel'], process.cwd());
   if (top.code !== 0) refuse(`not inside a git repository, so nothing was run (${top.stderr.trim()})`);
   // ask and review run from the top of the repository holding --cwd (review only) or the shell's directory; do and implement keep the shell's, or implement's --cwd, which bounds their writes.
-  const cwd = writes ? here : join(top.stdout.trim());
+  const cwd = writes ? here : join(top.stdout.replace(/\r?\n$/, ''));
   let before;
   if (command === 'review') await reviewChecks(args.base, cwd);
   if (writes) {
