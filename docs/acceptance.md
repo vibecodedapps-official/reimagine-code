@@ -1476,3 +1476,43 @@ profile's five files had the same sha256 after the run as before.
     proven, one allow rule naming the 0.3.1 `scripts/ccx.mjs` with forward slashes, and
     "old plugins: none found". `/ccx:ask` in auto mode printed "51" and `status: ok`.
   - The copy of the Codex login was deleted afterward.
+
+### 2026-10-05: release cca 0.9.0
+
+macOS 27.0, Claude Code 2.1.289, Node 26.4.0. The release commit was 17a7859, the merge of
+PR 25, which imported claude-codex-audit 0.8.1 at eed9fba as `plugins/cca`. CI run
+37339721318 on the PR passed on ubuntu-latest, macos-latest, and windows-latest, the
+Windows job in 16 minutes with the cca suites under `npm test` for the first time there,
+and the Ubuntu mawk step printed `<name> test: ok` for all seven awk suites. The scratch
+profile was the M4 one, `~/.cache/recode-acceptance/claude`, backed up first with `cp -a`
+and left with `cca` 0.9.0 installed afterward. Every `claude -p` and plugin command below
+ran with `CLAUDE_CONFIG_DIR` set to it; only `claude plugin tag` and `validate`, which
+read the repository, ran without it.
+
+- **Item 17 passed for cca 0.9.0.** `claude plugin tag --dry-run plugins/cca` named
+  `cca--v0.9.0` at HEAD, and `claude plugin tag --push plugins/cca` created the annotated
+  tag at 17a7859 and pushed it. `npm run lint` printed `lint: ok` with the tag present.
+- **Item 18 passed for cca, macOS.** In the scratch profile, after
+  `claude plugin uninstall cca@vibecodedapps-claude-codex-audit` (0.5.1) and
+  `claude plugin marketplace remove vibecodedapps-claude-codex-audit`,
+  `claude plugin marketplace update reimagine-code` (the GitHub source) and
+  `claude plugin install cca@reimagine-code` installed `cca` 0.9.0. Windows: not run.
+- **Item 21 passed, with one headless limit.** The `solo` fixture was built with
+  `sh tests/cca/fixture/build.sh solo`. From the fixture's `app` repository,
+  `claude -p "/cca:audit <manifest> --budget 0 --no-codex" --model opus
+  --permission-mode acceptEdits --allowedTools <Read, Write, Skill, and Bash patterns>`:
+  stage 1 ran, stage 8 wrote `report.md`, the run ended `partial` with
+  `verdict: audit incomplete`, the reply printed `/cca:resume 2026-10-05-1243-app-feature`,
+  and `stages.json` recorded `plugin_version` `0.9.0`. The fixture's
+  `git status --porcelain` was the same before and after (its own untracked `notes/`),
+  and `HEAD` stayed on `feature`. The limit: in a headless run under `CLAUDE_CONFIG_DIR`,
+  Claude Code refuses `mkdir` and writes under that directory as a sensitive location,
+  so two first tries stopped in stage 1 setup when the run directory fell back to the
+  plugin data directory (the first left an empty run directory there, removed by hand;
+  the second was refused at the `mkdir`), and the passing run used a manifest copy with
+  `"scratch": "./app/.test-output/cca"` (the fixture's ignored path); even then
+  `runs.json` in the data directory could not be written, so the run is not registered
+  for resume by id. An interactive session probably asks instead of refusing; not run.
+  The second opinion was not involved (`--no-codex`).
+- **Not run.** Item 22 (stage 6 through `ccx`, which needs a logged-in Codex and a live
+  multi-agent run) and item 23 (cca's M3-c). Both are listed for the review rounds.
