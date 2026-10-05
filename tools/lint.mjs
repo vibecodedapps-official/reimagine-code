@@ -35,6 +35,7 @@ const PLUGINS = [
   ] },
   { dir: "plugins/ccx-loop", catalogs: ["claude"], family: true, budgets: [] },
   { dir: "plugins/ccx-codex", catalogs: ["codex"], family: true, budgets: [] },
+  { dir: "plugins/cca", catalogs: ["claude"], family: false, budgets: [] },
   { dir: "plugins/repo-docs", catalogs: ["claude", "codex"], family: false, budgets: [] },
 ];
 // Old names a shipped file may still contain, by repository-relative path: the migration literals of R7.

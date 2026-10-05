@@ -1,4 +1,5 @@
 .scratch/
+.cca/
 .DS_Store
 node_modules/
 *.log

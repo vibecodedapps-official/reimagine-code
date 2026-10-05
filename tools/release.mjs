@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// Sets one component's version in every manifest and catalog entry that carries it, and for ccx, when --floor is given,
+// Sets one component's version (ccx, repo-docs, or cca) in every manifest and catalog entry that carries it, and for ccx, when --floor is given,
 // the floor of ccx-loop's dependency range. Then runs lint, which checks that the copies agree, the range, and the
 // changelog heading. Tagging stays with `claude plugin tag`.
 import { spawnSync } from "node:child_process";
@@ -9,10 +9,10 @@ import { fileURLToPath } from "node:url";
 import { isDeepStrictEqual } from "node:util";
 
 const root = fileURLToPath(new URL("..", import.meta.url));
-const usage = "usage: node tools/release.mjs ccx <version> [--floor <version>]\n       node tools/release.mjs repo-docs <version>";
+const usage = "usage: node tools/release.mjs ccx <version> [--floor <version>]\n       node tools/release.mjs repo-docs <version>\n       node tools/release.mjs cca <version>";
 const semver = /^\d+\.\d+\.\d+$/;
 const [component, version, flag, floor, ...extra] = process.argv.slice(2);
-const valid = ["ccx", "repo-docs"].includes(component) && semver.test(version ?? "") && !extra.length
+const valid = ["ccx", "repo-docs", "cca"].includes(component) && semver.test(version ?? "") && !extra.length
   && (flag === undefined || (component === "ccx" && flag === "--floor" && semver.test(floor ?? "")));
 if (!valid) {
   console.error(usage);
@@ -42,6 +42,10 @@ const edits = {
     ["plugins/repo-docs/.claude-plugin/plugin.json", setVersion, [topVersion]],
     ["plugins/repo-docs/.codex-plugin/plugin.json", setVersion, [topVersion]],
     [".claude-plugin/marketplace.json", (j) => { for (const e of j.plugins) if (e.name === "repo-docs") e.version = version; }],
+  ],
+  cca: [
+    ["plugins/cca/.claude-plugin/plugin.json", setVersion, [topVersion]],
+    [".claude-plugin/marketplace.json", (j) => { for (const e of j.plugins) if (e.name === "cca") e.version = version; }],
   ],
 }[component];
 

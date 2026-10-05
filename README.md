@@ -7,10 +7,12 @@ Code marketplace and a Codex marketplace, both named `reimagine-code`.
   setup and optional house rules. On Codex, general code review skills.
 - `ccx-loop`: on Claude Code, a plan, review, implement, review, publish loop for one
   unit of work.
+- `cca`: on Claude Code, a read-only, adversarial audit of a finished bundle of pull
+  requests before merge, with Codex as the optional second opinion.
 - `repo-docs`: keeps a repository's agent instruction files correct, on both hosts.
 
 Each plugin's README has the details: [ccx](plugins/ccx/README.md),
-[ccx-loop](plugins/ccx-loop/README.md), [ccx for
+[ccx-loop](plugins/ccx-loop/README.md), [cca](plugins/cca/README.md), [ccx for
 Codex](plugins/ccx-codex/README.md), and [repo-docs](plugins/repo-docs/README.md).
 The [changelog](CHANGELOG.md) lists each release.
 
@@ -31,6 +33,7 @@ In Claude Code:
 /plugin marketplace add vibecodedapps-official/reimagine-code
 /plugin install ccx@reimagine-code
 /plugin install ccx-loop@reimagine-code
+/plugin install cca@reimagine-code
 /plugin install repo-docs@reimagine-code
 ```
 
@@ -56,6 +59,7 @@ For Claude Code, run:
 claude plugin marketplace update reimagine-code
 claude plugin update ccx@reimagine-code
 claude plugin update ccx-loop@reimagine-code
+claude plugin update cca@reimagine-code
 claude plugin update repo-docs@reimagine-code
 ```
 
@@ -85,8 +89,10 @@ only in Claude Code.
 ## Moving from the old plugins
 
 This suite replaces codex-lite, ccl, codex-code-review, and repo-docs from its own
-marketplace. In Claude Code, `/ccx:setup` lists each old plugin it finds on either
-host, with the command that removes it. It runs none of them. Every renamed command and
+marketplace, and, since cca 0.9.0, claude-codex-audit. In Claude Code, `/ccx:setup` lists
+each of the first four it finds on either host, with the command that removes it, and
+runs none of them. The old audit install goes with
+`claude plugin uninstall cca@vibecodedapps-claude-codex-audit`. Every renamed command and
 path is listed under Breaking in the [changelog](CHANGELOG.md).
 
 ### From recode 0.1.x
