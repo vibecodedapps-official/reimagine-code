@@ -5,13 +5,13 @@
 ### Fixed
 
 - A headless run (`claude -p`) no longer ends in stage 1 at the reverted test step. The
-  step ran `revert-tests.sh run` and, past the Bash tool's limit, waited for a
-  completion notification. A foreground command is killed at its timeout rather than
-  moved to the background, and a headless session ends when its turn ends with only a
-  background command running. Stage 1 now starts `revert-tests.sh bg` in the background
-  and repeats `revert-tests.sh wait`, which returns within 9 minutes, until the run is
-  done. The 30-minute cap per bundle is unchanged. A run stops when the session that
-  started it ends, so a resumed stage 1 cannot collide with it (#37).
+  step's call could outlast the Bash tool's limit, so the orchestrator ran it in the
+  background and ended its turn to wait for the completion notification. A headless
+  session ends with that turn, so the notification never came. Stage 1 now starts
+  `revert-tests.sh bg` in the background and repeats `revert-tests.sh wait` in the
+  foreground, which returns within 9 minutes, until the run is done. The 30-minute cap
+  per bundle is unchanged. A run stops when the session that started it ends, so a
+  resumed stage 1 cannot collide with it (#37).
 
 ## 0.8.0 - 2026-10-05
 

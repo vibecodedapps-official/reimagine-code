@@ -1234,12 +1234,14 @@ The first try of the 0.8.0 acceptance run ended in stage 1. The orchestrator sta
 and ended its turn to wait for the completion notification. A headless session
 (`claude -p`) ends when its turn ends with only a background command running.
 
-- **The step's premise was wrong.** Probes on 2026-10-05 (Claude Code 2.1.289, Windows)
-  ran `sleep 30` in the foreground with a 10-second timeout, once headless and once
-  interactive. Both times the command was killed (exit 143, "Command timed out after
-  10s"); it did not move to the background. So a foreground call at the 600000 ms
-  maximum fails any bundle whose copies and tests pass 10 minutes, and the script allows
-  30 minutes of tests alone.
+- **Waiting must keep the turn going.** A foreground command that reaches its timeout
+  moves to the background, unless it starts with `sleep` (Claude Code's tools
+  reference); a probe on 2026-10-05 (Claude Code 2.1.289, Windows) moved `true; sleep
+  30` there at a 10-second timeout. In an interactive session the completion
+  notification then arrives. In `claude -p` it does not: the session ends with the turn,
+  and the headless docs say a background shell is terminated about five seconds after
+  the final result. So the orchestrator must never end its turn while the run is in
+  the background, and no single call may stand in for the whole run.
 - **Background run, foreground waits.** A third probe started a background command and
   then blocked on it with a foreground loop; the headless session stayed alive and
   finished. Stage 1 now starts `revert-tests.sh bg` in the background and repeats
@@ -1273,11 +1275,11 @@ and ended its turn to wait for the completion notification. A headless session
   TERM trap ignores HUP, INT, and TERM before it exits.
 - **Not done.** Headless runs stay acceptance-only, so the README does not document
   `CLAUDE_CODE_PRINT_BG_WAIT_CEILING_MS`.
-- **Stage 6 has the same false sentence (#39).** codex-lite's `ask` runs its Bash call in
-  the foreground at 600000 ms, so by the probes a Codex call past 10 minutes is killed in
-  either mode, and the tier timeouts of 1,200 to 3,600 seconds cannot be honored. No
-  recorded run hit it. The fix needs either a lower cca timeout or a change in
-  codex-lite, so it is not part of #37.
+- **Stage 6 has the same gap (#39).** codex-lite's `ask` runs Codex in one foreground
+  call with a 600000 ms timeout, and the tier timeouts run to 3,600 seconds. A call past
+  10 minutes moves to the background and waits for its notification, which works
+  interactively but ends a headless session. No recorded run hit it. The fix needs
+  either a lower cca timeout or a change in codex-lite, so it is not part of #37.
 
 ## Deferred past 0.3
 

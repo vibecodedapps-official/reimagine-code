@@ -9,9 +9,9 @@
 #   sh revert-tests.sh bg <repo> <base> <head> <keys file> <work dir> <result file>
 #   sh revert-tests.sh wait <result file>
 #
-# `bg` and `wait` let a caller whose commands are killed at a timeout, such as an agent's
-# shell tool, run a bundle that takes longer: it starts `bg` in the background and repeats
-# `wait` until it exits other than 3.
+# `bg` and `wait` let a caller whose single command may not outlast a timeout, such as an
+# agent's shell tool in a headless session, run a bundle that takes longer: it starts `bg`
+# in the background and repeats `wait` until it exits other than 3.
 # - `bg` removes `<result file>.exit`, creates `<result file>.err`, and runs `run` as a
 #   child, in its own process group, with its output in `.err`. When the child ends, `bg`
 #   writes the child's exit status to `<result file>.exit.tmp` and renames it to `.exit`.

@@ -620,8 +620,8 @@ that was killed, remains. Then, for each bundle with `test_command`, in manifest
    merge-base with the test code at its head state, runs each file in both, writes one
    verdict per file to the result file, and removes its work directory. Its header gives
    the rules and the caps: 20 files, `test_timeout` per command, 30 minutes per bundle,
-   and no run when a tree holds over 1 GB. A bundle can take longer than a foreground
-   command may run, and a foreground command is killed at its timeout. Then run
+   and no run when a tree holds over 1 GB. A bundle can take longer than one foreground
+   command may run. Then run
    `sh ${CLAUDE_PLUGIN_ROOT}/skills/cca/scripts/revert-tests.sh wait <run dir>/revert/<bundle>.md`
    in the foreground with the Bash tool's `timeout` set to 600000. It returns within 9
    minutes; while it exits 3 (still running), run it again, at most 8 times in all. Do
