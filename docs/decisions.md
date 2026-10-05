@@ -1227,6 +1227,60 @@ scenario's role tag names the account it reads as.
   cut it to note: in the fixture the role only picks an accounts file entry, so no path
   to write rights is shown. One medium run is one sample (`docs/acceptance.md`).
 
+## Headless runs and the reverted test step (#37, 2026-10-05)
+
+The first try of the 0.8.0 acceptance run ended in stage 1. The orchestrator started
+`revert-tests.sh run` in the background, as the step allowed past the Bash tool's limit,
+and ended its turn to wait for the completion notification. A headless session
+(`claude -p`) ends when its turn ends with only a background command running.
+
+- **Waiting must keep the turn going.** A foreground command that reaches its timeout
+  moves to the background, unless it starts with `sleep` (Claude Code's tools
+  reference); a probe on 2026-10-05 (Claude Code 2.1.289, Windows) moved `true; sleep
+  30` there at a 10-second timeout. In an interactive session the completion
+  notification then arrives. In `claude -p` it does not: the session ends with the turn,
+  and the headless docs say a background shell is terminated about five seconds after
+  the final result. So the orchestrator must never end its turn while the run is in
+  the background, and no single call may stand in for the whole run.
+- **Background run, foreground waits.** A third probe started a background command and
+  then blocked on it with a foreground loop; the headless session stayed alive and
+  finished. Stage 1 now starts `revert-tests.sh bg` in the background and repeats
+  `revert-tests.sh wait`, which returns within 9 minutes, at most 8 times. It works the
+  same headless and interactive, and keeps the #22 cap. Lowering the cap to fit one
+  foreground call was rejected: it cuts the cap by three quarters and still fails on a
+  slow copy build. No reliable signal tells headless from interactive.
+- **The status comes from a parent shell.** `bg` runs `run` as a child, keeps its
+  output in `<result file>.err`, and writes the child's exit status to `.exit` by rename.
+  An earlier design had `run` write a pid file and a status file from its own exit trap.
+  Review found a half-written pid file read as a dead run, a `die` inside a command
+  substitution losing its message, and pid reuse keeping a waiter alive. With a parent
+  shell, a KILLed `run` still gets a status (137, by design; no test KILLs it), and
+  nothing needs a pid.
+- **Bounded at both ends.** `bg` sends the child's process group TERM at its own deadline
+  (3600 s), and KILL 60 seconds later, so copy building, which the 30-minute cap does not
+  count, cannot run on without end. The group matters: bash holds off `run`'s TERM trap
+  while a foreground git step runs, so TERM to `run` alone waits for that step. The
+  stage's 8 waits (72 minutes) outlast that deadline plus cleanup; an eighth "still
+  running" means the wrapper died, and the stage stops.
+- **The run ends with the session.** Probes showed that when a headless session ends,
+  the harness kills its background shell without a signal the shell can catch, while a
+  process group the shell started survives. A run that outlived its session could race a
+  resumed stage 1, which deletes and reuses the same paths. So the group's leader is a
+  small shell that checks `bg` every second and, once `bg` is gone, sends its own group
+  TERM, and KILL 60 seconds later. A TERM to `bg` also wakes the leader, which then
+  found `bg` gone and sent a second TERM about a millisecond after the first. That one
+  landed as `run`'s exit trap began and killed it before its cleanup, which left the work
+  dir and an orphaned test (a trace on two CPUs showed it; on CI it failed case 15f in
+  some runs). So the leader skips its TERM when the group already had one, and `run`'s
+  TERM trap ignores HUP, INT, and TERM before it exits.
+- **Not done.** Headless runs stay acceptance-only, so the README does not document
+  `CLAUDE_CODE_PRINT_BG_WAIT_CEILING_MS`.
+- **Stage 6 has the same gap (#39).** codex-lite's `ask` runs Codex in one foreground
+  call with a 600000 ms timeout, and the tier timeouts run to 3,600 seconds. A call past
+  10 minutes moves to the background and waits for its notification, which works
+  interactively but ends a headless session. No recorded run hit it. The fix needs
+  either a lower cca timeout or a change in codex-lite, so it is not part of #37.
+
 ## Deferred past 0.3
 
 - ccl emitting a handoff, and a ccl hint suggesting `/cca:audit` (F7 and H6). Both are ccl

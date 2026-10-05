@@ -728,7 +728,8 @@ Its checks are:
 - `sh tests/ledger.sh`: runs `ledger.sh` on inline ledger inputs and compares each op's
   output and exit status with literals.
 - `sh tests/revert-tests.sh`: runs `revert-tests.sh` on inline repos (each change status,
-  odd paths, timeouts, caps, setup failures, an interrupt) and on the `patterns` and
+  odd paths, timeouts, caps, setup failures, an interrupt, and a run in the background
+  through `bg` and `wait`) and on the `patterns` and
   `ground-truth` fixtures, and compares each verdict with a literal.
 
 CI runs a `checks` job (lint, then a fixture build and verify for `solo`, `solo-dirty`,

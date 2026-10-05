@@ -6,6 +6,27 @@
 #
 # Usage:
 #   sh revert-tests.sh run <repo> <base> <head> <keys file> <work dir> <result file>
+#   sh revert-tests.sh bg <repo> <base> <head> <keys file> <work dir> <result file>
+#   sh revert-tests.sh wait <result file>
+#
+# `bg` and `wait` let a caller whose single command may not outlast a timeout, such as an
+# agent's shell tool in a headless session, run a bundle that takes longer: it starts `bg`
+# in the background and repeats `wait` until it exits other than 3.
+# - `bg` removes `<result file>.exit`, creates `<result file>.err`, and runs `run` as a
+#   child, in its own process group, with its output in `.err`. When the child ends, `bg`
+#   writes the child's exit status to `<result file>.exit.tmp` and renames it to `.exit`.
+#   At REVERT_TESTS_DEADLINE seconds (default 3600) it sends the child's group TERM, and
+#   KILL 60 seconds later, and adds `revert-tests: stopped at the deadline of <n> seconds`
+#   to `.err`. On HUP, INT, or TERM it sends the group TERM and exits 2 without writing
+#   `.exit`. When `bg` is gone without a signal (KILL), the group's leader sends the group
+#   TERM within a second, unless the group had one already, and KILL 60 seconds later;
+#   `.exit` is not written.
+# - `wait` checks every 2 seconds for at most REVERT_TESTS_WAIT seconds (default 540).
+#   With `.exit` present, it prints the last line of `.err` that is not blank on stderr
+#   (or, with none and a status other than 0, `revert-tests: the run ended with status
+#   <n>`), so a shell's job notice before `run`'s own line is dropped, removes both files, and
+#   exits 0 for status 0, else 2. With neither file present after 30 seconds (or the
+#   window, when shorter), it exits 2: no run started. At the window's end it exits 3.
 #
 # Portability: bash (Linux, macOS, Git Bash), which the script re-executes itself under
 # when another sh starts it, and awk in forms mawk and gawk accept. Each command needs its
@@ -66,11 +87,13 @@
 # Output tails are the last 80 lines of the command's output and errors, unredacted, each
 # line cut at 400 bytes, with NUL and carriage return bytes removed.
 #
-# Exit status:
+# Exit status of `run`:
 #   2  wrong arguments or keys, the work dir exists, a git step or write failed, or a
 #      process group was still live 10 seconds after KILL (one line on stderr; no result
 #      file)
 #   0  the result file is written, whatever the verdicts
+# `bg` exits 0 once `.exit` is written, else 2. `wait` exits as `run` did (0, or 2 with
+# its stderr), 2 for no run started or an unreadable `.exit`, and 3 while still running.
 
 if [ -z "${BASH_VERSION:-}" ]; then
 	if ! command -v bash > /dev/null 2>&1; then
@@ -101,9 +124,124 @@ die() {
 }
 
 usage() {
-	echo "usage: revert-tests.sh run <repo> <base> <head> <keys file> <work dir> <result file>" >&2
+	echo "usage: revert-tests.sh run|bg <repo> <base> <head> <keys file> <work dir> <result file>, or wait <result file>" >&2
 	exit 2
 }
+
+# secs <name> <value>: die unless the value is whole seconds, 1 or more.
+secs() {
+	case $2 in
+	'' | *[!0-9]* | 0*) die "$1 must be whole seconds, 1 or more" ;;
+	esac
+}
+
+if [ "${1:-}" = bg ]; then
+	[ $# -eq 7 ] || usage
+	shift
+	out=$6
+	outdir=$(dirname "$out")
+	[ -d "$outdir" ] || die "no directory for the result file: $outdir"
+	deadline=${REVERT_TESTS_DEADLINE:-3600}
+	secs REVERT_TESTS_DEADLINE "$deadline"
+	rm -f "$out.exit" "$out.exit.tmp"
+	[ ! -e "$out.exit" ] || die "cannot remove $out.exit"
+	: > "$out.err" || die "cannot write $out.err"
+	child=
+	trap 'if [ -n "$child" ]; then kill -TERM -"$child" 2> /dev/null; fi; exit 2' HUP INT TERM
+	# Its own process group, so TERM also reaches a foreground git step, which would
+	# otherwise hold off `run`'s trap until it returns. The group's leader outlives a KILL
+	# of `bg` (an agent's harness ends a session's shells so), so it ends the run itself.
+	bgpid=$$
+	set -m
+	(
+		termed=
+		trap 'termed=1' TERM
+		bash "$0" run "$@" &
+		r=$!
+		n=0
+		while kill -0 "$r" 2> /dev/null; do
+			if ! kill -0 "$bgpid" 2> /dev/null; then
+				if [ "$n" -eq 0 ] && [ -z "$termed" ]; then
+					kill -TERM 0 2> /dev/null
+				elif [ "$n" -ge 60 ]; then
+					kill -KILL 0 2> /dev/null
+				fi
+				n=$((n + 1))
+			fi
+			sleep 1
+		done
+		wait "$r"
+	) > "$out.err" 2>&1 < /dev/null &
+	child=$!
+	set +m
+	(
+		n=0
+		fired=
+		while kill -0 "$child" 2> /dev/null; do
+			if [ "$n" -eq "$deadline" ]; then
+				kill -TERM -"$child" 2> /dev/null
+				fired=1
+			elif [ "$n" -ge $((deadline + 60)) ]; then
+				kill -KILL -"$child" 2> /dev/null
+				break
+			fi
+			sleep 1
+			n=$((n + 1))
+		done
+		[ -z "$fired" ] || exit 3
+	) &
+	dog=$!
+	wait "$child"
+	st=$?
+	wait "$dog"
+	if [ $? -eq 3 ]; then
+		echo "revert-tests: stopped at the deadline of $deadline seconds" >> "$out.err"
+	fi
+	if ! { printf '%s\n' "$st" > "$out.exit.tmp" && mv -f "$out.exit.tmp" "$out.exit"; }; then
+		rm -f "$out.exit.tmp"
+		die "cannot write $out.exit"
+	fi
+	exit 0
+fi
+
+if [ "${1:-}" = wait ]; then
+	[ $# -eq 2 ] || usage
+	out=$2
+	win=${REVERT_TESTS_WAIT:-540}
+	secs REVERT_TESTS_WAIT "$win"
+	grace=30
+	if [ "$win" -lt "$grace" ]; then
+		grace=$win
+	fi
+	n=0
+	while :; do
+		if [ -f "$out.exit" ]; then
+			st=$(cat "$out.exit")
+			case $st in
+			'' | *[!0-9]*) die "not a status in $out.exit" ;;
+			esac
+			line=$(awk 'NF { l = $0 } END { print l }' "$out.err" 2> /dev/null)
+			if [ -n "$line" ]; then
+				printf '%s
+' "$line" >&2
+			elif [ "$st" != 0 ]; then
+				echo "revert-tests: the run ended with status $st" >&2
+			fi
+			rm -f "$out.exit" "$out.err"
+			[ "$st" = 0 ] && exit 0
+			exit 2
+		fi
+		if [ "$n" -ge "$grace" ] && [ ! -e "$out.err" ]; then
+			die "no run started for $out"
+		fi
+		if [ "$n" -ge "$win" ]; then
+			echo "revert-tests: still running" >&2
+			exit 3
+		fi
+		sleep 2
+		n=$((n + 2))
+	done
+fi
 
 [ $# -eq 7 ] && [ "$1" = run ] || usage
 repo=$2
@@ -125,6 +263,8 @@ live=
 wdog=
 renamed=
 cleanup() {
+	# A signal during the cleanup must not cut it short.
+	trap '' HUP INT TERM
 	if [ -n "$wdog" ]; then
 		kill "$wdog" 2> /dev/null
 	fi
@@ -145,7 +285,7 @@ cleanup() {
 	fi
 }
 trap cleanup EXIT
-trap 'exit 2' HUP INT TERM
+trap 'trap "" HUP INT TERM; exit 2' HUP INT TERM
 
 mkdir -p "$work" || die "cannot create the work dir: $work"
 made=1
@@ -198,9 +338,7 @@ done < "$keys"
 [ -s "$w/run.pat" ] || die "keys: no run pattern"
 timeout=${timeout:-300}
 cap=${REVERT_TESTS_CAP:-1800}
-case $cap in
-*[!0-9]* | 0*) die "REVERT_TESTS_CAP must be whole seconds, 1 or more" ;;
-esac
+secs REVERT_TESTS_CAP "$cap"
 paths_default=
 if [ ! -s "$w/path.pat" ]; then
 	paths_default=1
