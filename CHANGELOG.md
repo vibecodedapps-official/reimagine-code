@@ -22,6 +22,7 @@ repos' own changelogs are kept under `docs/history/`.
   version is an input of every stage.
 - The sh suites and fixtures run through `npm test` from `tests/cca/`. The records from
   before the move are under `docs/history/claude-codex-audit/`.
+- Released as 0.9.1; the move above shipped as 0.9.0.
 
 ## 0.3.1 - 2026-10-05
 

@@ -52,7 +52,7 @@ test('release sets the suite version and the range everywhere, then lint asks fo
   assert.ok(r.out.includes('CHANGELOG.md: no heading "## 0.4.0 - <YYYY-MM-DD>" for the suite version'), r.out);
   assert.deepEqual(versions(d), {
     suite: '0.4.0', ccx: '0.4.0', loop: '0.4.0', range: '>=0.4.0 <1.0.0', codex: '0.4.0',
-    docsClaude: '0.1.4', docsCodex: '0.1.4', cca: '0.9.0', catalog: '0.4.0', entries: { ccx: '0.4.0', 'ccx-loop': '0.4.0', cca: '0.9.0', 'repo-docs': '0.1.4' },
+    docsClaude: '0.1.4', docsCodex: '0.1.4', cca: '0.9.1', catalog: '0.4.0', entries: { ccx: '0.4.0', 'ccx-loop': '0.4.0', cca: '0.9.1', 'repo-docs': '0.1.4' },
   });
   assert.ok(lines(d, 'plugins/ccx-loop/.claude-plugin/plugin.json').includes('    { "name": "ccx", "version": ">=0.4.0 <1.0.0" }'));
   heading(d, '## 0.4.0 - 2026-10-04');
@@ -66,23 +66,23 @@ test('release sets repo-docs in its two manifests and its catalog entry only', (
   assert.equal(r.status, 0, r.out);
   assert.deepEqual(versions(d), {
     suite: '0.3.2', ccx: '0.3.2', loop: '0.3.2', range: '>=0.2.0 <1.0.0', codex: '0.3.2',
-    docsClaude: '0.1.5', docsCodex: '0.1.5', cca: '0.9.0', catalog: '0.3.2', entries: { ccx: '0.3.2', 'ccx-loop': '0.3.2', cca: '0.9.0', 'repo-docs': '0.1.5' },
+    docsClaude: '0.1.5', docsCodex: '0.1.5', cca: '0.9.1', catalog: '0.3.2', entries: { ccx: '0.3.2', 'ccx-loop': '0.3.2', cca: '0.9.1', 'repo-docs': '0.1.5' },
   });
   assert.ok(lines(d, 'plugins/repo-docs/.codex-plugin/plugin.json').includes('  "author": { "name": "vibecodedapps.net" },'));
 }));
 
 test('release sets cca in its manifest and its catalog entry only', () => inCopy((d) => {
-  const r = release(d, 'cca', '0.9.1');
+  const r = release(d, 'cca', '0.9.2');
   assert.equal(r.status, 0, r.out);
   assert.deepEqual(versions(d), {
     suite: '0.3.2', ccx: '0.3.2', loop: '0.3.2', range: '>=0.2.0 <1.0.0', codex: '0.3.2',
-    docsClaude: '0.1.4', docsCodex: '0.1.4', cca: '0.9.1', catalog: '0.3.2', entries: { ccx: '0.3.2', 'ccx-loop': '0.3.2', cca: '0.9.1', 'repo-docs': '0.1.4' },
+    docsClaude: '0.1.4', docsCodex: '0.1.4', cca: '0.9.2', catalog: '0.3.2', entries: { ccx: '0.3.2', 'ccx-loop': '0.3.2', cca: '0.9.2', 'repo-docs': '0.1.4' },
   });
   assert.ok(lines(d, 'plugins/cca/.claude-plugin/plugin.json').includes('  "license": "Apache-2.0",'));
 }));
 
 test('release rejects a malformed request', () => inCopy((d) => {
-  for (const args of [['ccx', '0.2'], ['repo-docs', '0.1.3', '--floor', '0.1.0'], ['cca', '0.9.0', '--floor', '0.1.0'], ['ccx-loop', '0.3.2'], ['ccx', '0.3.2', '--floor']]) {
+  for (const args of [['ccx', '0.2'], ['repo-docs', '0.1.3', '--floor', '0.1.0'], ['cca', '0.9.1', '--floor', '0.1.0'], ['ccx-loop', '0.3.2'], ['ccx', '0.3.2', '--floor']]) {
     const r = release(d, ...args);
     assert.equal(r.status, 2, `${args.join(' ')}: ${r.out}`);
     assert.ok(r.out.startsWith('usage: node tools/release.mjs ccx <version> [--floor <version>]'), r.out);
