@@ -24,6 +24,10 @@ repos' own changelogs are kept under `docs/history/`.
   before the move are under `docs/history/claude-codex-audit/`.
 - Released as 0.9.1; the move above shipped as 0.9.0.
 
+### repo-docs
+
+- Released as 0.1.5.
+
 ## 0.3.1 - 2026-10-05
 
 ### ccx

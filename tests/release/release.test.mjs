@@ -52,7 +52,7 @@ test('release sets the suite version and the range everywhere, then lint asks fo
   assert.ok(r.out.includes('CHANGELOG.md: no heading "## 0.4.0 - <YYYY-MM-DD>" for the suite version'), r.out);
   assert.deepEqual(versions(d), {
     suite: '0.4.0', ccx: '0.4.0', loop: '0.4.0', range: '>=0.4.0 <1.0.0', codex: '0.4.0',
-    docsClaude: '0.1.4', docsCodex: '0.1.4', cca: '0.9.1', catalog: '0.4.0', entries: { ccx: '0.4.0', 'ccx-loop': '0.4.0', cca: '0.9.1', 'repo-docs': '0.1.4' },
+    docsClaude: '0.1.5', docsCodex: '0.1.5', cca: '0.9.1', catalog: '0.4.0', entries: { ccx: '0.4.0', 'ccx-loop': '0.4.0', cca: '0.9.1', 'repo-docs': '0.1.5' },
   });
   assert.ok(lines(d, 'plugins/ccx-loop/.claude-plugin/plugin.json').includes('    { "name": "ccx", "version": ">=0.4.0 <1.0.0" }'));
   heading(d, '## 0.4.0 - 2026-10-04');
@@ -62,11 +62,11 @@ test('release sets the suite version and the range everywhere, then lint asks fo
 }));
 
 test('release sets repo-docs in its two manifests and its catalog entry only', () => inCopy((d) => {
-  const r = release(d, 'repo-docs', '0.1.5');
+  const r = release(d, 'repo-docs', '0.1.6');
   assert.equal(r.status, 0, r.out);
   assert.deepEqual(versions(d), {
     suite: '0.3.2', ccx: '0.3.2', loop: '0.3.2', range: '>=0.2.0 <1.0.0', codex: '0.3.2',
-    docsClaude: '0.1.5', docsCodex: '0.1.5', cca: '0.9.1', catalog: '0.3.2', entries: { ccx: '0.3.2', 'ccx-loop': '0.3.2', cca: '0.9.1', 'repo-docs': '0.1.5' },
+    docsClaude: '0.1.6', docsCodex: '0.1.6', cca: '0.9.1', catalog: '0.3.2', entries: { ccx: '0.3.2', 'ccx-loop': '0.3.2', cca: '0.9.1', 'repo-docs': '0.1.6' },
   });
   assert.ok(lines(d, 'plugins/repo-docs/.codex-plugin/plugin.json').includes('  "author": { "name": "vibecodedapps.net" },'));
 }));
@@ -76,7 +76,7 @@ test('release sets cca in its manifest and its catalog entry only', () => inCopy
   assert.equal(r.status, 0, r.out);
   assert.deepEqual(versions(d), {
     suite: '0.3.2', ccx: '0.3.2', loop: '0.3.2', range: '>=0.2.0 <1.0.0', codex: '0.3.2',
-    docsClaude: '0.1.4', docsCodex: '0.1.4', cca: '0.9.2', catalog: '0.3.2', entries: { ccx: '0.3.2', 'ccx-loop': '0.3.2', cca: '0.9.2', 'repo-docs': '0.1.4' },
+    docsClaude: '0.1.5', docsCodex: '0.1.5', cca: '0.9.2', catalog: '0.3.2', entries: { ccx: '0.3.2', 'ccx-loop': '0.3.2', cca: '0.9.2', 'repo-docs': '0.1.5' },
   });
   assert.ok(lines(d, 'plugins/cca/.claude-plugin/plugin.json').includes('  "license": "Apache-2.0",'));
 }));
@@ -118,8 +118,8 @@ test('release raises a plugin changed since its tag, so lint passes again', () =
 test('release keeps CRLF line endings, as in a Windows checkout', () => inCopy((d) => {
   const files = ['.claude-plugin/marketplace.json', 'plugins/repo-docs/.claude-plugin/plugin.json', 'plugins/repo-docs/.codex-plugin/plugin.json'];
   for (const f of files) writeFileSync(join(d, f), readFileSync(join(d, f), 'utf8').replace(/\r?\n/g, '\r\n'));
-  const r = release(d, 'repo-docs', '0.1.5');
+  const r = release(d, 'repo-docs', '0.1.6');
   assert.equal(r.status, 0, r.out);
-  assert.deepEqual([versions(d).docsClaude, versions(d).docsCodex, versions(d).entries['repo-docs']], ['0.1.5', '0.1.5', '0.1.5']);
+  assert.deepEqual([versions(d).docsClaude, versions(d).docsCodex, versions(d).entries['repo-docs']], ['0.1.6', '0.1.6', '0.1.6']);
   for (const f of files) assert.ok(!/[^\r]\n/.test(readFileSync(join(d, f), 'utf8')), `${f} has a bare LF`);
 }));

@@ -263,7 +263,7 @@ test('lint rejects the codex ccx off the suite version', () => fails(
 
 test('lint rejects repo-docs manifests with different versions', () => fails(
   (d) => editJson(d, 'plugins/repo-docs/.codex-plugin/plugin.json', (j) => { j.version = '0.1.1'; }),
-  'plugins/repo-docs/.codex-plugin/plugin.json: version 0.1.1 differs from 0.1.4 in .claude-plugin/plugin.json'));
+  'plugins/repo-docs/.codex-plugin/plugin.json: version 0.1.1 differs from 0.1.5 in .claude-plugin/plugin.json'));
 
 test('lint rejects the codex plugin without its NOTICE', () => fails(
   (d) => rmSync(join(d, 'plugins/ccx-codex/NOTICE')),
@@ -298,7 +298,7 @@ const tagged = (d, ...tags) => {
 };
 
 test('lint passes on a tagged copy with no change since its tags', () => {
-  const r = lint((d) => tagged(d, 'ccx--v0.3.2', 'ccx-loop--v0.3.2', 'repo-docs--v0.1.4'));
+  const r = lint((d) => tagged(d, 'ccx--v0.3.2', 'ccx-loop--v0.3.2', 'repo-docs--v0.1.5'));
   assert.equal(r.status, 0, r.out);
 });
 
@@ -312,7 +312,7 @@ test('lint holds the codex ccx to the bridge tag', () => fails(
 
 test('lint compares a change with the highest tag by number', () => fails(
   (d) => { tagged(d, 'repo-docs--v0.1.9', 'repo-docs--v0.1.10'); appendFileSync(join(d, 'plugins/repo-docs/README.md'), 'More.\n'); },
-  'plugins/repo-docs: changed since repo-docs--v0.1.10, so its version must be above 0.1.10; found 0.1.4'));
+  'plugins/repo-docs: changed since repo-docs--v0.1.10, so its version must be above 0.1.10; found 0.1.5'));
 
 test('lint rejects a shallow clone, which may lack the tags', () => fails(
   (d) => { tagged(d); writeFileSync(join(d, '.git', 'shallow'), git(d, 'rev-parse', 'HEAD')); },

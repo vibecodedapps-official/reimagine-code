@@ -34,7 +34,7 @@
       "name": "repo-docs",
       "source": "./plugins/repo-docs",
       "description": "Keeps a repository's instruction files correct and progressively disclosed.",
-      "version": "0.1.4"
+      "version": "0.1.5"
     }
   ]
 }
