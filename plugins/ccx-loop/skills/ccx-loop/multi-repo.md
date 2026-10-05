@@ -41,7 +41,8 @@ names, for each repository, and leaves the rest of that step as written.
   checks, CI reads under Step 7.3.1, and issue comments) runs inside one Bash call as `cd
   <path> && ...`, or with `-R <owner>/<repo>` where the subcommand accepts it. `gh api` does
   not accept `-R`: run it from the checkout, or spell the endpoint out as
-  `repos/<owner>/<repo>/...` instead of `repos/{owner}/{repo}/...`. Every `git` call for it
+  `repos/<owner>/<repo>/...` instead of `repos/{owner}/{repo}/...`; always pass
+  `--hostname <host>`, the hostname Step 0 recorded. Every `git` call for it
   runs as `git -C <path>`.
 - PR body files: each repository's body is written to `.ccx/<run-id>/pr-body-<slug>.md` in
   the primary (the primary's own may stay `pr-body.md`). Every `--body-file` for an

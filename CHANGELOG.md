@@ -22,6 +22,31 @@ repos' own changelogs are kept under `docs/history/`.
   silently dropping `writing`, and the command text says to write the list with no
   spaces.
 
+### ccx-loop
+
+- After the reviewer swaps to its Claude fallback, every later reviewer call in the run,
+  plan follow-up rounds, Step 5 rounds, and CI repair reviews, goes to that fallback.
+  Before, those steps read as Codex, so a `--no-codex` run could call a `ccx:` skill
+  after a CI failure.
+- A change requested at plan approval reruns the plan's verification and the risk floor
+  and chooses each slice's implementer again; the tier never falls. Before, it got only
+  one more review round.
+- Plan confirmation compares a local branch with the base commit only when the branch
+  exists. Before, a run that continued a branch with no local branch of that name ended
+  `blocked` there.
+- The skill names where the user's instruction and settings files are read from:
+  `$CLAUDE_CONFIG_DIR`, else `~/.claude`.
+- Every `gh api` call in the CI watch, handoff, and multi-repo texts passes
+  `--hostname <host>`, the host Step 0 recorded. Before, the calls went to gh's default
+  host, so a GitHub Enterprise run with a github.com login also saved published its PR
+  and then ended `blocked` on the first CI read.
+- The CI watch reads the PR's `state` at every poll and ends `blocked` when it is not
+  `OPEN`, naming the state. Before, a PR closed during the watch could be reported as
+  `done`.
+- A `pull_request_target` workflow is judged by its file on the default branch, in the
+  CI watch and in the deploy ask-first before pushing. Before, one the PR itself added
+  could make the watch wait for a check that never comes.
+
 ### ccx (Codex)
 
 - Version 0.3.2, to stay in step with `ccx`. No change.

@@ -131,7 +131,8 @@ run only, to do these things without asking:
 
 Carve-outs:
 
-1. Read the user's and the repo's instruction files before changing anything. If those files
+1. Read the user's instruction files in `$CLAUDE_CONFIG_DIR` (else `~/.claude`) and the
+   repo's instruction files before changing anything. If those files
    add an ask-first rule for any action above, that rule wins and the action prompts. This
    skill never removes an ask-first rule.
 2. Always ask first, whatever any file says, before: force push, `--no-verify`, merging,
@@ -565,10 +566,11 @@ and nothing replaces it. A lower-risk run never uses it.
    `git -C <worktree> diff <base-commit>`. Record any Fable error. A later round continues the
    same subagent with SendMessage when possible, else starts a fresh one given the earlier
    objections and how each was resolved.
-4. A swap replaces one reviewer and never removes a stage. It holds for the rest of that
-   stage; the next stage tries Codex again unless Step 0.6 recorded it unavailable or
-   `--no-codex` is set. The tier never changes because a reviewer is unavailable. Only the
-   Codex role is ever swapped: the Claude role of a higher-risk run is unchanged by
+4. A swap replaces one reviewer and never removes a stage. The fallback becomes the active
+   reviewer for every later reviewer call in the run, including plan follow-ups and CI
+   repair reviews. A `--no-codex` run never calls a `ccx:` skill. The tier never changes
+   because a reviewer is unavailable. Only the Codex role is ever swapped: the Claude
+   role of a higher-risk run is unchanged by
    `--no-codex` or by any Codex failure, and runs every Step 5 round.
 5. Write every swap to `run.md` with its reason. Each one appears in the report.
 6. If no reviewer is available for a required stage, end in `blocked`.
@@ -695,7 +697,8 @@ A stop at any item before 0.5 prints the report and writes nothing, except in a 
 handling item 3 says. The printed report says which preflight item failed and what would fix
 it. Step 0 creates nothing except artifacts.
 
-1. Read the user's and the repo's instruction files, and `.ccx.json`. Record every
+1. Read the user's instruction files in `$CLAUDE_CONFIG_DIR` (else `~/.claude`), the
+   repo's instruction files, and `.ccx.json`. Record every
    ask-first rule. A malformed `.ccx.json` stops the run in `blocked`. So does a
    `.recode.json` or a `.ccl.json` at the repo root with no `.ccx.json` beside it: that is
    the config's name from before the plugin was renamed, and ignoring it would drop its `checks` and
@@ -721,9 +724,11 @@ it. Step 0 creates nothing except artifacts.
       PR (with `continue`), issue comments, the PR report comment, the CI watch's `gh`
       calls, each Codex call if Codex is used, subagents, and any
       other command this skill does not pre-approve. Take the mode from what the session
-      states and from the settings files' default mode and allow rules (user, project, and
-      local settings). An action whose outcome cannot be determined counts as one that will
-      prompt. In default mode, each Codex call prompts for ccx's request-file write
+      states and from the settings files' default mode and allow rules: user settings in
+      `$CLAUDE_CONFIG_DIR/settings.json` (else `~/.claude/settings.json`), project settings
+      in `<repo>/.claude/settings.json`, and local settings in
+      `<repo>/.claude/settings.local.json`. An action whose outcome cannot be determined
+      counts as one that will prompt. In default mode, each Codex call prompts for ccx's request-file write
       unless the user has allowed it.
    3. Before printing, run the flagged-file check of Step 0.3 (`git ls-files -v` and `git
       cat-file --filters`, both pre-approved) so the statement can predict a worktree run:
@@ -985,8 +990,9 @@ Every tier. The reviewer for the stage comes from the tier table in `tiers.md`: 
    and name the repo's instruction files. With a fallback reviewer, give it the same request.
 2. Verify each objection against the code before accepting it.
 3. Revise the plan. Append to `plan.md` a review log for the round: each objection, blocking
-   or not, accepted or rejected, and why. Resend in the same thread with `--resume <thread id>`
-   so it keeps context, telling the reviewer what changed and what you rejected and why.
+   or not, accepted or rejected, and why. Continue the active reviewer: for Codex, resend
+   in the same thread with `--resume <thread id>`; for the fallback, continue its subagent
+   under Codex availability item 3. Tell it what changed and what you rejected and why.
 4. Repeat until the reviewer has no blocking objections (its reply ends with `NO BLOCKING
    OBJECTIONS` and you have found none), with a cap of 3 rounds.
 5. If a disagreement is the user's call, write the question and both positions to the report
@@ -1016,8 +1022,8 @@ Runs only when `confirm-plan` is true and the run is not plan-only. Otherwise go
    worktree run. A flagged path that differs from `HEAD` and that `run.md` does not
    already record for that checkout is a failure; it never starts the worktree exception.
    In each repository that continues a branch, also rerun Step 0.2's check that a local
-   branch of that name equals the base commit, Step 0.2's worktree check, and that `HEAD`
-   of the repository's checkout is at the base commit. A failure ends in `blocked` naming
+   branch of that name, when one exists, equals the base commit, Step 0.2's worktree check,
+   and that `HEAD` of the repository's checkout is at the base commit. A failure ends in `blocked` naming
    what changed. Also, in each repository that continues a branch, run `git ls-remote
    --heads <remote> refs/heads/<its branch>` and compare its head with that repository's
    base commit. If it moved, end in `blocked` naming the branch. For a repository that
@@ -1027,9 +1033,13 @@ Runs only when `confirm-plan` is true and the run is not plan-only. Otherwise go
    retargeted during the wait blocks the run before anything is implemented. The base
    commit stays the one fetched in Step 0.2: the default branch moving during the wait
    changes nothing.
-4. A requested change is recorded in `inputs.md` as an ad-hoc input. It gets one more Step
-   3 round, inside the cap of 3 that Step 3 and Step 3.7.1 share. That round follows Step
-   3 items 2 to 6: an open blocking objection at the cap ends in `blocked` (Step 3 item
+4. A requested change is recorded in `inputs.md` as an ad-hoc input. Rerun Step 1.3's
+   verification on the changed input, then apply the risk floor without re-estimating
+   effort; the tier never falls below the one already chosen. Update the plan and choose
+   each slice's implementer again under `tiers.md`, and judge its higher-risk rule again.
+   It gets one more Step 3 round, inside the cap of 3 that Step 3 and Step 3.7.1 share.
+   That round follows Step 3 items 2 to 6: an open blocking objection at the cap ends in
+   `blocked` (Step 3 item
    6), and the question is asked again only when the round ends with no blocking
    objection. When no round remains, end in `stopped` with the requested change as the
    question.
@@ -1202,8 +1212,9 @@ listed.
    current diff. A fix is made only when a round remains to review it. In
    the third round nothing is fixed: a confirmed blocking finding ends the run in
    `blocked`, and a confirmed non-blocking finding is deferred and listed in the report.
-4. After the fixes, judge the rule again and run the next round with the same role: for
-   Codex, resend in the same thread with `ccx:ask --resume <thread id>` and `diff.patch`;
+4. After the fixes, judge the rule again and run the next round with the active reviewer:
+   for Codex, resend in the same thread with `ccx:ask --resume <thread id>` and `diff.patch`;
+   for its fallback, continue the subagent under Codex availability item 3;
    for Claude, rerun the skill fresh at the same level, and in a worktree run continue the
    Opus substitute with SendMessage. In Multi-repo mode, resend each additional
    repository's patch the same way, and continue its Claude subagent with SendMessage, as
@@ -1273,7 +1284,9 @@ anything is pushed, stop Step 7 and end in `prepared`.
    repository that has a diff, each body with a "Related pull requests" section, then edit
    each body once to link the siblings, as `multi-repo.md` describes. Before
    pushing, check whether the push or the PR would trigger a deploy
-   (workflows that run on `push` or `pull_request` and deploy or release). If so, ask first.
+   (workflows that run on `push`, `pull_request`, or `pull_request_target` and deploy or
+   release). Judge `pull_request_target` from its file on the default branch with
+   `git show <remote>/<default>:<path>`. If so, ask first.
    Read `pr-body.md` in this skill's base directory, write the body to
    `.ccx/<run-id>/pr-body.md`, and pass it with `gh pr create --body-file`. The body has what
    changed per input, decisions a reviewer needs to understand the shipped change, drift
@@ -1312,8 +1325,10 @@ anything is pushed, stop Step 7 and end in `prepared`.
       with the run's reviewer role before the fix is pushed. Judge the higher-risk rule
       again first on the new diff; a run that turns higher-risk here moves to Claude, with
       the skill check of the Claude review contract, and never moves back. Refresh
-      `diff.patch`. For the Codex role, use the Step 5 Codex thread when one exists, else
-      `ccx:review --base <base-commit>`, which covers committed work. In a worktree
+      `diff.patch`. For the Codex role, continue the active fallback subagent under Codex
+      availability item 3 when swapped; only when Codex is active, use the Step 5 Codex
+      thread when one exists, else `ccx:review --base <base-commit>`, which covers
+      committed work. In a worktree
       run, refresh `diff.patch` from the worktree and continue the Step 5 reviewer, the
       Codex thread with `ccx:ask --resume` when Codex reviewed Step 5, else the
       fallback subagent under Codex availability item 3; never `ccx:review`. For the
