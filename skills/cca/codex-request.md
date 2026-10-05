@@ -107,8 +107,10 @@ An input you could not open is listed as "not read: <path>".
 3. Dropped findings you would restore, each with the reason and evidence.
 4. Before you choose new findings, trace outward from at most 10 changed symbols,
    riskiest first, as common.md's "Outward trace" section describes: siblings, newly
-   called functions, and consumers. The trace is for your own search; do not write it
-   out. Then give up to ten findings no reviewer raised, from the trace or anywhere else,
+   called functions, consumers, and, for a consumer of a widened input, each decision
+   that reads the widened part, checked against the ticket and claims text the brief
+   names. The trace is for your own search; do not write it out. Then give up to ten
+   findings no reviewer raised, from the trace or anywhere else,
    each in the finding schema from common.md, under a heading `### X<n>: <title>` with
    ids X1, X2, and so on, and the line "- origin: codex". <When
    `live/carried/` holds an `X<n>`: "Number them after the highest carried X<n>, which

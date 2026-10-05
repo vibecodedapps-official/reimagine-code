@@ -1061,6 +1061,172 @@ pass-two adversary challenges it.
   bundle, and no run over 1 GB. `REVERT_TESTS_CAP` overrides the 30 minutes so the test
   suite's cap case runs in seconds.
 
+## Rerun of renamed run-once scripts (#23 part B, 2026-10-04)
+
+The 2026-10-03 note on run-once scripts (#20) said a runner that journals by name runs
+a renamed script again, but the rule did not check renames: item 2 flagged only an edit
+to an existing script and said it did not judge rerun safety. Case R1 of the `ground-truth` fixture, a renamed journaled migration
+that drops and adds the records key unconditionally, passed both acceptance runs. Each
+judged the end state: `migrations-OK8` and the late verdict on C43 in 0.6.0, and
+`migrations-OK4` in 0.7.0, with pass two upholding both.
+
+- **No repeated work, not the same end state.** A rerun of a script written to converge
+  leaves the same end state, so that test clears R1 and every other rename. The harm is
+  the rebuild on every install that ran the old name. A per-statement idempotency rule,
+  the issue's first proposal, fails the other way: it flags `solo`'s guarded
+  `002_add_status.sh` and the function scripts, which rewrite their own line on purpose.
+- **The test is by effect, not by the diff.** The auditor compares the old script with
+  the new one directly and, for each step, asks whether an install that ran the old script
+  already has its result. A step whose result is new there (a new column, a definition
+  that differs from the old one) is needed work, and the rule does not judge it. A step
+  whose result is already there is repeated work unless a guard stops it. Each result is
+  judged apart, so a new result in the same command does not excuse a repeated one. A
+  first design split a script into changed and kept steps by the diff's hunks. That fails
+  twice: the saved patch is made without `-M`, so with `diff.renames=false` a rename shows
+  as a pure add and every step looks changed; and a log-line edit inside the key step
+  would exempt a rebuild. An "in place, constant cost" exemption was left out too: the key
+  step and the function steps have the same shape in the fixture, so an exemption would
+  clear R1 by the argument that cleared it before. The three function scripts stay silent
+  against the merge-base because each one's step installs a definition that differs from
+  the old one, not because a rerun leaves the same lines. Severity follows the cost: `medium` for a
+  rebuild, a walk over rows, or an outside effect; `low` for a definition set to the value
+  the old run set.
+- **A guard tests the step's result, and every needed step still runs.** A guard on "a
+  key exists" skips an older install whose key is still `id`, and that install needs the
+  step. A guard may wrap one step or the whole script; what it must not do is skip a
+  needed step. A whole-script exit that tests only the old step's result skips the new
+  steps on every install that ran the old name, and it is the obvious fix for R1. A guard
+  may also test a fact that shows the result is there, such as the old name's journal
+  entry, as long as it holds both ways.
+- **The runner comes from the repo; no manifest key.** The auditor needs one fact: how the
+  runner derives a script's journal key. Both runs found the runner and quoted it with no
+  key. A key is hearsay the auditor must still cite, and it adds validation, README text,
+  and a resume input. When the runner is outside the audited repos, the finding says so,
+  assumes the file name is the key, and the live check reads the old script's journal
+  entry, which also shows the key form. When the rename keeps the key, the runner does not
+  see it, and the file is judged as an edit.
+- **The label stays `unverified assumption`.** The repo shows that the new name runs where
+  the old one ran, but not that any environment ran the old one. A journal a ticket or PR
+  thread lists shows one environment on one date. The cap stays `medium`, as for P20.
+- **By status.** `R` and `C` are checked (the list now carries the old path and score).
+  `A` is not: it has no journal entry under any name. Stage 1 passes only `-M`, so a
+  copy of an unchanged script lists as `A`; finding it needs `--find-copies-harder` and
+  would flag templates. A rewrite under 50% similarity lists as `D` plus `A` and is not
+  paired. A rerun after a failed first run depends on whether the runner wraps a script
+  in a transaction, and is not checked.
+- **Pass two holds the same test.** The adversary upheld the end-state argument twice, so
+  `common.md` carries the rule and the adversary treats an item that clears a renamed
+  script as among the riskiest.
+- **No new cap.** The auditor already reads every changed file. The added reads are the
+  old script and the runner once per scope.
+- **Fixture.** The lookup and audit renames are the decoys, with no new commit. The rank
+  rename is one only against the merge-base: `main`'s `732d4ba` gives the old name the
+  same score filter, so on an install that ran that later body the renamed script sets
+  the same definition again, a `low` finding by this rule. The acceptance run of
+  2026-10-04 raised it, and the decoy note was narrowed to match. `solo`'s
+  `002_add_status.sh` is an added file, which the rule does not check. No
+  `verify.sh` check runs the function scripts twice: under the effect test they are
+  decoys because their definition changed, so a second run that leaves the same lines
+  would prove the wrong thing.
+
+## Decision points in the outward trace (#32, 2026-10-04)
+
+C2 of the ground-truth fixture: the change passed a settings map where the merge-base
+passed `null`, so the `office_code` rule in `src/rules.sh` began to follow
+`require_office`, and `GT-6` names only the flag and office rules. Both runs' trace found
+the consumer (`bulk-rules-OT2` in 0.6.0, `bulk-rules-OT1` in 0.7.0) and pass two upheld
+it, but each judged `check` as one reader and never set its three rules beside the
+ticket.
+
+- **Prose only.** `ledger.sh` classifies a line as a heading only at the left margin and
+  as an end line only when the whole line is `runs:`, `consumed:`, `opened:`, or
+  `status: complete` (`classify`, `isend`), and reads a pass-one `## Outward trace`
+  never. An indented decision line under an entry is text. A probe on a copy of the
+  `tests/ledger.sh` trace fixture gave identical `build5`, `check`, and `mandatory`
+  output with decision lines added. The fixture gains the lines so the claim stays tested.
+- **Decision lines inside the entry.** One line per decision point, indented under the
+  entry, with a `decisions:` field before `result:`. Separate entries would spend the 15
+  per scope (C2 alone takes 3) and each would need an id and a challenge line; a
+  separate section would grow the output contract, stage 4, stage 5, and stage 8.
+- **Eight per entry, uncovered first.** Counted per entry, not per consumer, so the
+  worst case is 8 lines per entry and not 10 consumers times that. Decision lines do not
+  count toward the 15 entries or the 10 consumers. Enumerating the decisions is a
+  search; judging each is the cost. When there are more than 8, a search of the
+  ticket, PR, and claims for each one's field or message picks the unmentioned ones
+  first, then direct readers, then file order. The marker is the existing
+  `(<k> of <n> checked)`, and the unlisted are named by location, so the report's
+  Coverage shows them. Eight is a judgment from one case with three; reopen it if a run
+  shows a cut list hiding a miss.
+- **Covered means named and followed.** A source covers a decision when it names it by
+  its field, message, or condition and says it follows the change. Naming the setting is
+  not enough: `GT-6` names `require_office`, which keys both the office and the
+  `office_code` rules, so a key test covers all three and misses C2 again. "The flag and
+  office rules" names two rules; `office` is not `office_code`. A ranked source is not a
+  coverage source: it says what a rule does, not that it should follow the new input. An
+  edit to the decision's own lines is not coverage: it shows what to review, not that the
+  change is meant.
+- **Outcome is judged over the values the input can now carry.** The repo's cache holds
+  `yes` for both keys, so judged on today's data the third rule is unchanged. A changed
+  outcome with no coverage is a finding under Q2, `verified fact` on the quote pair
+  (merge-base value, head value, the decision) and an empty coverage search,
+  `unverified assumption` when a source's wording could reach the decision. The agent
+  cannot run `bulk_import.sh` (hard rule 2), so the quotes carry it. This is not a
+  "missing rationale": it rests on a changed outcome.
+- **Strict on the boundary.** "Office rules" could be read to include `office_code`. The
+  strict reading is picked because the message and the condition differ, and because a
+  wrong finding is at most `medium` and the adversary can drop it with the covering
+  quote.
+- **Not done here.** A script check of the decision lines; decision lines for the
+  specialist `interactions` scope, which writes no trace; the ticket exports as Codex
+  inputs (the request names them through the brief instead); a completeness check of the
+  decision list at low tier, where no entry is challenged.
+
+## A test that runs as an account with more rights than it needs (#33, 2026-10-04)
+
+Case H1 of the `ground-truth` fixture: `tests/scenario_hrn_lookup.sh` reads two columns as
+`svc_writer`, the account the service writes with. Both medium runs missed it. The harness
+auditor's entry (`harness-OK5` in 0.6.0, `harness-OK6` in 0.7.0) checked only that the
+scenario's role tag names the account it reads as.
+
+- **The route was fine.** The file is in the harness group, which does not get the tests
+  checklist, but the tests scope reads every changed file of every bundle at every tier:
+  `combined` at low, `tests-hygiene` at medium, `tests` at high. In both runs
+  `tests-hygiene` listed the file and held the row. In 0.6.0 it signed the file off on the
+  same shallow check (`tests-hygiene-OK8`: the declared role exists in dev and qa). The
+  gap was a missing item. The item goes in the tests checklist only. Group scopes keep
+  the matcher and run-once checks, and specialists do not repeat those; the same rule of
+  one scope per check keeps this item out of group scopes.
+- **Three levels of evidence.** A grant or role definition shows the rights. Code outside
+  the tests that writes as the account, or a name that says writer, owner, or admin, only
+  points to them. An account with neither is not flagged, since an accounts file entry
+  holds a name and a secret reference, not rights; an account such as `api_user`, with no
+  write shown anywhere, must not be flagged. In the fixture the pointer is `src/upsert.sh`:
+  line 7 sets `svc_writer` as the default account, and `put_row` writes the table and
+  reports `wrote ... as $DB_ACCOUNT`.
+- **The label follows the evidence.** A quoted grant can support `verified fact`. A
+  pointer only gives an `unverified assumption`. No tree holds the fixture's grants, so
+  H1 is an `unverified assumption`, at most `medium`, with a `live check` on the grants and
+  on whether a read-only role exists in each environment. That matches the case set's
+  rating.
+- **Q1, not Q2.** The weak-test clause files under Q2 because the change is not shown to
+  work. Here the change works and gives the test more rights than it uses, which is the
+  best-practice question. The custom-list fallback is the weak-test clause's.
+- **Its own item, outside the weak-test gate.** A weak-test flag becomes a finding only
+  with a named regression. A test with sound assertions can still run as too strong an
+  account, so the item says it applies whether or not the assertions are adequate.
+- **Flagged where the account is chosen.** `step_find_by_hrn` takes the role as a
+  parameter, so the finding sits on the scenario that passes `svc_writer`. One finding per
+  account names every test that uses it.
+- **The narrower role comes from a sibling.** The bundle adds `report_reader` for other
+  GT-9 reads, in dev only (`harness-F8`), and the unchanged `scenario_audit_event.sh`
+  reads the same table as `api_user`, present in dev and qa. The live check picks one.
+- **Not done.** No run and no live access. No second copy in group scopes. No rule that a
+  Verified OK entry must state an account's rights. The pass-two adversary is unchanged.
+  The two copies of the checklist are not linked by lint, as for #18.
+- **Measured once.** The acceptance run of 2026-10-04 found H1 in pass one, and pass two
+  cut it to note: in the fixture the role only picks an accounts file entry, so no path
+  to write rights is shown. One medium run is one sample (`docs/acceptance.md`).
+
 ## Deferred past 0.3
 
 - ccl emitting a handoff, and a ccl hint suggesting `/cca:audit` (F7 and H6). Both are ccl

@@ -889,6 +889,9 @@ the original review missed each case; this section does not repeat it. Lines are
 - Expected finding: with `require_office=no`, a record with an office and no
   `office_code` is imported, where the merge-base rejects it with
   `office_code is required`. No ticket, PR line, or test covers the change.
+- Decoys: the `flag is required` rule (lines 24 to 26) and the `office is required` rule
+  (lines 27 to 29) follow the settings too, and `GT-6` asks for that. A finding that
+  they changed is a trap. Only the `office_code` rule is outside the ticket.
 
 **C3: a store read without the tenant (`GT-9`, medium).**
 
@@ -910,6 +913,13 @@ the original review missed each case; this section does not repeat it. Lines are
   `env/dev/accounts.txt` line 1).
 - Expected finding: the scenario needs a read-only role; with the writer's account, a
   copied step can write to the service's tables.
+  No tree holds the grants. `src/upsert.sh` line 7 and its `wrote ... as $DB_ACCOUNT`
+  message are the only sign of the account's rights.
+- Decoys: `tests/scenario_report_read.sh` line 8 and `tests/scenario_report_audit.sh`
+  line 9 read as `report_reader`, and the unchanged `tests/scenario_audit_event.sh` reads
+  as `api_user`. No tree shows either account writing, so a finding that they hold too
+  many rights has no support. `tests/test_upsert_site.sh` runs `src/upsert.sh`, whose
+  statements write, so it correctly runs as the writer.
 
 **H2: a built query where a bound one exists (`GT-9`, low).**
 
@@ -928,7 +938,22 @@ the original review missed each case; this section does not repeat it. Lines are
 - Expected finding: every install that journaled `003_records_pk.sh` runs the renamed
   file and rebuilds the key again (`rebuilt pk`). A guard that only checks for a `pk:`
   line is wrong: an older install's `pk: id` is what this block moves to `pk: id,type`.
-  The guard must compare the key's columns. The run-once rule does not flag a rename.
+  The guard must compare the key's columns, and it must still let the column step (lines
+  17 to 19) run on an install that journaled the old name. The run-once rule checks a
+  rename for repeated work. The key step is repeated work: an install that journaled
+  `003_records_pk.sh` already has `pk: id,type`. The finding is an `unverified
+  assumption`, at most `medium`, with a `live check` on the journal for
+  `003_records_pk.sh`.
+- Decoys for this rule: `f_lookup_gt12.sh` (R073) and `f_audit_gt13.sh` (R061). Each
+  has one step that installs the function's definition, and the rename changes that
+  definition, so an install that ran the old name does not have the new one yet. A
+  finding that one of them repeats work on a rerun is a false positive. `f_rank_gt13.sh`
+  (R081) is the same against the merge-base, but `main`'s `732d4ba` gives
+  `f_rank_ops9.sh` the same score filter, so on an install that ran that later body the
+  renamed script sets the same definition again. A `low` finding that says so is right,
+  not a decoy hit. Findings about these files for R2 (the collision), R3 (a journaled name with
+  a later body), or B2, and a finding that the columns step is not guarded (a second
+  rerun), are other findings.
 
 **R2: two open pull requests rename one script (`GT-12`, high).**
 
