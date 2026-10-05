@@ -1,6 +1,12 @@
 # Changelog
 
-## Unreleased
+## 0.8.0 - 2026-10-05
+
+Adds three auditor checks for cases both earlier `ground-truth` runs missed: each
+decision a consumer makes on a widened input, a test that runs as a stronger account
+than it needs, and a renamed run-once script that repeats work. The recorded run found
+18 of the 20 cases, against 15, at about 9% more agent tokens. No manifest key changes.
+A run started under 0.7.0 or earlier reruns from stage 1 on resume.
 
 ### Added
 
