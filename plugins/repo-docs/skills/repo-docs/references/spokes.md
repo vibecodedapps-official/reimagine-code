@@ -65,13 +65,13 @@ Platform behavior named here is recorded, with its source, in `references/platfo
   An `@path` import is a Claude Code mechanism; make each one a pointer or inline it.
 - A repo with a symlinked `AGENTS.md` or `CLAUDE.md`, or a `CLAUDE.md` with content after
   the import, keeps its file locations unless it is the sole instruction file covered
-  above; the first maintain run normalizes it. Replace
-  each symlink with a regular file, so the content sits in a regular `AGENTS.md`. Route every line after the import through the placement rule, so
-  only Claude-only mechanics reach `.claude/rules/`. Rename a `CLAUDE.md` with no sibling
-  `AGENTS.md` to `AGENTS.md` and place its lines the same way. Delete every `CLAUDE.md`,
-  or make each exact if the adapter policy requires adapters. Write the `## Spokes`
-  section and report each change. Except for that sole-file move, no file leaves its
-  directory, so normalization is not a move.
+  above; the first maintain run normalizes it. Replace each symlink with a regular file,
+  so the content sits in a regular `AGENTS.md`. Route every line after the import through
+  the placement rule, so only Claude-only mechanics reach `.claude/rules/`. Rename a
+  `CLAUDE.md` outside `.claude/` with no sibling `AGENTS.md` to `AGENTS.md` and place its
+  lines the same way. Delete every `CLAUDE.md`, or make each exact if the adapter policy
+  requires adapters. Write the `## Spokes` section and report each change. Except for that
+  sole-file move, no file leaves its directory, so normalization is not a move.
 
 ## Modes and severity
 

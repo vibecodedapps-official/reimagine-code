@@ -153,7 +153,9 @@ repos' own changelogs are kept under `docs/history/`.
   root `AGENTS.md`, rewriting relative paths. Before, the text could be read as renaming
   it in place to `.claude/AGENTS.md`, which Claude Code loads and Codex never does.
   The rule that a symlinked instruction file keeps its location excepts that sole
-  file, so a symlinked `.claude/CLAUDE.md` moves too.
+  file, so a symlinked `.claude/CLAUDE.md` moves too, and a `.claude/CLAUDE.md` beside
+  a root `AGENTS.md` is never renamed to `.claude/AGENTS.md`: its lines are placed and
+  the file is deleted or made an adapter.
 - The judgment checks flag a `.claude/AGENTS.md`, beside `AGENTS.override.md` and
   `AGENTS.local.md`, as a file one platform reads and the other never does.
 - The adapter guidance no longer names Amazon Bedrock or disabled telemetry as sessions
