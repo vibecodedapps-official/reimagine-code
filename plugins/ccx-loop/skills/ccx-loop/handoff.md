@@ -199,8 +199,9 @@ line of `## Bundles`:
 
 - `repo`: the absolute path, as in the handoff.
 - `pr`: `github:<owner>/<repo>#<n>` when a PR exists and its head on the remote is the
-  local head of that repository's branch (`git rev-parse <remote>/<branch>`, which the
-  run's own push updated, equals `git rev-parse HEAD`); else `branch` and `base`, as in
+  local head of that repository's branch (the live head from `git ls-remote --heads
+  <remote> refs/heads/<branch>` equals `git rev-parse HEAD`); otherwise, including a
+  mismatch or when the remote head cannot be read, use `branch` and `base`, as in
   the handoff, with the same `base` value, `<selected remote>/<base branch>`. cca audits a
   PR at its remote head, so a PR whose head lacks this run's commits (a declined push,
   or an unpushed CI repair) is named by its local branch instead.

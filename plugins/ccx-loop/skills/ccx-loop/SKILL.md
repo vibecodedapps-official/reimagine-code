@@ -157,10 +157,14 @@ Carve-outs:
 
    The same holds for a Codex implementer call that returns `failed` or no status line,
    because it may have written part of its slice. So before every Codex implementer or
-   fix call, including a retry or CI repair, record `git status --porcelain
-   --untracked-files=all` without `--ignored` in a separate snapshot under
-   `.ccx/<run-id>/`, and save the current `git diff` of tracked and intent-to-add paths to
-   a patch file there. Keep each call's snapshot and patch. After a call that returns
+   fix call, including a retry or CI repair, in the checkout the call runs in, record
+   `git status --porcelain --untracked-files=all` without `--ignored`, the current
+   `git diff` of tracked and intent-to-add paths, and `git hash-object` of each
+   untracked, non-ignored file outside `.ccx/`, with its repo-relative path. Save them as
+   `.ccx/<run-id>/pre-<n>.status`, `pre-<n>.patch`, and `pre-<n>.hashes` under the
+   session's original checkout. Number calls from 1 across all checkouts, retries and
+   CI repairs included; record each call's checkout in `run.md`. Keep every set.
+   After a call that returns
    `failed` or no status line, before its retry or the Sonnet fallback after a second
    failure:
    - The previous call must have returned its output, in the foreground or as a background
@@ -182,7 +186,10 @@ Carve-outs:
      the possible surviving process. On POSIX the runner stops the process group, so the
      returned output is the evidence.
    - Compare `git status --porcelain --untracked-files=all` and the current diff with
-     that call's snapshot and patch. Never touch an ignored (`!!`) path or anything
+     that call's snapshot and patch, and compare the hashes of untracked files with
+     its saved hashes. An untracked file outside the slice whose hash changed ends
+     the run in `blocked` naming it, even when its status line is unchanged.
+     Never touch an ignored (`!!`) path or anything
      under `.ccx/`. Cleanup applies only outside the slice to a status line new or
      different from the snapshot. For a path clean before the call, restore a tracked
      file with `git checkout -- <path>` or delete an untracked, non-ignored file. If a
@@ -346,6 +353,9 @@ append a numeric suffix (`-2`, `-3`). Never overwrite an existing file this run 
 | `inputs.md` | `.ccx/<run-id>/` | Step 0.5, Step 1 | The invocation block with its timestamp as the first section; every fetched issue with its comments and labels; the text of every file input and ad-hoc description; verification notes; drift corrections; per-input buildable status |
 | `plan.md` | `.ccx/<run-id>/` | Step 2, revised in Step 3 | The plan, with a review log appended per round |
 | `run.md` | `.ccx/<run-id>/` | Step 0.5 onward | The run log, below |
+| `pre-<n>.status` | `.ccx/<run-id>/` | Before every Codex implementer or fix call, including retries and CI repair | Status of the call's checkout; n is unique across all checkouts |
+| `pre-<n>.patch` | `.ccx/<run-id>/` | With `pre-<n>.status` | Current diff of tracked and intent-to-add paths in the call's checkout |
+| `pre-<n>.hashes` | `.ccx/<run-id>/` | With `pre-<n>.status` | Repo-relative paths and `git hash-object` hashes of untracked, non-ignored files outside `.ccx/` in the call's checkout |
 | `diff.patch` | `.ccx/<run-id>/` | Step 5 follow-up rounds and CI repair rounds, and every diff review in a worktree run, and the first Step 5 round under a fallback in Multi-repo mode, and in a Claude-role run the Opus stand-in's reads | The current diff from the base commit, for Codex to read |
 | `diff-<slug>.patch` | `.ccx/<run-id>/` | Multi-repo mode: Step 5 and CI repair, one per additional repo | That repo's current diff from its base commit |
 | `report.md` | `.ccx/<run-id>/` | Every terminal state | The final report |
@@ -1113,7 +1123,7 @@ If the run is plan-only, stop here at every tier. Print the plan. It is already 
       the slice written, so the preconditions of Approval scope item 6 apply before any
       retry or fallback: the previous call returned its output; it did not say Codex may
       still be running; on Windows a `failed` call, or one with no status line, ends the
-      run in `blocked` instead; and you have compared the pre-call snapshot and patch
+      run in `blocked` instead; and you have compared the pre-call snapshot, patch, and hashes
       and completed only the safe cleanup in Approval scope item 6, with no block.
       Then retry once as a fresh `ccx:implement`
       call with the same slice prompt and the slice's current diff. A second `failed` or

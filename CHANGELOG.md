@@ -35,11 +35,13 @@ repos' own changelogs are kept under `docs/history/`.
 - A failed Codex implementer or fix call is cleaned up against a snapshot taken before
   the call. Only paths that call changed outside its slice are restored, ignored paths and
   `.ccx/` are never touched, and a path that was already changed before the call ends the
-  run in `blocked`. Before, the cleanup could revert earlier slices' work and delete
-  ignored files such as `.env`.
+  run in `blocked`, as does an untracked file outside the slice whose content changed.
+  Before, the cleanup could revert earlier slices' work and delete ignored files such as
+  `.env`.
 - The CI watch compares the PR head with the commit the run pushed, at every poll and
   before it reports green, and ends in `blocked` on a mismatch. Before, a push by someone
-  else during the watch could be reported as `done`.
+  else during the watch could be reported as `done`. The cca manifest names the PR only
+  when its live remote head is the run's commit.
 - The CI watch reads every page of active rules, commit statuses, and workflow runs.
   Before, a required check or a failing status past the first 30 was missed.
 - The README and the catalog entry say that updating `ccx-loop` does not update `ccx`, and
