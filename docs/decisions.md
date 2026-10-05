@@ -467,3 +467,43 @@ narrower need for `code-review`, and the multi-repo rules.
    author's choice. A clean fix needs `apply` to carry a plan token, which changes its
    command line, and refusing while a plan is pending would block re-planning after a
    decline.
+
+## Part 14: cca 0.9.0, the audit plugin joins, 2026-10-05
+
+Decided with the user on 2026-10-05, before the import. The user is the only user of
+every plugin in the suite, so no step redirects other users from the old repositories.
+
+1. **`plugins/cca`, Claude catalog only.** cca is commands, agents, and Claude subagents,
+   so it has no Codex side. Imported with `git subtree add` from claude-codex-audit
+   `eed9fba` (the 0.8.1 release) without squash, then one move commit and one rename
+   commit, as the four earlier sources were (`docs/rename-map.md` section 6).
+2. **Own version line, first release 0.9.0.** The install id and the bridge it detects
+   both change, so a minor bump, not a patch. Tagged `cca--v0.9.0`; the bare `v0.8.x`
+   tags stay in the archived repository. `tools/release.mjs cca <version>` sets it. The
+   suite version does not move, so the changelog carries the entry under Unreleased
+   until the next suite release dates it.
+3. **The bridge stays optional, found as `ccx@` at 0.1.0 or later.** The
+   `cca:adversary` fallback is a supported mode, so a `dependencies` entry on `ccx`
+   would make a Claude-only user install a bridge they do not use. The old floor,
+   codex-lite 0.7.0, was for the `status:` line and `--timeout`, which every `ccx`
+   carries, so the honest floor is the oldest `ccx`. Issue 39's fix may raise it.
+4. **The sh suites run through `npm test`.** `tests/cca/sh.test.mjs` spawns `sh` for
+   cca's lint, each fixture build and verify (two of them again under a hostile global
+   git config), and the eight script suites, one test per script so a failure names it,
+   and fails rather than skips when `sh` is missing. The mawk run is an Ubuntu-only CI
+   step. The root lint's catalog, ASCII, old-name, LICENSE, and tag rules cover
+   `plugins/cca` by walking it; rule 15 (no bridge version gate) stays scoped to the
+   loop, since cca reads the bridge version by design. cca's own lint takes
+   `plugins/cca` as its root and drops its catalog check.
+5. **No old-plugins entry for cca.** Setup's list exists to move other users; with one
+   user, who moves by hand, adding it would only force a suite bump of `ccx`. R16 stays
+   as written. Tests paths and version literals the move forces (`tests/cca/*.sh`,
+   `stages.json`'s `plugin_version`) changed with the rename, as M2 did for the bridge.
+6. **The old repository is archived after `cca--v0.9.0` and the user's own install
+   moves.** Its two open issues, 39 (a stage 6 Codex call past 10 minutes ends a
+   headless session) and 23 (run-once artifact collisions and rerun safety), are
+   reopened here first with a link each way. Issue 39's two fixes, a 540-second cap in
+   cca or a background mode in the bridge, are decided after the migration, since the
+   bridge now lives here and `ccx` 0.3.1 already stops Codex on SIGTERM.
+7. **The review-rounds transport stays `recode` 0.1.3** on the author's real profile,
+   which this work never changes; the user updates it to `ccx` when they choose.

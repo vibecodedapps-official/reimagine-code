@@ -89,8 +89,10 @@ only in Claude Code.
 ## Moving from the old plugins
 
 This suite replaces codex-lite, ccl, codex-code-review, and repo-docs from its own
-marketplace. In Claude Code, `/ccx:setup` lists each old plugin it finds on either
-host, with the command that removes it. It runs none of them. Every renamed command and
+marketplace, and, since cca 0.9.0, claude-codex-audit. In Claude Code, `/ccx:setup` lists
+each of the first four it finds on either host, with the command that removes it, and
+runs none of them. The old audit install goes with
+`claude plugin uninstall cca@vibecodedapps-claude-codex-audit`. Every renamed command and
 path is listed under Breaking in the [changelog](CHANGELOG.md).
 
 ### From recode 0.1.x

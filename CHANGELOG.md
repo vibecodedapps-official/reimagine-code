@@ -3,6 +3,22 @@
 One changelog for the suite. Each release has a subsection per component. The source
 repos' own changelogs are kept under `docs/history/`.
 
+## Unreleased
+
+### cca
+
+- Moved claude-codex-audit 0.8.1 into the suite as `cca` 0.9.0, with its git history.
+  It installs as `cca@reimagine-code` from this repository's Claude catalog; the old
+  marketplace `vibecodedapps-claude-codex-audit` is retired.
+- Stage 6 calls the bridge as `ccx:ask` and looks for a plugin id starting `ccx@` at
+  0.1.0 or later, where it called `codex-lite:ask` and looked for `codex-lite@` at
+  0.7.0 or later. Without `ccx`, the second opinion swaps to `cca:adversary` as before.
+- The stage 6 ledger entry's `codex.codex_lite_version` key is now `codex.ccx_version`.
+- A run started under 0.8.1 or earlier reruns from stage 1 on resume, since the plugin
+  version is an input of every stage.
+- The sh suites and fixtures run through `npm test` from `tests/cca/`. The records from
+  before the move are under `docs/history/claude-codex-audit/`.
+
 ## 0.3.1 - 2026-10-05
 
 ### ccx

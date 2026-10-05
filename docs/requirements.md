@@ -23,13 +23,15 @@ v0.1.0 migrates the bridge (codex-lite-cc), the loop (claude-codex-loop), the ge
 code review skills (codex-code-review), and repo-docs into one repository that is both a
 Claude Code marketplace and a Codex marketplace. It adds the house rules command, ships
 the Writing style and the chat instructions, and keeps every existing behavior unless a
-requirement below changes it. The audit plugin is not part of v0.1.0.
+requirement below changes it. The audit plugin was not part of v0.1.0; it joined on
+2026-10-05 as `cca` 0.9.0 (R61 to R65).
 
 ## Distribution
 
 1. **Claude catalog.** `.claude-plugin/marketplace.json` is named `reimagine-code` and
-   lists exactly `ccx`, `ccx-loop`, and `repo-docs`, each with a relative source
-   under `./plugins/`. Check: lint; `claude plugin validate --strict` on the root.
+   lists exactly `ccx`, `ccx-loop`, `cca` (since 2026-10-05), and `repo-docs`, each
+   with a relative source under `./plugins/`. Check: lint;
+   `claude plugin validate --strict` on the root.
 2. **Codex catalog.** `.agents/plugins/marketplace.json` is named `reimagine-code` and
    lists exactly `ccx` (source `./plugins/ccx-codex`) and `repo-docs`, each with
    policy `AVAILABLE` and `ON_INSTALL`. Depends on spike M0.5. Check: lint; acceptance:
@@ -220,6 +222,33 @@ requirement below changes it. The audit plugin is not part of v0.1.0.
     ChatGPT's 5,000-character cap, which the block fits. Nothing installs it. The README
     and the rules command name its path. Check: lint for presence and length; review.
 
+## Audit plugin: cca on Claude Code
+
+Added 2026-10-05, when claude-codex-audit 0.8.1 at `eed9fba` joined the suite as `cca`
+0.9.0. Its earlier requirements are its own spec, decisions, and acceptance records under
+`docs/history/claude-codex-audit/`.
+
+61. **Catalog and version.** `plugins/cca` is listed in the Claude catalog only, on its
+    own version line, like repo-docs, and tagged `cca--v<version>`. The suite version
+    does not move for a cca release. Check: lint; release record.
+62. **Behavior carried over.** The commands `audit`, `resume`, `act`, and `handoff`, the
+    five agents, the skill, and the eight sh scripts behave as cca 0.8.1 with the bridge
+    names changed. Every sh suite and fixture build of the source repository runs through
+    `npm test`, from `tests/cca/`, on the three CI systems, plus mawk on Ubuntu. Check:
+    test; acceptance for a run.
+63. **Bridge detection.** Stage 6 calls `ccx:ask` and takes the version of the plugin id
+    starting `ccx@` from `claude plugin list --json`; 0.1.0 or later counts. Without it,
+    with Codex absent, or with `--no-codex`, the second opinion swaps to `cca:adversary`.
+    The manifest declares no dependency, so the plugin installs and runs without `ccx`.
+    Check: review of stage 6; acceptance.
+64. **Clean and self-contained.** `plugins/cca` holds LICENSE, is ASCII, and names no old
+    plugin or marketplace (R5 to R7 apply to it), and its own lint, `tests/cca/lint.sh`,
+    passes with `plugins/cca` as root. Check: lint; test.
+65. **Loop coupling unchanged.** `ccx-loop` keeps writing `handoff.md` and
+    `cca-manifest.json` and suggesting `/cca:audit` without reading the audit plugin, so
+    R25 holds, and those names, with `cca:` and `cca-handoff: 1`, are frozen interfaces
+    inside one repository. Check: acceptance.
+
 ## Release
 
 48. **Versions.** `ccx`, `ccx-loop`, and the Codex `ccx` are 0.1.0 in every
@@ -284,7 +313,6 @@ v0.1.0 acceptance.
 
 ## Non-goals
 
-- The audit plugin, which joins in a later release.
 - The Codex adapter, Codex-only mode, and the reverse bridge.
 - Applying house rules from Codex.
 - Generating the chat blocks from the style file.

@@ -15,15 +15,15 @@ them, and the design names what changes if a spike fails.
 reimagine-code is one repository that is two plugin catalogs: a Claude Code marketplace and a
 Codex marketplace, both named `reimagine-code`. It replaces four repos: codex-lite-cc
 (the bridge), claude-codex-loop (the loop), the general half of codex-code-review, and
-repo-docs. The audit plugin (claude-codex-audit) joins in a later release.
+repo-docs. The audit plugin (claude-codex-audit) joined on 2026-10-05 as `cca`.
 
 The suite has four layers:
 
 - **Bridge**: Claude dispatches the Codex CLI for a question, a review, or an edit.
   Plugin `ccx`.
 - **Loop** (process): plan, review, implement, review, publish for one unit of work,
-  with Codex as implementer and second reviewer. Plugin `ccx-loop`. Audit joins it
-  later.
+  with Codex as implementer and second reviewer. Plugin `ccx-loop`. The audit of a
+  finished bundle before merge, with Codex as the second opinion, is plugin `cca`.
 - **House rules** (policy): working rules written into the user's home instruction files,
   plus an optional writing style. Shipped and applied by `ccx`.
 - **Setup**: diagnostics, old-plugin detection, and the house rules command. Part of
@@ -33,7 +33,7 @@ repo-docs is a separate, independent plugin in the same catalogs.
 
 ```
 reimagine-code/
-  .claude-plugin/marketplace.json     Claude catalog: ccx, ccx-loop, repo-docs
+  .claude-plugin/marketplace.json     Claude catalog: ccx, ccx-loop, cca, repo-docs
   .agents/plugins/marketplace.json    Codex catalog: ccx, repo-docs
   plugins/
     ccx/                           Claude only
@@ -48,6 +48,11 @@ reimagine-code/
       .claude-plugin/plugin.json      depends on ccx
       commands/                       plan run
       skills/ccx-loop/
+    cca/                           Claude only
+      .claude-plugin/plugin.json
+      commands/                       audit resume act handoff
+      agents/                         digester mapper auditor adversary merger
+      skills/cca/                     the orchestrator, its stages, and eight sh scripts
     ccx-codex/                     Codex only, plugin name `ccx`
       plugin.json                     agent-plugins schema 1.0.0
       skills/general-code-review*/
@@ -66,6 +71,7 @@ reimagine-code/
 | `ccx` | `plugins/ccx` | yes | no | none | ccx family |
 | `ccx-loop` | `plugins/ccx-loop` | yes | no | `ccx` `>=0.1.0 <1.0.0` | ccx family |
 | `ccx` | `plugins/ccx-codex` | no | yes | none | ccx family |
+| `cca` | `plugins/cca` | yes | no | none; uses `ccx` when installed | its own |
 | `repo-docs` | `plugins/repo-docs` | yes | yes | none | its own |
 
 What each host gets in v0.1.0:
@@ -234,6 +240,27 @@ Behavior carries over from ccl 0.10.0 except as listed.
 - **Audit coupling.** Unchanged. The loop writes `handoff.md` and `cca-manifest.json` and
   suggests `/cca:audit`, all optional, and works without the audit plugin. These names
   stay until the audit plugin joins the suite.
+
+### cca (Claude)
+
+Joined 2026-10-05 from claude-codex-audit 0.8.1 at `eed9fba`, as 0.9.0. Behavior carries
+over unchanged except for names: four commands (`audit`, `resume`, `act`, `handoff`),
+five agents, and one orchestrator skill with its stage files and eight POSIX sh scripts.
+
+- **Bridge.** Stage 6 calls `ccx:ask` and takes the version of the plugin id starting
+  `ccx@` from `claude plugin list --json`; it must be 0.1.0 or later, since the
+  `status:` line and `--timeout` it relies on, added in codex-lite 0.7.0, are in every
+  `ccx`. There is no `dependencies` entry: the second opinion swaps to `cca:adversary`
+  when the bridge or Codex is absent, and that fallback is a supported mode.
+- **Version line.** Its own, like repo-docs, tagged `cca--v<version>` and set by
+  `tools/release.mjs cca <version>`. Stage 1 writes the version into `stages.json` and
+  resume treats it as an input of every stage, so a run from an earlier version reruns
+  from stage 1.
+- **Tests.** The sh suites and fixtures in `tests/cca/`, run by `tests/cca/sh.test.mjs`
+  under `npm test`, with an Ubuntu-only mawk step in CI. `tests/cca/lint.sh` runs with
+  `plugins/cca` as its root and leaves the catalog to `tools/lint.mjs`.
+- **Loop coupling.** The names the loop writes, `handoff.md`, `cca-manifest.json`, and
+  `/cca:audit`, are shared interfaces in one repository and stay frozen.
 
 ### ccx (Codex)
 
@@ -450,7 +477,8 @@ ships.
   resolve. Then one commit moves files into place and a second renames strings. Moves and
   renames are never mixed, so `git log --follow` and review stay readable.
 - **Pinned sources.** codex-lite-cc `2b2454d`, claude-codex-loop `16b8ee7`,
-  codex-code-review `f5c7687`, repo-docs `83b14a2`. The house rules, style, and chat
+  codex-code-review `f5c7687`, repo-docs `83b14a2`, and, on 2026-10-05,
+  claude-codex-audit `eed9fba`. The house rules, style, and chat
   block come from forge-ops `main` when M3 starts, recorded in the PR; it was `948ce5f`
   on 2026-10-03, which added two rules after the 2026-10-02 handoff. Release 0.1.3 synced
   the core rules to `9faabda` on 2026-10-04 (`docs/decisions.md` Part 9).
@@ -464,12 +492,14 @@ ships.
   `repo-docs` from an old marketplace, and `recode` from this one. The Claude catalog's
   `renames` map moves `recode` and `recode-loop` installs to `ccx` and `ccx-loop`, so
   setup finds the Claude ones only after a move that did not happen. It never lists
-  the audit plugin, which stays separate. Running old and new together duplicates the
-  bridge hook and the review skills.
+  the audit plugin: its one user moved by hand when it joined (2026-10-05). Running
+  old and new together duplicates the bridge hook and the review skills.
 - **Audit plugin.** It calls the bridge as `codex-lite:ask` and finds it by the
   `codex-lite@` plugin id on 33 lines. Uninstalling `codex-lite` breaks it until those
   lines say `ccx`. Decided 2026-10-03: the audit repo switches them to `ccx` before
   cutover uninstalls `codex-lite`. As of 0.6.0 it has not, so `codex-lite` stays.
+  Done 2026-10-05: the audit plugin joined this repository as `cca` 0.9.0, calling
+  `ccx:ask`, so `codex-lite` can go once `cca` 0.9.0 is installed.
 - **Cutover**, after release, in three steps so no machine is left without rules:
   1. forge-ops installers stop writing the home instruction files. Today
      `claude/install.mjs` rewrites `~/.claude/CLAUDE.md` to its one-line import whenever
@@ -484,7 +514,7 @@ ships.
      are uninstalled. The rules command reports the import but never rewrites it, so this
      is a hand edit with a backup.
   3. After every machine has moved, forge-ops drops its policy files and the old repos
-     are archived.
+     are archived, claude-codex-audit among them once `cca` 0.9.0 is released.
 
 ## Security and permissions
 
@@ -501,7 +531,6 @@ ships.
 
 ## Out of scope for v0.1.0
 
-- The audit plugin and its commands.
 - The Codex adapter: loop and audit as Codex skills, Codex-only mode, the reverse bridge.
 - House rules applied from Codex.
 - Generating the chat blocks from the style file.

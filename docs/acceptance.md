@@ -235,6 +235,32 @@ name a plugin are rerun under the new names and recorded here.
     Rerun when the tier table, the higher-risk rule, or the Claude review contract
     changes. Run 2026-10-04 for 0.3.0, except the late switch, which could not be
     staged then or in two tries on 2026-10-05; see the records.
+21. **cca install and a budget-0 audit.** Setup: a scratch profile with this
+    repository's catalog added and `cca` installed from it; the `solo` fixture built with
+    `sh tests/cca/fixture/build.sh solo`, which prints its manifest path. Command: in a
+    session whose directory is the fixture's `app` repository,
+    `claude -p "/cca:audit <manifest> --budget 0 --no-codex" --model opus`, as cca's own
+    case M0-c' ran it (`docs/history/claude-codex-audit/acceptance.md`). Expected: the
+    four `cca:` commands are listed; stage 1 runs and stage 8 writes the report; the run
+    ends `partial` with verdict `audit incomplete` and prints a `/cca:resume <run-id>`
+    line; `stages.json` records `plugin_version` `0.9.0`; the fixture repository's
+    `git status --porcelain` is unchanged by the run. Covers R61 and R62. Rerun when a
+    cca command, the skill, the catalog entry, or the plugin version changes. Not yet
+    run.
+22. **cca second opinion through ccx.** Setup: as item 21, with `ccx` installed from
+    this catalog, Codex logged in, and the `patterns` fixture. Command: `/cca:audit
+    <manifest> --effort low`; then uninstall `ccx` and run `/cca:resume <run-id> --from 6`.
+    Expected: in the first run, stage 6 records the `ccx` version, calls `ccx:ask`, and
+    its ledger entry has `codex.called` true and a `codex.ccx_version`; in the second,
+    the stage swaps to `cca:adversary` with the reason "ccx not installed or version
+    unreadable" and the run still ends `reported`. Covers R63. Rerun when stage 6, the
+    bridge's output lines, or the catalog changes. Not yet run.
+23. **cca items under the new names.** The list was drawn 2026-10-05 from
+    `docs/history/claude-codex-audit/acceptance.md`: only case M3-c (a session started
+    outside any git repository, where the bridge refuses and the run swaps) names the
+    bridge, read as `ccx`; it was never run there. Every other case keeps its result and
+    reruns under that file's conditions. Expected: M3-c's own result. Rerun when stage 6
+    changes. Not yet run.
 
 ## Record of runs
 

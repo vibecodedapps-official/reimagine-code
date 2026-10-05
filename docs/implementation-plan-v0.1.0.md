@@ -266,7 +266,8 @@ Each step is a separate ask.
 
 0. Prerequisite: the audit plugin calls the bridge as `recode`, done in the audit repo
    in a release after 0.6.0, which still calls `codex-lite:ask`. Until then `codex-lite`
-   stays installed on every machine that uses the audit.
+   stays installed on every machine that uses the audit. Done 2026-10-05, in this
+   repository instead: the audit plugin joined as `cca` 0.9.0 and calls `ccx:ask`.
 1. forge-ops, first change: both installers stop writing the home instruction files,
    and its Claude settings and Codex config declare the new marketplace and plugins in
    place of the old ones. The policy files stay, so existing imports keep working
@@ -303,7 +304,9 @@ Decided 2026-10-03:
    to a version, to run `claude plugin validate --strict` (M2 item 5, R52).
 3. **The audit plugin's bridge calls.** The audit repo switches its 33 `codex-lite`
    lines to `recode` as part of its 0.4.0 work, before M7 uninstalls `codex-lite` (M7
-   step 0). That change is made in the audit repo and asked for there.
+   step 0). That change is made in the audit repo and asked for there. Superseded
+   2026-10-05: the audit plugin joined this repository as `cca`, and the rename was made
+   here (`docs/rename-map.md` section 6).
 
 To verify:
 
@@ -318,6 +321,8 @@ To verify:
    forge-ops has it until you decide on a general wording.
 
 ## Out of scope
+
+Amended 2026-10-05: the audit plugin joined as `cca` (`docs/architecture.md`).
 
 As in the requirements: the audit plugin, the Codex adapter, Codex-only mode, the
 reverse bridge, house rules from Codex, generated chat blocks, and `claude plugin eval`
