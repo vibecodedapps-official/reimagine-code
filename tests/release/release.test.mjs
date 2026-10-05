@@ -79,6 +79,10 @@ test('release sets cca in its manifest and its catalog entry only', () => inCopy
     docsClaude: '0.1.5', docsCodex: '0.1.5', cca: '0.9.2', catalog: '0.3.2', entries: { ccx: '0.3.2', 'ccx-loop': '0.3.2', cca: '0.9.2', 'repo-docs': '0.1.5' },
   });
   assert.ok(lines(d, 'plugins/cca/.claude-plugin/plugin.json').includes('  "license": "Apache-2.0",'));
+  assert.ok(lines(d, 'plugins/cca/skills/cca/SKILL.md').includes('  "plugin_version": "0.9.2",'));
+  assert.ok(lines(d, 'plugins/cca/skills/cca/stages/1-orient.md').some((l) => l.includes('`plugin_version` `0.9.2`, empty `approvals`')));
+  assert.ok(lines(d, 'plugins/cca/skills/cca/stages/resume.md').includes('   - `plugin_version`, which for this release is `0.9.2`.'));
+  assert.ok(r.out.includes('plugins/cca/skills/cca/SKILL.md, plugins/cca/skills/cca/stages/1-orient.md, plugins/cca/skills/cca/stages/resume.md'), r.out);
 }));
 
 test('release rejects a malformed request', () => inCopy((d) => {

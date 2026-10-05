@@ -230,7 +230,8 @@ Added 2026-10-05, when claude-codex-audit 0.8.1 at `eed9fba` joined the suite as
 
 61. **Catalog and version.** `plugins/cca` is listed in the Claude catalog only, on its
     own version line, like repo-docs, and tagged `cca--v<version>`. The suite version
-    does not move for a cca release. Check: lint; release record.
+    does not move for a cca release. The skill's three `plugin_version` literals equal
+    the manifest version, and the release tool sets them. Check: lint; release record.
 62. **Behavior carried over.** The commands `audit`, `resume`, `act`, and `handoff`, the
     five agents, the skill, and the eight sh scripts behave as cca 0.8.1 with the bridge
     names changed. Every sh suite and fixture build of the source repository runs through

@@ -1,7 +1,7 @@
 #!/usr/bin/env node
-// Sets one component's version (ccx, repo-docs, or cca) in every manifest and catalog entry that carries it, and for ccx, when --floor is given,
-// the floor of ccx-loop's dependency range. Then runs lint, which checks that the copies agree, the range, and the
-// changelog heading. Tagging stays with `claude plugin tag`.
+// Sets one component's version (ccx, repo-docs, or cca) in every manifest and catalog entry that carries it, for ccx, when --floor is given,
+// the floor of ccx-loop's dependency range, and for cca the three plugin_version literals in its skill. Then runs lint, which checks
+// that the copies agree, the range, and the changelog heading. Tagging stays with `claude plugin tag`.
 import { spawnSync } from "node:child_process";
 import { readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
@@ -66,6 +66,20 @@ for (const [file, change, lines] of edits) {
     process.exit(1);
   }
   out.push([file, after]);
+}
+// cca's skill spells its version out in three places, which lint holds to the manifest, so a cca release sets them too.
+const literals = component !== "cca" ? [] : [
+  ["plugins/cca/skills/cca/SKILL.md", /("plugin_version": ")[^"]*(")/],
+  ["plugins/cca/skills/cca/stages/1-orient.md", /(`plugin_version` `)[^`]*(`)/],
+  ["plugins/cca/skills/cca/stages/resume.md", /(for this release is `)[^`]*(`)/],
+];
+for (const [file, re] of literals) {
+  const before = readFileSync(join(root, file), "utf8");
+  if (!re.test(before)) {
+    console.error(`release: ${file}: no plugin_version literal to set; no file was written`);
+    process.exit(1);
+  }
+  out.push([file, before.replace(re, `$1${version}$2`)]);
 }
 for (const [file, after] of out) writeFileSync(join(root, file), after);
 console.log(`release: ${component} ${version}${floor ? `, ccx range >=${floor} <1.0.0` : ""}: ${out.map(([f]) => f).join(", ")}`);
