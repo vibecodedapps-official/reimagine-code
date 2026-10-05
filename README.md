@@ -48,6 +48,27 @@ On Codex, `ccx` is the code review skills, a different plugin from the Claude Co
 bridge of the same name. Codex runs the repo-docs hook only after you trust it in
 `/hooks`.
 
+## Update
+
+For Claude Code, run:
+
+```
+claude plugin marketplace update reimagine-code
+claude plugin update ccx@reimagine-code
+claude plugin update ccx-loop@reimagine-code
+claude plugin update repo-docs@reimagine-code
+```
+
+Update the plugins you installed, then restart Claude Code. Updating `ccx-loop` does not
+update `ccx`. After updating `ccx`, run `/ccx:setup` again and use the allow rule it
+prints, because the old rule names the previous version's path.
+
+For Codex, run:
+
+```
+codex plugin marketplace upgrade reimagine-code
+```
+
 ## Modes
 
 - **Cross-vendor**, the default: the Codex CLI is installed and logged in. The bridge
