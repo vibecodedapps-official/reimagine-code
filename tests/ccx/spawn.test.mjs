@@ -6,7 +6,7 @@ import { existsSync, mkdirSync, readdirSync, symlinkSync, utimesSync, writeFileS
 import { dirname, join } from 'node:path';
 import {
   ASK, ASK_RESUME, FAKE, ID, ID2, RESUME, RESUME2, SANDBOX, SCRIPT, THREAD, THREAD2,
-  alive, calls, cli, dead, pids, probeLeftovers, requestLeft, run, savedThread, spawning, stdin, threadFile, withScratch,
+  alive, calls, cli, dead, git, pids, probeLeftovers, requestLeft, run, savedThread, spawning, stdin, threadFile, withScratch,
 } from './fixtures/harness.mjs';
 
 test('ask: the recorded argv and stdin match, and a good run renders the answer', spawning, withScratch((s) => {
@@ -223,12 +223,12 @@ test('a run past its deadline has its whole process group killed, grandchild inc
 }));
 
 const processGroupCheck = spawnSync('ps', ['-o', 'ppid=', '-p', String(process.pid)]).error;
-for (const mode of ['hang', 'ignores-signals']) for (const signal of ['SIGINT', 'SIGTERM']) test(`ask ${mode} interrupted by ${signal} stops Codex and reports failure`,
-  { ...spawning, skip: spawning.skip || (mode === 'hang' && processGroupCheck && `process-group pid lookup unavailable: ${processGroupCheck.code}`) }, withScratch(async (s) => {
+for (const [command, mode] of [['ask', 'hang'], ['ask', 'ignores-signals'], ['do', 'hang']]) for (const signal of ['SIGINT', 'SIGTERM']) test(`${command} ${mode} interrupted by ${signal} stops Codex and reports failure`,
+  { ...spawning, skip: spawning.skip || (command === 'ask' && mode === 'hang' && processGroupCheck && `process-group pid lookup unavailable: ${processGroupCheck.code}`) }, withScratch(async (s) => {
   writeFileSync(join(s.data, `request-${ID}.txt`), 'q');
-  const bridge = spawn(process.execPath, [SCRIPT, 'ask', s.data, ID], {
+  const bridge = spawn(process.execPath, [SCRIPT, command, s.data, ID], {
     cwd: s.repo, stdio: ['ignore', 'pipe', 'pipe'],
-    env: { ...process.env, CCX_CODEX_BIN: FAKE, CCX_TIMEOUT_MS: '1000', FAKE_CODEX: mode, FAKE_CODEX_PIDS: join(s.root, 'pids') },
+    env: { ...process.env, CCX_CODEX_BIN: FAKE, CCX_PROBE_TARGET: s.target, CCX_TIMEOUT_MS: '1000', FAKE_CODEX: mode, FAKE_CODEX_PIDS: join(s.root, 'pids') },
   });
   let stdout = '';
   bridge.stdout.on('data', (b) => { stdout += b; });
@@ -240,25 +240,57 @@ for (const mode of ['hang', 'ignores-signals']) for (const signal of ['SIGINT', 
     for (let i = 0; i < 100 && !existsSync(join(s.root, 'pids')); i++) await new Promise((r) => setTimeout(r, 50));
     assert.equal(existsSync(join(s.root, 'pids')), true, 'Codex fixture started');
     const childPid = pids(s)[0];
-    if (mode === 'hang') {
+    if (mode === 'hang' && command === 'ask') {
       const parent = spawnSync('ps', ['-o', 'ppid=', '-p', String(childPid)], { encoding: 'utf8' });
       assert.equal(parent.status, 0, 'read Codex pid from its recorded child');
       codexPid = Number(parent.stdout.trim());
-    } else codexPid = childPid;
+    } else if (mode !== 'hang') codexPid = childPid;
     assert.equal(bridge.kill(signal), true);
     const result = await ended;
-    assert.equal(await dead(codexPid), true, 'Codex process stopped');
+    if (codexPid) assert.equal(await dead(codexPid), true, 'Codex process stopped');
     if (mode === 'hang') assert.equal(await dead(childPid), true, 'Codex child stopped');
     await closed;
     assert.equal(result.code, 1);
     assert.equal(result.sig, null);
     assert.match(stdout, /\nstatus: failed\n$/);
     assert.doesNotMatch(stdout, /timed out|status: timeout/);
+    if (command === 'do') assert.match(stdout, /\nworking tree after the run: clean, nothing untracked or ignored\n/);
   } finally {
     clearTimeout(deadline);
     bridge.kill('SIGKILL');
     if (codexPid) try { process.kill(-codexPid, 'SIGKILL'); } catch {}
     if (existsSync(join(s.root, 'pids'))) for (const pid of pids(s)) try { process.kill(pid, 'SIGKILL'); } catch {}
+    bridge.stdout.destroy(); bridge.stderr.destroy();
+    await ended;
+  }
+}));
+
+test('review interrupted during pre-turn git starts no Codex and refuses', spawning, withScratch(async (s) => {
+  const monitor = join(s.root, 'fsmonitor');
+  const marker = join(s.root, 'git-started');
+  writeFileSync(monitor, `#!${process.execPath}\nimport { writeFileSync } from 'node:fs';\nwriteFileSync(${JSON.stringify(marker)}, 'started');\nsetTimeout(() => {}, 30000);\n`, { mode: 0o755 });
+  git(s.repo, 'config', 'core.fsmonitor', monitor);
+  writeFileSync(join(s.repo, 'tracked.txt'), 'two\n');
+  writeFileSync(join(s.data, `request-${ID}.txt`), '--base HEAD');
+  const bridge = spawn(process.execPath, [SCRIPT, 'review', s.data, ID], {
+    cwd: s.repo, stdio: ['ignore', 'pipe', 'pipe'],
+    env: { ...process.env, CCX_CODEX_BIN: FAKE, FAKE_CODEX: '', FAKE_CODEX_ARGV: join(s.root, 'argv.jsonl') },
+  });
+  let stdout = '';
+  bridge.stdout.on('data', (b) => { stdout += b; });
+  const ended = new Promise((resolve, reject) => { bridge.on('error', reject); bridge.on('close', (code) => resolve(code)); });
+  const deadline = setTimeout(() => bridge.kill('SIGKILL'), 15000);
+  try {
+    for (let i = 0; i < 100 && !existsSync(marker); i++) await new Promise((r) => setTimeout(r, 50));
+    assert.equal(existsSync(marker), true, 'pre-turn git reached fsmonitor');
+    assert.equal(bridge.kill('SIGTERM'), true);
+    const code = await ended;
+    assert.deepEqual(calls(s), [], 'interrupted pre-turn git must not start Codex');
+    assert.match(stdout, /\nstatus: refused\n$/);
+    assert.equal(code, 1);
+  } finally {
+    clearTimeout(deadline);
+    bridge.kill('SIGKILL');
     bridge.stdout.destroy(); bridge.stderr.destroy();
     await ended;
   }

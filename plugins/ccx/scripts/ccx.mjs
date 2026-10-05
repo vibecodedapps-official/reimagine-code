@@ -87,7 +87,7 @@ function run(file, args, { ms, cwd, input, onStdout }) {
 
 // For commands that normally take milliseconds: failing to start or missing the deadline is a refusal naming them.
 async function local(name, file, args, cwd, ms = LOCAL_MS) {
-  const r = await run(file, args, { ms, cwd });
+  const r = await run(file, args, { ms, cwd }); if (r.interrupted) refuse(`${name} was interrupted`);
   if (r.spawnError) refuse(`could not start ${name}: ${r.spawnError.message}`);
   if (r.timedOut) refuse(`${name} did not finish within ${secs(ms)}${r.stillRunning ? `; it may still be running as pid ${r.pid}` : ' and was stopped'}`);
   return r;

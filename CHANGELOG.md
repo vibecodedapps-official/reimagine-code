@@ -9,15 +9,18 @@ repos' own changelogs are kept under `docs/history/`.
 
 - `/ccx:rules` writes through a symlinked `CLAUDE.md` or `AGENTS.md` to the file it
   points to, so the link survives. Before, apply replaced the link with a regular file.
-  A target with more than one hard link is refused, and nothing is written.
+  A target with more than one hard link, or a link to a missing file, is refused, and
+  nothing is written. When `CLAUDE.md` and `AGENTS.md` are the same file, the Codex
+  target is skipped.
 - `/ccx:rules` keeps the target file's permissions. Before, a `0600` file became `0644`.
 - `/ccx:rules` skips the Codex file at apply time when the Codex home was removed, or an
   `AGENTS.override.md` was added, after the diff was shown. Before, it wrote anyway.
 - `/ccx:rules` reads a block or an import on the first line of a file that starts with a
   UTF-8 byte order mark. Before, such a block read as malformed.
-- Stopping `ask`, `do`, `implement`, or `review` with SIGINT or SIGTERM now stops Codex
-  and the commands it started, and ends with `status: failed`. Before, Codex kept
-  running after the bridge was gone.
+- Stopping `ask`, `do`, `implement`, or `review` with SIGINT or SIGTERM now stops Codex,
+  and on macOS and Linux the commands it started, and ends with `status: failed`. A
+  signal during the bridge's own git calls stops the run before Codex starts. Before,
+  Codex kept running after the bridge was gone.
 - `ask` with `--resume <id>` or `--resume=<id>` and a Windows line ending after the id
   forwards the question without a leading newline.
 - `/ccx:rules` says that `--options` replaces the options in use, so adding Codex's

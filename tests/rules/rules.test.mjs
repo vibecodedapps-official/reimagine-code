@@ -236,7 +236,7 @@ const LATER = new Date('2026-10-03T12:00:01Z');
 const SHIPPED = loadTexts();
 
 function sandbox(fn, { codex = true } = {}) {
-  return async () => {
+  return async (t) => {
     const root = mkdtempSync(join(tmpdir(), 'ccx-rules-'));
     const s = { root, claudeDir: join(root, 'claude'), codexDir: join(root, 'codex'), data: join(root, 'data'), home: join(root, 'home') };
     s.claude = join(s.claudeDir, 'CLAUDE.md');
@@ -246,7 +246,7 @@ function sandbox(fn, { codex = true } = {}) {
     if (codex) mkdirSync(s.codexDir);
     s.run = (verb, rest = [], { now = AT, platform = 'linux' } = {}) => main([verb, s.data, ...rest], { env: s.env, platform, now, home: s.home });
     s.state = () => JSON.parse(readFileSync(join(s.data, 'rules-state.json'), 'utf8'));
-    try { return await fn(s); } finally { rmSync(root, { recursive: true, force: true }); }
+    try { return await fn(s, t); } finally { rmSync(root, { recursive: true, force: true }); }
   };
 }
 const bytes = (path) => readFileSync(path, 'latin1');
@@ -526,6 +526,35 @@ test('R33, R41, R42: apply and remove write through a target symlink', { skip: p
   s.run('apply', ['claude'], { now: LATER });
   assert.equal(lstatSync(s.claude).isSymbolicLink(), true);
   assert.equal(bytes(managed), 'managed line\n');
+}));
+
+test('A2-U2-1: apply refuses a dangling target symlink without writing', { skip: process.platform === 'win32' }, sandbox((s, t) => {
+  const missing = join(s.root, 'missing.md');
+  mkdirSync(s.claudeDir);
+  try { symlinkSync(missing, s.claude); } catch (e) { if (e.code === 'EPERM') { t.skip('symlinks are not permitted'); return; } throw e; }
+  s.run('plan');
+  assert.throws(() => s.run('apply', ['claude']), { message: `${s.claude} is a symbolic link that points to a missing file, so nothing was written` });
+  assert.equal(lstatSync(s.claude).isSymbolicLink(), true);
+  assert.equal(existsSync(missing), false);
+  assert.deepEqual(readdirSync(s.claudeDir), ['CLAUDE.md']);
+}));
+
+test('O2-U2-1: a Codex target linked to the Claude target is skipped', { skip: process.platform === 'win32' }, sandbox((s, t) => {
+  const shared = join(realpathSync(s.root), 'shared.md');
+  put(shared, 'shared instructions\n');
+  mkdirSync(s.claudeDir);
+  try { symlinkSync(shared, s.claude); symlinkSync(shared, s.codex); } catch (e) { if (e.code === 'EPERM') { t.skip('symlinks are not permitted'); return; } throw e; }
+  const out = s.run('plan', ['--options', 'core,writing']);
+  assert.deepEqual(out.slice(-3), [`target: codex ${shared}`,
+    'state: skipped; it is the same file as the Claude target, so the Codex file is left alone', 'change: none']);
+  s.run('apply', ['claude']);
+  assert.equal(s.run('status')[1], `codex: skipped ${shared}`);
+  assert.equal(s.run('status')[0], `claude: current ${shared} options=core,writing`);
+  assert.throws(() => s.run('apply', ['codex']), { message: 'there is no planned change for codex; run /ccx:rules again' });
+  assert.equal(lstatSync(s.claude).isSymbolicLink(), true);
+  assert.equal(lstatSync(s.codex).isSymbolicLink(), true);
+  assert.equal(bytes(`${shared}.ccx-backup-20261003120000`), 'shared instructions\n');
+  assert.equal(bytes(shared).includes('## Writing'), false);
 }));
 
 test('R41: apply refuses a hard-linked target without writing', sandbox((s) => {

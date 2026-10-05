@@ -161,13 +161,15 @@ export function targets(env, home = homedir()) {
   const claudeDir = env.CLAUDE_CONFIG_DIR || join(home, '.claude');
   const codexDir = env.CODEX_HOME || join(home, '.codex');
   const resolved = (path) => existsSync(path) && lstatSync(path).isSymbolicLink() ? realpathSync(path) : path;
-  return {
+  const all = {
     claude: { path: resolved(join(claudeDir, 'CLAUDE.md')) },
     codex: !existsSync(codexDir) ? { path: join(codexDir, 'AGENTS.md'), skip: `there is no Codex home at ${codexDir}, so nothing is written there` }
       : existsSync(join(codexDir, 'AGENTS.override.md'))
         ? { path: join(codexDir, 'AGENTS.md'), skip: `Codex reads ${join(codexDir, 'AGENTS.override.md')} instead of AGENTS.md, so the Codex file is left alone` }
         : { path: resolved(join(codexDir, 'AGENTS.md')) },
   };
+  if (!all.codex.skip && all.codex.path === all.claude.path) all.codex.skip = 'it is the same file as the Claude target, so the Codex file is left alone';
+  return all;
 }
 
 const ROOT = fileURLToPath(new URL('..', import.meta.url));
@@ -250,6 +252,7 @@ function run(verb, dataDir, rest, { env, platform, now, home }) {
     }
     if (all[name]?.skip) { save(dataDir, PLAN_FILE, plans); return report(name, all[name], { after: null }); }
     const before = readText(p.path);
+    if (lstatSync(p.path, { throwIfNoEntry: false })?.isSymbolicLink()) refuse(`${p.path} is a symbolic link that points to a missing file, so nothing was written`);
     if (fileHash(before) !== p.before) refuse(`${p.path} changed after the diff was shown, so nothing was written; run /ccx:rules again`);
     if (before !== null && statSync(p.path).nlink > 1) refuse(`${p.path} has multiple hard links, so nothing was written`);
     const after = Buffer.from(p.after, 'base64').toString('latin1');
