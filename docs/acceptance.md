@@ -542,3 +542,95 @@ The reverted test runs:
 One more departure, not from the test keys: an adversary noted that the brief says
 `README.md` exists at each head, while the `svc-2` head has none; the first run's brief
 says the same, unnoticed. The run recorded it in `brief_errata`.
+
+## Run with the checks for #32, #33, and #23's rerun safety (2026-10-04)
+
+The third run found 18 of the 20 cases, against 15. It found the three cases the change
+targets, C2, H1, and R1, all in pass one, and lost none. It missed S4 and B2 again. H2
+dropped out of pass one and came back in pass two. It counted no decoy. Pass two cut H1
+to note and C2 to low, below the case set's medium; only R1 ends at medium. One run is
+one sample.
+
+It ran the same command and settings as the run above, with `manifest-revert.json`,
+from the `svc` checkout of a fresh `sh tests/fixture/build.sh ground-truth` build. The
+snapshot held `.claude-plugin`, `agents`, `commands`, and `skills` of `434dfb8`, copied
+outside the repo from the checkout before the commit; `diff -r` against that checkout
+showed no difference after the run. The stream's init line named it as the only `cca`
+plugin.
+Codex ran stage 6.
+
+The headless session needed two restarts, neither caused by the change:
+
+- The first try ended in stage 1 after 4 minutes and $1.81. The orchestrator started the
+  reverted test runs as a background command and ended its turn to wait, and a
+  `claude -p` session ends with its turn when only a background command is running. A
+  20-second probe showed the same, with or without
+  `CLAUDE_CODE_PRINT_BG_WAIT_CEILING_MS=0`. The second try ran that step in the
+  foreground, as the run above did.
+- The second try ran stages 1 to 6, then the harness stopped it while the late adversary
+  was running: "Background tasks still running after 600s; terminating." `/cca:resume`
+  with `CLAUDE_CODE_PRINT_BG_WAIT_CEILING_MS=0` reused stages 1 to 6, retook the
+  baseline, and ran stages 7 and 8. Its first snapshot failed with `MSYS_NO_PATHCONV=1`
+  set, because the `pwd -P` path `/tmp/...` reached Windows git unconverted; it reran
+  with the variable unset.
+
+Run `2026-10-04-1715-svc-pr-1`, started 21:15:01Z, stage 6 ended 22:04:40Z, stages 7 and
+8 ran 22:40:43Z to 23:08:53Z. It ended `reported`, verdict `not ready`, 49 items (3 high,
+18 medium, 15 low, 12 note, 4 contested, 1 dismissed). The two sessions reported $58.78
+and $10.87, $69.65 against $59.34, plus the first try's $1.81. Agent tokens in
+`usage.md` sum to 3,210,853 over 21 launches, against 2,947,778; the lost late
+adversary reported none. No launch went over the agent cap, and the brief did not say
+`README.md` exists at each head.
+
+| Case | Run with the test keys: final item | This run: final item |
+|---|---|---|
+| S1 | C2, counts at high (contested, high and medium) | C2, counts at high (contested, high and medium) |
+| S2 | C1, high, `verified fact` | C1, high, `verified fact` |
+| S3 | C6, medium; its recommended change removes `study.json`'s trailing comma | C6, medium; the same |
+| S4 | none | none |
+| S5 | C7, medium | C7, medium |
+| T1 | C16, medium, names `a1dfff3`; C17 for the tests | C15, medium, names `a1dfff3`; C17 for the tests |
+| T2 | C20, medium; C24, low | C20, medium; C23, low |
+| T3 | C32, low | C30, low |
+| T4 | C28, counts at medium (contested, medium and low) | C28, low |
+| T5 | C29, counts at medium (contested, medium and low); C35, low | C29, medium |
+| C1 | C13, high; the silent-off half only | C13, high; its title is the silent-off half, and its evidence and claim 8's correction carry the fail-closed half |
+| C2 | none | C14, low, `verified fact` |
+| C3 | C27, counts at high (contested, high and medium) | C27, medium |
+| H1 | none | C31, counts at note (contested, low and note) |
+| H2 | C33, low, `convention` | C48, note, from pass two only |
+| R1 | none | C37, medium, `unverified assumption`, live check; C44, low, the columns step |
+| R2 | C37, medium | C39, medium |
+| R3 | C36, medium, `unverified assumption`, live check | C38, medium, `unverified assumption`, live check |
+| B1 | C31, counts at medium (contested, medium and low); C30, medium | C32, medium |
+| B2 | none | none |
+
+What the new checks did:
+
+- H1: `tests-hygiene-F10` and `harness-F5` filed it at medium, `unverified assumption`,
+  with a live check on the grants; the harness auditor found it without the checklist
+  item. Pass two cut them to low and note: the role only picks an accounts file entry
+  and a masked log line, and the client reads a CSV, so this harness has no path to write
+  rights. `tests-hygiene-OK7` cleared `report_reader`, `api_user`, and
+  `tests/test_upsert_site.sh`.
+- C2: `bulk-rules-OT1` listed the three rules in `check` as decision lines, marked the flag
+  and office rules covered by `GT-6`, and the `office_code` rule not covered, which raised
+  `bulk-rules-F2`. Pass two cut it to low because the gate predates the bundle. The GT-5
+  and GT-14 widenings wrote `decisions: none`.
+- R1: `migrations-F1` says the key rebuild runs again on every install that ran
+  `003_records_pk.sh`, and that the same end state does not clear it. Pass two corrected
+  its recommended change to the guard that compares the key's columns. No Verified OK
+  item cleared the script on its end state. `migrations-OK2` and `migrations-OK3`
+  cleared the audit and lookup renames.
+
+Decoys: `migrations-F4` (C40, low) says the rank rename sets again the definition that
+`main`'s `732d4ba` gave `f_rank_ops9.sh`, and `git show` confirms the two differ only in a
+comment. That is right, so `tests/fixture/expected.md` now narrows the rank decoy to the
+merge-base. No item says the flag or office rule changed, that `K3` should still be
+rejected, or that the masked password or `health` is a defect.
+
+Where it missed: for S4, `records-OT2` and `tests-hygiene-OK1` call the site update's
+difference from person and org no defect, and C9 (note) is the dead branch. For B2, no
+item is about the file's history in a forge view. For H2, `harness-OK2` and
+`tests-hygiene-OK8` cleared it in pass one, and `tests-hygiene-P3` raised it in pass two;
+the late adversary cut it to note with H1's reasoning.
