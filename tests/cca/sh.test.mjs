@@ -10,7 +10,8 @@ import { fileURLToPath } from 'node:url';
 
 const root = fileURLToPath(new URL('../../', import.meta.url));
 const sh = (script, args = [], env = {}) => {
-  const r = spawnSync('sh', [join(root, 'tests', 'cca', script), ...args], { cwd: root, encoding: 'utf8', env: { ...process.env, ...env } });
+  // A forward-slash path relative to cwd, which Git Bash on Windows reads as given; a joined path would carry backslashes.
+  const r = spawnSync('sh', [`tests/cca/${script}`, ...args], { cwd: root, encoding: 'utf8', env: { ...process.env, ...env } });
   assert.equal(r.error, undefined, `cannot start sh for ${script}: ${r.error?.message}`);
   return { status: r.status, stdout: r.stdout, stderr: r.stderr, text: `${script} ${args.join(' ')}\n${r.stdout}${r.stderr}` };
 };

@@ -497,8 +497,9 @@ every plugin in the suite, so no step redirects other users from the old reposit
    `plugins/cca` as its root and drops its catalog check.
 5. **No old-plugins entry for cca.** Setup's list exists to move other users; with one
    user, who moves by hand, adding it would only force a suite bump of `ccx`. R16 stays
-   as written. Tests paths and version literals the move forces (`tests/cca/*.sh`,
-   `stages.json`'s `plugin_version`) changed with the rename, as M2 did for the bridge.
+   as written. The test paths the move forces (`tests/cca/*.sh`) changed with the
+   rename, as M2 did for the bridge; the `plugin_version` literals the skill writes
+   changed in the build commits that set the version.
 6. **The old repository is archived after `cca--v0.9.0` and the user's own install
    moves.** Its two open issues, 39 (a stage 6 Codex call past 10 minutes ends a
    headless session) and 23 (run-once artifact collisions and rerun safety), are

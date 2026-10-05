@@ -491,7 +491,7 @@ any other shipped file.
 ## 6. The audit plugin, claude-codex-audit 0.8.1 into plugins/cca, 2026-10-05
 
 Built from `vibecodedapps-official/claude-codex-audit` at `eed9fba` (the 0.8.1 release
-merge), read with `git ls-tree` and `git grep` on 2026-10-05. The source tree is 63
+merge), read with `git ls-tree` and `git grep` on 2026-10-05. The source tree is 61
 tracked files; no `scratch/` or `.cca/` path was ever committed (ran `git log --all
 --diff-filter=A`). Every shipped file is ASCII (ran a byte scan). The import is
 `git subtree add --prefix=imports/claude-codex-audit`, without squash, then one move
@@ -529,7 +529,7 @@ s#cca@vibecodedapps-claude-codex-audit#cca@reimagine-code#g
 s#codex-lite:ask#ccx:ask#g
 s#codex-lite@#ccx@#g
 s#codex_lite_version#ccx_version#g      (one stage 6 ledger key, written only)
-s#codex-lite#ccx#g                      (bare rule last; 36 occurrences in the live files)
+s#codex-lite#ccx#g                      (bare rule last; 26 lines in the live files, 36 with docs/ and CHANGELOG.md)
 ```
 
 Hand edits in the same commit, because a rule reads badly or lint rejects the result:
@@ -575,7 +575,10 @@ every command flag. These are the interfaces `ccx-loop` and recorded runs depend
   `.claude-plugin/marketplace.json` check goes, since the root catalog is checked by
   `tools/lint.mjs`. Its header comment follows.
 - `plugins/cca/.claude-plugin/plugin.json`: `version` 0.8.1 becomes 0.9.0, with the
-  catalog entry, in the manifest commit, not here.
+  catalog entry, in the manifest commit, not here. The three `0.8.1` literals the skill
+  carries (`SKILL.md`'s `stages.json` example, `stages/1-orient.md` step 7, and
+  `stages/resume.md`'s input list) follow it in a build commit of their own, since
+  stage 1 writes that value and resume compares it.
 
 ### 6.4 New files, from no source
 

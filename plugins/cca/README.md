@@ -21,7 +21,8 @@ cca is the pair of `ccx-loop`: the loop builds and publishes one unit of work, c
 audits what was built, across units.
 
 Built against Claude Code 2.1.284. The static checks, fixture builds, and one budget-0 run
-have passed, and `docs/acceptance.md` records five full multi-agent audit runs on the
+have passed, and `docs/history/claude-codex-audit/acceptance.md` in the reimagine-code
+repository records five full multi-agent audit runs on the
 `patterns` and `ground-truth` fixtures, under Claude Code 2.1.287.
 
 ## Requirements
@@ -606,7 +607,8 @@ stage 6 fails.
 
 Codex reads a file outside every repo, such as a run directory in the plugin's data
 directory, by absolute path. That read was verified on Windows with ccx's elevated
-sandbox only (`docs/decisions.md`, "Absolute-path Codex requests"); on Linux and macOS it
+sandbox only (`docs/history/claude-codex-audit/decisions.md`, "Absolute-path Codex
+requests"); on Linux and macOS it
 relies on Codex's documented read-only policy. To stay clear of it, keep the run
 directory inside a repo: use an ignored in-repo scratch directory, or the manifest
 `scratch` key.
