@@ -149,6 +149,10 @@ repos' own changelogs are kept under `docs/history/`.
 - Migrating a repository whose only instruction file is `.claude/CLAUDE.md` makes it the
   root `AGENTS.md`, rewriting relative paths. Before, the text could be read as renaming
   it in place to `.claude/AGENTS.md`, which Claude Code loads and Codex never does.
+  The rule that a symlinked instruction file keeps its location excepts that sole
+  file, so a symlinked `.claude/CLAUDE.md` moves too.
+- The judgment checks flag a `.claude/AGENTS.md`, beside `AGENTS.override.md` and
+  `AGENTS.local.md`, as a file one platform reads and the other never does.
 - The adapter guidance no longer names Amazon Bedrock or disabled telemetry as sessions
   that cannot read `AGENTS.md`; `references/platforms.md` version-qualifies them, with
   the first session after an upgrade, and says to try a fresh session first.

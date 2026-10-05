@@ -48,7 +48,8 @@ Platform behavior named here is recorded, with its source, in `references/platfo
 6. An index in free prose, a pointer outside the index, an index line that is neither
    a pointer, a blank, nor a column-0 `- ` line, or a spoke that cannot be indexed.
 7. `AGENTS.override.md` or `AGENTS.local.md` (Codex reads the first in place of
-   `AGENTS.md`; Claude Code reads neither), or a `.claude/rules/` rule other agents need.
+   `AGENTS.md`; Claude Code reads neither), `.claude/AGENTS.md` (Claude Code loads it; Codex never reads it),
+   or a `.claude/rules/` rule other agents need.
 8. Size: a file long enough to be skimmed. Platform limits are facts, not thresholds.
 9. Effective loading, confirmed by the session verification.
 
@@ -63,12 +64,14 @@ Platform behavior named here is recorded, with its source, in `references/platfo
   lines to `.claude/rules/`, add `## Spokes`, and no adapter unless required.
   An `@path` import is a Claude Code mechanism; make each one a pointer or inline it.
 - A repo with a symlinked `AGENTS.md` or `CLAUDE.md`, or a `CLAUDE.md` with content after
-  the import, keeps its file locations; the first maintain run normalizes it. Replace
+  the import, keeps its file locations unless it is the sole instruction file covered
+  above; the first maintain run normalizes it. Replace
   each symlink with a regular file, so the content sits in a regular `AGENTS.md`. Route every line after the import through the placement rule, so
   only Claude-only mechanics reach `.claude/rules/`. Rename a `CLAUDE.md` with no sibling
   `AGENTS.md` to `AGENTS.md` and place its lines the same way. Delete every `CLAUDE.md`,
   or make each exact if the adapter policy requires adapters. Write the `## Spokes`
-  section and report each change. No file leaves its directory, so this is not a move.
+  section and report each change. Except for that sole-file move, no file leaves its
+  directory, so normalization is not a move.
 
 ## Modes and severity
 
