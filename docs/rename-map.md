@@ -508,7 +508,7 @@ commit and one rename commit, as the sections above did.
 | `.gitignore` | root `.gitignore` | merge: the `.cca/` line; `scratch/` is covered by `.scratch/` |
 | `CHANGELOG.md` | `docs/history/claude-codex-audit/CHANGELOG.md` | history |
 | `LICENSE` | none | dropped: Apache text with an unfilled appendix; `plugins/cca/LICENSE` is a copy of the root file (R5) |
-| `NOTICE` | root `NOTICE` | merge: the first line is the repo name; the rest is the Apache boilerplate the root already has |
+| `NOTICE` | none | dropped: the first line is the repo name and the rest is the Apache boilerplate the root NOTICE already has, so there is nothing to merge |
 | `README.md` | `plugins/cca/README.md` | edit (6.2 and 6.3) |
 | `agents/*.md` (5) | `plugins/cca/agents/` | move, unchanged |
 | `commands/*.md` (4) | `plugins/cca/commands/` | move, unchanged |

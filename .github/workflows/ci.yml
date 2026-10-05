@@ -26,6 +26,20 @@ jobs:
           node-version: 22
       - run: npm run lint
       - run: npm test
+      - name: cca awk suites with mawk
+        # Ubuntu's default awk is gawk; the audit plugin's scripts must also run on mawk.
+        if: matrix.os == 'ubuntu-latest'
+        run: |
+          set -euo pipefail
+          sudo apt-get update
+          sudo apt-get install -y mawk
+          mkdir -p "$RUNNER_TEMP/mawk-bin"
+          ln -sf "$(command -v mawk)" "$RUNNER_TEMP/mawk-bin/awk"
+          export PATH="$RUNNER_TEMP/mawk-bin:$PATH"
+          awk -W version 2>&1 | head -n 1
+          for t in handoff readonly live memory ledger working-tree revert-tests; do
+            sh "tests/cca/$t.sh"
+          done
 
   validate:
     name: validate manifests

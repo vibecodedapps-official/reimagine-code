@@ -7,10 +7,12 @@ Code marketplace and a Codex marketplace, both named `reimagine-code`.
   setup and optional house rules. On Codex, general code review skills.
 - `ccx-loop`: on Claude Code, a plan, review, implement, review, publish loop for one
   unit of work.
+- `cca`: on Claude Code, a read-only, adversarial audit of a finished bundle of pull
+  requests before merge, with Codex as the optional second opinion.
 - `repo-docs`: keeps a repository's agent instruction files correct, on both hosts.
 
 Each plugin's README has the details: [ccx](plugins/ccx/README.md),
-[ccx-loop](plugins/ccx-loop/README.md), [ccx for
+[ccx-loop](plugins/ccx-loop/README.md), [cca](plugins/cca/README.md), [ccx for
 Codex](plugins/ccx-codex/README.md), and [repo-docs](plugins/repo-docs/README.md).
 The [changelog](CHANGELOG.md) lists each release.
 
@@ -31,6 +33,7 @@ In Claude Code:
 /plugin marketplace add vibecodedapps-official/reimagine-code
 /plugin install ccx@reimagine-code
 /plugin install ccx-loop@reimagine-code
+/plugin install cca@reimagine-code
 /plugin install repo-docs@reimagine-code
 ```
 
@@ -56,6 +59,7 @@ For Claude Code, run:
 claude plugin marketplace update reimagine-code
 claude plugin update ccx@reimagine-code
 claude plugin update ccx-loop@reimagine-code
+claude plugin update cca@reimagine-code
 claude plugin update repo-docs@reimagine-code
 ```
 
