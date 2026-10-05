@@ -1325,7 +1325,8 @@ runf "build5, heading that resembles an id" 0 "$tmp/want5.txt" build5 "$tmp/aa3"
 # Outward trace sections (#17): a pass-one `## Outward trace` and a pass-two
 # `## Outward trace challenged` are read by no op. The files below carry them, with a
 # fence that holds finding and section headings, and the ops give what they would give
-# without the sections.
+# without the sections. An entry carries indented decision lines (#32); they change
+# nothing either.
 OT=$tmp/ot
 mkdir -p "$OT/pass1" "$OT/pass2" "$OT/ledger"
 printf 'pass1 app pass1/app.md m-a complete\npass2 app pass2/app.md m-b complete\n' > "$OT/ledger/inventory.txt"
@@ -1350,7 +1351,9 @@ cat > "$OT/pass1/app.md" <<'EOF'
 - app-OK1: guard checked
 
 ## Outward trace
-- app-OT1: app:src/a.sh:run (app@abc:src/a.sh:4); siblings: app:src/b.sh:helper (app@abc:src/b.sh:12); callees: none; consumers: web:src/w.sh:call (web@abc:src/w.sh:7); result: finding app-F1
+- app-OT1: app:src/a.sh:run (app@abc:src/a.sh:4); siblings: app:src/b.sh:helper (app@abc:src/b.sh:12); callees: none; consumers: web:src/w.sh:call (web@abc:src/w.sh:7); decisions: listed below (2 of 3 checked), not listed: web:src/w.sh:30; result: finding app-F1
+  - decision web@abc:src/w.sh:9 skips a row with no mode; reads: mode; outcome: changed from skip to import; covered: no, searched GT-1, PR-1 body, claims 1 and 2; finding app-F1
+  - decision web@abc:src/w.sh:14 rejects an unknown mode; reads: mode; outcome: unchanged; covered: n/a
 - app-OT2: app:src/a.sh:parse (app@abc:src/a.sh:20); siblings: none; callees: app:src/a.sh:trim (app@abc:src/a.sh:30) fails closed;
   consumers: none; result: sound, evidence: app@abc:src/a.sh:21 returns on an empty input
 - app-OT3: app:src/c.sh:late (app@abc:src/c.sh:30); siblings: none; callees: none; consumers: none; result: incomplete: the caller lives in a repo the brief does not map

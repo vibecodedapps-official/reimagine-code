@@ -180,10 +180,11 @@ session.
   for it. Neither fails a scope or changes the verdict counts.
 - Outward trace, read from the pass files and stage entries, so it shows when pass two
   failed or never ran: each scope whose trace is `not assessed`; each `not traced:`
-  symbol; each entry with result `incomplete`; each entry cut to `(<k> of <n> checked)`;
-  each `outward trace:` line of a pass-two `## Coverage gaps`; and the number of trace
-  entries `not challenged`. A symbol shows once. None fails a scope or changes the
-  verdict counts.
+  symbol; each entry with result `incomplete`; each entry cut to `(<k> of <n> checked)`,
+  a cut decision list included, with its `not listed:` locations; each `outward trace:`
+  line of a pass-two `## Coverage gaps`; and the number of trace entries
+  `not challenged`. A symbol shows once. None fails a scope or changes the verdict
+  counts.
 - Each bundle whose base refresh the user declined ("base: local ref, refresh
   declined" in the brief): the base commit list and overlap set are as of that ref.
 - Each `head: working-tree` bundle: the loose objects `working-tree.sh build` wrote to

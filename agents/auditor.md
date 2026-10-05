@@ -56,13 +56,17 @@ custom list.
    - A missing rationale in a ticket or PR is not by itself a defect.
 6. Write the `## Verified OK` list: each item checked and found sound, with its evidence.
    In a group or `combined` scope, then write `## Outward trace`, in the shape and with
-   the cap, bounds, and sibling rule that `common.md`'s "Outward trace" gives. Look
-   outward from each changed symbol to its siblings, the functions it newly calls, and
-   the consumers of any input or output it widens, in every tree the brief maps. Use only
-   the commands in "Boundaries", item 2. The trace complements "Matcher and run-once
-   checks" and does not replace it. A sibling that lacks the change is a finding only
-   under the sibling rule; write it as a finding in step 5's shape and name its id in the
-   entry. A specialist scope and a top-up write no trace.
+   the cap, bounds, and sibling and decision rules that `common.md`'s "Outward trace"
+   gives. Look outward from each changed symbol to its siblings, the functions it newly
+   calls, and the consumers of any input or output it widens, in every tree the brief
+   maps. For each consumer of a widened input, list the decision points that read the
+   widened part, and mark which ones a ticket, the PR, a claim, or a test covers. Open
+   those texts for each decision; a ticket that names the key a decision reads does not
+   cover it. Use only the commands in "Boundaries", item 2. The trace complements
+   "Matcher and run-once checks" and does not replace it. A sibling that lacks the change
+   is a finding only under the sibling rule, and a decision only under the decision rule;
+   write either as a finding in step 5's shape and name its id in the entry. A specialist
+   scope and a top-up write no trace.
 7. Write the `## Claims` list: every claim assigned to your scope, `true`, `false`, or
    `not verified`, with the finding id or the evidence. A `verification` claim takes the
    line shapes in "Claims list" and is `true, reproduced` only when you reproduced the
@@ -107,6 +111,25 @@ prompt assigns, in addition to steps 1 to 11.
    because its test would pass without it. With a custom question list, file it under the
    question closest to test coverage, or the first question when none fits, and say so in
    the finding. This check reads the tests; it does not run them.
+
+   Separately from the weak-test check, and whether or not the test's assertions are
+   adequate, flag an added or changed test, step, or scenario that runs as an
+   account, role, or credential with write or admin rights when everything it runs as that
+   account only reads. Flag the test that picks the account, not a shared step that takes
+   the role as a parameter. A grant or role definition shows the rights. Code outside the
+   tests that writes as the account (find it with `git grep` on the account's name), or a
+   name that says writer, owner, or admin, only points to them. Without a grant or a
+   pointer, do not flag the account; an accounts file entry holds a name and a secret
+   reference, not rights. Name the account, where its rights come from, and the narrower
+   role the test needs, such as a read-only role that a sibling test already reads with.
+   File one finding per account, naming each test. With a quoted grant or role definition,
+   label the finding as `common.md`'s "Evidence" says. When the rights are only pointed
+   to, label it `unverified assumption` and fill `live check` with a query on the
+   account's grants and on whether a read-only role exists, for each environment the test
+   runs in. With the default questions, file it under Q1: the test is given more rights
+   than it uses. With a custom question list, file it under the question closest to best
+   practice, or the first question when none fits, and say so in the finding. This check
+   also reads only.
 2. Work-item hygiene: each ticket matches the change; each acceptance criterion is met or
    not, with evidence; follow-ups are recorded; each `status` claim's parent and links match
    the forge data (a GitHub ticket's `<ticket>.md` gives its parent as
@@ -144,9 +167,17 @@ with `git show`, `git log`, and `git grep` only. A specialist scope does not run
    concrete query: whether the script's name is in the journal (the table or file where
    the runner records applied scripts) of each target environment, and what each result
    changes. Journaled: the edit never runs there, so the change must be a new script. Not
-   journaled anywhere: no defect. A rename (`R`), a deletion (`D`), and an added file are
-   not flagged by this rule. A renamed script may run again under its new name; this
-   rule does not judge rerun safety.
+   journaled anywhere: no defect. A deletion (`D`) and an added file are not flagged by
+   this rule: an added file has no journal entry under any name, so it runs once on each
+   install. A renamed or copied script (`R`, `C`; the list gives its old path) is
+   checked for repeated work, as "Rerun of a renamed run-once script" in `common.md`
+   says: the new name may be unjournaled where the old one ran, so the script runs again
+   there. For each such file in your scope, read the old script with
+   `git show <merge-base>:<old path>` and the new one at the head sha, and compare the
+   two directly. File one finding per script that repeats work, with label
+   `unverified assumption`, severity at most `medium`, and a `live check`. Write a
+   `## Verified OK` line for each script you check and clear, naming the guard, or
+   saying that each step's result is new to an install that ran the old name.
 
 ## Top-up mode
 

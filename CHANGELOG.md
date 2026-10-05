@@ -1,5 +1,31 @@
 # Changelog
 
+## Unreleased
+
+### Added
+
+- The outward trace lists each decision that reads an input a change widens (a rule, a
+  branch, or a key lookup in a consumer), and marks which ones the ticket, the PR, the
+  claims, or a test covers. A decision whose outcome changed with no coverage is a
+  finding. Before, a consumer was judged as one reader, so a rule that began to follow a
+  setting the ticket never mentions went unreported (#32).
+- The tests checklist flags an added or changed test, step, or scenario that runs as an
+  account, role, or credential with write or admin rights when it only reads. The finding
+  names the account, where its rights come from, and the narrower role the test needs.
+  When no grant is found and the rights are only pointed to, by code that writes with the
+  account or by its name, it is an unverified finding with a live check on the grants
+  (#33).
+
+### Changed
+
+- Group and `combined` auditors now check a renamed or copied run-once script (`R` or
+  `C` in the run-once list) for repeated work. A runner that journals by name runs the
+  new name on every install that ran the old one, so a step whose result an install that
+  ran the old name already has, and that nothing guards, runs again there, even when the
+  end state is the same. The finding is an `unverified assumption`, at most medium, with a
+  live check on the old script's journal entry. The run-once list now carries each old
+  path and score. No new manifest key (part of #23).
+
 ## 0.7.0 - 2026-10-04
 
 Adds an opt-in stage 1 step that runs a bundle's changed tests with the change reverted,

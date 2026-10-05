@@ -502,11 +502,13 @@ For each bundle, record:
   built head sha the same way). The `-M` makes a rename show as `R` whatever the user's
   `diff.renames` setting is. In a three-dot diff the old side is the merge-base, so the
   status letter alone says whether a file exists there. `M`, `D`, and `R` with any score
-  exist at the merge-base, and a rename is listed by its new path. `A` is new, and so is
-  the new path of a `C` (copy) entry. The pathspec hides an old path that matches no
-  pattern, so a file moved in from outside the patterns shows as `A` and is listed as
-  new. The command only reads. A `run_once` key that matches no changed file gives the
-  list `none`. A bundle without the key has no list.
+  exist at the merge-base, and a rename is listed by its new path, with its old path and
+  its score (`R067`). `--name-status` prints the status and score, then the old path, then
+  the new path. `A` is new, and so is the new path of a `C` (copy) entry, which is listed
+  with its source path. The pathspec hides an old path that matches no pattern, so a file
+  moved in from outside the patterns shows as `A` and is listed as new. The command only
+  reads. A `run_once` key that matches no changed file gives the list `none`. A bundle
+  without the key has no list.
 
 For every reference and source of truth with a `path`, record its pinned sha:
 `git -C <path> rev-parse <ref>^{commit}`.
@@ -768,8 +770,9 @@ claim has a scope that stage 4 schedules; reassign any that does not by rule 3.
    Tier and reason; Bundles (head, base, merge-base, base commits since the merge-base,
    files changed on both sides, stack, the `ticket_token` patterns when the bundle has
    them, the run-once list of step 3 when the bundle has `run_once`: the patterns, then
-   one line per file with its status letter, its path, and `exists at merge-base` or
-   `new`, or `none`; for a bundle with `test_command`, step 6b's line: the path
+   one line per file with its status letter and score, its path, for `R` and `C` its old
+   path (`from <old path>`), and `exists at merge-base` or `new`, or `none`; for a
+   bundle with `test_command`, step 6b's line: the path
    `revert/<bundle>.md` and its verdict counts line, or `no changed tests to run`; the
    head sha is recorded as `headRefOid` for a GitHub PR, and the
    pinned base sha is the local sha of `<remote>/<baseRefName>`; for a GitHub PR also

@@ -202,9 +202,10 @@ Outputs: `report.md`, `claims-verdicts.md`, and `work-items.jsonl`. The format o
          entries, so it shows even when pass two failed or never ran: each scope recorded
          as "outward trace: not assessed"; each `not traced:` symbol of a pass-one
          `## Outward trace`; each entry with result `incomplete`; each entry cut to
-         `(<k> of <n> checked)`; each `outward trace:` line of a pass-two `## Coverage
-         gaps`; and the number of trace entries `not challenged`. A symbol on both lists
-         shows once. None of these fails a scope or changes the counts;
+         `(<k> of <n> checked)`, a cut decision list included, with its `not listed:`
+         locations; each `outward trace:` line of a pass-two `## Coverage gaps`; and the
+         number of trace entries `not challenged`. A symbol on both lists shows once. None
+         of these fails a scope or changes the counts;
        - each bundle whose base refresh was declined, from the brief's "base: local
          ref, refresh declined" line;
        - each `head: working-tree` bundle: the loose objects `working-tree.sh build`

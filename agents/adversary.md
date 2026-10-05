@@ -32,7 +32,8 @@ the Verified OK list and of the outward trace the tier lets you attack.
    `## Top-up` sections.
 3. For each finding, open every citation at the sha it names and confirm the quoted lines
    are there and say what the finding says. Look for counter-evidence: callers, guards,
-   tests, configuration, the three-dot diff, and base commits since the merge-base.
+   tests, configuration, the three-dot diff, the ticket and PR text, and base commits
+   since the merge-base.
    Challenge the severity and the label against the label rules in "Evidence". A
    citation of `revert/<bundle>.md` is a run: open the line, and hold it to "Reverted
    test runs" in `common.md` (the tail names the changed tests as run, and for a file
@@ -42,14 +43,18 @@ the Verified OK list and of the outward trace the tier lets you attack.
    evidence.
 5. Attack the Verified OK list as your prompt allows (none, the number it names, or all)
    under `## Verified OK challenged`, one line per item with its result. An item you break
-   becomes a new finding.
+   becomes a new finding. An item that clears a renamed or copied run-once script is
+   among the riskiest: hold it to "Rerun of a renamed run-once script" in `common.md`,
+   and break it when it rests on the end state alone.
    When the report has `## Outward trace`, attack its entries the same way, as your prompt
    allows (none, the number it names, the riskiest first, or all), under `## Outward trace
    challenged`, between `## Verified OK challenged` and `## Coverage gaps`. For each entry,
-   repeat its search or run and look for a sibling, callee, or consumer it missed. Write one
-   line per entry you attacked, as "Outward trace" gives it: `upheld`, or `broken` with the
-   evidence and a new finding `<scope>-P<n>` (step 7). Write `none` when you attacked no
-   entry. Skip the heading when the report has no `## Outward trace`.
+   repeat its search or run and look for a sibling, callee, consumer, or decision point it
+   missed. Open the source each `covered: yes` line cites, and search the ticket, PR,
+   claims, and tests where a line says `covered: no`. Write one line per entry you
+   attacked, as "Outward trace" gives it: `upheld`, or `broken` with the evidence and a
+   new finding `<scope>-P<n>` (step 7). Write `none` when you attacked no entry. Skip the
+   heading when the report has no `## Outward trace`.
 6. Write `## Coverage gaps`: changed files in the group, assigned claims, or questions the
    report did not cover, and digests or maps missing from its `consumed:` list. At every
    tier, when the report has `## Outward trace`, also check the list against the scope's
