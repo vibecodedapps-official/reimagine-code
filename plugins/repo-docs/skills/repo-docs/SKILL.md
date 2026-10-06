@@ -88,8 +88,8 @@ placement rule. A hub that has grown past these four sections is a finding.
   error or a finding, and end with a session verification: start a fresh session at the
   repo root and confirm the hub actually loaded.
 - **maintain**: applies changes, including first setup, a repo whose only instruction file
-  is `CLAUDE.md` or `.claude/CLAUDE.md`, and a repo with symlinked instruction files or an
-  adapter with content after the import, under the safeguards in `references/spokes.md`.
+  is `CLAUDE.md` or `.claude/CLAUDE.md`, and a repo with symlinked instruction files or a
+  `CLAUDE.md` that is not exact, under the safeguards in `references/spokes.md`.
 
 ## Reference files
 

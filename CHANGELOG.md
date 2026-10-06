@@ -153,11 +153,16 @@ repos' own changelogs are kept under `docs/history/`.
   root `AGENTS.md`, rewriting relative paths. Before, the text could be read as renaming
   it in place to `.claude/AGENTS.md`, which Claude Code loads and Codex never does.
   The rule that a symlinked instruction file keeps its location excepts that sole
-  file, so a symlinked `.claude/CLAUDE.md` moves too, and a `.claude/CLAUDE.md` beside
-  a root `AGENTS.md` is never renamed to `.claude/AGENTS.md`: its lines are placed and
-  the file is deleted or made an adapter.
+  file, so a symlinked `.claude/CLAUDE.md` moves too. A `.claude/CLAUDE.md` beside a
+  root `AGENTS.md` is no longer renamed to `.claude/AGENTS.md`: its lines are placed
+  and the file is deleted.
+- Maintain mode normalizes any `CLAUDE.md` that is not exact, routing every line but
+  the import through the placement rule. Before, only a symlinked file or a `CLAUDE.md`
+  with content after its import was normalized, so one with its own lines and no import
+  met no rule.
 - The judgment checks flag a `.claude/AGENTS.md`, beside `AGENTS.override.md` and
-  `AGENTS.local.md`, as a file one platform reads and the other never does.
+  `AGENTS.local.md`, as a file the two platforms load under different conditions, which
+  `references/platforms.md` records.
 - The adapter guidance no longer names Amazon Bedrock or disabled telemetry as sessions
   that cannot read `AGENTS.md`; `references/platforms.md` version-qualifies them, with
   the first session after an upgrade, and says to try a fresh session first.
