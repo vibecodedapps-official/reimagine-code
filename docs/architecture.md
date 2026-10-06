@@ -370,12 +370,14 @@ apart:
   and writes the plan and state files, because Claude may run two applies at once.
 - `--remove` deletes the block and the bytes its `join` names, and nothing else. When
   the command created the file and nothing else is in it, the file is deleted. Install
-  then remove gives back the original bytes.
+  then remove gives back the original bytes; after `--adopt`, remove gives back the
+  trimmed file instead.
 - `plan` compares the rules with the text outside the block, unit by unit (heading, list
   item, paragraph, whitespace collapsed, markers ignored; the plain shapes of
-  `docs/decisions.md` Part 17 item 7 only), and notes how many are already there. It also finds the `@` imports in the Claude file as Claude does, follows them
-  read-only (four hops, 50 files, 256 KiB each), and notes how many rules each imported
-  file holds. It never changes an imported file. It recommends adopt, apply, or decline
+  `docs/decisions.md` Part 17 item 7 only), and notes how many are already there. It
+  also finds the `@` imports in the Claude file as Claude does, follows them read-only
+  (four hops, 50 files, 256 KiB each), and notes how many rules each imported file
+  holds. It never changes an imported file. It recommends adopt, apply, or decline
   per target; the command text asks on that basis.
 - `plan --adopt` removes the matching units outside the block (and a matching heading
   whose section held only them, and one separator blank line), and puts a `join=none`

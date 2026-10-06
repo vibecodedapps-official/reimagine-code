@@ -233,8 +233,9 @@ requirement below changes it. The audit plugin was not part of v0.1.0; it joined
 66. **Overlap and recommendation.** `plan` compares the rules with the units (headings,
     list items, paragraphs, whitespace collapsed) outside the block and in the imported
     files, notes how many of the rules are already present, and prints one `recommend:`
-    line per target with a ready change: `adopt` for in-file overlap, `decline` for
-    overlap from imports, else `apply`; `remove` is `apply`. Only a unit of plain shape
+    line per target with a ready change: `adopt` for in-file overlap, or `decline` when
+    the file is gated (R67) or `--adopt` already ran; `decline` for overlap from imports;
+    else `apply`; `remove` is `apply`. Only a unit of plain shape
     (Part 17 item 7) is compared; anything else is never counted. The command text asks per
     target on that basis. Check: test.
 67. **Adopt.** `plan --adopt` removes the units outside the block that match the rules,
@@ -243,9 +244,9 @@ requirement below changes it. The audit plugin was not part of v0.1.0; it joined
     plan and apply are unchanged. With no overlap it plans as `plan`. A unit outside the
     scope of Part 17 item 7 is never removed; indented text is never a rule, since it may
     belong to a container, and a unit followed directly by an underline, quote, table row,
-    lone marker, or HTML is never a rule. A file holding a comment mark, fence, quote, table
-    pipe, or line starting with `<` outside the block is not edited by `--adopt` at all; the plan
-    names the first such line and does not recommend adopt. `--adopt` with
+    lone marker, or HTML is never a rule. A file holding a comment mark, fence, quote,
+    table pipe, or line starting with `<` outside the block is not edited by `--adopt` at
+    all; the plan names the first such line and does not recommend adopt. `--adopt` with
     `--remove` is refused. Check: test.
 
 ## Audit plugin: cca on Claude Code

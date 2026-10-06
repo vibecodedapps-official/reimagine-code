@@ -706,7 +706,8 @@ four rounds and reviewed over 21 rounds until a review found nothing.
    matches and a reworded line does not. A list item takes the lines indented from its
    content column to three columns past it, so a qualification keeps the whole item; a
    lazy or deeper line makes the item odd (item 7), and an odd unit never matches. Fenced
-   code, HTML comments, and indented code are never units. A reworded unit is never partly removed. Headings are not counted as rules.
+   code, HTML comments, and indented code are never units. A reworded unit is never
+   partly removed. Headings are not counted as rules.
 3. **Imports follow Claude's documented rules.** Source:
    https://code.claude.com/docs/en/memory, "Import additional files", checked
    2026-10-06: relative to the importing file, `~/` is home, absolute allowed, at most
@@ -716,10 +717,11 @@ four rounds and reviewed over 21 rounds until a review found nothing.
    with reads cached by real path and bounds of four hops, 50 files, and 256 KiB. Every
    read error and size or count bound hit is recorded as incomplete and reported as "at
    least", never as an exact count. An import past the fourth hop is neither followed nor
-   counted, since Claude does not load it. Overlap is over the union of each file's unit sets, never
-   concatenated text. Claude's behavior for a symlinked CLAUDE.md is not documented, so
-   each relative import in that file is tried beside the link first, then beside its
-   destination, and the first that exists is used; writes still go to the destination.
+   counted, since Claude does not load it. Overlap is over the union of each file's unit
+   sets, never concatenated text. Claude's behavior for a symlinked CLAUDE.md is not
+   documented, so each relative import in that file is tried beside the link first, then
+   beside its destination, and the first that exists is used; writes still go to the
+   destination.
    Codex documents no automatic import syntax, so nothing is scanned for it.
 4. **One recommendation per target.** In-file overlap recommends `decline` when the file
    is gated (item 7) or adopt already ran, else `adopt`; otherwise any overlap from imports
