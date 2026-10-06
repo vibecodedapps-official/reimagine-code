@@ -56,23 +56,23 @@ Platform behavior named here is recorded, with its source, in `references/platfo
 ## Maintain-mode safeguards
 
 - Adopt existing file locations; a pointer beats a move. Exceptions: a spoke whose
-  filename has a space or `: `, and moving the sole `.claude/CLAUDE.md` to the root hub.
+  filename has a space or `: `, and moving the sole instruction file out of `.claude/`.
 - Never rewrite dated or historical entries; append a correction. Repair inbound links in
   the same change that moves content. Never delete a real constraint to shorten a file.
-- A repo whose only instruction file is `CLAUDE.md` or `.claude/CLAUDE.md`: make it the
-  root `AGENTS.md`, rewriting relative paths when it leaves `.claude/`. Move Claude-only
-  lines to `.claude/rules/`, add `## Spokes`, and no adapter unless required.
-  An `@path` import is a Claude Code mechanism; make each one a pointer or inline it.
-- A repo with a symlinked `AGENTS.md` or `CLAUDE.md`, or a `CLAUDE.md` that is not exact,
-  keeps its file locations unless it is the sole instruction file covered above; the
-  first maintain run normalizes it. Replace each symlink with a regular file, so the
-  content sits in a regular `AGENTS.md`. Route every line but the import through the
-  placement rule, so only Claude-only mechanics reach `.claude/rules/`. Rename a
-  `CLAUDE.md` outside `.claude/` with no sibling `AGENTS.md` to `AGENTS.md` and place its
-  lines the same way. Delete every `CLAUDE.md` under `.claude/`; delete every other
-  `CLAUDE.md`, or, if the adapter policy requires adapters, make each exact and add any
-  missing one. Write `## Spokes` and report each change. Except for that sole-file move,
-  no file leaves its directory, so normalization is not a move.
+- Make each `@path` import a pointer or inline it, except an import of an `AGENTS.md`.
+- A repo whose only instruction file is `CLAUDE.md` or under `.claude/`: make it the root
+  `AGENTS.md`, rewriting relative paths when it leaves `.claude/`. Move Claude-only lines
+  to `.claude/rules/`, add `## Spokes`, and no adapter unless required.
+- A repo with a tracked `AGENTS.md` or `CLAUDE.md` that is a symlink or under `.claude/`,
+  or a `CLAUDE.md` that is not exact, keeps its file locations unless it is the sole
+  instruction file covered above; the first maintain run normalizes it. Replace each
+  symlink with a regular file. Route every line but an import through the placement
+  rule, so only Claude-only mechanics reach `.claude/rules/`. Rename a `CLAUDE.md`
+  outside `.claude/` with no sibling `AGENTS.md` to `AGENTS.md` and place its lines the
+  same way. Delete each such file under `.claude/`; delete every other `CLAUDE.md`, or,
+  if the adapter policy requires adapters, make each exact and add any missing one.
+  Write `## Spokes` and report each change. Except for that sole-file move, no file
+  leaves its directory, so normalization is not a move.
 
 ## Modes and severity
 

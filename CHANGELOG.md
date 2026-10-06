@@ -93,8 +93,9 @@ repos' own changelogs are kept under `docs/history/`.
   and act cannot find it, records that in the brief during stage 1 or in the stage's
   `stages.json` entry and `usage.md` afterward, and prints the entry to add by hand;
   when the entry is present with its old state, it says so and keeps the resume command.
-  Whenever the lock's release failed, or a stale lock was left in place, it also prints
-  the lock's path and the command that removes it.
+  Whenever this run's lock release is refused or fails with the lock still held, or a
+  stale lock is treated as refused, it also prints the lock's path and the command that
+  removes it.
 - The read-only check accepts another cca run's or a handoff's file under any audited
   repository's `<scratch>/cca/` and lists it as such. Before, two audits of the same
   repository ended each other `blocked`.
@@ -149,17 +150,23 @@ repos' own changelogs are kept under `docs/history/`.
 
 ### repo-docs
 
-- Migrating a repository whose only instruction file is `.claude/CLAUDE.md` makes it the
-  root `AGENTS.md`, rewriting relative paths. Before, the text could be read as renaming
-  it in place to `.claude/AGENTS.md`, which Claude Code loads and Codex never does.
+- Migrating a repository whose only instruction file is `.claude/CLAUDE.md`, or a
+  `.claude/AGENTS.md` that an earlier migration left, makes it the root `AGENTS.md`,
+  rewriting relative paths. Before, the text could be read as renaming it in place to
+  `.claude/AGENTS.md`, which Codex reads only from a session started inside `.claude/`.
   The rule that a symlinked instruction file keeps its location excepts that sole
   file, so a symlinked `.claude/CLAUDE.md` moves too. A `.claude/CLAUDE.md` beside a
   root `AGENTS.md` is no longer renamed to `.claude/AGENTS.md`: its lines are placed
   and the file is deleted.
-- Maintain mode normalizes any `CLAUDE.md` that is not exact, routing every line but
-  the import through the placement rule. Before, only a symlinked file or a `CLAUDE.md`
-  with content after its import was normalized, so one with its own lines and no import
-  met no rule.
+- Maintain mode normalizes any `CLAUDE.md` that is not exact, and any tracked
+  `AGENTS.md` or `CLAUDE.md` that is a symlink or sits under `.claude/`, placing its
+  lines and deleting a file under `.claude/`. Before, only a symlinked file or a
+  `CLAUDE.md` with content after its import was normalized, so one with its own lines
+  and no import met no rule, and nothing removed a `.claude/AGENTS.md` left by an
+  earlier rename.
+- Every `@path` import in a file that maintain mode migrates or normalizes becomes a
+  pointer or is inlined, except an import of an `AGENTS.md`. Before, that rule covered
+  only the sole-file migration.
 - The judgment checks flag a `.claude/AGENTS.md`, beside `AGENTS.override.md` and
   `AGENTS.local.md`, as a file the two platforms load under different conditions, which
   `references/platforms.md` records.
