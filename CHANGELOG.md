@@ -164,9 +164,8 @@ repos' own changelogs are kept under `docs/history/`.
   `CLAUDE.md` with content after its import was normalized, so one with its own lines
   and no import met no rule, and nothing removed a `.claude/AGENTS.md` left by an
   earlier rename.
-- Every `@path` import in a file that maintain mode migrates or normalizes becomes a
-  pointer or is inlined, except an import of an `AGENTS.md`. Before, that rule covered
-  only the sole-file migration.
+- Every `@path` import maintain mode meets becomes a pointer or is inlined, except an
+  import of an `AGENTS.md`. Before, that rule covered only the sole-file migration.
 - The judgment checks flag a `.claude/AGENTS.md`, beside `AGENTS.override.md` and
   `AGENTS.local.md`, as a file the two platforms load under different conditions, which
   `references/platforms.md` records.

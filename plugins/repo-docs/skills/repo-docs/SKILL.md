@@ -1,7 +1,7 @@
 ---
 name: repo-docs
 description: Use when editing AGENTS.md, CLAUDE.md, or a spoke the hub indexes; when
-  setting up a repo that has no instruction files or only CLAUDE.md or .claude/CLAUDE.md;
+  setting up a repo that has no instruction files or only CLAUDE.md or a file under .claude/;
   when adding a spoke, an adapter, or a pointer; before a commit or pull request; or after a batch of
   feature work, to keep the hub and its spokes correct and progressively disclosed. Not
   for writing user-facing product docs, API references, or README content unrelated to
