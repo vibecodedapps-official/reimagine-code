@@ -122,9 +122,9 @@ name a plugin are rerun under the new names and recorded here.
     merged; `codex plugin list`; `codex plugin add ccx@reimagine-code`; `codex plugin
     add repo-docs@reimagine-code`. Expected: the `reimagine-code` marketplace lists
     exactly `ccx` and `repo-docs`, from `plugins/ccx-codex` and `plugins/repo-docs`,
-    and they install at 0.1.0 and 0.1.2. Covers R2. Rerun when the Codex catalog or a
-    Codex manifest changes. Run 2026-10-03, 2026-10-04 for 0.2.0 and 0.3.0, and
-    2026-10-05 for 0.3.1; see the records.
+    and they install at the versions their manifests give. Covers R2. Rerun when the
+    Codex catalog or a Codex manifest changes. Run 2026-10-03, 2026-10-04 for 0.2.0 and
+    0.3.0, and 2026-10-05 for 0.3.1; see the records.
 12. **Code review on Codex.** Setup: as item 11, in a scratch git repository with
     `math.mjs`, `test.mjs`, and a `package.json` whose `test` script passes, then an
     uncommitted change that renames an export, gives `add` a third argument with a
