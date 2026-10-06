@@ -39,6 +39,11 @@ name a plugin are rerun under the new names and recorded here.
    Covers R33, R38, R41, and R42. Rerun when `rules.mjs`, the rules command, or a rules
    file changes. Run 2026-10-03, 2026-10-04 for 0.1.3 and 0.2.0, 2026-10-05 for 0.3.1,
    and 2026-10-06 for 0.3.2 and 0.4.0; see the records.
+   Adopt run, added for 0.5.0: put the shipped core rules into the scratch `AGENTS.md`
+   by hand under a heading of your own, run `/ccx:rules`, and expect the note that the
+   rules are already there with `recommend: adopt`; choose adopt, then apply; expected:
+   the heading and the block remain, the hand copy is gone, and `/ccx:rules --remove`
+   leaves the heading. Covers R66 and R67. Not yet run; due before the 0.5.0 release.
 4. **Staleness notice and decline.** Setup: as item 3, with this block after the text
    of `CLAUDE.md` and an empty line, whose digest matches its body: begin line
    `<!-- ccx:house-rules begin version=0.0.1 options=core join=blank digest=6d3e610aaf815551 -->`,
