@@ -142,7 +142,7 @@ name a plugin are rerun under the new names and recorded here.
     "Review hooks" at the "Hooks need review" prompt and pressing `t` to trust all; then
     `codex exec --json -s danger-full-access "Append the line 'Prefer plain words.' to
     docs/style.md, then run exactly: git commit -am 'docs: extend the style guide'" <
-    /dev/null`. Expected: the audit reads the skill from the installed 0.1.2 and reports
+    /dev/null`. Expected: the audit reads the skill from the installed plugin and reports
     the missing spoke as an error; `config.toml` gains a `trusted_hash` for the hook; the
     commit goes ahead and its session file holds the hook's message starting "repo-docs:
     this command commits". Without `< /dev/null`, `codex exec` waits for input and never

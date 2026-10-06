@@ -519,3 +519,54 @@ pre-approved.
    item 7's "for now" ends here: the release preparation raised R14 to 710 and split
    `ccx.mjs` lines 51, 90, and 323 (commit 33b84bf), with the author's approval in the
    plan. At 0.3.2 the two scripts use 703 lines; lint prints the figure on every run.
+2. **A reviewer that fell back stays the active reviewer.** After a Codex failure swaps
+   the loop's reviewer to the Claude fallback, every later reviewer call (follow-ups in
+   Step 3.3, the CI repair review in Step 5.4, the checkout review in Step 7.3.5) goes
+   to the active reviewer, and a `--no-codex` run never calls a `ccx:` skill (5f78769).
+   The round 1 review found the three steps still reading as Codex after a swap, and a
+   failed reviewer call printing a thread id the step would have resumed.
+3. **A PR closed or merged by someone else during the CI watch ends the run `blocked`.**
+   `ci-watch.md` reads the PR's `state` and ends `blocked` on anything but `OPEN`
+   (5f78769), matching the pre-push rule and the `done` definition. A closed, unmerged
+   PR read like an open one on every field the watch used (head, base, merge commit,
+   `mergeable`, green checks), so a watch could end `done` on it. Treating a merge by
+   someone else as `done` instead is the author's call and reopens this.
+4. **cca's registry lock is a directory with an owner directory inside it, and a
+   headless session treats a stale lock as refused.** Every `runs.json` update holds
+   `runs.json.lock` with `<run-id>-<HHMMSS>` inside it, rereads the registry, writes a
+   per-owner temporary file, and replaces the registry only while its owner directory
+   still exists (567f711, 35c6535, 2818c2f). A lock older than about a minute is stale;
+   it is removed only after a user says no other audit or resume is running, and a
+   headless session treats it as refused and reports its path (2cd5b27). The round 3
+   scenario scripts, under sh, dash, and busybox on APFS and ext4, lost an entry or
+   removed a live lock in three schedules with a minute-based lock and kept every entry
+   with the owner directory. Removing a stale lock unasked would cost a merely paused
+   session its entry; the automatic variant is the user's call. Known limit: a shell
+   stopped inside the one replace-and-release command for over a minute, which no
+   supported path does.
+5. **The revert-tests script refuses a partial clone; a stage 1 refusal is the user's
+   call.** `GIT_NO_LAZY_FETCH=1` is exported beside `GIT_OPTIONAL_LOCKS`, and a repository
+   with a promisor remote or `extensions.partialclone` ends `partial clones are not
+   supported`, exit 2, before the first object read (2168b93). On a blobless clone a run
+   had fetched five packs into the audited repository over the network while the
+   read-only check noticed nothing. The agents' own `git show` and `git diff` fetch
+   lazily too; whether stage 1 refuses a partial clone outright is open.
+6. **The read-only check's advisory `touched` walk never stops a run.** Its `find`
+   errors are printed and ignored (2168b93); the hash walk stays fatal. An ignored
+   directory with mode 000 had made every check exit 2, and a directory churning during
+   a check did so in two of thirty runs.
+7. **A custom group's name is slugged like the run id, with no length cap, and a
+   reserved or shared slug stops the run.** Lowercase, with runs of characters outside
+   `a-z0-9` turned into one `-`; a slug that is empty, a reserved scope name, another
+   group's slug, or a specialist scope's top-up name stops stage 1 (35c6535). The ledger
+   script had failed on a group named `auth api` (`expected 5 fields, got 7`), and a name
+   equal to a specialist scope wrote that scope's files.
+8. **repo-docs normalization deletes every tracked instruction file under `.claude/` and
+   converts every import but an import of an `AGENTS.md`.** A `.claude/CLAUDE.md` or
+   `.claude/AGENTS.md` beside a root `AGENTS.md` has its lines placed and is deleted,
+   never renamed in place or made an adapter, because Claude Code loads
+   `.claude/AGENTS.md` only when it reads `AGENTS.md` directly, Codex only from a session
+   started inside `.claude/`, and an adapter there would import an absent
+   `.claude/AGENTS.md` (d773f04, 0aff3bb, a3df9cb, 6ea123b). A sole instruction file
+   under `.claude/` moves to the root hub. The 90-line budget of `references/spokes.md`
+   was met by dropping two reason clauses; raising it is the user's call.
