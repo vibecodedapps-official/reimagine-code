@@ -364,12 +364,13 @@ In a headless session, or when unsure whether a user can answer, remove a stale
 lock without asking, with `rmdir <lock>/* <lock>` (`rmdir <lock>` when it is
 empty), then acquire. This is safe: a session whose lock was removed before its
 replace command finds its test failing and acquires again, so no entry is lost on
-a supported path (the known limit below stands). Never remove a stale lock whose
-owner directory has this session's own `<owner>` name: another invocation with this
-id started in the same second, and the replace test below could not tell the two
-locks apart. This session holds no lock then and runs no release, since that owner
-directory is the other invocation's; at stage 1 D6 it stops as the duplicate-id
-rule says, and elsewhere it takes the registry-failure rule.
+a supported path (the known limit below stands). A stale lock whose owner directory
+(seen with `ls <lock>`) has this session's own `<owner>` name is this session's own
+leftover when its earlier release failed, and is removed as such; otherwise it
+belongs to another invocation with this id started in the same second, and the
+replace test below could not tell the two locks apart: never remove it, run no
+release, since this session holds no lock, and at stage 1 D6 stop as the
+duplicate-id rule says, elsewhere take the registry-failure rule.
 
 Holding the lock, read `runs.json` afresh with the Read tool (or start an array
 when absent), then write `<tmp>` = `${CLAUDE_PLUGIN_DATA}/runs.json.<owner>.tmp`,
