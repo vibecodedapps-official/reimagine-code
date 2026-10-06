@@ -19,7 +19,8 @@ name a plugin are rerun under the new names and recorded here.
    directory); ask prints Codex's answer; implement edits the scratch repository and its
    footer shows the change. Covers R9 and R15. Rerun when a bridge command, the setup
    report, or the data directory changes. Run 2026-10-03, setup rerun 2026-10-04, and run
-   2026-10-04 for 0.2.0 and 2026-10-05 for 0.3.1; see the records.
+   2026-10-04 for 0.2.0, 2026-10-05 for 0.3.1, and 2026-10-06 for 0.3.2 and 0.4.0; see
+   the records.
 2. **codex-lite items under the new names.** Setup: as each item says, in scratch
    profiles. Command: items 1, 5, 8, 11, 12, 16, 17, 18, and 19 of
    `docs/history/codex-lite-cc/acceptance.md`, the items that name the plugin or its
@@ -36,8 +37,8 @@ name a plugin are rerun under the new names and recorded here.
    session quotes the rule; after removal each file equals its backup byte for byte; with
    no Codex home the Codex target is reported as skipped and no directory is created.
    Covers R33, R38, R41, and R42. Rerun when `rules.mjs`, the rules command, or a rules
-   file changes. Run 2026-10-03, 2026-10-04 for 0.1.3 and 0.2.0, and 2026-10-05 for
-   0.3.1; see the records.
+   file changes. Run 2026-10-03, 2026-10-04 for 0.1.3 and 0.2.0, 2026-10-05 for 0.3.1,
+   and 2026-10-06 for 0.3.2 and 0.4.0; see the records.
 4. **Staleness notice and decline.** Setup: as item 3, with this block after the text
    of `CLAUDE.md` and an empty line, whose digest matches its body: begin line
    `<!-- ccx:house-rules begin version=0.0.1 options=core join=blank digest=6d3e610aaf815551 -->`,
@@ -172,8 +173,9 @@ name a plugin are rerun under the new names and recorded here.
     `claude plugin details <plugin>@reimagine-code` for `ccx` and `ccx-loop`.
     Expected: "Always-on" at most 1,300 tokens for `ccx` and at most 510 for
     `ccx-loop`. Covers R8. Rerun at each release. Run 2026-10-03 for 0.1.0, and
-    2026-10-04 for 0.1.1, 0.1.2, 0.1.3, 0.2.0, and 0.3.0, and 2026-10-05 for 0.3.1
-    before and after the merge; see the records.
+    2026-10-04 for 0.1.1, 0.1.2, 0.1.3, 0.2.0, and 0.3.0, 2026-10-05 for 0.3.1 before
+    and after the merge, and 2026-10-06 for 0.3.2 and 0.4.0 before the merge; see the
+    records.
 17. **Tags.** Setup: the release commit on `main`. Command: `claude plugin tag --push`
     on `plugins/ccx`, then `plugins/ccx-loop`, then `plugins/repo-docs`; then
     `git ls-remote --tags origin`. Expected: each tag command checks the manifest against
@@ -1867,3 +1869,51 @@ run. Nothing in the checkout changed, nothing was committed, nothing was posted.
   for when to press it. Left on the machine: an empty `repo2 ` folder, the test
   repositories and rules folders under `C:\recode accept\ccx032`, and the fixture under
   `%TEMP%`.
+
+### 2026-10-06: ccx 0.4.0 and ccx-loop 0.4.0, before the merge
+
+macOS 27.0, Claude Code 2.1.289, codex-cli 0.160.0, Node 26.4.0. The runs installed the
+suite from a local clone of `chore/drop-migration` at a428d21, with the tags
+`ccx--v0.4.0` and `ccx-loop--v0.4.0` made in the clone only, into the M4 profile, which
+was restored afterward. `ccx` 0.4.0, `ccx-loop` 0.4.0, `cca` 0.9.1, and `repo-docs`
+0.1.5 were installed. Git credentials were off. The runs were headless, in auto mode,
+with one copy of the Codex login in item 1's Codex home, deleted right after the
+implement run, and one Codex session at a time. No permission denial occurred. The real
+`~/.claude` and `~/.codex` files had the same sha256, and the same `auth.json` and
+`installed_plugins.json` times, after the runs as before. The release's other changes,
+the removed README sections, catalog map, and loop gate, have no item left to run: items
+5 and 7 dropped their retired cases in the same commit.
+
+- **Item 16 passed before the release.** About 1,241 always-on tokens for `ccx` (of
+  1,300; 1,268 at 0.3.2, before the shorter setup description), 504 for `ccx-loop` (of
+  510), 180 for `repo-docs`, and 1,173 for `cca`. Unverified: `repo-docs` reads 180
+  against 176 at 0.3.2 with no change in the plugin since; the clone's path differs from
+  the earlier run's, and no run changing only that was made.
+- **Item 1 passed.** `/ccx:setup` reported codex-cli 0.160.0, the ChatGPT login, and a
+  proven `workspace-write` sandbox; its allow rule named the clone's
+  `plugins/ccx/scripts/ccx.mjs`, the path the init event lists. `/ccx:ask` printed "51"
+  and `status: ok`; a test skill's `ccx:implement` changed one line of `math.mjs`, with
+  ` M math.mjs` and `status: ok` in the footer.
+  - **New in 0.4.0.** Setup's output was the three Codex lines and the allow rule, with
+    no `old plugins` line and no uninstall or remove command, though the copied
+    `config.toml` still enables an old Codex review plugin, which the 0.3.2 setup had
+    listed; the command runs one command, and its description reads "Check Codex
+    version, login, sandbox mode, write sandbox, and the allow rule";
+    `suite.mjs old-plugins` printed `ccx: use session-start <dataDir>` and exited 1.
+- **Item 3 passed.** Both diffs were shown and asked about separately; a new session
+  quoted the dependency rule; after `--remove`, `cmp` matched each file against its
+  original and its first backup; with the Codex home missing, status showed
+  `codex: skipped` and no folder was created; the profile's `CLAUDE.md` was
+  byte-identical afterward. Claude made only the expected `rules.mjs` calls, with no
+  extra read of the profile's `CLAUDE.md`.
+  - **New in 0.4.0.** Through the installed `rules.mjs` and `suite.mjs`, on a `CLAUDE.md`
+    holding a line of its own and a well-formed block under the old `recode:house-rules`
+    marker: `status` reported the target `absent`; `plan` and `apply` added a
+    `ccx:house-rules` block after it, with the old three lines kept byte for byte, and
+    `status` then read `current`. Session start with the old block in both targets
+    printed nothing and exited 0, while a positive control with item 4's stale block
+    printed the notice. A control with 0.3.2's scripts, from a worktree at
+    `ccx--v0.3.2`, read the same file as `stale` and printed a session notice naming
+    `recode:house-rules`.
+  - Not run: a Codex session quoting a rule, since the rules Codex home has no login;
+    the `windows` option; the Codex target of the old-block case.
