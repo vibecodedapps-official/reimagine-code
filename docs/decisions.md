@@ -555,9 +555,12 @@ pre-approved.
    leftover from a same-second collision, and the fourth diff review pass showed a
    three-session schedule where a session that removed another's lock as its own
    published over a third session's registered entry. The cost is a session whose own
-   release left its owner directory inside the lock: it reports a registry failure at
-   each later update, its entry printed for hand entry, and the next audit or resume
-   removes the lock. A collision-resistant owner token would remove the case but
+   release left its owner directory inside the lock: each later update takes the
+   registry-failure rule with its three cases (a manual entry only when the entry is
+   absent, the old state reported when present, nothing when the registry is already
+   right; cfee3b3, after the fifth pass found the first wording promised a manual entry
+   in every case), and the next audit or resume removes the lock. A
+   collision-resistant owner token would remove the case but
    changes the owner form the plan froze, and is the user's call. The lock
    report fires when the lock directory is left holding this session's owner directory
    or nothing, or a stale lock stays because the user kept it or it bears this
