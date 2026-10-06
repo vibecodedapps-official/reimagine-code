@@ -557,12 +557,14 @@ prints the differences. A change to tracked files, untracked non-ignored files, 
 index, stash, or config stops the run `blocked` and shows it (exit status 1). A check
 that could not complete, such as a missing baseline file, also stops the run `blocked`
 (exit 2). A change among ignored files, or a new remote-tracking ref, is accepted only
-when a logged agent run or an approved fetch accounts for it (exit 3). A file newer than
-the marker that is neither ignored nor changed in content is listed as touched and does
-not stop the run. The git commands cca and its agents issue themselves run without an
-index write during an audit or resume: the script sets `GIT_OPTIONAL_LOCKS=0`, the stages
-run `git status` with `--no-optional-locks`, and agents run neither `git status` nor a
-working-tree diff (a working-tree `git diff` refreshes the index even with that flag). A repo's own
+when a logged agent run or an approved fetch accounts for it, or when it is another cca
+run's or a handoff's file under an audited repository's `<scratch>/cca/`, outside this
+run's directory (exit 3). A file newer than the marker that is neither ignored nor
+changed in content is listed as touched and does not stop the run. The git commands cca
+and its agents issue themselves run without an index write during an audit or resume:
+the script sets `GIT_OPTIONAL_LOCKS=0`, the stages run `git status` with
+`--no-optional-locks`, and agents run neither `git status` nor a working-tree diff (a
+working-tree `git diff` refreshes the index even with that flag). A repo's own
 test or lint command, which agents may run in a directly read tree, can run git itself
 and is not covered. Stage 9 (act) is the write phase and is outside this boundary.
 
@@ -674,7 +676,8 @@ action is logged in `act/log.md` in the run directory.
 `--max-agents` caps concurrent subagents; extra work is queued, never merged or dropped.
 `--budget` is soft: when it runs out, running agents finish, no new stage from 2 to 7
 starts, the report is written from what is on disk, and the run ends `partial` with a
-resume command. cca prints elapsed time and agents run at each stage boundary.
+resume command, or the registry entry to add by hand when the run is not in `runs.json`.
+cca prints elapsed time and agents run at each stage boundary.
 
 `usage.md` records per stage the agents run, their requested models, wall-clock time,
 and tokens as reported in each agent's completion notification. Every token number is
