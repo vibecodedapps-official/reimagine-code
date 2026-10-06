@@ -11,20 +11,23 @@ read, which workflows apply, what passes, and how to poll. Item 5, CI repair, st
       offers no rulesets for this repository, so none apply. Record that answer in `run.md`
       and the report, take the required checks from branch protection alone, and expect no
       required workflows. Any other failure of the rules read still blocks.
-      - Required checks: `gh api repos/{owner}/{repo}/branches/<base> --jq .protection` gives
+      `<host>` is the hostname Step 0 recorded, including `github.com`.
+      - Required checks: `gh api --hostname <host> repos/{owner}/{repo}/branches/<base> --jq .protection` gives
         `required_status_checks` (`contexts`, and `checks` with `app_id`). `<base>` is the
         base branch the run recorded for the PR: the default branch for a PR this run
         opened, and the base branch Step 0.2 recorded with `continue`. Do not read the
         `/protection` endpoint, which returns 404 without admin rights.
-        `gh api "repos/{owner}/{repo}/rules/branches/<base>?per_page=100" --paginate`
+        `gh api --hostname <host> "repos/{owner}/{repo}/rules/branches/<base>?per_page=100" --paginate`
         gives the active rules, including
         organization rulesets: its `required_status_checks` rules add required checks and its
         `workflows` rules name required workflows by file path and repository. A required check
         is a name and, when set, the app that must report it.
-      - The PR: `gh pr view <n> --json headRefOid,mergeable,baseRefName` for the head SHA,
-        merge state, and base branch, and `gh api repos/{owner}/{repo}/pulls/<n> --jq
-        .merge_commit_sha` for the test merge commit. Read the PR view again at every
-        poll. A missing `merge_commit_sha` is read again on the next poll. A base branch
+      - The PR: `gh pr view <n> --json headRefOid,mergeable,baseRefName,state` for the head SHA,
+        merge state, base branch, and PR state, and `gh api --hostname <host> repos/{owner}/{repo}/pulls/<n> --jq .merge_commit_sha`
+        for the test merge commit. Read the PR view again at every
+        poll and before declaring CI green or not applicable. A `state` other than
+        `OPEN` ends the watch in `blocked` at once, naming the state, including `MERGED`.
+        A missing `merge_commit_sha` is read again on the next poll. A base branch
         other than `<base>` means the PR was retargeted, so the required checks read above
         no longer apply: end in `blocked` at once, naming both branches.
         Record the commit SHA this run last pushed for each PR. At every poll and again
@@ -35,20 +38,22 @@ read, which workflows apply, what passes, and how to poll. Item 5, CI repair, st
         is pending; after those 2 minutes it is a mismatch.
         Judge results only when `headRefOid` equals the commit this run last pushed.
       - Results, for the head commit and the test merge commit:
-        `gh api "repos/{owner}/{repo}/commits/<sha>/check-runs?filter=latest&per_page=100"`
+        `gh api --hostname <host> "repos/{owner}/{repo}/commits/<sha>/check-runs?filter=latest&per_page=100"`
         (page on when `total_count` exceeds 100) and
-        `gh api "repos/{owner}/{repo}/commits/<sha>/status?per_page=100" --paginate`,
+        `gh api --hostname <host> "repos/{owner}/{repo}/commits/<sha>/status?per_page=100" --paginate`,
         which gives the latest status per
         context. Only the latest result counts: the latest status per context, and the latest
         attempt of each check run within its own check suite, so same-named checks from
         different workflows are judged separately. Earlier attempts are report history only.
       - Required workflows:
-        `gh api "repos/{owner}/{repo}/actions/runs?head_sha=<head sha>&per_page=100" --paginate`,
+        `gh api --hostname <host> "repos/{owner}/{repo}/actions/runs?head_sha=<head sha>&per_page=100" --paginate`,
         comparing each run's `path` and repository with the rule's workflow file path and
         `repository_id`.
       Read every page of active rules, statuses, and workflow runs before evaluating CI.
       Read both commits again after every push.
-   2. A workflow applies to the PR when it triggers on pull requests, its `branches`,
+   2. Judge a `pull_request_target` workflow by its file on the default branch
+      (`git show <remote>/<default>:<path>`); a workflow this PR adds or changes takes
+      effect only after merge. A workflow applies to the PR when it triggers on pull requests, its `branches`,
       `branches-ignore`, `paths`, and `paths-ignore` filters match the PR's base branch and
       changed files, and its `types` filter, when present, includes the event the watched head
       commit produced: `opened` for the first watch after the PR is created, `synchronize`
@@ -76,7 +81,11 @@ read, which workflows apply, what passes, and how to poll. Item 5, CI repair, st
       source. A required workflow is met when its latest run for the head commit, matched by
       the rule's workflow file path and repository, passes. A match that cannot be confirmed
       counts as unmet and is named in the report.
-   4. Poll at about 30 second intervals, checking the run budget each time. CI is not
+   4. Poll at about 30 second intervals, checking the run budget each time. Poll with
+      one read per Bash call, writing out each `gh api --hostname <host>` call as above,
+      and apply each rule of items 1 to 3 as soon as the reads it needs are in, before
+      the next read. Never poll in a shell loop that runs several reads: a rule can end
+      the watch at any read, and a loop cannot end it at once. CI is not
       judged until 2 minutes after the push, measured from the time recorded right after
       the push returned. If `mergeable` is `CONFLICTING`, `pull_request` workflows do not
       run: end in `blocked` at once, naming the conflict. CI is green when every required

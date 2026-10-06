@@ -15,7 +15,7 @@ Platform behavior named here is recorded, with its source, in `references/platfo
   such line is a finding.
 - The path is bare and relative to the repo root: no backticks, markdown link, trailing
   slash, or leading `@`. A leading `@` makes Claude Code import the file at launch.
-- A path with a space or `: ` cannot be expressed. Rename the file, the one move maintain
+- A path with a space or `: ` cannot be expressed. Rename the file, a move maintain
   mode proposes, or leave it unindexed with a finding.
 - The prose says what the spoke holds and when to read it. A directory spoke's condition
   reads "Read before editing under `<dir>/`", so a Codex session started at the root can
@@ -25,9 +25,9 @@ Platform behavior named here is recorded, with its source, in `references/platfo
 
 - Default: none. Claude Code reads `AGENTS.md` directly unless a `CLAUDE.md`,
   `.claude/CLAUDE.md`, or `CLAUDE.local.md` exists in or above the working directory.
-- Add adapters only when a session type in use cannot read `AGENTS.md` (an older Claude
-  Code, Amazon Bedrock, telemetry off, the built-in `agents-md` plugin off, or **Project
-  instructions** set to `claude-md`), or when someone needs a `CLAUDE.local.md`.
+- Add adapters only when a session in use cannot read `AGENTS.md` under the applicable
+  version or configuration conditions in `references/platforms.md`, or when someone
+  needs a `CLAUDE.local.md`. For a first session after an upgrade, try a fresh session.
 - All or nothing, since once any `CLAUDE.md` counts Claude Code reads only `CLAUDE.md`
   files: no tracked `CLAUDE.md`, or each is an adapter beside an `AGENTS.md` and each
   tracked `AGENTS.md` has one. A tracked `CLAUDE.md` test fixture leaves this to judgment.
@@ -48,26 +48,37 @@ Platform behavior named here is recorded, with its source, in `references/platfo
 6. An index in free prose, a pointer outside the index, an index line that is neither
    a pointer, a blank, nor a column-0 `- ` line, or a spoke that cannot be indexed.
 7. `AGENTS.override.md` or `AGENTS.local.md` (Codex reads the first in place of
-   `AGENTS.md`; Claude Code reads neither), or a `.claude/rules/` rule other agents need.
+   `AGENTS.md`; Claude Code reads neither), `.claude/AGENTS.md` (the platforms load it
+   under different conditions), or a `.claude/rules/` rule other agents need.
 8. Size: a file long enough to be skimmed. Platform limits are facts, not thresholds.
 9. Effective loading, confirmed by the session verification.
 
 ## Maintain-mode safeguards
 
-- Adopt existing file locations; a pointer beats a move. The one exception is a spoke
-  whose filename has a space or `: `. Upgrading never requires reorganizing a repo.
+- Adopt existing file locations; a pointer beats a move. Exceptions: a spoke whose
+  filename has a space or `: `, and moving the sole instruction file out of `.claude/`.
 - Never rewrite dated or historical entries; append a correction. Repair inbound links in
   the same change that moves content. Never delete a real constraint to shorten a file.
-- A repo whose only instruction file is a `CLAUDE.md`: rename it `AGENTS.md`, move
+- Make each `@path` import but an adapter line a pointer or inline it. Drop an import of
+  an `AGENTS.md` unless it is an adapter line. Report, never inline, an import of a file
+  the repo does not track: keep its line where it is in a file that stays or is renamed,
+  and when its file is deleted or made exact, name the import in the report for the user
+  to place.
+- A repo whose only tracked instruction file is a `CLAUDE.md` or `.claude/AGENTS.md`: make
+  it the root `AGENTS.md`, rewriting relative paths when it leaves `.claude/`. Move
   Claude-only lines to `.claude/rules/`, add `## Spokes`, and no adapter unless required.
-  An `@path` import is a Claude Code mechanism; make each one a pointer or inline it.
-- A repo with a symlinked `AGENTS.md` or `CLAUDE.md`, or a `CLAUDE.md` with content after
-  the import, keeps its file locations; the first maintain run normalizes it. Replace
-  each symlink with a regular file, so the content sits in a regular `AGENTS.md`. Route every line after the import through the placement rule, so
-  only Claude-only mechanics reach `.claude/rules/`. Rename a `CLAUDE.md` with no sibling
-  `AGENTS.md` to `AGENTS.md` and place its lines the same way. Delete every `CLAUDE.md`,
-  or make each exact if the adapter policy requires adapters. Write the `## Spokes`
-  section and report each change. No file leaves its directory, so this is not a move.
+  An untracked sole file is left alone; the repo gets first setup.
+- A repo with a tracked symlinked `AGENTS.md` or `CLAUDE.md`, a tracked
+  `.claude/AGENTS.md` or `.claude/CLAUDE.md`, or a tracked `CLAUDE.md` that is not
+  exact, keeps its file locations unless it is the sole instruction file covered above;
+  the first maintain run normalizes it. Replace each symlink with a regular file. Route
+  every line but an import through the placement rule, so only Claude-only mechanics
+  reach `.claude/rules/`. Rename a tracked `CLAUDE.md` outside `.claude/` with no sibling
+  `AGENTS.md` to `AGENTS.md` and place its lines the same way. Delete a tracked
+  `.claude/AGENTS.md` or `.claude/CLAUDE.md`; delete every other tracked `CLAUDE.md`, or,
+  if the adapter policy requires adapters, make each exact and add any missing one. Write
+  `## Spokes` and report each change. Except for that sole-file move, no file leaves its
+  directory, so normalization is not a move.
 
 ## Modes and severity
 

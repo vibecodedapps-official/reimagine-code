@@ -34,6 +34,7 @@
 # 15 bg and wait: a run in the background (15a), a keys error with a stale .exit (15b), the
 #    deadline (15c), wait's window (15d), no run (15e), TERM to bg (15f), wrong arguments
 #    (15g), the deadline during a blocked git step (15h), KILL to bg (15i)
+# 16 a partial clone is refused without fetching   17 a tab path is not used
 #
 # Prints one line per mismatch, then `revert-tests test: ok` when there were none. Exit 0
 # when every case matches, otherwise 1.
@@ -517,6 +518,43 @@ case_id="case 11f"
 "$sh_bin" "$rt" > "$tmp/out" 2> "$tmp/err"
 rc=$?
 fails 'usage: revert-tests.sh run|bg <repo> <base> <head> <keys file> <work dir> <result file>, or wait <result file>'
+
+# 16. A partial clone is refused without fetching missing blobs.
+case_id="case 16, partial clone is refused without fetching"
+mkrepo c16
+put 100644 src/lib.sh 'exit 0\n'
+commit main
+put 100644 tests/test_a.sh 'exit 0\n'
+commit feature main
+g "$root" clone -q --bare "$R" "$root/origin.git" || mismatch "$case_id: bare clone failed"
+g "$root/origin.git" config uploadpack.allowFilter true
+g "$root/origin.git" config uploadpack.allowAnySHA1InWant true
+g "$root" clone -q --filter=blob:none --no-checkout --branch feature "file://$root/origin.git" "$root/partial" ||
+	mismatch "$case_id: partial clone failed"
+g "$root/partial" update-ref refs/heads/main refs/remotes/origin/main
+find "$root/partial/.git/objects/pack" -name '*.pack' -type f | sort > "$tmp/packs.before"
+run "$root/partial" "$run_keys"
+fails 'revert-tests: partial clones are not supported'
+find "$root/partial/.git/objects/pack" -name '*.pack' -type f | sort > "$tmp/packs.after"
+cmp -s "$tmp/packs.before" "$tmp/packs.after" || mismatch "$case_id: pack files changed"
+
+# 17. A test-code path holding a tab is listed as not used and never run.
+case_id="case 17, tab path is not used"
+mkrepo c17
+put 100644 README 'x\n'
+commit main
+tab_path=$(printf 'tests/test_a\tb.sh')
+put 100644 "$tab_path" 'exit 0\n'
+put 100644 tests/test_c.sh 'exit 0\n'
+commit feature main
+run "$R" "$run_keys"
+ok
+verdicts '- `tests/test_c.sh`: passes at head and without the change\n'
+has 'passes at head and without the change: 1; passes at head only: 0; does not pass at head: 0; not run: 0.'
+has '- test-code paths with a newline, not used: 1'
+has "  - \`$tab_path\`"
+hasnt "### \`$tab_path\`, head copy"
+hasnt "### \`$tab_path\`, reverted copy"
 
 # 14. An empty merge-base tree: the reverted copy holds the head's test file and none of
 # its production files, so a test that needs nothing passes in both copies.

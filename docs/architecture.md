@@ -124,6 +124,9 @@ lint, so the `ccx--v<version>` tag names one commit for both.
 
 ## Components
 
+Each section describes its component as it joined the suite; later changes are in
+`CHANGELOG.md`.
+
 ### ccx (Claude)
 
 Behavior carries over from codex-lite 0.9.0 unchanged except for names.
@@ -131,8 +134,8 @@ Behavior carries over from codex-lite 0.9.0 unchanged except for names.
 - **Commands.** `ask`, `review`, `implement` as today. `do` and `setup` keep
   `disable-model-invocation: true`, so they cost nothing until typed. New: `rules`, also
   `disable-model-invocation: true`.
-- **Scripts.** `ccx.mjs` (was `codex-lite.mjs`) and `codex.mjs` keep their 700-line
-  runtime budget and change only by renames; the budget has 3 lines of headroom today.
+- **Scripts.** `ccx.mjs` (was `codex-lite.mjs`) and `codex.mjs` keep their 710-line
+  runtime budget; lint prints the lines used on every run.
   New code goes in two new modules with their own budgets: `rules.mjs` (house rules,
   pure file logic, spawns nothing) and `suite.mjs` (the old-plugin report and the
   SessionStart notice, which spawn `claude plugin list --json` or read files).
@@ -253,7 +256,8 @@ five agents, and one orchestrator skill with its stage files and eight POSIX sh 
   `ccx`. There is no `dependencies` entry: the second opinion swaps to `cca:adversary`
   when the bridge or Codex is absent, and that fallback is a supported mode.
 - **Version line.** Its own, like repo-docs, tagged `cca--v<version>` and set by
-  `tools/release.mjs cca <version>`. Stage 1 writes the version into `stages.json` and
+  `tools/release.mjs cca <version>`, which also sets the three `plugin_version` literals
+  in the skill that lint holds to the manifest. Stage 1 writes the version into `stages.json` and
   resume treats it as an input of every stage, so a run from an earlier version reruns
   from stage 1.
 - **Tests.** The sh suites and fixtures in `tests/cca/`, run by `tests/cca/sh.test.mjs`
@@ -455,13 +459,18 @@ ships.
   per-module line budgets; the Codex schema URL is 1.0.0;
   every plugin directory holds LICENSE, and `plugins/ccx-codex/` also NOTICE; a
   plugin changed since its highest `<name>--v<version>` tag carries a higher version,
-  the Codex `ccx` against the bridge's tags, which share its name; and the changelog
-  has a dated heading for the suite version.
-- **Release** (`tools/release.mjs`): `ccx <version> [--floor <version>]` or
-  `repo-docs <version>` sets the version line in every manifest and catalog entry that
-  carries it, and with `--floor` the loop's dependency range, writing no file unless all
-  can be set cleanly. It then runs lint, which checks the copies, the range, and the
-  changelog heading. Tagging stays with `claude plugin tag`.
+  the Codex `ccx` against the bridge's tags, which share its name; the root README's
+  install and uninstall blocks name every catalog plugin; cca's three `plugin_version`
+  literals equal its manifest version; every `gh api` command in the loop's shipped text
+  passes `--hostname`, each in one backtick span on one line; every `tests/` path the cca
+  README names in a code span or fenced block exists; and the changelog has a dated
+  heading for the suite version.
+- **Release** (`tools/release.mjs`): `ccx <version> [--floor <version>]`,
+  `repo-docs <version>`, or `cca <version>` sets the version line in every manifest and
+  catalog entry that carries it, with `--floor` the loop's dependency range, and for cca
+  the three `plugin_version` literals in its skill, writing no file unless all can be set
+  cleanly. It then runs lint, which checks the copies, the range, and the changelog
+  heading. Tagging stays with `claude plugin tag`.
 - **CI**: GitHub Actions on Ubuntu, macOS, and Windows with Node 22, running lint and
   tests, then `claude plugin validate --strict` on the root and on each plugin
   directory. CI installs the Claude Code npm package, pinned to a version, for that step

@@ -34,7 +34,7 @@ same commit run from a `mktemp -d` directory prints nothing.
 - One authoritative version, in `.claude-plugin/plugin.json`. `.codex-plugin/plugin.json`
   and the suite catalog's `repo-docs` entry hold copies.
 - `skills/repo-docs/SKILL.md` stays at or under 120 lines, and each file under
-  `skills/repo-docs/references/` at or under 90. A platform's version numbers, byte and
+  `skills/repo-docs/references/` at or under 100. A platform's version numbers, byte and
   hop limits, line-count guidance, and URLs live only in
   `skills/repo-docs/references/platforms.md`; every other file states the behavior in
   words and points there.

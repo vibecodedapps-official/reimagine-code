@@ -226,8 +226,8 @@ agents read them directly. In this mode:
   `<path>@new` line for each other repository. Each chosen branch is checked against its
   remote, and any other reply ends the run in `stopped`. Artifacts live only in the
   primary's `.ccx/<run-id>/`. No slice spans repositories. Every `gh` call for an
-  additional repository is run from that checkout or targeted with `-R <owner>/<repo>`
-  where the subcommand accepts it (`gh api` does not; its endpoint is spelled out), and
+  additional repository is run from that checkout or targeted with `-R <owner>/<repo>` (`-R <host>/<owner>/<repo>` off github.com)
+  where the subcommand accepts it (`gh api` does not; its endpoint is spelled out and its host passed with `--hostname`), and
   every `git` call with `git -C <path>`.
 - Codex `review` covers the primary. Each additional repository with a diff is reviewed
   with `ccx:review --cwd <absolute path>` in its own thread, and its follow-ups resume

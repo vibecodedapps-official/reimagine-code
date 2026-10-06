@@ -786,6 +786,10 @@ errmsg "gate, missing inventory" "ledger: cannot read $tmp/empty/ledger/inventor
 # check --through 7.
 run "check 7, base" 0 "" check "$B" --through 7 --tier medium --stage6 complete --late complete
 
+cp -R "$B" "$tmp/cf"
+printf '```\nopen\n' >> "$tmp/cf/converged.md"
+run "check 7, converged.md ends inside a fence" 1 "ledger: converged.md: the file ends inside a code fence" check "$tmp/cf" --through 7 --tier medium --stage6 complete --late complete
+
 cp -R "$B" "$tmp/h1"
 mk7 "$tmp/h1" "app-P1 app-T1 X1" ""
 cp "$B/late/adversary.md" "$tmp/h1/late/adversary.md"
@@ -989,6 +993,21 @@ rm "$tmp/r13/ledger/6.md"
 run "check 6, stage 6 failed, no ledger/6.md" 0 "" check "$tmp/r13" --through 6 --stage6 failed
 
 # Headings that look like findings or verdicts but are not exact are errors.
+cp -R "$B" "$tmp/mh-space"
+sed 's/^### web-F1:/###  web-F1:/' "$B/pass1/web.md" > "$tmp/mh-space/pass1/web.md"
+run "build5, heading with extra space" 1 "" build5 "$tmp/mh-space"
+errmsg "build5, heading with extra space" "ledger: pass1/web.md:1: malformed finding heading"
+
+cp -R "$B" "$tmp/mh-bold"
+sed 's/^### web-F1:/### **web-F1**:/' "$B/pass1/web.md" > "$tmp/mh-bold/pass1/web.md"
+run "build5, heading with bold id" 1 "" build5 "$tmp/mh-bold"
+errmsg "build5, heading with bold id" "ledger: pass1/web.md:1: malformed finding heading"
+
+cp -R "$B" "$tmp/mh-code"
+sed 's/^### web-F1:/### `web-F1`:/' "$B/pass1/web.md" > "$tmp/mh-code/pass1/web.md"
+run "build5, heading with backticked id" 1 "" build5 "$tmp/mh-code"
+errmsg "build5, heading with backticked id" "ledger: pass1/web.md:1: malformed finding heading"
+
 cp -R "$B" "$tmp/q1"
 printf '### app-P2:Missing space\n- severity: low\n- label: convention
 status: complete

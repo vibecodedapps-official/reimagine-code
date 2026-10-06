@@ -87,7 +87,7 @@ requirement below changes it. The audit plugin was not part of v0.1.0; it joined
 13. **Data directory.** Scripts receive the data directory as an argument from the
     command text or the hook's `args`, and never read it from the environment. Depends
     on spike M0.4 for the hook. Check: test; lint.
-14. **Runtime budget.** `ccx.mjs` and `codex.mjs` together stay at or under 700 lines.
+14. **Runtime budget.** `ccx.mjs` and `codex.mjs` together stay at or under 710 lines.
     `rules.mjs` has its own budget of 400 lines and `suite.mjs` of 200. Check: lint.
 
 ## Setup
@@ -230,10 +230,12 @@ Added 2026-10-05, when claude-codex-audit 0.8.1 at `eed9fba` joined the suite as
 
 61. **Catalog and version.** `plugins/cca` is listed in the Claude catalog only, on its
     own version line, like repo-docs, and tagged `cca--v<version>`. The suite version
-    does not move for a cca release. Check: lint; release record.
+    does not move for a cca release. The skill's three `plugin_version` literals equal
+    the manifest version, and the release tool sets them. Check: lint; release record.
 62. **Behavior carried over.** The commands `audit`, `resume`, `act`, and `handoff`, the
-    five agents, the skill, and the eight sh scripts behave as cca 0.8.1 with the bridge
-    names changed. Every sh suite and fixture build of the source repository runs through
+    five agents, the skill, and the eight sh scripts behave at the import as cca 0.8.1
+    with the bridge names changed; every later change is a line under `### cca` in
+    `CHANGELOG.md`. Every sh suite and fixture build of the source repository runs through
     `npm test`, from `tests/cca/`, on the three CI systems, plus mawk on Ubuntu. Check:
     test; acceptance for a run.
 63. **Bridge detection.** Stage 6 calls `ccx:ask` and takes the version of the plugin id

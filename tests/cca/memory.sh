@@ -67,6 +67,10 @@ want="claim 1${tab}APP-1${tab}$mem/MEMORY.md${nl}claim 1${tab}APP-1${tab}$mem/pr
 run "fixture verdicts" 0 "$want" find "$F/claims-verdicts.md" "$mem"
 run "fixture verdicts, trailing slash" 0 "$want" find "$F/claims-verdicts.md" "$mem/"
 
+ln -s "$mem" "$tmp/memlink"
+want="claim 1${tab}APP-1${tab}$tmp/memlink/MEMORY.md${nl}claim 1${tab}APP-1${tab}$tmp/memlink/project_app1.md${nl}claim 3${tab}APP-1${tab}$tmp/memlink/MEMORY.md${nl}claim 3${tab}APP-1${tab}$tmp/memlink/project_app1.md"
+run "fixture verdicts, symlinked directory" 0 "$want" find "$F/claims-verdicts.md" "$tmp/memlink"
+
 # ---------------------------------------------------------------------------
 # Inline verdicts: every key grammar, the boundary rule, and the entries that print nothing.
 M=$tmp/m

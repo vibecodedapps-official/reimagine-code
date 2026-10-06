@@ -98,7 +98,7 @@ An unknown flag or a bad value is rejected in one line, and nothing is written.
 | `--effort` | `low`, `medium`, or `high`; overrides the tier cca picks | picked from the bundle's size (see Effort) |
 | `--no-codex` | none; the fallback reviewer gives the second opinion | Codex, when available |
 | `--codex-model` | a full Codex model id | `gpt-6.1-sol` |
-| `--codex-timeout` | seconds, 1 to 3600 | by tier: low 1,200, medium 2,400, high 3,600 |
+| `--codex-timeout` | seconds, 1 to 3600; at most 540 when the session is headless or cannot tell whether a user can answer | by tier: low 1,200, medium 2,400, high 3,600 |
 | `--models` | `role=model,...`, roles `digester`, `mapper`, `auditor`, `adversary`, `merger`, models as the Agent tool accepts them (`opus`, `sonnet`, `haiku`, `fable`) | see Roles |
 | `--questions` | a markdown file of `id: question` lines | the four default questions |
 | `--claims` | a claims file; repeat the flag for more | none |
@@ -229,7 +229,9 @@ are relative to the manifest's directory.
   `*.test.*`, `*.spec.*`, and `*Test.*`), `test_setup` (a command run once in each copy
   first, such as `npm ci`; without it a copy holds tracked files only), and
   `test_timeout` (seconds per command, default 300). At most 20 files and 30 minutes run
-  per bundle. Setting `test_command` is your consent to run the bundle's own commands:
+  per bundle. A partial clone (`--filter`) of any audited repo stops the run before
+  stage 1 with `<repo>: partial clones are not supported`; the test step refuses one
+  too. Setting `test_command` is your consent to run the bundle's own commands:
   they run with your environment and credentials, as a test run in your checkout does,
   in copies under cca's data directory that are removed afterwards. Set it only for a
   suite that reaches no live system, and have `test_setup` install into the copy (a
@@ -257,7 +259,11 @@ are relative to the manifest's directory.
 - **`groups`.** Optional review groups, each with a `name`, a `repo`, and `files` globs
   relative to that repo. When present, it replaces the groups cca would derive. A file
   matching two entries goes to both with a note; changed files no entry matches go to an
-  `unticketed` group.
+  `unticketed` group. Each name is lowercased, with runs of characters outside `a-z0-9`
+  turned into one `-`, and the run stops before stage 1 if the slug is empty, is a reserved scope name
+  (`tests`, `hygiene`, `tests-hygiene`, `interactions`, `combined`, `unticketed`),
+  is shared by two entries, or equals `<scope>-topup` or `<scope>-maptopup`, where
+  `<scope>` is another entry's slug or a reserved scope name.
 - **`questions`.** `"default"` for the four default questions, or a path to a questions
   file, as for `--questions`.
 - **`models`.** Per-role model overrides, as for `--models`.
@@ -464,9 +470,20 @@ path inside the primary repo that the repo ignores (`git check-ignore` succeeds)
 missing directory is created. Otherwise the run stops before stage 1 with
 `scratch <path>: not an ignored path inside <primary repo>`. A resumed run keeps its recorded
 directory, even when the manifest's `scratch` has changed since. The run id is
-`<YYYY-MM-DD-HHMM>-<slug>`, with a numeric suffix on collision. Every run is recorded in
-`runs.json` in cca's plugin data directory, so `/cca:resume` and `/cca:act` find it from
-any directory.
+`<YYYY-MM-DD-HHMM>-<slug>`, with a numeric suffix on collision. The suffix is settled
+when the directory is created, which fails if it exists, and again under the registry
+lock: when another audit registered the same id in the same minute, the run stops
+before stage 1 with a line naming the id, and you run the command again. Every run is
+recorded in `runs.json` in cca's plugin data directory, so `/cca:resume` and
+`/cca:act` find it from any directory, unless Claude Code refuses the write, which the
+run reports. Each update holds the lock directory `runs.json.lock`. A lock more than
+about a minute old is stale: an interactive session asks you whether another audit or
+resume is running and removes it on "no", and a headless session, or one that cannot
+tell whether a user can answer, removes it without asking. A stale lock left by a
+second audit of the same id started in the same second, or by the run's own failed
+release, is never removed by that run: a new audit stops before stage 1 with the
+duplicate-id line, and you run the command again; a later update or a resume reports
+a registry failure instead and leaves the lock for the next audit or resume to remove.
 
 The run directory holds all state: the normalized `manifest.json`, `stages.json` (the
 only record of which stages are complete), `audit-brief.md`, `claims.md`, `groups.md`,
@@ -480,7 +497,8 @@ interrupted run loses no finished stage, and `/cca:resume` never reuses a stale 
 
 - `reported`: every applicable stage complete.
 - `partial`: a report was written, but a stage failed or the budget ran out. The verdict
-  is `audit incomplete`, and cca prints a resume command.
+  is `audit incomplete`, and cca prints a resume command when the run's entry is in
+  `runs.json`, else the entry to add to the registry by hand.
 - `blocked`: no report could be written, or the read-only check failed. The reason is
   printed and every finished stage file is kept.
 
@@ -491,13 +509,13 @@ The run stops by printing the report path, the verdict, and the terminal state.
 During `/cca:audit` and `/cca:resume`, nothing changes an audited repo's tracked files,
 untracked non-ignored files, the index, branches, tags, stashes, config, or remotes. An
 audited repo is every bundle, reference, and source of truth. The only writes are the
-run directory, `runs.json`, ccx's own request and thread files in its data
-directory, and an explicit `git fetch --no-tags --refmap=` into remote-tracking refs after you
+run directory, `runs.json`, the `runs.json.lock` directory and temporary file beside
+`runs.json`, ccx's own request and thread files in its data directory, and an explicit `git fetch --no-tags --refmap=` into remote-tracking refs after you
 approve the listed commands (a remote configured with `remote.<name>.prune` may also
 delete stale remote-tracking refs). A bundle with `test_command` adds the copies its
 stage 1 test run makes under cca's data directory, removed when it ends, and whatever
 those test commands write outside the audited repos; the report discloses both. An
-ignored file written by a check run that an agent logged is allowed and reported. That attribution is self-reported: it rests on the
+ignored file written by a run that an agent logged is allowed and reported. That attribution is self-reported: it rests on the
 agent's own `runs:` list, and it is repo-level, so any logged run in a repo accounts for
 any ignored-file change in that repo.
 
@@ -505,7 +523,10 @@ When a repo's checkout is not at the audited sha, or has changes, cca exports th
 tree into the run directory from git objects, so no checkout filter or attribute runs and
 nothing is written to the repo. Symlinks are exported as placeholder files holding their
 target, and submodules are listed, not exported. An export over 1 GB is asked about
-first.
+first. A partial clone (a promisor remote or `extensions.partialclone`) of any audited
+repo stops the run before stage 1 with `<repo>: partial clones are not supported`,
+since the agents' `git show` and `git diff` would fetch missing objects over the
+network.
 
 A bundle with `head: working-tree` writes one more thing to its repo: the loose git
 objects of a commit that `skills/cca/scripts/working-tree.sh build` makes from the working
@@ -550,12 +571,14 @@ prints the differences. A change to tracked files, untracked non-ignored files, 
 index, stash, or config stops the run `blocked` and shows it (exit status 1). A check
 that could not complete, such as a missing baseline file, also stops the run `blocked`
 (exit 2). A change among ignored files, or a new remote-tracking ref, is accepted only
-when a logged agent run or an approved fetch accounts for it (exit 3). A file newer than
-the marker that is neither ignored nor changed in content is listed as touched and does
-not stop the run. The git commands cca and its agents issue themselves run without an
-index write during an audit or resume: the script sets `GIT_OPTIONAL_LOCKS=0`, the stages
-run `git status` with `--no-optional-locks`, and agents run neither `git status` nor a
-working-tree diff (a working-tree `git diff` refreshes the index even with that flag). A repo's own
+when a logged agent run or an approved fetch accounts for it, or when it is another cca
+run's or a handoff's file under an audited repository's `<scratch>/cca/`, outside this
+run's directory (exit 3). A file newer than the marker that is neither ignored nor
+changed in content is listed as touched and does not stop the run. The git commands cca
+and its agents issue themselves run without an index write during an audit or resume:
+the script sets `GIT_OPTIONAL_LOCKS=0`, the stages run `git status` with
+`--no-optional-locks`, and agents run neither `git status` nor a working-tree diff (a
+working-tree `git diff` refreshes the index even with that flag). A repo's own
 test or lint command, which agents may run in a directly read tree, can run git itself
 and is not covered. Stage 9 (act) is the write phase and is outside this boundary.
 
@@ -604,6 +627,10 @@ its sentinel. Only an input it could not open goes inline, in the one follow-up 
 follow-up's text is passed in the call itself, since Codex may not open the file;
 otherwise Codex reads the file by path. Over the cap, the follow-up is not sent and
 stage 6 fails.
+
+In a headless session, or when cca cannot tell whether a user can answer, the timeout
+passed to Codex is at most 540 seconds, so the call ends before a foreground command's
+10-minute limit and never moves to the background, where a headless session would end.
 
 Codex reads a file outside every repo, such as a run directory in the plugin's data
 directory, by absolute path. That read was verified on Windows with ccx's elevated
@@ -667,7 +694,8 @@ action is logged in `act/log.md` in the run directory.
 `--max-agents` caps concurrent subagents; extra work is queued, never merged or dropped.
 `--budget` is soft: when it runs out, running agents finish, no new stage from 2 to 7
 starts, the report is written from what is on disk, and the run ends `partial` with a
-resume command. cca prints elapsed time and agents run at each stage boundary.
+resume command, or the registry entry to add by hand when the run is not in `runs.json`.
+cca prints elapsed time and agents run at each stage boundary.
 
 `usage.md` records per stage the agents run, their requested models, wall-clock time,
 and tokens as reported in each agent's completion notification. Every token number is
@@ -677,11 +705,10 @@ presented as exact.
 
 ## Pairing with ccx-loop
 
-The pairing is still manual: pass a `ccx-loop` run's `report.md` as a claims file
-(`--claims <path>`). A loop report is a prose claims file, and stage 1 types each
-sentence. `/cca:handoff` can run in any session, including one that ran the loop, and
-writes the typed form. Automatic chaining from the loop, and the loop writing a handoff
-itself, are not implemented; `skills/cca/handoff.md` is the format the loop could adopt.
+When a `ccx-loop` run has a commit of its own, it writes
+`.ccx/<run-id>/handoff.md` and `.ccx/<run-id>/cca-manifest.json` and suggests
+`/cca:audit "<absolute path of .ccx/<run-id>/cca-manifest.json>"`. The manifest carries
+the bundles and tickets, with the typed handoff as its claims.
 
 ## Development
 
@@ -707,13 +734,13 @@ Its checks live in `tests/cca/` of the reimagine-code repository. From its root,
 `npm test` runs every one of them through `tests/cca/sh.test.mjs`, and `npm run lint`
 runs the repository checks. Each can also run alone:
 
-- `sh tests/cca/cca/lint.sh`: checks the static parts (command and agent frontmatter, no agent
+- `sh tests/cca/lint.sh`: checks the static parts (command and agent frontmatter, no agent
   with Edit or NotebookEdit, every stage file the skill names exists).
-- `sh tests/cca/cca/fixture/build.sh <solo|solo-dirty|full|tokens|patterns|ground-truth>`:
+- `sh tests/cca/fixture/build.sh <solo|solo-dirty|full|tokens|patterns|ground-truth>`:
   builds a throwaway fixture in a temp directory and prints its manifest path. Expected
   outcomes are listed in `tests/cca/fixture/expected.md`. `ground-truth` plants the 20
   confirmed review findings of `tests/cca/fixture/ground-truth-cases.md`.
-- `sh tests/cca/cca/fixture/verify.sh <manifest path> [name]`: checks a built fixture against
+- `sh tests/cca/fixture/verify.sh <manifest path> [name]`: checks a built fixture against
   the key literals in `tests/cca/fixture/expected.md` and prints one line per mismatch. CI
   runs it after each build.
 - `sh tests/cca/readonly.sh`: runs `readonly.sh` against a `solo-dirty` fixture, one case per

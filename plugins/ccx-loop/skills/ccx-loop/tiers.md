@@ -161,7 +161,8 @@ and in the final report.
 
 At every tier the default implementer is Codex at the tier's model, one call per slice:
 `gpt-6.1-sol` at low and medium, `gpt-6-astra` at high and xhigh. Choose the implementer
-per slice in Step 2. At high and xhigh, choose `sonnet` for a slice when any of these
+per slice in Step 2 and again after a requested plan change at Step 3.5. At high and xhigh,
+choose `sonnet` for a slice when any of these
 hold; otherwise keep Codex. At low and medium tier it is always Codex. Opus never
 implements. `sonnet` is also the fallback for a Codex slice (see Rules for roles).
 
@@ -196,6 +197,10 @@ directly or through shared code or configuration that they depend on:
 - a row-level security policy
 - a data access path
 - a public API's signature or behavior
+
+After a requested plan change at Step 3.5, rerun Step 1.3's verification and apply this
+floor without re-estimating effort. Keep at least the tier already chosen, then choose
+each slice's implementer again and judge the higher-risk rule on the updated plan.
 
 The triggers are about behavior. Editing a file in one of these areas without changing
 such behavior does not trigger the floor. Examples are a typo fix in a migrations README,

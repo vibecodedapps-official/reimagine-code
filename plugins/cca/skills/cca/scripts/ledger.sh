@@ -540,10 +540,13 @@ function fhead(head,   p, id) {
 # is text; it is 1 for the files that carry additions, where a lower-case x<n> or l<n>
 # is a mis-cased id.
 function malformed(head, xl,   p, tok) {
+	sub(/^[ \t]+/, "", head)
 	p = index(head, " ")
 	tok = (p > 0 ? substr(head, 1, p - 1) : head)
 	p = index(tok, ":")
 	if (p > 0) tok = substr(tok, 1, p - 1)
+	sub(/^[*`]+/, "", tok)
+	sub(/[*`]+$/, "", tok)
 	return (isid(tok) || (xl && tok ~ /^[xl][0-9]+$/) || tok ~ /.-[fpt][0-9]+$/)
 }
 
@@ -1423,7 +1426,7 @@ function check7(   w7, i, id, n, k, p, items, nit, c, j, hd, e, abs, na, cnt, an
 	# converged.md
 	n = readfile(run "/converged.md", CA)
 	if (n < 0) return
-	classify(CA, n)
+	if (classify(CA, n)) cprob("converged.md: the file ends inside a code fence")
 	nit = 0
 	for (i = 1; i <= n; i++) {
 		if (K[i] != "H2" || index(CA[i], "## C") != 1) continue

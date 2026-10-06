@@ -34,6 +34,7 @@
 # 27 a linked worktree in an ignored directory of the repo
 # 28 a configured core.fsmonitor hook is not run
 # 29 touched b.txt next to a blocked `a b.txt`  30 one of two identical config lines removed
+# 32 an unreadable ignored directory
 #
 # Prints one line per mismatch, then `readonly test: ok` when there were none. Exit 0
 # when every case matches, otherwise 1.
@@ -535,6 +536,28 @@ printf '%s\n' 'Second local edit.' >> "$A/README.md"
 ro check "$A" "$R" k=v/b k=v/b k=v/c
 cd "$cwd0" || exit 1
 expect "case 31" 1 "blocked hashes + $hash_edit README.md\nblocked hashes - $hash_orig README.md\n" ''
+
+# 32. an unreadable ignored directory does not make the advisory touched walk fatal.
+case_id="case 32, unreadable ignored directory"
+case $(uname -s) in
+MINGW*|MSYS*|CYGWIN*) ;;
+*)
+	if [ "$(id -u)" != 0 ]; then
+		fresh
+		mkdir "$A/.test-output/pgdata"
+		chmod 000 "$A/.test-output/pgdata"
+		snap "$R/b"
+		ro check "$A" "$R" "$R/b" "$R/b" "$R/c"
+		chmod 700 "$A/.test-output/pgdata"
+		[ "$rc" = 0 ] || mismatch "$case_id: exit $rc, expected 0: $(cat "$tmp/err")"
+		[ ! -s "$tmp/out" ] || mismatch "$case_id: expected empty stdout: $(cat "$tmp/out")"
+		case $(cat "$tmp/err") in
+		*find:*'Permission denied'*) ;;
+		*) mismatch "$case_id: find diagnostic missing: $(cat "$tmp/err")" ;;
+		esac
+	fi
+	;;
+esac
 
 if [ "$bad" -gt 0 ]; then
 	exit 1

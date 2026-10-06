@@ -8,7 +8,8 @@
 #
 # Portability: POSIX sh (dash, bash, Git Bash), and awk in forms mawk and gawk accept.
 # Every intermediate goes to a temporary file, removed on exit, and every command's exit
-# status is checked, so an incomplete collection exits 2.
+# status is checked, so an incomplete collection exits 2, except the optional
+# `touched` walk, whose `find` errors are printed and ignored.
 #
 # snapshot: creates <out prefix>.marker (an empty file, written fresh), then writes six
 # files, each renamed into place only when every part succeeded. Paths are relative to the
@@ -72,7 +73,8 @@
 #
 # Exit status, the first that holds:
 #   2  a collection or comparison step failed, or the arguments are wrong (one line on
-#      stderr; nothing is printed on stdout)
+#      stderr; nothing is printed on stdout), except the optional `touched` walk,
+#      whose `find` errors are printed and ignored
 #   1  a `blocked` line was printed
 #   3  only `remote-ref` or `ignored` lines were printed
 #   0  otherwise (`touched` lines may be printed)
@@ -536,7 +538,7 @@ check() {
 	# Touched: newer than the baseline marker, not ignored, not part of a blocked line. A
 	# .git (a directory, or a submodule's file) is pruned at any depth.
 	(cd "$top" && find . -name .git -prune -o -type f -newer "$np_base.marker" -print) \
-		> "$tmp/found" || die "find failed"
+		> "$tmp/found" || :
 	sed 's|^\./||' "$tmp/found" > "$tmp/found.rel" || die "sed failed"
 	PRE=${relrun:+$relrun/} IC=$ic awk '
 		BEGIN { pre = ENVIRON["PRE"]; ic = ENVIRON["IC"]; prel = tolower(pre) }

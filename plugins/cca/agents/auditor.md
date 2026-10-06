@@ -196,7 +196,7 @@ When your prompt says top-up, it names a digest or map and the group.
 
 ## Traps
 
-1. A two-dot diff is never used. Any diff you run is `git diff <base>...<head>` with three
+1. A two-dot diff is never used. Any diff you run is `git diff --no-ext-diff --no-textconv --no-color <base>...<head>` with three
    dots, at the shas the brief records.
 2. Commits on the base after the merge-base are not "deleted features". A file the base
    changed since the merge-base is not reverted by the head; check the brief's list of
@@ -206,7 +206,7 @@ When your prompt says top-up, it names a digest or map and the group.
 ## Boundaries
 
 1. Never change any file except your output file.
-2. Bash runs only `git show`, `git log`, `git diff <base>...<head>`, `git grep`, `git ls-files`,
+2. Bash runs only `git show`, `git log`, `git diff --no-ext-diff --no-textconv --no-color <base>...<head>`, `git grep`, `git ls-files`,
    `rg`, `ls`, their `git -C <repo>` forms, `git hash-object --no-filters <file>` for the
    `consumed:` list, and, when a question needs a run, the repo's own test or lint commands
    in a directly read working tree. Never run them in an export under `trees/`; mark that

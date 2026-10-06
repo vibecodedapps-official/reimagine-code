@@ -31,7 +31,7 @@ const walk = (dir, skip = () => false) => {
 // budgets: the only runtime modules the plugin may hold, in groups, each with its line limit.
 const PLUGINS = [
   { dir: "plugins/ccx", catalogs: ["claude"], family: true, budgets: [
-    { files: ["scripts/codex.mjs", "scripts/ccx.mjs"], max: 700 }, { files: ["scripts/rules.mjs"], max: 400 }, { files: ["scripts/suite.mjs"], max: 200 },
+    { files: ["scripts/codex.mjs", "scripts/ccx.mjs"], max: 710 }, { files: ["scripts/rules.mjs"], max: 400 }, { files: ["scripts/suite.mjs"], max: 200 },
   ] },
   { dir: "plugins/ccx-loop", catalogs: ["claude"], family: true, budgets: [] },
   { dir: "plugins/ccx-codex", catalogs: ["codex"], family: true, budgets: [] },
@@ -72,13 +72,17 @@ for (const pl of PLUGINS) {
 }
 
 // 3. The Claude catalog lists exactly the Claude plugins above, from sources that exist; each entry agrees with its manifest;
-// the suite's plugins share the suite version; and the root README install block names the marketplace and every plugin.
+// the suite's plugins share the suite version; and the root README install and uninstall blocks name every plugin.
 const pkg = json("package.json");
 const market = json(".claude-plugin/marketplace.json");
 const dirs = readdirSync(join(root, "plugins"), { withFileTypes: true }).filter((d) => d.isDirectory()).map((d) => `plugins/${d.name}`);
 for (const d of dirs) if (!PLUGINS.some((pl) => pl.dir === d)) fail(`${d}: no row in PLUGINS in tools/lint.mjs`);
 const claude = PLUGINS.filter((pl) => pl.catalogs.includes("claude"));
 const manifests = new Map(claude.map((pl) => [pl.dir, json(`${pl.dir}/.claude-plugin/plugin.json`)]));
+for (const [file, pattern] of [["SKILL.md", /"plugin_version": "([^"]+)"/], ["stages/1-orient.md", /`plugin_version` `([^`]+)`/], ["stages/resume.md", /for this release is `([^`]+)`/]]) {
+  const p = `plugins/cca/skills/cca/${file}`, s = read(p), version = manifests.get("plugins/cca")?.version;
+  if (s !== null && version !== undefined && s.match(pattern)?.[1] !== version) fail(`${p}: plugin_version ${s.match(pattern)?.[1] ?? "missing"} differs from the cca manifest version ${version}`);
+}
 if (market) {
   if (market.name !== "reimagine-code") fail(`.claude-plugin/marketplace.json: name must be reimagine-code, not ${market.name}`);
   if (!market.metadata?.description) fail(".claude-plugin/marketplace.json: metadata.description is missing, and claude plugin validate --strict requires it");
@@ -116,7 +120,22 @@ if (readme !== null && market && repos.length === 1) {
   for (const line of want) {
     if (!readme.split("\n").some((l) => l.trim() === line)) fail(`README.md install block lacks the line: ${line}`);
   }
+  for (const e of market.plugins ?? []) {
+    const line = `/plugin uninstall ${e.name}@${market.name}`;
+    if (!readme.split("\n").some((l) => l.trim() === line)) fail(`README.md uninstall block lacks the line: ${line}`);
+  }
 }
+
+// Test paths in the cca README's code spans and fenced blocks must exist.
+const ccaReadme = read("plugins/cca/README.md");
+let ccaFence = false;
+ccaReadme?.split("\n").forEach((line, i) => {
+  if (/^\s*```/.test(line)) { ccaFence = !ccaFence; return; }
+  const code = ccaFence ? [line] : [...line.matchAll(/`([^`]+)`/g)].map((m) => m[1]);
+  for (const span of code) for (const [path] of span.matchAll(/\btests\/[\w./*-]+/g)) {
+    if (!path.includes("*") && !existsSync(join(root, path))) fail(`plugins/cca/README.md:${i + 1}: missing test path ${path}`);
+  }
+});
 
 // 4. Only do, setup and rules are hidden from the model; ask, review and implement must stay visible so a plain-words request, or a skill's delegation, can reach them.
 const hidden = { ask: false, review: false, implement: false, do: true, setup: true, rules: true };
@@ -251,6 +270,28 @@ for (const p of shipped.filter((f) => rel(f).startsWith("plugins/ccx-loop/"))) {
   readFileSync(p, "utf8").split("\n").forEach((l, i) => {
     const hit = gates.find((re) => re.test(l));
     if (hit) fail(`${rel(p)}:${i + 1}: bridge version gate /${hit.source}/: ${l.trim()}`);
+  });
+}
+
+// Loop API commands must carry the hostname recorded at adoption.
+for (const p of shipped.filter((f) => rel(f).startsWith("plugins/ccx-loop/") && f.endsWith(".md"))) {
+  let fenced = false;
+  readFileSync(p, "utf8").split("\n").forEach((line, i) => {
+    if (/^\s*```/.test(line)) { fenced = !fenced; return; }
+    if (fenced) return;
+    const spans = line.split("`");
+    for (let j = 1; j < spans.length; j += 2) {
+      const span = spans[j];
+      if (!/(?:^|[\s;|&(])gh\s+api(?:\s|$)/.test(span)) continue;
+      if (j === spans.length - 1) {
+        fail(`${rel(p)}:${i + 1}: gh api span runs across lines`);
+        continue;
+      }
+      const command = span.match(/(?:^|[\s;|&(])gh\s+api\s+(.+)/)?.[1];
+      if (command && !/(?:^|\s)--hostname(?:=|\s+)[^\s]+/.test(command)) {
+        fail(`${rel(p)}:${i + 1}: gh api command must pass --hostname`);
+      }
+    }
   });
 }
 

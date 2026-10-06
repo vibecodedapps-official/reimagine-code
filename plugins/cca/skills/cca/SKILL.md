@@ -29,6 +29,7 @@ allowed-tools:
   - Bash(git -C * grep *)
   - Bash(git config --list --local)
   - Bash(git -C * config --list --local)
+  - Bash(git -C * config --local --includes --get-regexp *)
   - Bash(git remote -v)
   - Bash(git -C * remote -v)
   - Bash(git ls-files *)
@@ -50,7 +51,8 @@ stage sections below say.
 
 The `allowed-tools` list above pre-approves read commands only. Export, snapshot,
 state-file, and probe commands (such as the export script, `rm -rf` and `mkdir` in the run
-directory, `stat`, `find`, `sha256sum`, `jq`, `awk`, `mv -f`, `wc -c`, `codex --version`,
+directory, the lock's `mkdir` and `rmdir`, `sleep`, `stat`, `find`,
+`sha256sum`, `shasum`, `jq`, `awk`, `mv -f`, `wc -c`, `codex --version`,
 and the `sh` runs of the scripts in `${CLAUDE_PLUGIN_ROOT}/skills/cca/scripts/`:
 `readonly.sh`, `handoff.sh`, `work-items.sh`, `working-tree.sh`, `live.sh`, and
 `ledger.sh`) follow the session's permission mode; tell the user once, before stage 1,
@@ -62,7 +64,7 @@ the plugin's own directory, where the stage files and templates live. Use each p
 exactly as it appears in this file; neither is a shell variable. Read stage files and
 templates with the Read tool, never through Bash. Stage files name both literally;
 there each means the directory substituted here. In every Bash command, including the
-`mv` of `runs.json.tmp`, use the resolved absolute path, never the unexpanded text.
+`mv` of `runs.json.<owner>.tmp`, use the resolved absolute path, never the unexpanded text.
 
 ## Invocation block
 
@@ -111,7 +113,9 @@ mean, in addition:
    `usage.md`, and `report.md`. Agents read the run directory and the audited trees
    and write only their own output file.
 2. During audit and resume you write only inside the run directory and to
-   `${CLAUDE_PLUGIN_DATA}/runs.json`. You never run `git checkout`, `git switch`,
+   `${CLAUDE_PLUGIN_DATA}/runs.json`, its `runs.json.lock` directory (including
+   the owner directory), and its `runs.json.<owner>.tmp` temporary file. You never
+   run `git checkout`, `git switch`,
    `git reset`, `git stash`, `git worktree`, `git archive`, `git checkout-index`, or any
    command that writes to an audited repo, and you run `git fetch` only after the
    approval in stage 1. The one other write is `working-tree.sh build` for a bundle with
@@ -209,7 +213,8 @@ orient -+-> digest ------+
    starts per group once its barrier clears; early groups do not wait for late ones.
 4. Map-correction top-ups run in stage 5 and finish before stage 6 starts.
 5. Stage 6 starts when every group has finished pass two.
-6. Stage 7 runs the late adversary (medium and high, and low when `live/` lists ids) and
+6. Stage 7 runs the late adversary (medium and high, and low when `live/findings.md` or
+   `live/claims.md` exists) and
    the merger.
 7. Stage 8 always runs, even after a failed stage or an expired budget.
 
@@ -229,7 +234,8 @@ fallback produced a complete output for every scope.
 - `reported`: every applicable stage complete, and a report written.
 - `partial`: a report was written, but a stage failed or the budget ran out. The
   verdict is `audit incomplete`, never `ready to merge`. Print the resume command
-  `/cca:resume <run-id>`.
+  `/cca:resume <run-id>` when the run's entry is in `runs.json`; otherwise print the
+  manual entry per State files.
 - `blocked`: no report could be written, or the read-only check failed. Print the
   reason; keep every finished stage file.
 
@@ -299,6 +305,10 @@ and before writing that stage's final entry:
    `approvals` after the baseline explains it. Otherwise end the run `blocked` at once
    and show it.
 4. For each `ignored` line (exit 3), added, deleted, or changed:
+   - If the path is inside `<s>/cca/` of any audited repository, where `<s>` is
+     any directory D2 (stage 1) would choose there, and outside this run's
+     directory, accept it as another cca run's or a handoff's file
+     and list it that way in the check file. It needs no agent attribution in step 5.
    - If any agent with Bash (digester, mapper, auditor, adversary, or the stage 6
      fallback), in any stage, is running or has ended since the previous check (from
      the `agents` lists in `stages.json`), accept it provisionally, as pending.
@@ -312,8 +322,9 @@ and before writing that stage's final entry:
    pending.
 6. Write `baseline/<stage>-check.md`: the stage, the time, the repos checked, the
    result (`pass` or `blocked: <reason>`), the ignored-file differences accepted (each
-   with the agent and run that accounts for it, or `pending` with the agents it waits
-   on), or `none`, the `touched` lines as "touched, content unchanged" (for a path the
+   labeled as another cca run's or a handoff's file, or with the agent and run that accounts
+   for it, or `pending` with the agents it waits on), or `none`, the `touched` lines
+   as "touched, content unchanged" (for a path the
    brief lists as flagged, "touched, content not compared"), and the
    `note mtime precision: seconds` line when the check printed it (the report's
    Coverage repeats it from there). On pass, the out prefix of this check becomes the
@@ -330,9 +341,85 @@ no `_test` key, do not read that file.
 
 ### State files
 
-Write `stages.json` and `runs.json` only through a temporary file beside the
-destination (`stages.json.tmp`, `runs.json.tmp`), then rename it over the destination
-with `mv -f`. Never edit either in place.
+Write `stages.json` only through `stages.json.tmp` beside it, then rename it over
+the destination with `mv -f`. Never edit state files in place.
+
+For every `runs.json` update, use `<owner>` = `<run-id>-<HHMMSS>`, the run id
+and this invocation's start time in hours, minutes, and seconds, so a resume of the
+same run gets its own token. `<lock>` is `${CLAUDE_PLUGIN_DATA}/runs.json.lock`.
+Acquire with `mkdir <lock> && mkdir <lock>/<owner>` (no `-p`), never one `mkdir`
+with both operands: a failed first operand would plant this owner in another
+session's lock. While `mkdir <lock>` fails because the lock exists, wait 5 seconds
+and retry. An empty lock is mid-acquire or a crash leftover; judge it by age too.
+
+A lock is stale when the lock directory itself is older than about a minute by
+mtime: `find <lock> -maxdepth 0 -mmin +1` lists it after a minute on GNU `find`,
+after two on BSD and busybox `find`. Never judge by how long this session waited.
+For a stale lock, ask only when a user can answer in this session whether another
+cca audit or resume is running, including one waiting at a prompt. On "no", remove
+it with `rmdir <lock>/* <lock>` (`rmdir <lock>` when empty), then acquire. On "yes",
+keep the 5-second retries for five more minutes, then ask once more. A second
+"yes", or a user who declines removal, takes the registry-failure rule below.
+In a headless session, or when unsure whether a user can answer, remove a stale
+lock without asking, with `rmdir <lock>/* <lock>` (`rmdir <lock>` when it is
+empty), then acquire. This is safe: a session whose lock was removed before its
+replace command finds its test failing and acquires again, so no entry is lost on
+a supported path (the known limit below stands). Interactive or headless, a stale
+lock whose owner directory (seen with `ls <lock>`) has this session's own `<owner>`
+name is never removed: it is the lock of another invocation with this id started in
+the same second, or this session's own leftover from a release that failed with the
+owner directory inside, and neither `ls` nor the replace test below can tell the two
+apart, while removing another's lock as one's own could publish over a third
+session's entry. Run no release, since this session holds no lock; at stage 1 D6
+stop as the duplicate-id rule says, elsewhere take the registry-failure rule. A
+session whose own failed release left that lock thus takes that rule, with its
+three cases below, at each later update, and the next audit or resume under another
+owner removes the lock as stale.
+
+Holding the lock, read `runs.json` afresh with the Read tool (or start an array
+when absent), then write `<tmp>` = `${CLAUDE_PLUGIN_DATA}/runs.json.<owner>.tmp`,
+never a shared temporary file. Replace and release in one Bash command, every path
+absolute: `[ -d <lock>/<owner> ] && mv -f <tmp> <runs.json> && rmdir <lock>/<owner> <lock>`.
+A failed test is not an error: the lock was taken over while this session paused.
+Acquire again, reread, rewrite, and run the command again. A shell stopped inside
+that one command for over a minute could still overwrite a takeover; no supported
+path stops it there (a permission prompt comes before the command, machine sleep
+pauses every session, a timeout kills the command), so this is a known limit, not
+handled. On every failure path, release any lock this session holds with
+`rmdir <lock>/<owner> <lock>`, then with `rmdir <lock>` once its owner directory is
+gone and the lock is left; another session's lock holds its own owner directory, so
+this release cannot remove it, except a same-owner lock, which this session never
+holds and so never releases (the guard above).
+
+On any refused or failed registry update step (lock acquisition, the Read,
+temporary-file write, or replace-and-release command), release any lock this
+session holds, as above. Then, whatever the case below, report the lock's resolved
+absolute path and the command that removes it when `<lock>` still exists holding
+this session's owner directory or nothing (the release was refused or failed, or
+only the data directory turned non-writable mid-update and left an empty lock), or
+when a stale lock stays because the user declined its removal or answered yes twice,
+or because its owner directory has this session's own name.
+The command is `rmdir <lock>/<owner> <lock>` for this session's lock and
+`rmdir <lock>/* <lock>` for a stale one, to run only once no cca audit or resume is
+running; each is `rmdir <lock>` when the lock is empty. Say that a later audit or
+resume removes a stale lock itself (a headless one without asking), so removing it by
+hand only saves the wait. Read `runs.json` with the Read tool and branch on this
+run's entry:
+
+- **Absent (D6's add failed, and nothing added it since):** tell the user at once
+  that `/cca:resume` and `/cca:act` cannot find this run. At D6, record the
+  limitation in `audit-brief.md`, which stage 1 still writes, so the report's
+  Coverage repeats it; after stage 1, record it in the stage's `stages.json` entry
+  and `usage.md`, never by editing the brief. Include it in the final reply. At the
+  end print the run's JSON entry to add by hand to the resolved absolute `runs.json`
+  path, in place of a bare resume command.
+- **Present with the old state (a later update failed):** say that `runs.json`
+  still shows the old state; keep printing `/cca:resume <run-id>`, with no manual
+  entry. Record the limitation in the stage's `stages.json` entry and `usage.md`
+  (at resume step 9, in `usage.md` and in the first rerun stage's final entry), and
+  in the final reply. Never edit the brief.
+- **Present with the new state (replace succeeded, only release failed):** the
+  registry is correct; record no limitation.
 
 `${CLAUDE_PLUGIN_DATA}/runs.json` is a JSON array with one entry per run:
 
@@ -348,7 +435,7 @@ with `mv -f`. Never edit either in place.
 
 ```json
 {
-  "plugin_version": "0.9.0",
+  "plugin_version": "0.9.1",
   "approvals": [ { "kind": "fetch", "target": "<repo name>:<remote>",
                    "decision": "approved", "time": "2026-09-30T14:15:00Z",
                    "commands": ["git -C <repo> fetch --no-tags --refmap= ..."] } ],

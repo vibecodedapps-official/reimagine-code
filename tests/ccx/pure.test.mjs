@@ -293,6 +293,13 @@ test('windowsSandboxSetting reads an inline table by its structure, not by the t
   assert.equal(windowsSandboxSetting('windows = { note = "a, sandbox = \'elevated\', b" }\n'), undefined);
 });
 
+test('windowsSandboxSetting honors escapes only in multiline basic strings', () => {
+  assert.equal(windowsSandboxSetting('notes = """\nWrite \\""" docstrings.\n"""\n[windows]\nsandbox = "unelevated"\n'), 'unelevated');
+  assert.equal(windowsSandboxSetting('notes = """a \\""" b"""\n[windows]\nsandbox = "unelevated"\n'), 'unelevated');
+  assert.equal(windowsSandboxSetting('notes = """a\\\\"""\n[windows]\nsandbox = "unelevated"\n'), 'unelevated');
+  assert.equal(windowsSandboxSetting("notes = '''a\\'''\n[windows]\nsandbox = \"unelevated\"\n"), 'unelevated');
+});
+
 test('windowsSandboxSetting skips multiline strings', () => {
   for (const q of ["'''", '"""']) {
     assert.equal(windowsSandboxSetting(`notes = ${q}\n[windows]\nsandbox = "unelevated"\n${q}\n[windows]\nsandbox = "elevated"\n`), 'elevated');

@@ -3,7 +3,60 @@
 One changelog for the suite. Each release has a subsection per component. The source
 repos' own changelogs are kept under `docs/history/`.
 
-## Unreleased
+## 0.3.2 - 2026-10-05
+
+### ccx
+
+- `ask` and `review` run in a repository whose directory name ends in a space. Before,
+  the path lost its trailing spaces, so the bridge could not start Codex, or ran it in a
+  sibling checkout without the space.
+- The Windows sandbox setting is read from a `config.toml` in which an earlier multiline
+  string holds an escaped `\"""`. Before, such a file read as having no setting, so
+  setup's sandbox rows failed and `ask` and `review` ran without the sandbox flag.
+- `/ccx:rules` saves its plan as UTF-8, so a config directory with a non-ASCII name
+  works. Before, the plan held a corrupted path or invalid JSON, and apply refused, or
+  wrote under a wrong directory.
+- `/ccx:rules` shows UTF-8 text in its diffs and import notes as written. Before, an
+  accented letter showed as two garbled characters. The bytes written were always right.
+- `/ccx:rules` refuses `--options core, writing`, a list split by a space, instead of
+  silently dropping `writing`, and the command text says to write the list with no
+  spaces.
+
+### ccx-loop
+
+- After the reviewer swaps to its Claude fallback, every later reviewer call in the run,
+  plan follow-up rounds, Step 5 rounds, and CI repair reviews, goes to that fallback.
+  Before, those steps read as Codex, so a `--no-codex` run could call a `ccx:` skill
+  after a CI failure.
+- A change requested at plan approval reruns the plan's verification, against the base
+  commit too when the planning snapshot is another commit, then the risk floor, and
+  chooses each slice's implementer again; the tier never falls, and when it rises with
+  no explicit run budget the budget becomes the new tier's default. Before, it got only
+  one more review round.
+- Plan confirmation compares a local branch with the base commit only when the branch
+  exists. Before, a run that continued a branch with no local branch of that name ended
+  `blocked` there.
+- The skill names where the user's instruction and settings files are read from:
+  `$CLAUDE_CONFIG_DIR`, else `~/.claude`.
+- Every `gh api` call in the CI watch, handoff, and multi-repo texts passes
+  `--hostname <host>`, the host Step 0 recorded. Before, the calls went to gh's default
+  host, so a GitHub Enterprise run with a github.com login also saved published its PR
+  and then ended `blocked` on the first CI read.
+- The CI watch reads the PR's `state` at every poll and ends `blocked` when it is not
+  `OPEN`, naming the state. Before, a PR closed during the watch could be reported as
+  `done`.
+- The CI watch polls with one read per Bash call, each `gh api` call written out with
+  `--hostname <host>`, and applies each state, head, and workflow rule as soon as its
+  reads are in, never in a shell loop over several reads. Before, the polling item gave
+  only the interval, so the watch could run as one shell loop whose own calls went to
+  gh's default host and whose rules were applied only when the loop ended.
+- A `pull_request_target` workflow is judged by its file on the default branch, in the
+  CI watch and in the deploy ask-first before pushing. Before, one the PR itself added
+  could make the watch wait for a check that never comes.
+
+### ccx (Codex)
+
+- Version 0.3.2, to stay in step with `ccx`. No change.
 
 ### cca
 
@@ -18,6 +71,140 @@ repos' own changelogs are kept under `docs/history/`.
   version is an input of every stage.
 - The sh suites and fixtures run through `npm test` from `tests/cca/`. The records from
   before the move are under `docs/history/claude-codex-audit/`.
+- The README's standalone check commands name `tests/cca/lint.sh`,
+  `tests/cca/fixture/build.sh`, and `tests/cca/fixture/verify.sh`. Before, each had an
+  extra `cca/` in its path and exited 127.
+- The README's pairing section describes the handoff `ccx-loop` writes, `handoff.md` and
+  `cca-manifest.json` under `.ccx/<run-id>/`, and the `/cca:audit` command it suggests.
+  Before, it said the pairing was manual and the loop wrote no handoff.
+- `/cca:handoff` prints a manifest for the session's bundles as a fenced JSON block when
+  it was given neither a manifest nor a PR as a URL or `github:owner/repo#n`, since
+  `/cca:audit` cannot learn the branch and base otherwise. Before, the printed command
+  stopped in stage 1 for want of a branch and base.
+- `/cca:handoff` copies check commands, paths, and commit subjects as recorded, tool
+  names included, and rewrites only prose that credits a model, agent, or tool with the
+  work. Before, the rule read as rewriting the commands too, so an auditor could not
+  reproduce a check.
+- Every `runs.json` update holds a `runs.json.lock` directory in the plugin data
+  directory, with an owner directory inside it named for the run and the invocation,
+  rereads the registry under it, writes a per-owner temporary file, and replaces the
+  registry only while its owner directory is still there. A lock older than about a
+  minute is stale: an interactive run asks whether another cca audit or resume is
+  running before removing it, and a headless run removes it without asking, since a
+  session whose lock was removed before its replace command rereads and rewrites. A
+  stale lock whose owner name is the run's own, left by a second audit of one id
+  started in the same second or by the run's own failed release, is never removed by
+  that run: it stops before stage 1 as a duplicate id, or reports a registry failure
+  after stage 1, and the next audit or resume removes the lock. Before, two audits
+  running at once could lose each other's entry, so `/cca:resume` and `/cca:act`
+  could not find a run.
+- A refused or failed `runs.json` update no longer ends with a bare `/cca:resume <run-id>`
+  that cannot work. When the run's entry is missing, the run says at once that resume
+  and act cannot find it, records that in the brief during stage 1 or in the stage's
+  `stages.json` entry and `usage.md` afterward, and prints the entry to add by hand;
+  when the entry is present with its old state, it says so and keeps the resume command.
+  Whenever the lock directory is left holding this run's owner directory or nothing, or
+  a stale lock stays because the user kept it or it carries the run's own owner name,
+  it also prints the lock's path and the command that removes it, with the form for an
+  empty lock.
+- A run id is settled twice. The run directory is created with a `mkdir` that fails
+  when it exists, taking the next suffix, and under the registry lock a run whose id
+  another audit registered in the same minute stops before stage 1, removes its
+  directory, and says to run the command again. Before, two audits started in the same
+  minute could share a run directory and overwrite each other's `manifest.json`, or
+  register one id twice.
+- Stage 1 stops before any read when an audited repository is a partial clone, with a
+  promisor remote or `extensions.partialclone`, printing `<repo>: partial clones are not
+  supported`. Before, nothing refused one, and the agents' `git show` and `git diff`
+  fetched the missing objects into the audited repository over the network.
+- In a headless session, or when cca cannot tell whether a user can answer, stage 6
+  passes Codex a timeout of at most 540 seconds, so the bridge call ends inside the Bash
+  tool's 10-minute foreground limit and never moves to the background; `codex_timeout`
+  records the value passed. Before, a tier timeout of 1,200 seconds or more let the call
+  run past that limit and move to the background, and a headless session ended with its
+  turn, losing the run.
+- The read-only check accepts another cca run's or a handoff's file under any audited
+  repository's `<scratch>/cca/` and lists it as such. Before, two audits of the same
+  repository ended each other `blocked`.
+- The report's revision hash falls back to `shasum -a 256` when `sha256sum` is absent,
+  and the step stops, writing no `report.md`, unless it has a 64-character hex digest.
+  Before, a PATH without `sha256sum` wrote `revision: sha256:` with no digest, which
+  `live.sh check` and `/cca:act` then rejected.
+- A manifest `groups` name is slugged like the run id, with no length cap: lowercased,
+  with runs of other characters turned into one `-`. A name that slugs to nothing, to
+  `tests`, `hygiene`, `tests-hygiene`, `interactions`, `combined`, or `unticketed`, to
+  another entry's slug, or to the `-topup` or `-maptopup` form of another entry's slug
+  or a reserved name stops the run before stage 1 with one line. Before, the name was
+  used as given, so a name with a space failed stage 5, and a name equal to a specialist
+  scope or to another group's top-up wrote the same scope files.
+- The late adversary runs at low tier when `live/findings.md` or `live/claims.md`
+  exists, and at every tier its prompt names the live files and carried files that
+  exist. Before, a claim-only live result at low launched no late adversary, and at
+  medium and high the prompt never named `live/claims.md`, so a live `true, reproduced`
+  claim could end `not verified, not reproduced`.
+- A second barrier top-up passes the preservation check when the saved copy, less its
+  final `status: complete` line, equals the same number of leading lines of the new
+  file. Before, a correct second top-up failed the check, so the scope failed and the
+  run ended `partial`.
+- Every patch diff in the stage files and the agents' commands passes `--no-ext-diff
+  --no-textconv --no-color`. Before, a user's `diff.external` or `color.ui=always` put
+  tool output or escape codes in `diffs/<bundle>.diff`.
+- The rule that a live check's query, place, and results hold no semicolon sits in the
+  finding schema, where every finding reads it. Before, it sat only in the run-once
+  section, and a semicolon in any other finding's live check field was cut when the
+  report split the field.
+- The attribution rule in `common.md` says an ignored file written by a run an agent
+  logged is allowed and reported, matching `SKILL.md` and the README. Before, it said
+  "a check run".
+- `revert-tests.sh` refuses a partial clone with `partial clones are not supported`,
+  exit 2, and sets `GIT_NO_LAZY_FETCH=1` for every git call. Before, on a
+  `--filter=blob:none` clone it fetched the missing blobs into the audited repository
+  over the network and wrote a full result, and the read-only check noticed nothing.
+- `memory.sh` follows a symlink given as the memory directory. Before, such a path
+  printed `none` for every key.
+- `ledger.sh` reports a finding heading with extra leading spaces, or an id wrapped in
+  `**` or backticks, as malformed. Before, it read the heading as text and dropped the
+  finding, so a blocker could leave the ledger without an error.
+- `ledger.sh check --through 7` fails when `converged.md` ends inside a code fence.
+  Before, every item after a stray opening fence was ignored and the check passed.
+- `revert-tests.sh` lists a test-code path holding a tab as not used and never runs it.
+  Before, it ran the path, which failed to copy, and the result showed an empty verdict
+  and a counts line short by one.
+- `readonly.sh check` no longer fails when `find` cannot read an ignored directory, such
+  as a `pgdata/` with mode 000, or when an ignored directory changes under it; the
+  diagnostic still prints. Before, every check exited 2 and the run ended `blocked`.
+- Released as 0.9.1; the move shipped as 0.9.0.
+
+### repo-docs
+
+- Migrating a repository whose only tracked instruction file is `.claude/CLAUDE.md`, or
+  a `.claude/AGENTS.md` that an earlier migration left, makes it the root `AGENTS.md`,
+  rewriting relative paths. Before, the text could be read as renaming it in place to
+  `.claude/AGENTS.md`, which Codex reads only from a session started inside `.claude/`.
+  The rule that a symlinked instruction file keeps its location excepts that sole
+  file, so a symlinked `.claude/CLAUDE.md` moves too. A `.claude/CLAUDE.md` beside a
+  root `AGENTS.md` is no longer renamed to `.claude/AGENTS.md`: its lines are placed
+  and the file is deleted.
+- Maintain mode normalizes any tracked `CLAUDE.md` that is not exact, and any tracked
+  `AGENTS.md` or `CLAUDE.md` that is a symlink or is `.claude/AGENTS.md` or
+  `.claude/CLAUDE.md`, placing its lines and deleting the file under `.claude/`; an
+  untracked file is never normalized or deleted. Before, only a symlinked file or a
+  `CLAUDE.md` with content after its import was normalized, so one with its own lines
+  and no import met no rule, and nothing removed a `.claude/AGENTS.md` left by an
+  earlier rename.
+- Every `@path` import maintain mode meets becomes a pointer or is inlined, except an
+  adapter line, which stays; an import of another `AGENTS.md`, which is dropped; and an
+  import of a file the repository does not track, such as one under the home directory,
+  which is reported and never inlined, its line kept only in a file that stays or is
+  renamed and otherwise named in the report. Before, that rule covered only the
+  sole-file migration and made no exception for any import.
+- The judgment checks flag a `.claude/AGENTS.md`, beside `AGENTS.override.md` and
+  `AGENTS.local.md`, as a file the two platforms load under different conditions, which
+  `references/platforms.md` records.
+- The adapter guidance no longer names Amazon Bedrock or disabled telemetry as sessions
+  that cannot read `AGENTS.md`; `references/platforms.md` version-qualifies them, with
+  the first session after an upgrade, and says to try a fresh session first.
+- Released as 0.1.5.
 
 ## 0.3.1 - 2026-10-05
 

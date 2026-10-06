@@ -508,3 +508,145 @@ every plugin in the suite, so no step redirects other users from the old reposit
    bridge now lives here and `ccx` 0.3.1 already stops Codex on SIGTERM.
 7. **The review-rounds transport stays `recode` 0.1.3** on the author's real profile,
    which this work never changes; the user updates it to `ccx` when they choose.
+
+## Part 15: ccx 0.3.2, cca 0.9.1, and repo-docs 0.1.5, the second review rounds, 2026-10-05
+
+Decided during the second review-rounds run, under a plan the user approved before it
+started, with local commits, the loop acceptance runs, and the audit acceptance run
+pre-approved.
+
+1. **The bridge budget is 710 lines, and the three joined lines are split.** Part 13
+   item 7's "for now" ends here: the release preparation raised R14 to 710 and split
+   `ccx.mjs` lines 51, 90, and 323 (commit 33b84bf), with the author's approval in the
+   plan. At 0.3.2 the two scripts use 703 lines; lint prints the figure on every run.
+2. **A reviewer that fell back stays the active reviewer.** After a Codex failure swaps
+   the loop's reviewer to the Claude fallback, every later reviewer call (plan follow-ups
+   in Step 3.3, the later final-review rounds in Step 5.4, and the CI repair review in
+   Step 7.3.5) goes to the active reviewer, and a `--no-codex` run never calls a `ccx:`
+   skill (5f78769). The round 1 review found the three steps still reading as Codex after
+   a swap, and a failed reviewer call printing a thread id the step would have resumed.
+3. **A PR closed or merged by someone else during the CI watch ends the run `blocked`.**
+   `ci-watch.md` reads the PR's `state` and ends `blocked` on anything but `OPEN`
+   (5f78769), matching the pre-push rule and the `done` definition. A closed, unmerged
+   PR read like an open one on every field the watch used (head, base, merge commit,
+   `mergeable`, green checks), so a watch could end `done` on it. Treating a merge by
+   someone else as `done` instead is the author's call and reopens this.
+4. **cca's registry lock is a directory with an owner directory inside it, and a
+   headless session removes a stale lock without asking.** Every `runs.json` update
+   holds `runs.json.lock` with `<run-id>-<HHMMSS>` inside it, rereads the registry,
+   writes a per-owner temporary file, and replaces the registry only while its owner
+   directory still exists (567f711, 35c6535, 2818c2f). A lock older than about a minute
+   is stale; an interactive session removes it after a user says no other audit or
+   resume is running, and a headless session, or one unsure whether a user can answer,
+   removes it at once (35c6535 and 2818c2f had it treat the lock as refused, and
+   2cd5b27 added the report; 337db4c takes the automatic variant with the user's
+   approval). The round 3 scenario scripts, under sh, dash, and busybox on APFS and
+   ext4, lost an entry or removed a live lock in three schedules with a minute-based
+   lock and kept every entry with the owner directory. A session whose stale lock is
+   removed before its replace command only rereads and rewrites, so the automatic
+   removal loses no entry on a supported path. A stale lock whose owner directory has
+   this session's own `<owner>` name is never removed: two invocations of one run id
+   started in the same second share the owner and the temporary file, so the replace
+   test could not tell the locks apart; the session holds no lock then and runs no
+   release, stops at stage 1 D6 as a duplicate id so two runs never share
+   `revert-work/<run-id>/`, and elsewhere takes the registry-failure rule (cc2ad41 and
+   b1cd5fe). 247eb9a had a session remove such a lock as its own leftover when its
+   earlier release had failed; 1895a62 reverts that, since `ls <lock>` cannot tell that
+   leftover from a same-second collision, and the fourth diff review pass showed a
+   three-session schedule where a session that removed another's lock as its own
+   published over a third session's registered entry. The cost is a session whose own
+   release left its owner directory inside the lock: each later update takes the
+   registry-failure rule with its three cases (a manual entry only when the entry is
+   absent, the old state reported when present, nothing when the registry is already
+   right; cfee3b3, after the fifth pass found the first wording promised a manual entry
+   in every case), and the next audit or resume removes the lock. A
+   collision-resistant owner token would remove the case but
+   changes the owner form the plan froze, and is the user's call. The lock
+   report fires when the lock directory is left holding this session's owner directory
+   or nothing, or a stale lock stays because the user kept it or it bears this
+   session's own name, and every printed command has its empty-lock form (337db4c,
+   1895a62). Known limits: a shell stopped inside the
+   one replace-and-release command for over a minute, which no supported path does; and
+   two sessions that remove one stale lock at once, an interactive "no" included, where
+   the slower removal can fail the faster session's acquisition, which then takes the
+   registry-failure rule and overwrites no registered entry, its own printed for hand
+   entry, or lands after the owner directory exists, so the faster session's replace
+   test fails and it acquires again.
+5. **The revert-tests script and stage 1 both refuse a partial clone.**
+   `GIT_NO_LAZY_FETCH=1` is exported beside `GIT_OPTIONAL_LOCKS`, and a repository with
+   a promisor remote or `extensions.partialclone` ends `partial clones are not
+   supported`, exit 2, before the first object read (2168b93). On a blobless clone a run
+   had fetched four packs into the audited repository over the network while the
+   read-only check noticed nothing. The agents' own `git show` and `git diff` fetch
+   lazily too, so stage 1 stops before any read when
+   `git -C <repo> config --local --includes --get-regexp '^(remote\..*\.promisor|extensions\.partialclone)$'`
+   matches for any audited repository, with `<repo>: partial clones are not supported`
+   (337db4c, with the user's approval; `--local` and the pre-approved probe in cc2ad41,
+   so the probe reads the repository's own config only, and `--includes` in b1cd5fe,
+   since `--local` alone skips the file's `include` directives: a promisor setting in
+   an included file passed the probe and was found with the flag).
+6. **The read-only check's advisory `touched` walk never stops a run.** Its `find`
+   errors are printed and ignored (2168b93); the hash walk stays fatal. An ignored
+   directory with mode 000 had made every check exit 2, and a directory churning during
+   a check did so in two of thirty runs.
+7. **A custom group's name is slugged like the run id, with no length cap, and a
+   reserved or shared slug stops the run.** Lowercase, with runs of characters outside
+   `a-z0-9` turned into one `-`; a slug that is empty, a reserved scope name, another
+   group's slug, or the `-topup` or `-maptopup` name of another group or a reserved scope
+   stops the run before stage 1 (2cc90e5, 35c6535). The ledger script had failed on a
+   group named `auth api` (`expected 5 fields, got 7`), and a name equal to a specialist
+   scope wrote that scope's files.
+8. **repo-docs maintain mode deletes a tracked `.claude/AGENTS.md` or `.claude/CLAUDE.md`,
+   drops an `AGENTS.md` import that is not an adapter line, and reports an import of a
+   file the repository does not track.** A tracked `.claude/CLAUDE.md` or
+   `.claude/AGENTS.md` beside a root `AGENTS.md` has its lines placed and is deleted,
+   never renamed in place or made an adapter, because Claude Code loads
+   `.claude/AGENTS.md` when it reads `AGENTS.md` directly, Codex only from a session
+   started inside `.claude/`, and an adapter there would import an absent
+   `.claude/AGENTS.md` (d773f04, 0aff3bb, a3df9cb, 6ea123b). A sole tracked `CLAUDE.md`
+   or `.claude/AGENTS.md` moves to the root hub, and an untracked sole file is left
+   alone, the repo getting first setup, though the new hub does not load in Claude Code
+   for that user while the untracked `CLAUDE.md` exists, which the audit's session
+   check then reports. The reference budget rose from 90 to 100 lines with the user's
+   approval, so the round 6 findings fit without dropping a reason clause (dfc5d75,
+   3eeb3ce, b60c91b): an `AGENTS.md` import is dropped unless it is an adapter line,
+   since inlining it would copy a hub into the file; an import of a file the repository
+   does not track, outside it or ignored, is reported and never inlined, its line kept
+   only in a file that stays or is renamed and otherwise named in the report, since the
+   run cannot share what it holds, so a sole file that becomes the hub keeps the line
+   and the next audit reports it by design (the diff review widened "outside the
+   repository" to "not tracked", the same hazard one step in; the user may narrow it
+   back); every normalization trigger, rename, and deletion names a tracked file, so an
+   ignored personal `CLAUDE.md` is never moved or deleted; and the deletion reaches only
+   the two `.claude/` files, not a tracked `.claude/skills/<name>/AGENTS.md`. Open:
+   under a required-adapters policy, "add any missing one" where an ignored personal
+   `CLAUDE.md` already sits.
+9. **A cca run id is settled under the registry lock, and a duplicate stops the run.**
+   Stage 1's suffix check at D3 is a first pass; D4 creates the run directory with a
+   `mkdir` that fails when it exists and takes the next suffix; D6, under the lock after
+   the fresh read, stops before stage 1 when another audit registered the same id in
+   the same minute, removing this run's directory (337db4c), and the same stop applies
+   before acquiring when a stale lock bears this run's own owner name (b1cd5fe, item 4).
+   The cumulative review found
+   that two audits started in the same minute could share a run directory and overwrite
+   each other's `manifest.json`, or register one id twice, since D3 read the registry
+   without the lock.
+10. **Stage 6 passes Codex at most 540 seconds in a headless session.** Issue 26, the
+    audit repository's issue 39 in Part 14 item 6, had two fixes, a cap in cca or a
+    background mode in the bridge; the cap is taken (337db4c). In a headless session, or
+    when cca cannot tell whether a user can answer, a larger `--codex-timeout` or tier
+    value is replaced by 540, so the `ccx:ask` call ends inside the Bash tool's
+    10-minute foreground limit and never moves to the background, where the turn's end
+    would end the session; step 6 says so, as stage 1 step 6b does for the test run. Every
+    tier value is above 540, so a headless run with no `--codex-timeout` always passes
+    540, and a longer Codex answer swaps to the fallback with the reason `codex timeout
+    after 540 s`. An interactive session keeps its value and waits for the background
+    notification.
+11. **The loop's CI watch polls with one read per Bash call.** Acceptance run 6 for
+    0.3.2 found 13 of 51 `gh api` calls without `--hostname`, ten of them in shell loops
+    the model wrote in two runs and three in ad hoc reads, and a PR closed during the
+    watch ending it `blocked` 79 seconds after the first `CLOSED` read, from one of those
+    loops; the text was right and the loop form bypassed it. Item 4 of the watch says one
+    read per Bash call, each `gh api` written out with the host, each rule applied as
+    soon as the reads it needs are in, and never a shell loop over several reads
+    (a8b6bfb, 17dbd8d, 0d6e4a2).

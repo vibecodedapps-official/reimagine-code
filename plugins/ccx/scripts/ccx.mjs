@@ -48,7 +48,8 @@ function run(file, args, { ms, cwd, input, onStdout }) {
       timers.forEach(clearTimeout);
       for (const signal of ['SIGINT', 'SIGTERM']) process.removeListener(signal, stop);
       if (child && POSIX) kill('SIGKILL');
-      res.stillRunning = !res.spawnError && child.exitCode === null && child.signalCode === null; if (res.interrupted) res.code = 1;
+      res.stillRunning = !res.spawnError && child.exitCode === null && child.signalCode === null;
+      if (res.interrupted) res.code = 1;
       for (const s of [child.stdin, child.stdout, child.stderr]) s?.destroy();
       child.unref();
       res.stdout = Buffer.concat(stdout).toString('utf8');
@@ -87,7 +88,8 @@ function run(file, args, { ms, cwd, input, onStdout }) {
 
 // For commands that normally take milliseconds: failing to start or missing the deadline is a refusal naming them.
 async function local(name, file, args, cwd, ms = LOCAL_MS) {
-  const r = await run(file, args, { ms, cwd }); if (r.interrupted) throw Object.assign(new Refusal(`${name} was interrupted`), { interrupted: true });
+  const r = await run(file, args, { ms, cwd });
+  if (r.interrupted) throw Object.assign(new Refusal(`${name} was interrupted`), { interrupted: true });
   if (r.spawnError) refuse(`could not start ${name}: ${r.spawnError.message}`);
   if (r.timedOut) refuse(`${name} did not finish within ${secs(ms)}${r.stillRunning ? `; it may still be running as pid ${r.pid}` : ' and was stopped'}`);
   return r;
@@ -268,7 +270,7 @@ async function main() {
   const top = await git(['-C', here, 'rev-parse', '--show-toplevel'], process.cwd());
   if (top.code !== 0) refuse(`not inside a git repository, so nothing was run (${top.stderr.trim()})`);
   // ask and review run from the top of the repository holding --cwd (review only) or the shell's directory; do and implement keep the shell's, or implement's --cwd, which bounds their writes.
-  const cwd = writes ? here : join(top.stdout.trim());
+  const cwd = writes ? here : join(top.stdout.replace(/\r?\n$/, ''));
   let before;
   if (command === 'review') await reviewChecks(args.base, cwd);
   if (writes) {
@@ -320,7 +322,8 @@ async function setup() {
       ok &&= pass;
       out.push(`${label}: ${text}`);
     } catch (e) {
-      if (!(e instanceof Refusal)) throw e; if (e.interrupted) { status = 'refused'; throw e; }
+      if (!(e instanceof Refusal)) throw e;
+      if (e.interrupted) { status = 'refused'; throw e; }
       ok = false;
       out.push(`${label}: ccx: ${e.message}`);
     }

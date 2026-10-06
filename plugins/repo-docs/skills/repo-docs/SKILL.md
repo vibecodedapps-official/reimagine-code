@@ -1,11 +1,11 @@
 ---
 name: repo-docs
 description: Use when editing AGENTS.md, CLAUDE.md, or a spoke the hub indexes; when
-  setting up a repo that has no instruction files or only a CLAUDE.md; when adding a
-  spoke, an adapter, or a pointer; before a commit or pull request; or after a batch of
-  feature work, to keep the hub and its spokes correct and progressively disclosed. Not
-  for writing user-facing product docs, API references, or README content unrelated to
-  agent instructions.
+  setting up a repo that has no instruction files or only CLAUDE.md or .claude/AGENTS.md;
+  when adding a spoke, an adapter, or a pointer; before a commit or pull request; or
+  after a batch of feature work, to keep the hub and its spokes correct and progressively
+  disclosed. Not for writing user-facing product docs, API references, or README content
+  unrelated to agent instructions.
 ---
 
 # repo-docs
@@ -87,9 +87,11 @@ placement rule. A hub that has grown past these four sections is a finding.
 - **audit**: read only; apply the checks in `references/spokes.md`, report each as an
   error or a finding, and end with a session verification: start a fresh session at the
   repo root and confirm the hub actually loaded.
-- **maintain**: applies changes, including first setup, a repo whose only instruction file
-  is a `CLAUDE.md`, and a repo with symlinked instruction files or an adapter with content
-  after the import, under the safeguards in `references/spokes.md`.
+- **maintain**: applies changes, including first setup, a repo whose only tracked
+  instruction file is a `CLAUDE.md` or `.claude/AGENTS.md`, and a repo with a tracked
+  symlinked `AGENTS.md` or `CLAUDE.md`, a tracked `.claude/AGENTS.md` or
+  `.claude/CLAUDE.md`, or a tracked `CLAUDE.md` that is not exact, under the safeguards
+  in `references/spokes.md`.
 
 ## Reference files
 

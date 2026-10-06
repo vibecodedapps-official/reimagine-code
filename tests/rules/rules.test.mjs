@@ -252,6 +252,50 @@ function sandbox(fn, { codex = true } = {}) {
 const bytes = (path) => readFileSync(path, 'latin1');
 const put = (path, text) => { mkdirSync(join(path, '..'), { recursive: true }); writeFileSync(path, text, 'latin1'); };
 
+test('A1-U2-1: saved plans preserve Unicode config paths and apply both targets', sandbox((s) => {
+  s.env.CLAUDE_CONFIG_DIR = join(s.root, 'claude-\u00e9\u6f22');
+  s.env.CODEX_HOME = join(s.root, 'codex-\u00e9\u6f22');
+  mkdirSync(s.env.CODEX_HOME);
+  s.run('plan');
+  const saved = JSON.parse(readFileSync(join(s.data, 'rules-plan.json'), 'utf8'));
+  const claude = join(s.root, 'claude-\u00e9\u6f22', 'CLAUDE.md');
+  const codex = join(s.root, 'codex-\u00e9\u6f22', 'AGENTS.md');
+  assert.equal(saved.claude.path, claude);
+  assert.equal(saved.codex.path, codex);
+  assert.deepEqual(s.run('apply', ['claude']), [`ccx: wrote ${claude}`]);
+  assert.deepEqual(s.run('apply', ['codex']), [`ccx: wrote ${codex}`]);
+  assert.equal(existsSync(claude), true);
+  assert.equal(existsSync(codex), true);
+}));
+
+test('A1-U2-2: reports decode UTF-8 text while preserving paths and file bytes', sandbox((s) => {
+  s.env.CLAUDE_CONFIG_DIR = join(s.root, 'claude-\u00e9');
+  const path = join(s.root, 'claude-\u00e9', 'CLAUDE.md');
+  const original = '# Jos\u00c3\u00a9\n@notes-\u00c3\u00bc.md\n';
+  put(path, original);
+  const out = s.run('plan');
+  assert.equal(out[0], `target: claude ${path}`);
+  assert.equal(out.includes('note: line 2: @notes-\u00fc.md imports a file that may hold the same rules; it is left as it is'), true);
+  const shown = out.find((line) => line.startsWith('--- '));
+  assert.equal(shown.split('\n').includes(' # Jos\u00e9'), true);
+  assert.equal(shown.split('\n')[0], `--- ${path}`);
+  s.run('apply', ['claude']);
+  assert.equal(bytes(path).startsWith(original), true);
+  put(path, bytes(path).replace('<!-- ccx:house-rules end -->', 'Se\u00c3\u00b1or line\n<!-- ccx:house-rules end -->'));
+  assert.equal(s.run('plan').some((line) => line.split('\n').includes('+Se\u00f1or line')), true);
+  put(path, `${BOM}# Mine\n${FF}\n`);
+  const unusual = s.run('plan').find((line) => line.startsWith('--- '));
+  assert.equal(unusual.split('\n').includes(' \ufeff# Mine'), true);
+  assert.equal(unusual.split('\n').includes(' \ufffd'), true);
+}));
+
+test('O1-U2-1: options refuse leftover arguments and empty list items', sandbox((s) => {
+  assert.throws(() => s.run('plan', ['--options', 'core,', 'writing']), { message: 'unexpected argument "writing" after --options list' });
+  assert.throws(() => s.run('plan', ['--options', 'core,']), { message: '--options takes a comma-separated list of core, windows, writing; got "core,"' });
+  assert.throws(() => s.run('plan', ['--options', 'core', 'writing']), { message: 'unexpected argument "writing" after --options list' });
+  assert.equal(s.run('plan', ['--options', 'core, writing']).includes('options: core,writing'), true);
+}));
+
 test('R33: the targets come from CLAUDE_CONFIG_DIR and CODEX_HOME, else from the home directory', sandbox((s) => {
   assert.deepEqual(targets(s.env, s.home), { claude: { path: s.claude }, codex: { path: s.codex } });
   const t = targets({}, s.home);
@@ -313,7 +357,7 @@ test('R35, R46: the writing option adds the shipped Writing section to the Codex
   assert.equal(codexBody, `${SHIPPED['core.md']}\n${SHIPPED['writing-codex.md']}${END}\n`);
   assert.equal(bytes(s.claude).split('\n').slice(1).join('\n'), `${SHIPPED['core.md']}${END}\n`);
   assert.match(bytes(s.codex).split('\n')[0],
-    /^<!-- ccx:house-rules begin version=0\.3\.1 options=core,writing join=none digest=[0-9a-f]{16} -->$/);
+    /^<!-- ccx:house-rules begin version=0\.3\.2 options=core,writing join=none digest=[0-9a-f]{16} -->$/);
 }));
 
 test('R37: plan writes nothing for current, edited and malformed targets', sandbox((s) => {
@@ -361,7 +405,7 @@ test('R41: an existing file is backed up with the time in its name, and no tempo
     [`ccx: wrote ${s.claude}; the earlier content is in ${s.claude}.ccx-backup-20261003120000`]);
   assert.deepEqual(readdirSync(s.claudeDir).sort(), ['CLAUDE.md', 'CLAUDE.md.ccx-backup-20261003120000']);
   assert.equal(bytes(`${s.claude}.ccx-backup-20261003120000`), 'mine\n');
-  assert.ok(bytes(s.claude).startsWith('mine\n\n<!-- ccx:house-rules begin version=0.3.1 options=core join=blank digest='));
+  assert.ok(bytes(s.claude).startsWith('mine\n\n<!-- ccx:house-rules begin version=0.3.2 options=core join=blank digest='));
   assert.deepEqual(s.state().created, {});
   assert.deepEqual(readdirSync(s.data).sort(), ['rules-plan.json', 'rules-state.json']);
 }));

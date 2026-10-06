@@ -181,7 +181,7 @@ never loses a finished one. With `--live`, it first imports approved live check 
      invalidates stage 1 (the bundles' head and base shas were already compared in
      step 3, which stops on any change);
    - upstream stage outputs, by `git hash-object --no-filters <file>`;
-   - `plugin_version`, which for this release is `0.9.0`.
+   - `plugin_version`, which for this release is `0.9.1`.
    - the live inputs of stages 6 to 8: `live/findings.md`, `live/claims.md`, and each
      `live/carried/<id>.md` that `live/findings.md` names, by `git hash-object
      --no-filters <file>` (`live.md`).
@@ -266,8 +266,11 @@ never loses a finished one. With `--live`, it first imports approved live check 
    list: when the planned commands for a repo and remote are all in one recorded list
    for that target, they are not asked again; otherwise ask once, listing the new
    commands, and record a new approval entry.
-9. **Mark the run running.** Set the run's `state` in `runs.json` to `running`. A
-   resumed run has no budget; the original invocation's budget does not carry over.
+9. **Mark the run running.** Set the run's `state` in `runs.json` to `running` under
+   the lock per SKILL.md, State files. On refusal or failure, continue per that
+   section, recording any limitation in `usage.md` and in the first rerun stage's
+   final `stages.json` entry, the one it writes when it ends. A resumed run has no
+   budget; the original invocation's budget does not carry over.
 10. **Continue.** Go to the SKILL.md section for the first rerun stage and run every
    stage after it, with the same rules as an audit. When the first rerun stage is 2, 3,
    or 4, launch every stage among 2, 3, and 4 that is being rerun together; a reused

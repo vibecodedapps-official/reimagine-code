@@ -151,8 +151,12 @@ Then, in Claude Code:
 ```
 /plugin uninstall ccx-loop@reimagine-code
 /plugin uninstall ccx@reimagine-code
+/plugin uninstall cca@reimagine-code
 /plugin uninstall repo-docs@reimagine-code
 ```
+
+Uninstalling `cca` deletes its data directory, including `runs.json` and run
+directories stored there; move any run you want to keep first.
 
 In Codex:
 

@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 // House rules: node rules.mjs <status|plan|remove|apply|decline> <dataDir> [args]. Keeps one marked block of rules in the
 // user's Claude CLAUDE.md and Codex AGENTS.md. Everything above main() is pure: it takes file text, options and rule texts.
-// Files are read and written as latin1, so every byte outside the block, a BOM or a stray non-UTF-8 byte included, survives.
+// Instruction files use latin1, so every byte outside the block, a BOM or a stray non-UTF-8 byte included, survives.
 import { createHash } from 'node:crypto';
 import { chmodSync, constants, lstatSync, copyFileSync, existsSync, mkdirSync, readFileSync, realpathSync, renameSync, rmSync, statSync, writeFileSync } from 'node:fs';
 import { homedir } from 'node:os';
@@ -42,7 +42,7 @@ export const eolOf = (text) => { const i = text.indexOf('\n'); return i > 0 && t
 export const defaultOptions = (platform) => (platform === 'win32' ? ['core', 'windows'] : ['core']);
 
 export function parseOptions(value, platform) {
-  const list = String(value ?? '').split(',').map((s) => s.trim()).filter(Boolean);
+  const list = String(value ?? '').split(',').map((s) => s.trim());
   const bad = list.filter((o) => !OPTIONS.includes(o));
   if (!list.length || bad.length) refuse(`--options takes a comma-separated list of ${OPTIONS.join(', ')}; got "${value}"`);
   if (list.includes('windows') && platform !== 'win32') refuse('the windows option is offered only on Windows');
@@ -182,7 +182,7 @@ export const pluginVersion = (root = ROOT) => JSON.parse(readFileSync(join(root,
 export const readText = (path) => { try { return readFileSync(path, 'latin1'); } catch (e) { if (e.code === 'ENOENT') return null; throw e; } };
 const readJson = (path) => { try { return JSON.parse(readFileSync(path, 'utf8')); } catch (e) { if (e.code === 'ENOENT') return undefined; throw e; } };
 export const loadState = (dataDir) => ({ options: {}, created: {}, declined: {}, ...readJson(join(dataDir, STATE_FILE)) });
-const save = (dataDir, file, value) => { mkdirSync(dataDir, { recursive: true }); writeAtomic(join(dataDir, file), `${JSON.stringify(value, null, 2)}\n`); };
+const save = (dataDir, file, value) => { mkdirSync(dataDir, { recursive: true }); writeAtomic(join(dataDir, file), `${JSON.stringify(value, null, 2)}\n`, undefined, 'utf8'); };
 const stamp = (now) => now.toISOString().replace(/\D/g, '').slice(0, 14);
 const sleep = (ms) => Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, ms);
 
@@ -204,9 +204,9 @@ function locked(dataDir, fn) {
 
 // Writes beside the target, then renames over it. On Windows a rename that fails, as when another process holds the
 // file, is retried once after a short wait.
-function writeAtomic(path, text, backup) {
+function writeAtomic(path, text, backup, encoding = 'latin1') {
   const tmp = `${path}.ccx-tmp-${process.pid}`;
-  writeFileSync(tmp, text, 'latin1');
+  writeFileSync(tmp, text, encoding);
   if (existsSync(path)) chmodSync(tmp, statSync(path).mode & 0o777);
   try { renameSync(tmp, path); } catch (e) {
     if (process.platform === 'win32') {
@@ -219,15 +219,16 @@ function writeAtomic(path, text, backup) {
 }
 
 function report(name, t, plan) {
+  const shown = (text) => Buffer.from(text, 'latin1').toString('utf8');
   const lines = [`target: ${name} ${t.path}`];
   if (t.skip) return [...lines, `state: skipped; ${t.skip}`, 'change: none'];
   const declined = plan.declined ? ' (you declined this text before)' : '';
   lines.push(`state: ${plan.state}${declined}${plan.note ? `; ${plan.note}` : ''}`);
   if (plan.options) lines.push(`options: ${plan.options.join(',')}`);
-  for (const l of name === 'claude' && t.text ? imports(t.text) : []) lines.push(`note: line ${l} imports a file that may hold the same rules; it is left as it is`);
-  if (plan.edits) lines.push(diff(...plan.edits, 'the rules this plugin would write', `the block in ${t.path}`));
+  for (const l of name === 'claude' && t.text ? imports(t.text) : []) lines.push(`note: line ${shown(l)} imports a file that may hold the same rules; it is left as it is`);
+  if (plan.edits) lines.push(diff(...plan.edits.map(shown), 'the rules this plugin would write', `the block in ${t.path}`));
   if (plan.after === null) return [...lines, 'change: none'];
-  return [...lines, 'change: ready', diff(t.text ?? '', plan.after, t.path, `${t.path} (proposed)`)];
+  return [...lines, 'change: ready', diff(shown(t.text ?? ''), shown(plan.after), t.path, `${t.path} (proposed)`)];
 }
 
 export function main(argv, { env = process.env, platform = process.platform, now = new Date(), home = homedir() } = {}) {
@@ -281,6 +282,7 @@ function run(verb, dataDir, rest, { env, platform, now, home }) {
   }
   let options;
   const at = rest.indexOf('--options');
+  if (at >= 0 && rest.length > at + 2) refuse(`unexpected argument "${rest[at + 2]}" after --options list`);
   if (at >= 0) options = parseOptions(rest[at + 1], platform);
   const texts = loadTexts();
   const version = pluginVersion();

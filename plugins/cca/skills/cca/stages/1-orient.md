@@ -35,12 +35,32 @@ step 1c, right after the baseline, for the same reason.
    base, or PR) stops the run and shows both.
 3. Normalize:
    - Every path to an absolute path. Every repo path must be a git checkout
-     (`git -C <path> rev-parse --show-toplevel`); store the top level.
+     (`git -C <path> rev-parse --show-toplevel`); store the top level. For every
+     audited repository (bundles, references, and sources of truth), with `<repo>` the
+     stored top level, when
+     `git -C <repo> config --local --includes --get-regexp '^(remote\..*\.promisor|extensions\.partialclone)$'`
+     exits 0 (`--includes` follows the file's `include` directives, which `--local`
+     alone skips), stop before stage 1 with one line per such repository,
+     `<repo>: partial clones are not supported`: the agents' `git show` and
+     `git diff` would fetch missing objects over the network, against the read-only
+     boundary.
    - `scratch`: when the manifest has it, an absolute path, relative to the manifest's
      directory like every manifest path. D2 checks it.
    - Bundle names: the repo directory's base name, lowercased, with `-2`, `-3` added
      when two bundles share it. `<bundle>` in file names below is this name.
      References and sources of truth keep their `name`, slugged the same way.
+   - Each custom `groups[].name`: slug it as D3 slugs the run id, but with no length
+     cap: lowercase, with runs of characters outside `a-z0-9` turned into one `-`.
+     Before stage 1, stop with one line `groups: <name> slugs to nothing` when its
+     slug is empty; stop with one line `groups: <name> is a reserved scope name` when
+     its slug is `tests`, `hygiene`, `tests-hygiene`, `interactions`, `combined`, or
+     `unticketed`. When two entries share a slug, stop with one line
+     `groups: <a> and <b> share the slug <s>`. When a slug equals `<scope>-topup`
+     or `<scope>-maptopup`, where `<scope>` is another entry's slug or a reserved
+     scope name, stop with
+     one line `groups: <name> collides with the top-up files of <scope>`.
+     `cross-cutting` is not reserved: the manifest's `groups` key replaces the merge
+     that produces it. Reject these names; never rename them.
    - Ticket and PR ids to `github:owner/repo#n` or `file:<absolute path>`. A short id
      such as `#159` is accepted only when the bundle's repo has exactly one GitHub
      remote (`git -C <repo> remote -v`); otherwise stop with
@@ -278,14 +298,26 @@ missing), and only rewrite the stage 1 entry as `running` with its inputs.
    bundle whose PR is a `file:` export, the PR part is the export's `id` (section B)
    or, failing that, the bundle's `branch`, never the file path. When
    `${CLAUDE_PLUGIN_DATA}/runs.json` already has that id or `<scratch>/cca/<run-id>/`
-   exists, add `-2`, then `-3`, and so on.
-4. Create `<scratch>/cca/<run-id>/`. This is the run directory. Append the invocation
-   block to `invocations.md` in it (SKILL.md, Invocation block).
+   exists, add `-2`, then `-3`, and so on. This check is a first pass, made with no
+   lock: D4 and D6 settle the id.
+4. Create `<scratch>/cca/` with `mkdir -p` when missing, then `<scratch>/cca/<run-id>/`
+   with `mkdir` and no `-p`. This is the run directory. When that `mkdir` fails
+   because the directory exists, another run made it first: take the next suffix per
+   D3 and create again. Append the invocation block to `invocations.md` in it
+   (SKILL.md, Invocation block).
 5. State the merged, normalized manifest to the user as a fenced JSON block and save
    it as `manifest.json` in the run directory.
 6. Add the run to `${CLAUDE_PLUGIN_DATA}/runs.json` with `state: running` (read the
-   array, or start one; write a temporary file beside it; rename).
-7. Write `stages.json` with `plugin_version` `0.9.0`, empty `approvals`, and a stage 1
+   array under the lock per SKILL.md, State files). Under the lock, after the fresh
+   read, when any entry already has this `run_id`, or, before acquiring, when a stale
+   lock's owner directory has this run's own `<owner>` name (that section's guard),
+   add nothing: release the lock this run holds, if any, and never another's; remove
+   this run's directory (this run alone created it at D4); and stop before stage 1
+   with one line naming the id and saying that another audit took it in the same
+   minute, so run the command again. That stop is not a registry failure. On refusal
+   or failure, continue per that section's three cases; if the entry is absent, use
+   its immediate warning, brief limitation, and manual-entry fallback.
+7. Write `stages.json` with `plugin_version` `0.9.1`, empty `approvals`, and a stage 1
    entry with status `running` and inputs: the hashes of `manifest.json`, each claims
    file, the questions file, and every `file:` ticket or PR export, and
    `plugin_version`. Step 10 adds the shas, `forge_hashes`, and `forge_gaps` to the
@@ -497,7 +529,7 @@ For each bundle, record:
 - the run-once list, for a bundle with `run_once` only. Patterns are repo-relative and
   follow git's glob pathspec rules (`*` does not cross `/`, `**` does). With the
   merge-base, base, and head shas known, list the changed files that match:
-  `git -C <repo> diff --name-status -M <base>...<head> -- ':(glob)<pattern>' ...`, one
+  `git -C <repo> diff --no-ext-diff --no-textconv --no-color --name-status -M <base>...<head> -- ':(glob)<pattern>' ...`, one
   pathspec per pattern, three dots as in step 4 (a `head: working-tree` bundle uses its
   built head sha the same way). The `-M` makes a rename show as `R` whatever the user's
   `diff.renames` setting is. In a three-dot diff the old side is the merge-base, so the
@@ -517,7 +549,7 @@ For every reference and source of truth with a `path`, record its pinned sha:
 
 For each bundle, write:
 
-- `diffs/<bundle>.diff`: `git -C <repo> diff <base>...<head>`.
+- `diffs/<bundle>.diff`: `git -C <repo> diff --no-ext-diff --no-textconv --no-color <base>...<head>`.
 - `diffs/<bundle>.stat`: `git -C <repo> diff --numstat <base>...<head>`, one file per
   line with added and deleted counts (`-` for binary files).
 
@@ -682,8 +714,9 @@ Group ids are lowercase slugs: a ticket's group is `<bundle>-<ticket number or f
 name>`; the fixed groups are `unticketed` and `cross-cutting`.
 
 With a manifest `groups` key, it replaces the derivation, the extraction, and the
-merge: each entry is a group named by its `name`; its globs are relative to the entry's
-`repo`; a file matching two entries goes to both with a note; changed files no entry
+merge: each entry is a group whose id is its `name` slug validated in section A step 3;
+its globs are relative to the entry's `repo`; a file matching two entries goes to both
+with a note; changed files no entry
 matches go to `unticketed`. Skip to the format below.
 
 Otherwise derive, per bundle:

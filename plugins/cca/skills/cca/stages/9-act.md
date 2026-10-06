@@ -27,7 +27,7 @@ commit sha is logged there (step 7).
    1. Find the run in `runs.json`. Stage 8 wrote `report.md` as the line
       `revision: sha256:<hex>`, one LF, then the body bytes. Recompute the revision over
       the same bytes, with Bash, never through the Read tool's text:
-      `tail -n +2 report.md | sha256sum`. Compare it with the hex on the first line
+      `tail -n +2 report.md | { sha256sum 2>/dev/null || shasum -a 256; }`. Compare it with the hex on the first line
       (`head -n 1 report.md`). If they differ, the report was edited: stop and say
       so.
    2. Every item id must name an item in the report. An unknown id stops act; no id is
@@ -88,7 +88,7 @@ commit sha is logged there (step 7).
          of these files, stage only this group's hunks from a byte-exact patch: write
          it with a shell redirect, not a file-writing tool, so bytes and line endings
          pass unchanged
-         (`git -C <repo> diff --binary --no-color --no-ext-diff -- <file> > <run dir>/act/patches/<group>.patch`,
+         (`git -C <repo> diff --binary --no-color --no-ext-diff --no-textconv -- <file> > <run dir>/act/patches/<group>.patch`,
          keeping only this group's hunks), check it with `git apply --cached --check`,
          then run `git -C <repo> apply --cached <patch>`. If this group's hunks
          overlap or touch another group's hunks, stop and ask. After staging, confirm
@@ -100,7 +100,8 @@ commit sha is logged there (step 7).
          fails is **introduced**: say so and do not offer the commit until the user
          decides. A failure present at baseline is **preexisting**: report it; it is not
          act's to fix.
-      7. Show the staged diff (`git diff --cached`) and both results against the
+      7. Show the staged diff (`git diff --cached --no-ext-diff --no-textconv --no-color`)
+         and both results against the
          baseline, and ask before the commit.
       8. On yes, recompute the report revision (step 1.4), write the message to
          `<run dir>/act/msg-<group>.txt`, and run `git -C <repo> commit -F <file>`. The

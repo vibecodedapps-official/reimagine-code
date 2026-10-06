@@ -54,7 +54,7 @@ You write one handoff file for the session's work, from the record only. Do the 
    - `decided_by` follows rule 11: `person: <name>` only when the record names that person, `role: <role>` when it names a role but no person, `checkpoint (recommended option taken)` for a checkpoint choice on the recommended option, else `not recorded`. A model, agent, or tool is never `decided_by`.
    - A statement the session checked goes under `verified`, with the exact check, or `not recorded`. Where the statement depends on it, the check also names its directory, environment variables, services or accounts, and the environment it ran against.
    - Apply the step 2 matches: a `false` statement is corrected, using the entry's `correction:` sub-line, or dropped. A recheck request, a `not verified` line on a `verification` claim, stays, with its `check:` updated when the session has rechecked it. A `not reproducible here` line changes nothing.
-   - No credentials, tokens, or secrets anywhere in the file. Text that names a model, agent, or tool is rewritten without the name.
+   - No credentials, tokens, or secrets anywhere in the file. Prose that credits a model, agent, or tool with the work is rewritten without the name; check commands, paths, and commit subjects are copied as recorded, tool names included.
 
 6. Choose the output path, the first of:
    - `--out`, which must lie outside every repo or be ignored by its repo (`git -C <repo> check-ignore -q <path>`), and must not name an existing file: when it does, stop and say so, so an earlier handoff is never overwritten;
@@ -67,4 +67,4 @@ You write one handoff file for the session's work, from the record only. Do the 
    - the corrections applied from `--verdicts`, or `none`;
    - the reconciliation list from step 2, or `none`;
    - with `--memory`, the memory reconciliation work from step 2, grouped by claim: per claim, each key with the files that hold it, `no file holds it` for `none`, and `no key to search for` for `no key`; or `none` when the output was empty. No file in the directory was edited;
-   - the next command: `/cca:audit <manifest or inputs> --claims <path>`.
+   - the next command: `/cca:audit <manifest or inputs> --claims <path>`, with the manifest and inputs as given. When neither a manifest nor a PR as a URL or `github:owner/repo#n` was given, `/cca:audit` cannot learn the branch and base from the command line: print a manifest for the bundles of step 3 as a fenced JSON block (`bundles`, each with its absolute `repo`, `branch`, `base`, and `tickets`), say to save it outside the repository or in an ignored path, and print `/cca:audit <saved manifest> --claims <path>`. Emit the JSON in the reply; do not write a second file.

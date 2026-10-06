@@ -20,7 +20,9 @@ These hold for every stage, for the orchestrator and every agent.
 1. **Read-only boundary.** During `/cca:audit` and `/cca:resume`, nothing changes an
    audited repo's tracked files, untracked non-ignored files, the index, branches, tags,
    stashes, config, or remotes. "Audited repo" means every bundle, reference, and source
-   of truth. Allowed writes: the run directory; cca's data directory (`runs.json`);
+   of truth. Allowed writes: the run directory; cca's data directory (`runs.json`,
+   its `runs.json.lock` directory including the owner directory, and its
+   `runs.json.<owner>.tmp` temporary file);
    ccx's own request and thread files in ccx's data directory, written
    when cca calls it; `git fetch` into remote-tracking refs, after the user approves it
    once per run; and, for a bundle with `head: working-tree`, the loose git objects that
@@ -30,11 +32,11 @@ These hold for every stage, for the orchestrator and every agent.
    removed when the step ends, and whatever a bundle's own test commands write outside
    every audited repo and the run directory, under the consent its `test_command` key
    gives, which the report discloses. Nothing else. An ignored
-   file written by a check run that an agent logged under its `runs:` heading is allowed
+   file written by a run that an agent logged under its `runs:` heading is allowed
    and reported, never silently.
 2. **Prevention and detection.** Agent tool lists exclude Edit and NotebookEdit. An
    agent with Bash runs only these commands: `git show`, `git log`,
-   `git diff <base>...<head>`, `git grep`, `git ls-files`, `rg`, `ls`,
+   `git diff --no-ext-diff --no-textconv --no-color <base>...<head>`, `git grep`, `git ls-files`, `rg`, `ls`,
    `git hash-object --no-filters` (never `-w`) for the `consumed:` hashes, `cat` of an
    exported file with `tail -c`, `head -c`, `wc -c`, `sed '$d'`, and one `awk`
    line-numbering stage for a digester's byte range, and, when a question needs a run in
@@ -50,13 +52,14 @@ These hold for every stage, for the orchestrator and every agent.
    change to tracked files, untracked non-ignored files, refs, the index, stashes, or
    config, including an added or deleted file, stops the run `blocked`, unless an approved
    fetch caused it. A change among ignored files that no logged run accounts for stops it
-   too. Not detected: an ignored file replaced with one of the same size and a restored
-   modification time, changes inside `.git/` other than refs, stashes, and config, a
-   change to a nested repository's refs other than its HEAD, its stashes, or its config, a
-   change inside a repository that sits in an ignored directory, such as a linked
-   worktree, other than an entry added or removed at its top level, and changes outside
-   the audited repos. The user should not edit audited repos during a run, since their own
-   edits trip the check too.
+   too, unless it is another cca run's or a handoff's file under an audited repository's
+   `<scratch>/cca/`, outside this run's directory. Not detected: an ignored file replaced
+   with one of the same size and a restored modification time, changes inside `.git/`
+   other than refs, stashes, and config, a change to a nested repository's refs other than
+   its HEAD, its stashes, or its config, a change inside a repository that sits in an
+   ignored directory, such as a linked worktree, other than an entry added or removed at
+   its top level, and changes outside the audited repos. The user should not edit audited
+   repos during a run, since their own edits trip the check too.
 3. **No model, agent, or tool names** in anything external: commit messages, PR or
    ticket text, and drafted comments. The report is internal and may name them.
 4. **No advisor tool**, in the orchestrator or any agent.
@@ -228,10 +231,9 @@ script.
   target environment and reads the key it holds. Its results: the key is the file name,
   so the new name runs there and repeats the step, and the recommended change applies. A
   key the rename keeps: the new name does not run there. No entry: the new name runs
-  once there, with nothing to repeat. The query, the place, and the results hold no
-  semicolon, since the field is split at its semicolons; join outcomes with periods. The
-  recommended change guards the repeated step on its own result, or leaves the old name
-  alone and puts the needed steps in a new script.
+  once there, with nothing to repeat. The recommended change guards the repeated step
+  on its own result, or leaves the old name alone and puts the needed steps in a new
+  script.
 - A script you check and clear gets a `## Verified OK` line that names the guard, or says
   that each step's result is new to an install that ran the old name. Where the tier
   lets pass two attack Verified OK items, it counts such an item among the riskiest and
@@ -257,6 +259,8 @@ Each finding uses exactly this block:
 - live check: <query>; <where it runs>; <what each result changes>; or none
 - work-item impact: <ticket, acceptance criterion, or none>
 ```
+
+In the `live check` field, the query, the place, and the results hold no semicolon, since the report splits the field at its semicolons; join outcomes with periods.
 
 Ids and origin tags:
 

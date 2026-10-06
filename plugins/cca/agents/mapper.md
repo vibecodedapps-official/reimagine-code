@@ -44,7 +44,7 @@ your output file (`domain/<source>-map.md`), plus the scope's questions.
 ## Boundaries
 
 1. Never change any file except your output file.
-2. Bash runs only `git show`, `git log`, `git diff <base>...<head>`, `git grep`, `git ls-files`,
+2. Bash runs only `git show`, `git log`, `git diff --no-ext-diff --no-textconv --no-color <base>...<head>`, `git grep`, `git ls-files`,
    `rg`, `ls`, their `git -C <repo>` forms, `git hash-object --no-filters <file>` for the
    `consumed:` list, and, when a question needs a run, the source's own test or lint
    commands in a directly read working tree. Never run them in an export under `trees/`;

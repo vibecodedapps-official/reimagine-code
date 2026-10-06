@@ -2,11 +2,23 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { execFileSync } from 'node:child_process';
-import { chmodSync, existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
+import { chmodSync, existsSync, mkdirSync, readFileSync, renameSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { DO, RESUME, SANDBOX, THREAD, calls, cli, cwds, git, probeLeftovers, requestLeft, run, spawning, stdin, withScratch } from './fixtures/harness.mjs';
 
 const REVIEW = ['exec', 'review', '--json', '--ignore-user-config', '-c', 'approval_policy="never"', '-c', 'sandbox_mode="read-only"'];
+
+test('ask and review preserve a repository name ending in a space', { skip: process.platform === 'win32' }, withScratch((s) => {
+  const cwd = `${s.root}/repo `;
+  renameSync(s.repo, cwd);
+  writeFileSync(join(cwd, 'tracked.txt'), 'two\n');
+  for (const command of ['ask', 'review']) {
+    const r = run(s, command, { cwd, request: command === 'ask' ? 'explain' : '' });
+    assert.equal(r.stdout.split('\n').find((line) => line.startsWith('cwd: ')), `cwd: ${s.root}/repo `);
+    assert.equal(r.status, 0, r.stdout);
+  }
+  assert.equal(readFileSync(join(s.root, 'cwd'), 'utf8'), `${s.root}/repo \n${s.root}/repo \n`);
+}));
 
 // PATH shims: git logs each call and then runs the real git; id leaves a marker, so a ref run through a shell shows.
 function shims(s, gitFirst = '') {
