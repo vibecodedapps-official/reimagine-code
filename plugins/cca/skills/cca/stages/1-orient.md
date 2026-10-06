@@ -35,7 +35,14 @@ step 1c, right after the baseline, for the same reason.
    base, or PR) stops the run and shows both.
 3. Normalize:
    - Every path to an absolute path. Every repo path must be a git checkout
-     (`git -C <path> rev-parse --show-toplevel`); store the top level.
+     (`git -C <path> rev-parse --show-toplevel`); store the top level. For every
+     audited repository (bundles, references, and sources of truth), when
+     `git -C <repo> config --get-regexp
+     '^(remote\..*\.promisor|extensions\.partialclone)$'` exits 0, with `<repo>` the
+     stored top level, stop before stage 1 with one line per such repository,
+     `<repo>: partial clones are not supported`: the agents' `git show` and
+     `git diff` would fetch missing objects over the network, against the read-only
+     boundary.
    - `scratch`: when the manifest has it, an absolute path, relative to the manifest's
      directory like every manifest path. D2 checks it.
    - Bundle names: the repo directory's base name, lowercased, with `-2`, `-3` added
@@ -290,15 +297,24 @@ missing), and only rewrite the stage 1 entry as `running` with its inputs.
    bundle whose PR is a `file:` export, the PR part is the export's `id` (section B)
    or, failing that, the bundle's `branch`, never the file path. When
    `${CLAUDE_PLUGIN_DATA}/runs.json` already has that id or `<scratch>/cca/<run-id>/`
-   exists, add `-2`, then `-3`, and so on.
-4. Create `<scratch>/cca/<run-id>/`. This is the run directory. Append the invocation
-   block to `invocations.md` in it (SKILL.md, Invocation block).
+   exists, add `-2`, then `-3`, and so on. This check is a first pass, made with no
+   lock: D4 and D6 settle the id.
+4. Create `<scratch>/cca/` with `mkdir -p` when missing, then `<scratch>/cca/<run-id>/`
+   with `mkdir` and no `-p`. This is the run directory. When that `mkdir` fails
+   because the directory exists, another run made it first: take the next suffix per
+   D3 and create again. Append the invocation block to `invocations.md` in it
+   (SKILL.md, Invocation block).
 5. State the merged, normalized manifest to the user as a fenced JSON block and save
    it as `manifest.json` in the run directory.
 6. Add the run to `${CLAUDE_PLUGIN_DATA}/runs.json` with `state: running` (read the
-   array under the lock per SKILL.md, State files); on refusal or failure, continue
-   per that section's three cases; if the entry is absent, use its immediate
-   warning, brief limitation, and manual-entry fallback.
+   array under the lock per SKILL.md, State files). Under the lock, after the fresh
+   read, when any entry already has this `run_id`, add nothing: release the lock,
+   remove this run's directory (this run alone created it at D4), and stop before
+   stage 1 with one line naming the id and saying that another audit registered it
+   in the same minute, so run the command again. That stop is not a registry
+   failure. On refusal or failure, continue per that section's three cases; if the
+   entry is absent, use its immediate warning, brief limitation, and manual-entry
+   fallback.
 7. Write `stages.json` with `plugin_version` `0.9.1`, empty `approvals`, and a stage 1
    entry with status `running` and inputs: the hashes of `manifest.json`, each claims
    file, the questions file, and every `file:` ticket or PR export, and

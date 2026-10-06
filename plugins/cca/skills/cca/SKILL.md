@@ -29,6 +29,7 @@ allowed-tools:
   - Bash(git -C * grep *)
   - Bash(git config --list --local)
   - Bash(git -C * config --list --local)
+  - Bash(git -C * config --get-regexp *)
   - Bash(git remote -v)
   - Bash(git -C * remote -v)
   - Bash(git ls-files *)
@@ -359,8 +360,11 @@ cca audit or resume is running, including one waiting at a prompt. On "no", remo
 it with `rmdir <lock>/* <lock>` (`rmdir <lock>` when empty), then acquire. On "yes",
 keep the 5-second retries for five more minutes, then ask once more. A second
 "yes", or a user who declines removal, takes the registry-failure rule below.
-In a headless session, or when unsure whether a user can answer, treat a stale
-lock as refused at once.
+In a headless session, or when unsure whether a user can answer, remove a stale
+lock without asking, with `rmdir <lock>/* <lock>` (`rmdir <lock>` when it is
+empty), then acquire. This is safe: a session whose lock was removed before its
+replace command finds its test failing and acquires again, so no entry is lost on
+a supported path (the known limit below stands).
 
 Holding the lock, read `runs.json` afresh with the Read tool (or start an array
 when absent), then write `<tmp>` = `${CLAUDE_PLUGIN_DATA}/runs.json.<owner>.tmp`,
@@ -372,19 +376,23 @@ that one command for over a minute could still overwrite a takeover; no supporte
 path stops it there (a permission prompt comes before the command, machine sleep
 pauses every session, a timeout kills the command), so this is a known limit, not
 handled. On every failure path, release any lock this session holds with
-`rmdir <lock>/<owner> <lock>`; another session's lock holds its own owner directory,
-so this release cannot remove it.
+`rmdir <lock>/<owner> <lock>`, then with `rmdir <lock>` once its owner directory is
+gone and the lock is left; another session's lock holds its own owner directory, so
+this release cannot remove it.
 
 On any refused or failed registry update step (lock acquisition, the Read,
-temporary-file write, replace-and-release command, or a stale lock treated as
-refused), release any lock this session holds with `rmdir <lock>/<owner> <lock>`.
-If that release is refused, or fails while `<lock>/<owner>` still exists, or a
-stale lock was treated as refused, then whatever the case below, report the lock's
-resolved absolute path and the command that removes it (`rmdir <lock>/<owner> <lock>`
-for this session's lock; `rmdir <lock>/* <lock>` for a stale one, to run only once no
-cca audit or resume is running), and say that a headless session cannot ask before
-removing it, so remove it by hand. Read `runs.json` with the Read tool and branch on
-this run's entry:
+temporary-file write, or replace-and-release command), release any lock this
+session holds, as above. Then, whatever the case below, report the lock's resolved
+absolute path and the command that removes it when `<lock>` still exists holding
+this session's owner directory or nothing (the release was refused or failed, or
+only the data directory turned non-writable mid-update and left an empty lock), or
+when a stale lock stays because the user declined its removal or answered yes twice.
+The command is `rmdir <lock>/<owner> <lock>` for this session's lock and
+`rmdir <lock>/* <lock>` for a stale one, to run only once no cca audit or resume is
+running; each is `rmdir <lock>` when the lock is empty. Say that a later audit or
+resume removes a stale lock itself (a headless one without asking), so removing it by
+hand only saves the wait. Read `runs.json` with the Read tool and branch on this
+run's entry:
 
 - **Absent (D6's add failed, and nothing added it since):** tell the user at once
   that `/cca:resume` and `/cca:act` cannot find this run. At D6, record the

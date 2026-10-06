@@ -98,7 +98,7 @@ An unknown flag or a bad value is rejected in one line, and nothing is written.
 | `--effort` | `low`, `medium`, or `high`; overrides the tier cca picks | picked from the bundle's size (see Effort) |
 | `--no-codex` | none; the fallback reviewer gives the second opinion | Codex, when available |
 | `--codex-model` | a full Codex model id | `gpt-6.1-sol` |
-| `--codex-timeout` | seconds, 1 to 3600 | by tier: low 1,200, medium 2,400, high 3,600 |
+| `--codex-timeout` | seconds, 1 to 3600; a headless session passes at most 540 | by tier: low 1,200, medium 2,400, high 3,600 |
 | `--models` | `role=model,...`, roles `digester`, `mapper`, `auditor`, `adversary`, `merger`, models as the Agent tool accepts them (`opus`, `sonnet`, `haiku`, `fable`) | see Roles |
 | `--questions` | a markdown file of `id: question` lines | the four default questions |
 | `--claims` | a claims file; repeat the flag for more | none |
@@ -229,9 +229,9 @@ are relative to the manifest's directory.
   `*.test.*`, `*.spec.*`, and `*Test.*`), `test_setup` (a command run once in each copy
   first, such as `npm ci`; without it a copy holds tracked files only), and
   `test_timeout` (seconds per command, default 300). At most 20 files and 30 minutes run
-  per bundle. A partial clone (`--filter`) stops stage 1 with
-  `revert-tests: partial clones are not supported`. Setting `test_command` is your
-  consent to run the bundle's own commands:
+  per bundle. A partial clone (`--filter`) of any audited repo stops the run before
+  stage 1 with `<repo>: partial clones are not supported`; the test step refuses one
+  too. Setting `test_command` is your consent to run the bundle's own commands:
   they run with your environment and credentials, as a test run in your checkout does,
   in copies under cca's data directory that are removed afterwards. Set it only for a
   suite that reaches no live system, and have `test_setup` install into the copy (a
@@ -470,9 +470,16 @@ path inside the primary repo that the repo ignores (`git check-ignore` succeeds)
 missing directory is created. Otherwise the run stops before stage 1 with
 `scratch <path>: not an ignored path inside <primary repo>`. A resumed run keeps its recorded
 directory, even when the manifest's `scratch` has changed since. The run id is
-`<YYYY-MM-DD-HHMM>-<slug>`, with a numeric suffix on collision. Every run is recorded in
-`runs.json` in cca's plugin data directory, so `/cca:resume` and `/cca:act` find it from
-any directory, unless Claude Code refuses the write, which the run reports.
+`<YYYY-MM-DD-HHMM>-<slug>`, with a numeric suffix on collision. The suffix is settled
+when the directory is created, which fails if it exists, and again under the registry
+lock: when another audit registered the same id in the same minute, the run stops
+before stage 1 with a line naming the id, and you run the command again. Every run is
+recorded in `runs.json` in cca's plugin data directory, so `/cca:resume` and
+`/cca:act` find it from any directory, unless Claude Code refuses the write, which the
+run reports. Each update holds the lock directory `runs.json.lock`. A lock more than
+about a minute old is stale: an interactive session asks you whether another audit or
+resume is running and removes it on "no", and a headless session removes it without
+asking.
 
 The run directory holds all state: the normalized `manifest.json`, `stages.json` (the
 only record of which stages are complete), `audit-brief.md`, `claims.md`, `groups.md`,
@@ -512,7 +519,10 @@ When a repo's checkout is not at the audited sha, or has changes, cca exports th
 tree into the run directory from git objects, so no checkout filter or attribute runs and
 nothing is written to the repo. Symlinks are exported as placeholder files holding their
 target, and submodules are listed, not exported. An export over 1 GB is asked about
-first.
+first. A partial clone (a promisor remote or `extensions.partialclone`) of any audited
+repo stops the run before stage 1 with `<repo>: partial clones are not supported`,
+since the agents' `git show` and `git diff` would fetch missing objects over the
+network.
 
 A bundle with `head: working-tree` writes one more thing to its repo: the loose git
 objects of a commit that `skills/cca/scripts/working-tree.sh build` makes from the working
@@ -613,6 +623,10 @@ its sentinel. Only an input it could not open goes inline, in the one follow-up 
 follow-up's text is passed in the call itself, since Codex may not open the file;
 otherwise Codex reads the file by path. Over the cap, the follow-up is not sent and
 stage 6 fails.
+
+In a headless session, or when cca cannot tell whether a user can answer, the timeout
+passed to Codex is at most 540 seconds, so the call ends before a foreground command's
+10-minute limit and never moves to the background, where a headless session would end.
 
 Codex reads a file outside every repo, such as a run directory in the plugin's data
 directory, by absolute path. That read was verified on Windows with ccx's elevated

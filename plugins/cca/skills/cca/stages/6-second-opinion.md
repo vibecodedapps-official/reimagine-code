@@ -35,6 +35,12 @@ for each batch `<k>` it answers, numbered from 2 (step 9).
    - model: `--codex-model`, else `gpt-6.1-sol`. Always the full id.
    - timeout in seconds: `--codex-timeout` when given (the command already rejected
      values outside 1 to 3,600), else by tier: low `1200`, medium `2400`, high `3600`.
+     In a headless session, or when unsure whether a user can answer (the judgment
+     of SKILL.md, State files, for a stale lock), at most `540`: a larger value is
+     replaced by `540`, so the bridge call ends before the Bash tool's 10-minute
+     foreground limit and never moves to the background. In an interactive session
+     the value stands. This value is `<timeout>` in the steps below, including the
+     reason in step 7, and is what `codex_timeout` records.
 
 3. **Decide who fills the role.**
    - With `--no-codex`, the fallback fills it from the start, with the swap reason
@@ -137,11 +143,15 @@ for each batch `<k>` it answers, numbered from 2 (step 9).
    --model <model> --timeout <timeout> Read "<absolute path of codex/request.md>" and answer as it asks.
    ```
 
-   Record the model and timeout passed for this call. The call can take longer than a
-   foreground command allows and move to the background. The fallback batches for ids
-   neither the request nor the follow-up carries (step 4.3) are launched before the
-   follow-up call (step 8); once a call is made, wait for its completion notification
-   without polling or any other tool call.
+   Record the model and timeout passed for this call. In an interactive session the
+   call can take longer than a foreground command allows and move to the background.
+   The fallback batches for ids neither the request nor the follow-up carries (step
+   4.3) are launched before the follow-up call (step 8); once a call is made in an
+   interactive session, wait for its completion notification without polling or any
+   other tool call. In a headless session (or when unsure whether a user can answer,
+   as in step 2), never end the turn while a background call is live, as in stage 1
+   step 6b, since the turn's end ends the session; with the cap of step 2, such a run
+   never has one.
 
 7. **Parse the result.** ccx ends its output with a line `status: <value>`, where
    the value is `ok`, `failed`, `refused`, or `timeout`, and prints a line

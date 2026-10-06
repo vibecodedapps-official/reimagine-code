@@ -89,18 +89,34 @@ repos' own changelogs are kept under `docs/history/`.
   directory, with an owner directory inside it named for the run and the invocation,
   rereads the registry under it, writes a per-owner temporary file, and replaces the
   registry only while its owner directory is still there. A lock older than about a
-  minute is stale: the run asks whether another cca audit or resume is running before
-  removing it, and a headless run treats it as a refused lock. Before, two audits
-  running at once could lose each other's entry, so `/cca:resume` and `/cca:act` could
-  not find a run.
+  minute is stale: an interactive run asks whether another cca audit or resume is
+  running before removing it, and a headless run removes it without asking, since a
+  session whose lock was removed before its replace command rereads and rewrites.
+  Before, two audits running at once could lose each other's entry, so `/cca:resume`
+  and `/cca:act` could not find a run.
 - A refused or failed `runs.json` update no longer ends with a bare `/cca:resume <run-id>`
   that cannot work. When the run's entry is missing, the run says at once that resume
   and act cannot find it, records that in the brief during stage 1 or in the stage's
   `stages.json` entry and `usage.md` afterward, and prints the entry to add by hand;
   when the entry is present with its old state, it says so and keeps the resume command.
-  Whenever this run's lock release is refused or fails with the lock still held, or a
-  stale lock is treated as refused, it also prints the lock's path and the command that
-  removes it.
+  Whenever the lock directory is left holding this run's owner directory or nothing, or
+  a stale lock stays because the user kept it, it also prints the lock's path and the
+  command that removes it, with the form for an empty lock.
+- A run id is settled twice. The run directory is created with a `mkdir` that fails
+  when it exists, taking the next suffix, and under the registry lock a run whose id
+  another audit registered in the same minute stops before stage 1, removes its
+  directory, and says to run the command again. Before, two audits started in the same
+  minute could share a run directory and overwrite each other's `manifest.json`, or
+  register one id twice.
+- Stage 1 stops before any read when an audited repository is a partial clone, with a
+  promisor remote or `extensions.partialclone`, printing `<repo>: partial clones are not
+  supported`. Before, nothing refused one, and the agents' `git show` and `git diff`
+  fetched the missing objects into the audited repository over the network.
+- In a headless session, or when cca cannot tell whether a user can answer, stage 6
+  passes Codex a timeout of at most 540 seconds, so the bridge call ends inside the Bash
+  tool's 10-minute foreground limit and never moves to the background; `codex_timeout`
+  records the value passed. Before, a tier timeout of 1,200 seconds or more moved the
+  call to the background, and a headless session ended with its turn, losing the run.
 - The read-only check accepts another cca run's or a handoff's file under any audited
   repository's `<scratch>/cca/` and lists it as such. Before, two audits of the same
   repository ended each other `blocked`.
