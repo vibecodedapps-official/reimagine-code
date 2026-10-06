@@ -45,6 +45,11 @@ repos' own changelogs are kept under `docs/history/`.
 - The CI watch reads the PR's `state` at every poll and ends `blocked` when it is not
   `OPEN`, naming the state. Before, a PR closed during the watch could be reported as
   `done`.
+- The CI watch polls with one read per Bash call, each `gh api` call written out with
+  `--hostname <host>`, and applies the state, head, and workflow rules after every read,
+  never in a shell loop over several reads. Before, the polling item gave only the
+  interval, so the watch could run as one shell loop whose own calls went to gh's
+  default host and whose rules were applied only when the loop ended.
 - A `pull_request_target` workflow is judged by its file on the default branch, in the
   CI watch and in the deploy ask-first before pushing. Before, one the PR itself added
   could make the watch wait for a check that never comes.

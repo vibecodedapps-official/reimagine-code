@@ -81,7 +81,11 @@ read, which workflows apply, what passes, and how to poll. Item 5, CI repair, st
       source. A required workflow is met when its latest run for the head commit, matched by
       the rule's workflow file path and repository, passes. A match that cannot be confirmed
       counts as unmet and is named in the report.
-   4. Poll at about 30 second intervals, checking the run budget each time. CI is not
+   4. Poll at about 30 second intervals, checking the run budget each time. Poll with
+      one read per Bash call, writing out each `gh api --hostname <host>` call as above,
+      and apply the rules of items 1 to 3 after each read before the next. Never poll in
+      a shell loop that runs several reads: the rules apply per read, and a loop cannot
+      end the watch at once. CI is not
       judged until 2 minutes after the push, measured from the time recorded right after
       the push returned. If `mergeable` is `CONFLICTING`, `pull_request` workflows do not
       run: end in `blocked` at once, naming the conflict. CI is green when every required
