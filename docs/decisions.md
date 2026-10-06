@@ -550,12 +550,19 @@ pre-approved.
    test could not tell the locks apart; the session holds no lock then and runs no
    release, stops at stage 1 D6 as a duplicate id so two runs never share
    `revert-work/<run-id>/`, and elsewhere takes the registry-failure rule (cc2ad41 and
-   b1cd5fe, and 247eb9a for the lock a session's own failed release left, which it removes
-   as its own, from the diff review); a collision-resistant owner token would remove the
-   case but changes the owner form the plan froze, and is the user's call. The lock
+   b1cd5fe). 247eb9a had a session remove such a lock as its own leftover when its
+   earlier release had failed; 1895a62 reverts that, since `ls <lock>` cannot tell that
+   leftover from a same-second collision, and the fourth diff review pass showed a
+   three-session schedule where a session that removed another's lock as its own
+   published over a third session's registered entry. The cost is a session whose own
+   release left its owner directory inside the lock: it reports a registry failure at
+   each later update, its entry printed for hand entry, and the next audit or resume
+   removes the lock. A collision-resistant owner token would remove the case but
+   changes the owner form the plan froze, and is the user's call. The lock
    report fires when the lock directory is left holding this session's owner directory
-   or nothing, or a stale lock stays because the user kept it, and every printed
-   command has its empty-lock form (337db4c). Known limits: a shell stopped inside the
+   or nothing, or a stale lock stays because the user kept it or it bears this
+   session's own name, and every printed command has its empty-lock form (337db4c,
+   1895a62). Known limits: a shell stopped inside the
    one replace-and-release command for over a minute, which no supported path does; and
    two sessions that remove one stale lock at once, an interactive "no" included, where
    the slower removal can fail the faster session's acquisition, which then takes the
@@ -595,19 +602,22 @@ pre-approved.
    started inside `.claude/`, and an adapter there would import an absent
    `.claude/AGENTS.md` (d773f04, 0aff3bb, a3df9cb, 6ea123b). A sole tracked `CLAUDE.md`
    or `.claude/AGENTS.md` moves to the root hub, and an untracked sole file is left
-   alone, the repo getting first setup. The reference budget rose from 90 to 100
-   lines with the user's approval, so the round 6 findings fit without dropping a reason
-   clause (dfc5d75, 3eeb3ce, b60c91b): an `AGENTS.md` import is dropped unless it is an
-   adapter line, since inlining it would copy a hub into the file; an import of a file the
-   repository does not track, outside it or ignored, is reported and never inlined, its
-   line kept only in a file that stays and otherwise named in the report, since the run
-   cannot share what it holds (the diff review widened "outside the repository" to "not
-   tracked", the same hazard one step in; the user may narrow it back); every
-   normalization trigger, rename, and deletion names a tracked file, so an ignored
-   personal `CLAUDE.md` is never moved or deleted; and the deletion reaches only the two
-   `.claude/` files, not a tracked `.claude/skills/<name>/AGENTS.md`. Open: under a
-   required-adapters policy, "add any missing one" where an ignored personal `CLAUDE.md`
-   already sits.
+   alone, the repo getting first setup, though the new hub does not load in Claude Code
+   for that user while the untracked `CLAUDE.md` exists, which the audit's session
+   check then reports. The reference budget rose from 90 to 100 lines with the user's
+   approval, so the round 6 findings fit without dropping a reason clause (dfc5d75,
+   3eeb3ce, b60c91b): an `AGENTS.md` import is dropped unless it is an adapter line,
+   since inlining it would copy a hub into the file; an import of a file the repository
+   does not track, outside it or ignored, is reported and never inlined, its line kept
+   only in a file that stays or is renamed and otherwise named in the report, since the
+   run cannot share what it holds, so a sole file that becomes the hub keeps the line
+   and the next audit reports it by design (the diff review widened "outside the
+   repository" to "not tracked", the same hazard one step in; the user may narrow it
+   back); every normalization trigger, rename, and deletion names a tracked file, so an
+   ignored personal `CLAUDE.md` is never moved or deleted; and the deletion reaches only
+   the two `.claude/` files, not a tracked `.claude/skills/<name>/AGENTS.md`. Open:
+   under a required-adapters policy, "add any missing one" where an ignored personal
+   `CLAUDE.md` already sits.
 9. **A cca run id is settled under the registry lock, and a duplicate stops the run.**
    Stage 1's suffix check at D3 is a first pass; D4 creates the run directory with a
    `mkdir` that fails when it exists and takes the next suffix; D6, under the lock after
