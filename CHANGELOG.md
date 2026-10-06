@@ -93,8 +93,9 @@ repos' own changelogs are kept under `docs/history/`.
   running before removing it, and a headless run removes it without asking, since a
   session whose lock was removed before its replace command rereads and rewrites. A
   stale lock whose owner name is the run's own, left by a second audit of one id
-  started in the same second, is never removed: the run stops before stage 1 as a
-  duplicate id, or reports a registry failure after stage 1. Before, two audits
+  started in the same second or by the run's own failed release, is never removed by
+  that run: it stops before stage 1 as a duplicate id, or reports a registry failure
+  after stage 1, and the next audit or resume removes the lock. Before, two audits
   running at once could lose each other's entry, so `/cca:resume` and `/cca:act`
   could not find a run.
 - A refused or failed `runs.json` update no longer ends with a bare `/cca:resume <run-id>`
@@ -103,8 +104,9 @@ repos' own changelogs are kept under `docs/history/`.
   `stages.json` entry and `usage.md` afterward, and prints the entry to add by hand;
   when the entry is present with its old state, it says so and keeps the resume command.
   Whenever the lock directory is left holding this run's owner directory or nothing, or
-  a stale lock stays because the user kept it, it also prints the lock's path and the
-  command that removes it, with the form for an empty lock.
+  a stale lock stays because the user kept it or it carries the run's own owner name,
+  it also prints the lock's path and the command that removes it, with the form for an
+  empty lock.
 - A run id is settled twice. The run directory is created with a `mkdir` that fails
   when it exists, taking the next suffix, and under the registry lock a run whose id
   another audit registered in the same minute stops before stage 1, removes its

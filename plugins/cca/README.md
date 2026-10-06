@@ -480,9 +480,10 @@ run reports. Each update holds the lock directory `runs.json.lock`. A lock more 
 about a minute old is stale: an interactive session asks you whether another audit or
 resume is running and removes it on "no", and a headless session, or one that cannot
 tell whether a user can answer, removes it without asking. A stale lock left by a
-second audit of the same id started in the same second is never removed: a new audit
-stops before stage 1 with the duplicate-id line, and you run the command again; a later
-update or a resume reports a registry failure instead and leaves that lock.
+second audit of the same id started in the same second, or by the run's own failed
+release, is never removed by that run: a new audit stops before stage 1 with the
+duplicate-id line, and you run the command again; a later update or a resume reports
+a registry failure instead and leaves the lock for the next audit or resume to remove.
 
 The run directory holds all state: the normalized `manifest.json`, `stages.json` (the
 only record of which stages are complete), `audit-brief.md`, `claims.md`, `groups.md`,

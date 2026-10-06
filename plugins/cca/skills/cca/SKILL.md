@@ -364,13 +364,17 @@ In a headless session, or when unsure whether a user can answer, remove a stale
 lock without asking, with `rmdir <lock>/* <lock>` (`rmdir <lock>` when it is
 empty), then acquire. This is safe: a session whose lock was removed before its
 replace command finds its test failing and acquires again, so no entry is lost on
-a supported path (the known limit below stands). A stale lock whose owner directory
-(seen with `ls <lock>`) has this session's own `<owner>` name is this session's own
-leftover when its earlier release failed, and is removed as such; otherwise it
-belongs to another invocation with this id started in the same second, and the
-replace test below could not tell the two locks apart: never remove it, run no
-release, since this session holds no lock, and at stage 1 D6 stop as the
-duplicate-id rule says, elsewhere take the registry-failure rule.
+a supported path (the known limit below stands). Interactive or headless, a stale
+lock whose owner directory (seen with `ls <lock>`) has this session's own `<owner>`
+name is never removed: it is the lock of another invocation with this id started in
+the same second, or this session's own leftover from a release that failed with the
+owner directory inside, and neither `ls` nor the replace test below can tell the two
+apart, while removing another's lock as one's own could publish over a third
+session's entry. Run no release, since this session holds no lock; at stage 1 D6
+stop as the duplicate-id rule says, elsewhere take the registry-failure rule. A
+session whose own failed release left that lock thus reports a registry failure at
+that update and each later one, its entry printed for hand entry, and the next audit
+or resume under another owner removes the lock as stale.
 
 Holding the lock, read `runs.json` afresh with the Read tool (or start an array
 when absent), then write `<tmp>` = `${CLAUDE_PLUGIN_DATA}/runs.json.<owner>.tmp`,
@@ -384,7 +388,8 @@ pauses every session, a timeout kills the command), so this is a known limit, no
 handled. On every failure path, release any lock this session holds with
 `rmdir <lock>/<owner> <lock>`, then with `rmdir <lock>` once its owner directory is
 gone and the lock is left; another session's lock holds its own owner directory, so
-this release cannot remove it.
+this release cannot remove it, except a same-owner lock, which this session never
+holds and so never releases (the guard above).
 
 On any refused or failed registry update step (lock acquisition, the Read,
 temporary-file write, or replace-and-release command), release any lock this
@@ -392,7 +397,8 @@ session holds, as above. Then, whatever the case below, report the lock's resolv
 absolute path and the command that removes it when `<lock>` still exists holding
 this session's owner directory or nothing (the release was refused or failed, or
 only the data directory turned non-writable mid-update and left an empty lock), or
-when a stale lock stays because the user declined its removal or answered yes twice.
+when a stale lock stays because the user declined its removal or answered yes twice,
+or because its owner directory has this session's own name.
 The command is `rmdir <lock>/<owner> <lock>` for this session's lock and
 `rmdir <lock>/* <lock>` for a stale one, to run only once no cca audit or resume is
 running; each is `rmdir <lock>` when the lock is empty. Say that a later audit or
