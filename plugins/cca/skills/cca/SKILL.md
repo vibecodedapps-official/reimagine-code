@@ -372,9 +372,9 @@ owner directory inside, and neither `ls` nor the replace test below can tell the
 apart, while removing another's lock as one's own could publish over a third
 session's entry. Run no release, since this session holds no lock; at stage 1 D6
 stop as the duplicate-id rule says, elsewhere take the registry-failure rule. A
-session whose own failed release left that lock thus reports a registry failure at
-that update and each later one, its entry printed for hand entry, and the next audit
-or resume under another owner removes the lock as stale.
+session whose own failed release left that lock thus takes that rule, with its
+three cases below, at each later update, and the next audit or resume under another
+owner removes the lock as stale.
 
 Holding the lock, read `runs.json` afresh with the Read tool (or start an array
 when absent), then write `<tmp>` = `${CLAUDE_PLUGIN_DATA}/runs.json.<owner>.tmp`,
