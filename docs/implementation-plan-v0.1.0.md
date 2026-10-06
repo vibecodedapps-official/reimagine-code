@@ -262,7 +262,10 @@ Check:
 
 ## M7: cutover
 
-Each step is a separate ask.
+Each step is a separate ask. Status 2026-10-06: the suite's side is complete, and ccx
+0.4.0 removed the migration paths, so the gate of step 2 (R59) and the uninstall check
+(R60) no longer exist; R58 to R60 are retired (`docs/decisions.md` Part 16). Steps 3
+and 4 are not recorded here.
 
 0. Prerequisite: the audit plugin calls the bridge as `recode`, done in the audit repo
    in a release after 0.6.0, which still calls `codex-lite:ask`. Until then `codex-lite`

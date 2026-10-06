@@ -650,3 +650,42 @@ pre-approved.
     read per Bash call, each `gh api` written out with the host, each rule applied as
     soon as the reads it needs are in, and never a shell loop over several reads
     (a8b6bfb, 17dbd8d, 0d6e4a2).
+
+## Part 16: ccx 0.4.0 and ccx-loop 0.4.0, the migration paths removed, 2026-10-06
+
+Decided with the user on 2026-10-06, after the 0.3.2 release: the old plugins and their
+config files are gone from every machine, and the suite has one user, so the paths that
+served the move from them are removed rather than kept in the shipped files. A Codex
+`gpt-6.1-sol` session made the change from a brief, a `gpt-6-astra` review found three
+leftovers, fixed in the same tree, and lint, the tests, and the manifest checks pass at
+a428d21.
+
+1. **The `renames` map is dropped, reversing Part 11 item 1.** The map moved 0.1.x
+   installs lazily, on the first plugin command after a marketplace update, and every
+   install has moved, so it has nothing left to move. Lint now fails on a catalog that
+   carries `renames` at all; the manifest check never asked for the map either way.
+2. **`/ccx:rules` reads only the current marker, reversing Part 11 item 6.** A file that
+   still carries a `recode:house-rules` block reads as `absent`, so `apply` adds a
+   `ccx:house-rules` block beside it and `--remove` finds nothing; the changelog says to
+   remove the old block by hand first, and the work-machine handoff checks for one
+   before its rules step. The session-start notice no longer reports old markers.
+3. **The loop no longer blocks on an old config file, reversing Part 11 item 7.** No
+   repository on any machine holds a `.recode.json` or `.ccl.json`, so R23's reason, a
+   dropped `checks` or `timeouts`, has no case left. R23 and the lint check for the gate
+   are retired.
+4. **Setup prints only its Codex diagnostics and allow rule, superseding Part 14 item
+   5.** The old-plugin lists and the `old-plugins` verb of `suite.mjs` are gone, with
+   the `claude plugin list` call they spawned, so the script reads files and spawns
+   nothing. R16 is retired and the setup description is shorter.
+5. **The migration literals lose their per-file allowances.** Lint check 10 rejects
+   every old plugin, marketplace, and install id in any shipped file, with three
+   patterns the review added for the old Codex review marketplace, the old audit
+   marketplace, and the old repo-docs install id. The README sections "Moving from the
+   old plugins" and "From recode 0.1.x", the Codex README's removal lines, and the
+   migration-only tests are removed. R7's exceptions and R58 to R60 are retired; the
+   history under `docs/history/`, the rename map, and Parts 10, 11, and 14 keep the
+   record.
+6. **The release is 0.4.0 for `ccx`, `ccx-loop`, and the Codex `ccx`.** A minor bump
+   marks the dropped behaviors in 0.x, as Part 11 item 8 did; the bridge contract (R10)
+   does not change, so the loop's range stays `>=0.2.0 <1.0.0`. cca and repo-docs are
+   unchanged.

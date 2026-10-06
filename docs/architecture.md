@@ -486,8 +486,9 @@ ships.
   in that repo, so no import carries them. They exist only on the author's disk. They are
   copied by hand into `docs/history/claude-codex-loop/`.
 - **Complete.** The old plugins are gone from every machine, and the suite has one
-  user. The cutover steps and the old-plugin inventory are in `docs/rename-map.md`,
-  `docs/decisions.md`, and the history docs.
+  user. The cutover steps are in `docs/implementation-plan-v0.1.0.md` (M7) and
+  `docs/decisions.md` Part 10; the list of old plugins that setup printed is in the
+  history before a428d21 (`plugins/ccx/scripts/suite.mjs`); the removal is Part 16.
 - **Removed in 0.4.0.** The catalog no longer carries a `renames` map; setup no longer
   lists old plugins; house rules recognize only the current marker; the session notice
   no longer reports old markers; and the loop no longer blocks on orphaned old configs.
