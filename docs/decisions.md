@@ -550,7 +550,8 @@ pre-approved.
    test could not tell the locks apart; the session holds no lock then and runs no
    release, stops at stage 1 D6 as a duplicate id so two runs never share
    `revert-work/<run-id>/`, and elsewhere takes the registry-failure rule (cc2ad41 and
-   b1cd5fe, from the diff review); a collision-resistant owner token would remove the
+   b1cd5fe, and 247eb9a for the lock a session's own failed release left, which it removes
+   as its own, from the diff review); a collision-resistant owner token would remove the
    case but changes the owner form the plan froze, and is the user's call. The lock
    report fires when the lock directory is left holding this session's owner directory
    or nothing, or a stale lock stays because the user kept it, and every printed
@@ -587,16 +588,17 @@ pre-approved.
    scope wrote that scope's files.
 8. **repo-docs maintain mode deletes a tracked `.claude/AGENTS.md` or `.claude/CLAUDE.md`,
    drops an `AGENTS.md` import that is not an adapter line, and reports an import of a
-   file outside the repository.** A tracked `.claude/CLAUDE.md` or `.claude/AGENTS.md`
-   beside a root `AGENTS.md` has its lines placed and is deleted, never renamed in place
-   or made an adapter, because Claude Code loads `.claude/AGENTS.md` when it reads
-   `AGENTS.md` directly, Codex only from a session started inside `.claude/`, and an
-   adapter there would import an absent `.claude/AGENTS.md` (d773f04, 0aff3bb, a3df9cb,
-   6ea123b). A sole tracked `CLAUDE.md` or `.claude/AGENTS.md` moves to the root hub,
-   and an untracked sole file is left alone. The reference budget rose from 90 to 100
+   file the repository does not track.** A tracked `.claude/CLAUDE.md` or
+   `.claude/AGENTS.md` beside a root `AGENTS.md` has its lines placed and is deleted,
+   never renamed in place or made an adapter, because Claude Code loads
+   `.claude/AGENTS.md` when it reads `AGENTS.md` directly, Codex only from a session
+   started inside `.claude/`, and an adapter there would import an absent
+   `.claude/AGENTS.md` (d773f04, 0aff3bb, a3df9cb, 6ea123b). A sole tracked `CLAUDE.md`
+   or `.claude/AGENTS.md` moves to the root hub, and an untracked sole file is left
+   alone, the repo getting first setup. The reference budget rose from 90 to 100
    lines with the user's approval, so the round 6 findings fit without dropping a reason
-   clause (dfc5d75, 3eeb3ce): an `AGENTS.md` import is dropped unless it is an adapter
-   line, since inlining it would copy a hub into the file; an import of a file the
+   clause (dfc5d75, 3eeb3ce, b60c91b): an `AGENTS.md` import is dropped unless it is an
+   adapter line, since inlining it would copy a hub into the file; an import of a file the
    repository does not track, outside it or ignored, is reported and never inlined, its
    line kept only in a file that stays and otherwise named in the report, since the run
    cannot share what it holds (the diff review widened "outside the repository" to "not
@@ -634,4 +636,4 @@ pre-approved.
     loops; the text was right and the loop form bypassed it. Item 4 of the watch says one
     read per Bash call, each `gh api` written out with the host, each rule applied as
     soon as the reads it needs are in, and never a shell loop over several reads
-    (a8b6bfb, 17dbd8d).
+    (a8b6bfb, 17dbd8d, 0d6e4a2).
