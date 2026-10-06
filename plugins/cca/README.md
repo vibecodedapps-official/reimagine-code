@@ -98,7 +98,7 @@ An unknown flag or a bad value is rejected in one line, and nothing is written.
 | `--effort` | `low`, `medium`, or `high`; overrides the tier cca picks | picked from the bundle's size (see Effort) |
 | `--no-codex` | none; the fallback reviewer gives the second opinion | Codex, when available |
 | `--codex-model` | a full Codex model id | `gpt-6.1-sol` |
-| `--codex-timeout` | seconds, 1 to 3600; a headless session passes at most 540 | by tier: low 1,200, medium 2,400, high 3,600 |
+| `--codex-timeout` | seconds, 1 to 3600; at most 540 when the session is headless or cannot tell whether a user can answer | by tier: low 1,200, medium 2,400, high 3,600 |
 | `--models` | `role=model,...`, roles `digester`, `mapper`, `auditor`, `adversary`, `merger`, models as the Agent tool accepts them (`opus`, `sonnet`, `haiku`, `fable`) | see Roles |
 | `--questions` | a markdown file of `id: question` lines | the four default questions |
 | `--claims` | a claims file; repeat the flag for more | none |
@@ -478,8 +478,8 @@ recorded in `runs.json` in cca's plugin data directory, so `/cca:resume` and
 `/cca:act` find it from any directory, unless Claude Code refuses the write, which the
 run reports. Each update holds the lock directory `runs.json.lock`. A lock more than
 about a minute old is stale: an interactive session asks you whether another audit or
-resume is running and removes it on "no", and a headless session removes it without
-asking.
+resume is running and removes it on "no", and a headless session, or one that cannot
+tell whether a user can answer, removes it without asking.
 
 The run directory holds all state: the normalized `manifest.json`, `stages.json` (the
 only record of which stages are complete), `audit-brief.md`, `claims.md`, `groups.md`,

@@ -36,10 +36,10 @@ step 1c, right after the baseline, for the same reason.
 3. Normalize:
    - Every path to an absolute path. Every repo path must be a git checkout
      (`git -C <path> rev-parse --show-toplevel`); store the top level. For every
-     audited repository (bundles, references, and sources of truth), when
-     `git -C <repo> config --get-regexp
-     '^(remote\..*\.promisor|extensions\.partialclone)$'` exits 0, with `<repo>` the
-     stored top level, stop before stage 1 with one line per such repository,
+     audited repository (bundles, references, and sources of truth), with `<repo>` the
+     stored top level, when
+     `git -C <repo> config --local --get-regexp '^(remote\..*\.promisor|extensions\.partialclone)$'`
+     exits 0, stop before stage 1 with one line per such repository,
      `<repo>: partial clones are not supported`: the agents' `git show` and
      `git diff` would fetch missing objects over the network, against the read-only
      boundary.

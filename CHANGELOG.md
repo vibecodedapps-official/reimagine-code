@@ -115,8 +115,9 @@ repos' own changelogs are kept under `docs/history/`.
 - In a headless session, or when cca cannot tell whether a user can answer, stage 6
   passes Codex a timeout of at most 540 seconds, so the bridge call ends inside the Bash
   tool's 10-minute foreground limit and never moves to the background; `codex_timeout`
-  records the value passed. Before, a tier timeout of 1,200 seconds or more moved the
-  call to the background, and a headless session ended with its turn, losing the run.
+  records the value passed. Before, a tier timeout of 1,200 seconds or more let the call
+  run past that limit and move to the background, and a headless session ended with its
+  turn, losing the run.
 - The read-only check accepts another cca run's or a handoff's file under any audited
   repository's `<scratch>/cca/` and lists it as such. Before, two audits of the same
   repository ended each other `blocked`.
