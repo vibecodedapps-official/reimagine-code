@@ -243,7 +243,7 @@ name a plugin are rerun under the new names and recorded here.
     case M0-c' ran it (`docs/history/claude-codex-audit/acceptance.md`). Expected: the
     four `cca:` commands are listed; stage 1 runs and stage 8 writes the report; the run
     ends `partial` with verdict `audit incomplete` and prints a `/cca:resume <run-id>`
-    line, or the entry to add to `runs.json` by hand when the registry write was refused;
+    line, or, when the run's entry is not in `runs.json`, the entry to add by hand;
     `stages.json` records `plugin_version` `0.9.1`; the fixture repository's
     `git status --porcelain` is unchanged by the run. Covers R61 and R62. Rerun when a
     cca command, the skill, the catalog entry, or the plugin version changes. Run
