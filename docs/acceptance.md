@@ -124,7 +124,8 @@ name a plugin are rerun under the new names and recorded here.
     exactly `ccx` and `repo-docs`, from `plugins/ccx-codex` and `plugins/repo-docs`,
     and they install at the versions their manifests give. Covers R2. Rerun when the
     Codex catalog or a Codex manifest changes. Run 2026-10-03, 2026-10-04 for 0.2.0 and
-    0.3.0, and 2026-10-05 for 0.3.1; see the records.
+    0.3.0, 2026-10-05 for 0.3.1, and 2026-10-06 for 0.3.2 and repo-docs 0.1.5; see the
+    records.
 12. **Code review on Codex.** Setup: as item 11, in a scratch git repository with
     `math.mjs`, `test.mjs`, and a `package.json` whose `test` script passes, then an
     uncommitted change that renames an export, gives `add` a third argument with a
@@ -181,8 +182,9 @@ name a plugin are rerun under the new names and recorded here.
     `git ls-remote --tags origin`. Expected: each tag command checks the manifest against
     its catalog entry and pushes; the remote holds a `<plugin>--v<version>` tag for each
     plugin's new version, and no bare `v` tag. Covers R49. Rerun at each release. Run
-    2026-10-03 for 0.1.0, 2026-10-04 for 0.1.1, 0.1.2, 0.1.3, 0.2.0, and 0.3.0, and
-    2026-10-05 for 0.3.1; see the records.
+    2026-10-03 for 0.1.0, 2026-10-04 for 0.1.1, 0.1.2, 0.1.3, 0.2.0, and 0.3.0,
+    2026-10-05 for 0.3.1 and cca 0.9.0, and 2026-10-06 for 0.3.2, cca 0.9.1, and
+    repo-docs 0.1.5; see the records.
 18. **Install from GitHub.** Setup: on macOS and on Windows 11 with both CLIs from npm,
     new scratch profiles on each host. Command: the four lines of R3, then `claude plugin
     install ccx-loop@reimagine-code` and `codex plugin add
@@ -195,7 +197,8 @@ name a plugin are rerun under the new names and recorded here.
     2026-10-04 for 0.1.1 on macOS, from the private repository and then the public one,
     and on Windows from the public one. Run 2026-10-04 for 0.1.2, 0.1.3, 0.2.0, and
     0.3.0, and 2026-10-05 for 0.3.1, each on macOS and Windows, from the public
-    repository; see the records.
+    repository, and 2026-10-06 for 0.3.2, cca 0.9.1, and repo-docs 0.1.5 on macOS; see
+    the records.
 19. **Windows.** Setup: a Windows 11 machine with both CLIs from npm, the suite
     installed as in item 18, and a test repository checked out under a path that holds
     a space. Command: `/ccx:ask` and `/ccx:implement` with a one-line change;
@@ -1755,3 +1758,42 @@ runs stand for the code they exercised, which those commits did not touch.
 
 - **Not run.** Item 19 (Windows; a brief is ready), item 11's GitHub form, and items 17
   and 18, which need the push and the tags.
+
+### 2026-10-06: release ccx 0.3.2, ccx-loop 0.3.2, cca 0.9.1, repo-docs 0.1.5
+
+macOS 27.0, Claude Code 2.1.289, codex-cli 0.160.0, Node 26.4.0. The release commit was
+e6c9ee2, the merge of PR 29, whose CI run 37462456379 passed on ubuntu-latest,
+macos-latest, and windows-latest, the Windows job in 16 minutes. Git credentials were
+off for the GitHub runs except the tag pushes. No permission denial occurred. The real
+`~/.claude` and `~/.codex` files had the same sha256, and the same `auth.json` and
+`installed_plugins.json` times, after the runs as before.
+
+- **Item 17 passed for this release.** The dry runs named `ccx--v0.3.2`,
+  `ccx-loop--v0.3.2`, `cca--v0.9.1`, and `repo-docs--v0.1.5` at HEAD. `claude plugin tag
+  --push` created and pushed all four at e6c9ee2, `ccx` first, then `ccx-loop`, `cca`,
+  and `repo-docs`; the remote holds the four and no bare `v` tag. `npm run lint` on
+  `main` printed `lint: ok` with the tags present.
+- **Update from GitHub.** In the M4 profile, restored to its state before the review
+  rounds with 0.3.1, 0.3.1, 0.9.0, and 0.1.4 installed from GitHub, `claude plugin
+  marketplace update reimagine-code` moved the catalog clone to e6c9ee2, and `claude
+  plugin update`, once per plugin, moved `ccx` and `ccx-loop` to 0.3.2, `cca` to 0.9.1,
+  and `repo-docs` to 0.1.5.
+- **Item 18 passed on macOS for this release, from the public repository.** `git
+  ls-remote` read `main` at e6c9ee2 and the four tags peeling to it.
+  - In `claude-m6`, with the plugins and catalog removed and added again, installing
+    the loop alone printed "(+ 1 dependency: ccx)". `ccx-loop` 0.3.2, `ccx` 0.3.2,
+    `cca` 0.9.1, and `repo-docs` 0.1.5 installed, each recording e6c9ee2.
+  - In `codex-m6`, with the marketplace removed and added again, `ccx` 0.3.2 and
+    `repo-docs` 0.1.5 installed and showed as enabled, with the clone at e6c9ee2. Right
+    after the re-add, before the two `codex plugin add` commands, `codex plugin list`
+    still showed 0.3.1 and 0.1.4; not explained.
+  - In the M4 profile, `/ccx:setup` proved the sandbox as `workspace-write` and printed
+    one allow rule naming the 0.3.2 `scripts/ccx.mjs`. A headless `/ccx:ask` with "What
+    is 17 times 3? Reply with the number only." printed "51" and `status: ok`, with no
+    permission denial. The copy of the Codex login was deleted afterward.
+- **Item 11 passed for this release.** In a new Codex home holding only the model,
+  effort, sandbox, and approval settings, and no login, `codex plugin marketplace add
+  vibecodedapps-official/reimagine-code` cloned e6c9ee2. `codex plugin list` showed
+  exactly `ccx`, from `plugins/ccx-codex`, and `repo-docs`, which installed at 0.3.2
+  and 0.1.5 and showed as enabled.
+- **Not run.** Items 18 and 19 on Windows, and cca's item 21 there; a brief is ready.
