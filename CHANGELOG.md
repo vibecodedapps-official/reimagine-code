@@ -175,7 +175,7 @@ repos' own changelogs are kept under `docs/history/`.
 
 ### repo-docs
 
-- Migrating a repository whose only instruction file is a tracked `.claude/CLAUDE.md`, or
+- Migrating a repository whose only tracked instruction file is `.claude/CLAUDE.md`, or
   a `.claude/AGENTS.md` that an earlier migration left, makes it the root `AGENTS.md`,
   rewriting relative paths. Before, the text could be read as renaming it in place to
   `.claude/AGENTS.md`, which Codex reads only from a session started inside `.claude/`.
@@ -190,12 +190,12 @@ repos' own changelogs are kept under `docs/history/`.
   `CLAUDE.md` with content after its import was normalized, so one with its own lines
   and no import met no rule, and nothing removed a `.claude/AGENTS.md` left by an
   earlier rename.
-- Every `@path` import maintain mode meets becomes a pointer or is inlined, except that
-  an import of an `AGENTS.md` is dropped unless it is an adapter line, and an import of
-  a file the repository does not track, such as one under the home directory, is
-  reported and never inlined; its line stays only in a file that stays, else the report
-  names it. Before, that rule covered only the sole-file migration and made no
-  exception for either import.
+- Every `@path` import maintain mode meets becomes a pointer or is inlined, except an
+  adapter line, which stays; an import of another `AGENTS.md`, which is dropped; and an
+  import of a file the repository does not track, such as one under the home directory,
+  which is reported and never inlined, its line kept only in a file that stays or is
+  renamed and otherwise named in the report. Before, that rule covered only the
+  sole-file migration and made no exception for any import.
 - The judgment checks flag a `.claude/AGENTS.md`, beside `AGENTS.override.md` and
   `AGENTS.local.md`, as a file the two platforms load under different conditions, which
   `references/platforms.md` records.

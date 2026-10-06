@@ -61,12 +61,13 @@ Platform behavior named here is recorded, with its source, in `references/platfo
   the same change that moves content. Never delete a real constraint to shorten a file.
 - Make each `@path` import but an adapter line a pointer or inline it. Drop an import of
   an `AGENTS.md` unless it is an adapter line. Report, never inline, an import of a file
-  the repo does not track: keep its line where it is in a file that stays, and when its
-  file is deleted or made exact, name the import in the report for the user to place.
-- A repo whose only instruction file is a tracked `CLAUDE.md` or `.claude/AGENTS.md`: make
+  the repo does not track: keep its line where it is in a file that stays or is renamed,
+  and when its file is deleted or made exact, name the import in the report for the user
+  to place.
+- A repo whose only tracked instruction file is a `CLAUDE.md` or `.claude/AGENTS.md`: make
   it the root `AGENTS.md`, rewriting relative paths when it leaves `.claude/`. Move
   Claude-only lines to `.claude/rules/`, add `## Spokes`, and no adapter unless required.
-  An untracked sole file is left alone.
+  An untracked sole file is left alone; the repo gets first setup.
 - A repo with a tracked symlinked `AGENTS.md` or `CLAUDE.md`, a tracked
   `.claude/AGENTS.md` or `.claude/CLAUDE.md`, or a tracked `CLAUDE.md` that is not
   exact, keeps its file locations unless it is the sole instruction file covered above;
