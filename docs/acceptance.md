@@ -124,7 +124,8 @@ name a plugin are rerun under the new names and recorded here.
     exactly `ccx` and `repo-docs`, from `plugins/ccx-codex` and `plugins/repo-docs`,
     and they install at the versions their manifests give. Covers R2. Rerun when the
     Codex catalog or a Codex manifest changes. Run 2026-10-03, 2026-10-04 for 0.2.0 and
-    0.3.0, and 2026-10-05 for 0.3.1; see the records.
+    0.3.0, 2026-10-05 for 0.3.1, and 2026-10-06 for 0.3.2 and repo-docs 0.1.5; see the
+    records.
 12. **Code review on Codex.** Setup: as item 11, in a scratch git repository with
     `math.mjs`, `test.mjs`, and a `package.json` whose `test` script passes, then an
     uncommitted change that renames an export, gives `add` a third argument with a
@@ -181,8 +182,9 @@ name a plugin are rerun under the new names and recorded here.
     `git ls-remote --tags origin`. Expected: each tag command checks the manifest against
     its catalog entry and pushes; the remote holds a `<plugin>--v<version>` tag for each
     plugin's new version, and no bare `v` tag. Covers R49. Rerun at each release. Run
-    2026-10-03 for 0.1.0, 2026-10-04 for 0.1.1, 0.1.2, 0.1.3, 0.2.0, and 0.3.0, and
-    2026-10-05 for 0.3.1; see the records.
+    2026-10-03 for 0.1.0, 2026-10-04 for 0.1.1, 0.1.2, 0.1.3, 0.2.0, and 0.3.0,
+    2026-10-05 for 0.3.1 and cca 0.9.0, and 2026-10-06 for 0.3.2, cca 0.9.1, and
+    repo-docs 0.1.5; see the records.
 18. **Install from GitHub.** Setup: on macOS and on Windows 11 with both CLIs from npm,
     new scratch profiles on each host. Command: the four lines of R3, then `claude plugin
     install ccx-loop@reimagine-code` and `codex plugin add
@@ -195,7 +197,8 @@ name a plugin are rerun under the new names and recorded here.
     2026-10-04 for 0.1.1 on macOS, from the private repository and then the public one,
     and on Windows from the public one. Run 2026-10-04 for 0.1.2, 0.1.3, 0.2.0, and
     0.3.0, and 2026-10-05 for 0.3.1, each on macOS and Windows, from the public
-    repository; see the records.
+    repository, and 2026-10-06 for 0.3.2, cca 0.9.1, and repo-docs 0.1.5 on macOS and
+    Windows; see the records.
 19. **Windows.** Setup: a Windows 11 machine with both CLIs from npm, the suite
     installed as in item 18, and a test repository checked out under a path that holds
     a space. Command: `/ccx:ask` and `/ccx:implement` with a one-line change;
@@ -204,8 +207,10 @@ name a plugin are rerun under the new names and recorded here.
     trusting the hook. Expected: the ask and implement succeed; the rules block is added
     with the file's CRLF endings kept, and still reads `current` in LF; the repo-docs
     hook adds its reminder on both hosts. Covers R53. Rerun when the bridge's spawn code,
-    the rules command, or the hook changes. Run 2026-10-03, 2026-10-04 for 0.2.0, and
-    2026-10-05 for 0.3.1 except the symbolic links and a real Ctrl-C; see the records.
+    the rules command, or the hook changes. Run 2026-10-03, 2026-10-04 for 0.2.0,
+    2026-10-05 for 0.3.1 except the symbolic links and a real Ctrl-C, and 2026-10-06 for
+    0.3.2 except the symbolic links and a folder name ending in a space; see the
+    records.
 20. **Reviewer routing.** Setup: scratch git repositories as in item 7, with a local bare
     `origin`; `ccx-loop` installed from this repository's catalog; Codex logged in.
     Command:
@@ -247,8 +252,8 @@ name a plugin are rerun under the new names and recorded here.
     `stages.json` records `plugin_version` `0.9.1`; no `runs.json.lock` is left in the
     data directory; the fixture repository's `git status --porcelain` is unchanged by
     the run. Covers R61 and R62. Rerun when a cca command, the skill, the catalog
-    entry, or the plugin version changes. Run 2026-10-05 for 0.9.0 and 2026-10-06 for
-    0.9.1; see the records.
+    entry, or the plugin version changes. Run 2026-10-05 for 0.9.0, and 2026-10-06 for
+    0.9.1 on macOS and Windows; see the records.
 22. **cca second opinion through ccx.** Setup: as item 21, with `ccx` installed from
     this catalog, Codex logged in, and the `patterns` fixture. Command: `/cca:audit
     <manifest> --effort low`; then uninstall `ccx` and run `/cca:resume <run-id> --from 6`.
@@ -1755,3 +1760,113 @@ runs stand for the code they exercised, which those commits did not touch.
 
 - **Not run.** Item 19 (Windows; a brief is ready), item 11's GitHub form, and items 17
   and 18, which need the push and the tags.
+
+### 2026-10-06: release ccx 0.3.2, ccx-loop 0.3.2, cca 0.9.1, repo-docs 0.1.5
+
+macOS 27.0, Claude Code 2.1.289, codex-cli 0.160.0, Node 26.4.0. The release commit was
+e6c9ee2, the merge of PR 29, whose CI run 37462456379 passed on ubuntu-latest,
+macos-latest, and windows-latest, the Windows job in 16 minutes. Git credentials were
+off for the GitHub runs except the tag pushes. No permission denial occurred. The real
+`~/.claude` and `~/.codex` files had the same sha256, and the same `auth.json` and
+`installed_plugins.json` times, after the runs as before.
+
+- **Item 17 passed for this release.** The dry runs named `ccx--v0.3.2`,
+  `ccx-loop--v0.3.2`, `cca--v0.9.1`, and `repo-docs--v0.1.5` at HEAD. `claude plugin tag
+  --push` created and pushed all four at e6c9ee2, `ccx` first, then `ccx-loop`, `cca`,
+  and `repo-docs`; the remote holds the four and no bare `v` tag. `npm run lint` on
+  `main` printed `lint: ok` with the tags present.
+- **Update from GitHub.** In the M4 profile, restored to its state before the review
+  rounds with 0.3.1, 0.3.1, 0.9.0, and 0.1.4 installed from GitHub, `claude plugin
+  marketplace update reimagine-code` moved the catalog clone to e6c9ee2, and `claude
+  plugin update`, once per plugin, moved `ccx` and `ccx-loop` to 0.3.2, `cca` to 0.9.1,
+  and `repo-docs` to 0.1.5.
+- **Item 18 passed on macOS for this release, from the public repository.** `git
+  ls-remote` read `main` at e6c9ee2 and the four tags peeling to it.
+  - In `claude-m6`, with the plugins and catalog removed and added again, installing
+    the loop alone printed "(+ 1 dependency: ccx)". `ccx-loop` 0.3.2, `ccx` 0.3.2,
+    `cca` 0.9.1, and `repo-docs` 0.1.5 installed, each recording e6c9ee2.
+  - In `codex-m6`, with the marketplace removed and added again, `ccx` 0.3.2 and
+    `repo-docs` 0.1.5 installed and showed as enabled, with the clone at e6c9ee2. Right
+    after the re-add, before the two `codex plugin add` commands, `codex plugin list`
+    still showed 0.3.1 and 0.1.4; not explained.
+  - In the M4 profile, `/ccx:setup` proved the sandbox as `workspace-write` and printed
+    one allow rule naming the 0.3.2 `scripts/ccx.mjs`. A headless `/ccx:ask` with "What
+    is 17 times 3? Reply with the number only." printed "51" and `status: ok`, with no
+    permission denial. The copy of the Codex login was deleted afterward.
+- **Item 11 passed for this release.** In a new Codex home holding only the model,
+  effort, sandbox, and approval settings, and no login, `codex plugin marketplace add
+  vibecodedapps-official/reimagine-code` cloned e6c9ee2. `codex plugin list` showed
+  exactly `ccx`, from `plugins/ccx-codex`, and `repo-docs`, which installed at 0.3.2
+  and 0.1.5 and showed as enabled.
+- Windows: items 18, 19, and 21 ran on the user's machine the same day; see the next
+  record.
+
+### 2026-10-06: release ccx 0.3.2, ccx-loop 0.3.2, cca 0.9.1, repo-docs 0.1.5, Windows
+
+The personal Windows 11 machine, with Claude Code 2.1.283, codex-cli 0.157.1, Node
+26.4.0, and Git 2.55.0.windows.5. Git credentials were turned off (`GIT_CONFIG_GLOBAL`
+set to an empty file, since the commands ran in PowerShell): `git config --list` printed
+nothing. A session on that machine ran a brief and reported here. `git ls-remote` read
+`main` and the four tags, all peeling to e6c9ee2. The real profile's five files had the
+same sha256 after the runs as before; every copy of the Codex login was deleted after its
+run. Nothing in the checkout changed, nothing was committed, nothing was posted.
+
+- **Item 18 passed on Windows for this release, from the public repository.**
+  - In `claude-m6`, with the catalog removed (which uninstalled the three old plugins)
+    and added again with no ref, `ccx`, `ccx-loop`, `cca`, and `repo-docs` installed at
+    0.3.2, 0.3.2, 0.9.1, and 0.1.5, enabled, each recording e6c9ee2; with `ccx`
+    installed first, the loop printed no dependency line.
+  - In `codex-m6`, with the marketplace added again, `ccx` 0.3.2 and `repo-docs` 0.1.5
+    showed as installed and enabled, with the clone at e6c9ee2.
+- **Item 19 passed on Windows for 0.3.2, except two skipped parts.** In the repository
+  under `C:\recode accept\ccx032\repo` (`npm test`: 1 pass):
+  - Headless `/ccx:setup` passed in 11 s: `workspace-write` proven, one allow rule naming
+    the 0.3.2 `scripts/ccx.mjs` with forward slashes, "old plugins: none found".
+    `/ccx:ask` in auto mode printed "57" and `status: ok`; `/ccx:implement` through a
+    project skill reported the same HEAD before and after, ` M math.mjs`, and
+    `status: ok`, having added one line to `math.mjs`.
+  - New in 0.3.2: a `config.toml` copy beginning with a `notes` string that holds an
+    escaped `\"""` let 0.3.2's setup read the Windows sandbox setting and prove
+    `workspace-write`, where 0.3.1's `ccx.mjs` on the same file printed that the mode is
+    not set and left the sandbox untested. The rules command, in a config directory
+    named `cafe-` plus an accented `e`, wrote `rules-plan.json` as strict UTF-8 JSON with
+    the path as written, showed the diff line ` Order a cafe before noon.` (with its
+    accent) in UTF-8, and applied the block keeping that line. The unquoted
+    `--options core, writing` was refused, exit 1, nothing written, with
+    `ccx: unexpected argument "writing" after --options list`; the quoted
+    `"core, writing"` was trimmed and accepted, and `core,writing` worked.
+  - Rules with CRLF: 90 CRLF lines, 0 bare LF, the text above the block kept; after
+    converting to LF, status read `current` with `options=core,windows`. The hard-link
+    and two-file cases match 0.3.1: the plan skipped the Codex file as the same file,
+    `apply claude` refused the multiply linked `CLAUDE.md` with exit 1, and two separate
+    files both planned absent and ready.
+  - Hook: two Claude Code commits, one through `git -C "<path>" commit --allow-empty`,
+    carry the reminder in their transcripts from `PreToolUse:PowerShell`, and
+    `echo "git commit"` got none; a Codex commit run by the user from PowerShell through
+    a script has the reminder in its session file, and Codex did not ask about the hook.
+  - Ctrl-C: with the bridge started from PowerShell and Ctrl-C pressed while Codex ran,
+    it printed `ccx: the run failed: codex was ended by SIGTERM; no turn.completed event
+    arrived`, the thread id, the Resume line, and `status: failed`; no `codex` or
+    `ccx.mjs` process was left, and the request file was removed. In an interactive
+    `/ccx:ask`, Ctrl-C stopped Codex and left no process, but Claude Code showed only its
+    own "The user doesn't want to proceed with this tool use" and none of the bridge's
+    output. Unverified: whether Node on Windows reports the stopped child as SIGTERM or
+    the bridge ends Codex with SIGTERM after Ctrl-C; a macOS Ctrl-C run would tell.
+  - Skipped: a repository whose folder name ends in a space, since Windows drops the
+    space on `mkdir` and `git init` fails in a folder made with the `\\?\` prefix; and the
+    symbolic-link rules cases, since Developer Mode is off and `mklink` needs it.
+- **Item 21 passed on Windows for 0.9.1.** `sh tests/cca/fixture/build.sh solo` worked in
+  Git Bash. With `"scratch": "./app/.test-output/cca"` in a manifest copy, headless
+  `/cca:audit <manifest> --budget 0 --no-codex` in auto mode ran in 313 s, exit 0: the
+  four `cca:` commands listed; stage 1 ran and stage 8 wrote `report.md` with
+  `terminal state: partial` and `verdict: audit incomplete`; the reply ended with the
+  `/cca:resume <run-id>` line; `stages.json` records `plugin_version` `0.9.1`; `runs.json`
+  in the data folder holds the run as `partial`, where the 0.9.0 run could not write it;
+  no `runs.json.lock` is left; the fixture's `git status --porcelain` is unchanged and
+  HEAD stays on `feature`. Inside the audited session, the built-in removal check
+  blocked the lock release once, and the session reran it with literal paths, as on
+  macOS; none of the outer session's calls were denied.
+- **Observed.** The bridge prints nothing until Codex ends, so a Ctrl-C test has no cue
+  for when to press it. Left on the machine: an empty `repo2 ` folder, the test
+  repositories and rules folders under `C:\recode accept\ccx032`, and the fixture under
+  `%TEMP%`.
