@@ -84,8 +84,8 @@ read, which workflows apply, what passes, and how to poll. Item 5, CI repair, st
    4. Poll at about 30 second intervals, checking the run budget each time. Poll with
       one read per Bash call, writing out each `gh api --hostname <host>` call as above,
       and apply each rule of items 1 to 3 as soon as the reads it needs are in, before
-      the next read. Never poll in a shell loop that runs several reads: the rules apply
-      per read, and a loop cannot end the watch at once. CI is not
+      the next read. Never poll in a shell loop that runs several reads: a rule can end
+      the watch at any read, and a loop cannot end it at once. CI is not
       judged until 2 minutes after the push, measured from the time recorded right after
       the push returned. If `mergeable` is `CONFLICTING`, `pull_request` workflows do not
       run: end in `blocked` at once, naming the conflict. CI is green when every required
