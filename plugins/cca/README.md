@@ -486,7 +486,8 @@ interrupted run loses no finished stage, and `/cca:resume` never reuses a stale 
 
 - `reported`: every applicable stage complete.
 - `partial`: a report was written, but a stage failed or the budget ran out. The verdict
-  is `audit incomplete`, and cca prints a resume command.
+  is `audit incomplete`, and cca prints a resume command when the run's entry is in
+  `runs.json`, else the entry to add to the registry by hand.
 - `blocked`: no report could be written, or the read-only check failed. The reason is
   printed and every finished stage file is kept.
 

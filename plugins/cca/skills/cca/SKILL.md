@@ -367,15 +367,24 @@ when absent), then write `<tmp>` = `${CLAUDE_PLUGIN_DATA}/runs.json.<owner>.tmp`
 never a shared temporary file. Replace and release in one Bash command, every path
 absolute: `[ -d <lock>/<owner> ] && mv -f <tmp> <runs.json> && rmdir <lock>/<owner> <lock>`.
 A failed test is not an error: the lock was taken over while this session paused.
-Acquire again, reread, rewrite, and run the command again. On every failure path,
-release any lock this session holds with `rmdir <lock>/<owner> <lock>`; another
-session's lock holds its own owner directory, so this release cannot remove it.
+Acquire again, reread, rewrite, and run the command again. A shell stopped inside
+that one command for over a minute could still overwrite a takeover; no supported
+path stops it there (a permission prompt comes before the command, machine sleep
+pauses every session, a timeout kills the command), so this is a known limit, not
+handled. On every failure path, release any lock this session holds with
+`rmdir <lock>/<owner> <lock>`; another session's lock holds its own owner directory,
+so this release cannot remove it.
 
 On any refused or failed registry update step (lock acquisition, the Read,
 temporary-file write, replace-and-release command, or a stale lock treated as
 refused), release any lock this session holds with `rmdir <lock>/<owner> <lock>`.
-A refused or failed release changes nothing below. Read `runs.json` with the Read
-tool and branch on this run's entry:
+If that release is refused, or fails while `<lock>/<owner>` still exists, or a
+stale lock was treated as refused, then whatever the case below, report the lock's
+resolved absolute path and the command that removes it (`rmdir <lock>/<owner> <lock>`
+for this session's lock; `rmdir <lock>/* <lock>` for a stale one, to run only once no
+cca audit or resume is running), and say that a headless session cannot ask before
+removing it, so remove it by hand. Read `runs.json` with the Read tool and branch on
+this run's entry:
 
 - **Absent (D6's add failed, and nothing added it since):** tell the user at once
   that `/cca:resume` and `/cca:act` cannot find this run. At D6, record the
@@ -387,13 +396,10 @@ tool and branch on this run's entry:
 - **Present with the old state (a later update failed):** say that `runs.json`
   still shows the old state; keep printing `/cca:resume <run-id>`, with no manual
   entry. Record the limitation in the stage's `stages.json` entry and `usage.md`
-  (at resume step 9, in the first rerun stage's entry), and in the final reply.
-  Never edit the brief.
+  (at resume step 9, in `usage.md` and in the first rerun stage's final entry), and
+  in the final reply. Never edit the brief.
 - **Present with the new state (replace succeeded, only release failed):** the
-  registry is correct. Report the lock's resolved absolute path and the command
-  that removes it, `rmdir <lock>/<owner> <lock>`, with absolute paths. Say that the
-  next registry update asks before removing it and that a headless session cannot
-  ask, so remove it by hand. Record no limitation.
+  registry is correct; record no limitation.
 
 `${CLAUDE_PLUGIN_DATA}/runs.json` is a JSON array with one entry per run:
 

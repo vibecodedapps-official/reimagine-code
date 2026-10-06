@@ -92,9 +92,9 @@ repos' own changelogs are kept under `docs/history/`.
   that cannot work. When the run's entry is missing, the run says at once that resume
   and act cannot find it, records that in the brief during stage 1 or in the stage's
   `stages.json` entry and `usage.md` afterward, and prints the entry to add by hand;
-  when the entry is present with its old state, it says so and keeps the resume command;
-  when only the lock's release failed, it prints the lock's path and the command that
-  removes it.
+  when the entry is present with its old state, it says so and keeps the resume command.
+  Whenever the lock's release failed, or a stale lock was left in place, it also prints
+  the lock's path and the command that removes it.
 - The read-only check accepts another cca run's or a handoff's file under any audited
   repository's `<scratch>/cca/` and lists it as such. Before, two audits of the same
   repository ended each other `blocked`.
