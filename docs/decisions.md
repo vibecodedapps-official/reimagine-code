@@ -538,19 +538,27 @@ pre-approved.
    directory still exists (567f711, 35c6535, 2818c2f). A lock older than about a minute
    is stale; an interactive session removes it after a user says no other audit or
    resume is running, and a headless session, or one unsure whether a user can answer,
-   removes it at once (2cd5b27 had it treat the lock as refused; 337db4c takes the
-   automatic variant with the user's approval). The round 3 scenario scripts, under sh,
-   dash, and busybox on APFS and ext4, lost an entry or removed a live lock in three
-   schedules with a minute-based lock and kept every entry with the owner directory. A
-   session whose stale lock is removed before its replace command only rereads and
-   rewrites, so the automatic removal loses no entry on a supported path. The lock
+   removes it at once (35c6535 and 2818c2f had it treat the lock as refused, and
+   2cd5b27 added the report; 337db4c takes the automatic variant with the user's
+   approval). The round 3 scenario scripts, under sh, dash, and busybox on APFS and
+   ext4, lost an entry or removed a live lock in three schedules with a minute-based
+   lock and kept every entry with the owner directory. A session whose stale lock is
+   removed before its replace command only rereads and rewrites, so the automatic
+   removal loses no entry on a supported path. A stale lock whose owner directory has
+   this session's own `<owner>` name is never removed: two invocations of one run id
+   started in the same second share the owner and the temporary file, so the replace
+   test could not tell the locks apart, and the session takes the registry-failure rule
+   (cc2ad41, from the diff review); a collision-resistant owner token would remove the
+   case but changes the owner form the plan froze, and is the user's call. The lock
    report fires when the lock directory is left holding this session's owner directory
    or nothing, or a stale lock stays because the user kept it, and every printed
    command has its empty-lock form (337db4c). Known limits: a shell stopped inside the
    one replace-and-release command for over a minute, which no supported path does; and
-   two headless sessions that judge one stale lock stale at once, where the slower
-   removal can fail the faster session's acquisition, which then takes the
-   registry-failure rule and loses no entry.
+   two sessions that remove one stale lock at once, an interactive "no" included, where
+   the slower removal can fail the faster session's acquisition, which then takes the
+   registry-failure rule and overwrites no registered entry, its own printed for hand
+   entry, or lands after the owner directory exists, so the faster session's replace
+   test fails and it acquires again.
 5. **The revert-tests script and stage 1 both refuse a partial clone.**
    `GIT_NO_LAZY_FETCH=1` is exported beside `GIT_OPTIONAL_LOCKS`, and a repository with
    a promisor remote or `extensions.partialclone` ends `partial clones are not
@@ -558,9 +566,10 @@ pre-approved.
    had fetched four packs into the audited repository over the network while the
    read-only check noticed nothing. The agents' own `git show` and `git diff` fetch
    lazily too, so stage 1 stops before any read when
-   `git -C <repo> config --get-regexp '^(remote\..*\.promisor|extensions\.partialclone)$'`
+   `git -C <repo> config --local --get-regexp '^(remote\..*\.promisor|extensions\.partialclone)$'`
    matches for any audited repository, with `<repo>: partial clones are not supported`
-   (337db4c, with the user's approval).
+   (337db4c, with the user's approval; `--local` and the pre-approved probe in cc2ad41,
+   so the probe reads the repository's own config only).
 6. **The read-only check's advisory `touched` walk never stops a run.** Its `find`
    errors are printed and ignored (2168b93); the hash walk stays fatal. An ignored
    directory with mode 000 had made every check exit 2, and a directory churning during
@@ -579,16 +588,20 @@ pre-approved.
    or made an adapter, because Claude Code loads `.claude/AGENTS.md` when it reads
    `AGENTS.md` directly, Codex only from a session started inside `.claude/`, and an
    adapter there would import an absent `.claude/AGENTS.md` (d773f04, 0aff3bb, a3df9cb,
-   6ea123b). A sole instruction file under `.claude/` moves to the root hub. The
-   reference budget rose from 90 to 100 lines with the user's approval, so the round 6
-   findings fit without dropping a reason clause (dfc5d75): an `AGENTS.md` import is
-   dropped unless it is an adapter line, since inlining it would copy a hub into the
-   file; an import of a file outside the repository is reported and its line left in
-   place, since the run cannot see what it holds; every normalization trigger, rename,
-   and deletion names a tracked file, so an ignored personal `CLAUDE.md` is never
-   deleted; and the deletion reaches only the two `.claude/` files, not a tracked
-   `.claude/skills/<name>/AGENTS.md`. Open: under a required-adapters policy, "add any
-   missing one" where an ignored personal `CLAUDE.md` already sits.
+   6ea123b). A sole tracked `CLAUDE.md` or `.claude/AGENTS.md` moves to the root hub,
+   and an untracked sole file is left alone. The reference budget rose from 90 to 100
+   lines with the user's approval, so the round 6 findings fit without dropping a reason
+   clause (dfc5d75, 3eeb3ce): an `AGENTS.md` import is dropped unless it is an adapter
+   line, since inlining it would copy a hub into the file; an import of a file the
+   repository does not track, outside it or ignored, is reported and never inlined, its
+   line kept only in a file that stays and otherwise named in the report, since the run
+   cannot share what it holds (the diff review widened "outside the repository" to "not
+   tracked", the same hazard one step in; the user may narrow it back); every
+   normalization trigger, rename, and deletion names a tracked file, so an ignored
+   personal `CLAUDE.md` is never moved or deleted; and the deletion reaches only the two
+   `.claude/` files, not a tracked `.claude/skills/<name>/AGENTS.md`. Open: under a
+   required-adapters policy, "add any missing one" where an ignored personal `CLAUDE.md`
+   already sits.
 9. **A cca run id is settled under the registry lock, and a duplicate stops the run.**
    Stage 1's suffix check at D3 is a first pass; D4 creates the run directory with a
    `mkdir` that fails when it exists and takes the next suffix; D6, under the lock after
@@ -603,14 +616,16 @@ pre-approved.
     when cca cannot tell whether a user can answer, a larger `--codex-timeout` or tier
     value is replaced by 540, so the `ccx:ask` call ends inside the Bash tool's
     10-minute foreground limit and never moves to the background, where the turn's end
-    would end the session; step 6 says so, as stage 1 step 6b does for the agents. Every
+    would end the session; step 6 says so, as stage 1 step 6b does for the test run. Every
     tier value is above 540, so a headless run with no `--codex-timeout` always passes
     540, and a longer Codex answer swaps to the fallback with the reason `codex timeout
     after 540 s`. An interactive session keeps its value and waits for the background
     notification.
 11. **The loop's CI watch polls with one read per Bash call.** Acceptance run 6 for
-    0.3.2 found 13 of 51 `gh api` calls without `--hostname` and a PR closed during the
-    watch ending it `blocked` 79 seconds after the first `CLOSED` read, all in shell
-    loops the model wrote; the text was right and the loop form bypassed it. Item 4 of
-    the watch says one read per Bash call, each `gh api` written out with the host, the
-    rules applied after each read, and never a shell loop over several reads (a8b6bfb).
+    0.3.2 found 13 of 51 `gh api` calls without `--hostname`, ten of them in shell loops
+    the model wrote in two runs and three in ad hoc reads, and a PR closed during the
+    watch ending it `blocked` 79 seconds after the first `CLOSED` read, from one of those
+    loops; the text was right and the loop form bypassed it. Item 4 of the watch says one
+    read per Bash call, each `gh api` written out with the host, each rule applied as
+    soon as the reads it needs are in, and never a shell loop over several reads
+    (a8b6bfb, 17dbd8d).
