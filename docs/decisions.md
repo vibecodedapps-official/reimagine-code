@@ -532,26 +532,35 @@ pre-approved.
    `mergeable`, green checks), so a watch could end `done` on it. Treating a merge by
    someone else as `done` instead is the author's call and reopens this.
 4. **cca's registry lock is a directory with an owner directory inside it, and a
-   headless session treats a stale lock as refused.** Every `runs.json` update holds
-   `runs.json.lock` with `<run-id>-<HHMMSS>` inside it, rereads the registry, writes a
-   per-owner temporary file, and replaces the registry only while its owner directory
-   still exists (567f711, 35c6535, 2818c2f). A lock older than about a minute is stale;
-   it is removed only after a user says no other audit or resume is running, and a
-   headless session treats it as refused and reports its path (2cd5b27). The round 3
-   scenario scripts, under sh, dash, and busybox on APFS and ext4, lost an entry or
-   removed a live lock in three schedules with a minute-based lock and kept every entry
-   with the owner directory. A session whose stale lock is removed before its replace
-   command only rereads and rewrites, so removing it unasked loses no entry on a
-   supported path; the automatic variant is the user's call. Known limit: a shell
-   stopped inside the one replace-and-release command for over a minute, which no
-   supported path does.
-5. **The revert-tests script refuses a partial clone; a stage 1 refusal is the user's
-   call.** `GIT_NO_LAZY_FETCH=1` is exported beside `GIT_OPTIONAL_LOCKS`, and a repository
-   with a promisor remote or `extensions.partialclone` ends `partial clones are not
+   headless session removes a stale lock without asking.** Every `runs.json` update
+   holds `runs.json.lock` with `<run-id>-<HHMMSS>` inside it, rereads the registry,
+   writes a per-owner temporary file, and replaces the registry only while its owner
+   directory still exists (567f711, 35c6535, 2818c2f). A lock older than about a minute
+   is stale; an interactive session removes it after a user says no other audit or
+   resume is running, and a headless session, or one unsure whether a user can answer,
+   removes it at once (2cd5b27 had it treat the lock as refused; 337db4c takes the
+   automatic variant with the user's approval). The round 3 scenario scripts, under sh,
+   dash, and busybox on APFS and ext4, lost an entry or removed a live lock in three
+   schedules with a minute-based lock and kept every entry with the owner directory. A
+   session whose stale lock is removed before its replace command only rereads and
+   rewrites, so the automatic removal loses no entry on a supported path. The lock
+   report fires when the lock directory is left holding this session's owner directory
+   or nothing, or a stale lock stays because the user kept it, and every printed
+   command has its empty-lock form (337db4c). Known limits: a shell stopped inside the
+   one replace-and-release command for over a minute, which no supported path does; and
+   two headless sessions that judge one stale lock stale at once, where the slower
+   removal can fail the faster session's acquisition, which then takes the
+   registry-failure rule and loses no entry.
+5. **The revert-tests script and stage 1 both refuse a partial clone.**
+   `GIT_NO_LAZY_FETCH=1` is exported beside `GIT_OPTIONAL_LOCKS`, and a repository with
+   a promisor remote or `extensions.partialclone` ends `partial clones are not
    supported`, exit 2, before the first object read (2168b93). On a blobless clone a run
    had fetched four packs into the audited repository over the network while the
    read-only check noticed nothing. The agents' own `git show` and `git diff` fetch
-   lazily too; whether stage 1 refuses a partial clone outright is open.
+   lazily too, so stage 1 stops before any read when
+   `git -C <repo> config --get-regexp '^(remote\..*\.promisor|extensions\.partialclone)$'`
+   matches for any audited repository, with `<repo>: partial clones are not supported`
+   (337db4c, with the user's approval).
 6. **The read-only check's advisory `touched` walk never stops a run.** Its `find`
    errors are printed and ignored (2168b93); the hash walk stays fatal. An ignored
    directory with mode 000 had made every check exit 2, and a directory churning during
@@ -563,15 +572,45 @@ pre-approved.
    stops the run before stage 1 (2cc90e5, 35c6535). The ledger script had failed on a
    group named `auth api` (`expected 5 fields, got 7`), and a name equal to a specialist
    scope wrote that scope's files.
-8. **repo-docs maintain mode deletes a tracked `AGENTS.md` or `CLAUDE.md` under `.claude/`
-   and converts every import it meets but an import of an `AGENTS.md`.** A
-   `.claude/CLAUDE.md` or `.claude/AGENTS.md` beside a root `AGENTS.md` has its lines
-   placed and is deleted, never renamed in place or made an adapter, because Claude Code
-   loads `.claude/AGENTS.md` when it reads `AGENTS.md` directly, Codex only from a session
-   started inside `.claude/`, and an adapter there would import an absent
-   `.claude/AGENTS.md` (d773f04, 0aff3bb, a3df9cb, 6ea123b). A sole instruction file
-   under `.claude/` moves to the root hub. The 90-line budget of `references/spokes.md`
-   was met by dropping two reason clauses; raising it is the user's call. Whether an
-   `AGENTS.md` import is dropped instead and an import of a file outside the repository
-   reported, and whether the deletion reaches only `.claude/AGENTS.md` and
-   `.claude/CLAUDE.md`, waits on that budget and is the user's call.
+8. **repo-docs maintain mode deletes a tracked `.claude/AGENTS.md` or `.claude/CLAUDE.md`,
+   drops an `AGENTS.md` import that is not an adapter line, and reports an import of a
+   file outside the repository.** A tracked `.claude/CLAUDE.md` or `.claude/AGENTS.md`
+   beside a root `AGENTS.md` has its lines placed and is deleted, never renamed in place
+   or made an adapter, because Claude Code loads `.claude/AGENTS.md` when it reads
+   `AGENTS.md` directly, Codex only from a session started inside `.claude/`, and an
+   adapter there would import an absent `.claude/AGENTS.md` (d773f04, 0aff3bb, a3df9cb,
+   6ea123b). A sole instruction file under `.claude/` moves to the root hub. The
+   reference budget rose from 90 to 100 lines with the user's approval, so the round 6
+   findings fit without dropping a reason clause (dfc5d75): an `AGENTS.md` import is
+   dropped unless it is an adapter line, since inlining it would copy a hub into the
+   file; an import of a file outside the repository is reported and its line left in
+   place, since the run cannot see what it holds; every normalization trigger, rename,
+   and deletion names a tracked file, so an ignored personal `CLAUDE.md` is never
+   deleted; and the deletion reaches only the two `.claude/` files, not a tracked
+   `.claude/skills/<name>/AGENTS.md`. Open: under a required-adapters policy, "add any
+   missing one" where an ignored personal `CLAUDE.md` already sits.
+9. **A cca run id is settled under the registry lock, and a duplicate stops the run.**
+   Stage 1's suffix check at D3 is a first pass; D4 creates the run directory with a
+   `mkdir` that fails when it exists and takes the next suffix; D6, under the lock after
+   the fresh read, stops before stage 1 when another audit registered the same id in
+   the same minute, removing this run's directory (337db4c). The cumulative review found
+   that two audits started in the same minute could share a run directory and overwrite
+   each other's `manifest.json`, or register one id twice, since D3 read the registry
+   without the lock.
+10. **Stage 6 passes Codex at most 540 seconds in a headless session.** Issue 26, the
+    audit repository's issue 39 in Part 14 item 6, had two fixes, a cap in cca or a
+    background mode in the bridge; the cap is taken (337db4c). In a headless session, or
+    when cca cannot tell whether a user can answer, a larger `--codex-timeout` or tier
+    value is replaced by 540, so the `ccx:ask` call ends inside the Bash tool's
+    10-minute foreground limit and never moves to the background, where the turn's end
+    would end the session; step 6 says so, as stage 1 step 6b does for the agents. Every
+    tier value is above 540, so a headless run with no `--codex-timeout` always passes
+    540, and a longer Codex answer swaps to the fallback with the reason `codex timeout
+    after 540 s`. An interactive session keeps its value and waits for the background
+    notification.
+11. **The loop's CI watch polls with one read per Bash call.** Acceptance run 6 for
+    0.3.2 found 13 of 51 `gh api` calls without `--hostname` and a PR closed during the
+    watch ending it `blocked` 79 seconds after the first `CLOSED` read, all in shell
+    loops the model wrote; the text was right and the loop form bypassed it. Item 4 of
+    the watch says one read per Bash call, each `gh api` written out with the host, the
+    rules applied after each read, and never a shell loop over several reads (a8b6bfb).
