@@ -547,8 +547,10 @@ pre-approved.
    removal loses no entry on a supported path. A stale lock whose owner directory has
    this session's own `<owner>` name is never removed: two invocations of one run id
    started in the same second share the owner and the temporary file, so the replace
-   test could not tell the locks apart, and the session takes the registry-failure rule
-   (cc2ad41, from the diff review); a collision-resistant owner token would remove the
+   test could not tell the locks apart; the session holds no lock then and runs no
+   release, stops at stage 1 D6 as a duplicate id so two runs never share
+   `revert-work/<run-id>/`, and elsewhere takes the registry-failure rule (cc2ad41 and
+   b1cd5fe, from the diff review); a collision-resistant owner token would remove the
    case but changes the owner form the plan froze, and is the user's call. The lock
    report fires when the lock directory is left holding this session's owner directory
    or nothing, or a stale lock stays because the user kept it, and every printed
@@ -566,10 +568,12 @@ pre-approved.
    had fetched four packs into the audited repository over the network while the
    read-only check noticed nothing. The agents' own `git show` and `git diff` fetch
    lazily too, so stage 1 stops before any read when
-   `git -C <repo> config --local --get-regexp '^(remote\..*\.promisor|extensions\.partialclone)$'`
+   `git -C <repo> config --local --includes --get-regexp '^(remote\..*\.promisor|extensions\.partialclone)$'`
    matches for any audited repository, with `<repo>: partial clones are not supported`
    (337db4c, with the user's approval; `--local` and the pre-approved probe in cc2ad41,
-   so the probe reads the repository's own config only).
+   so the probe reads the repository's own config only, and `--includes` in b1cd5fe,
+   since `--local` alone skips the file's `include` directives: a promisor setting in
+   an included file passed the probe and was found with the flag).
 6. **The read-only check's advisory `touched` walk never stops a run.** Its `find`
    errors are printed and ignored (2168b93); the hash walk stays fatal. An ignored
    directory with mode 000 had made every check exit 2, and a directory churning during
@@ -606,7 +610,9 @@ pre-approved.
    Stage 1's suffix check at D3 is a first pass; D4 creates the run directory with a
    `mkdir` that fails when it exists and takes the next suffix; D6, under the lock after
    the fresh read, stops before stage 1 when another audit registered the same id in
-   the same minute, removing this run's directory (337db4c). The cumulative review found
+   the same minute, removing this run's directory (337db4c), and the same stop applies
+   before acquiring when a stale lock bears this run's own owner name (b1cd5fe, item 4).
+   The cumulative review found
    that two audits started in the same minute could share a run directory and overwrite
    each other's `manifest.json`, or register one id twice, since D3 read the registry
    without the lock.
