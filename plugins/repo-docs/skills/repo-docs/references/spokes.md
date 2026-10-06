@@ -59,20 +59,23 @@ Platform behavior named here is recorded, with its source, in `references/platfo
   filename has a space or `: `, and moving the sole instruction file out of `.claude/`.
 - Never rewrite dated or historical entries; append a correction. Repair inbound links in
   the same change that moves content. Never delete a real constraint to shorten a file.
-- Make each `@path` import a pointer or inline it, except an import of an `AGENTS.md`.
-- A repo whose only instruction file is `CLAUDE.md` or under `.claude/`: make it the root
-  `AGENTS.md`, rewriting relative paths when it leaves `.claude/`. Move Claude-only lines
-  to `.claude/rules/`, add `## Spokes`, and no adapter unless required.
-- A repo with a tracked `AGENTS.md` or `CLAUDE.md` that is a symlink or under `.claude/`,
-  or a `CLAUDE.md` that is not exact, keeps its file locations unless it is the sole
-  instruction file covered above; the first maintain run normalizes it. Replace each
-  symlink with a regular file. Route every line but an import through the placement
-  rule, so only Claude-only mechanics reach `.claude/rules/`. Rename a `CLAUDE.md`
-  outside `.claude/` with no sibling `AGENTS.md` to `AGENTS.md` and place its lines the
-  same way. Delete each such file under `.claude/`; delete every other `CLAUDE.md`, or,
-  if the adapter policy requires adapters, make each exact and add any missing one.
-  Write `## Spokes` and report each change. Except for that sole-file move, no file
-  leaves its directory, so normalization is not a move.
+- Make each `@path` import a pointer or inline it. Drop an import of an `AGENTS.md` unless
+  it is an adapter line, and report, never inline, an import of a file outside the repo,
+  leaving its line in place.
+- A repo whose only instruction file is a `CLAUDE.md` or `.claude/AGENTS.md`: make it the
+  root `AGENTS.md`, rewriting relative paths when it leaves `.claude/`. Move Claude-only
+  lines to `.claude/rules/`, add `## Spokes`, and no adapter unless required.
+- A repo with a tracked symlinked `AGENTS.md` or `CLAUDE.md`, a tracked
+  `.claude/AGENTS.md` or `.claude/CLAUDE.md`, or a tracked `CLAUDE.md` that is not
+  exact, keeps its file locations unless it is the sole instruction file covered above;
+  the first maintain run normalizes it. Replace each symlink with a regular file. Route
+  every line but an import through the placement rule, so only Claude-only mechanics
+  reach `.claude/rules/`. Rename a tracked `CLAUDE.md` outside `.claude/` with no sibling
+  `AGENTS.md` to `AGENTS.md` and place its lines the same way. Delete a tracked
+  `.claude/AGENTS.md` or `.claude/CLAUDE.md`; delete every other tracked `CLAUDE.md`, or,
+  if the adapter policy requires adapters, make each exact and add any missing one. Write
+  `## Spokes` and report each change. Except for that sole-file move, no file leaves its
+  directory, so normalization is not a move.
 
 ## Modes and severity
 

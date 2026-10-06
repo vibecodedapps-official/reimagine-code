@@ -163,14 +163,17 @@ repos' own changelogs are kept under `docs/history/`.
   file, so a symlinked `.claude/CLAUDE.md` moves too. A `.claude/CLAUDE.md` beside a
   root `AGENTS.md` is no longer renamed to `.claude/AGENTS.md`: its lines are placed
   and the file is deleted.
-- Maintain mode normalizes any `CLAUDE.md` that is not exact, and any tracked
-  `AGENTS.md` or `CLAUDE.md` that is a symlink or sits under `.claude/`, placing its
-  lines and deleting a file under `.claude/`. Before, only a symlinked file or a
+- Maintain mode normalizes any tracked `CLAUDE.md` that is not exact, and any tracked
+  `AGENTS.md` or `CLAUDE.md` that is a symlink or is `.claude/AGENTS.md` or
+  `.claude/CLAUDE.md`, placing its lines and deleting the file under `.claude/`; an
+  untracked file is never normalized or deleted. Before, only a symlinked file or a
   `CLAUDE.md` with content after its import was normalized, so one with its own lines
   and no import met no rule, and nothing removed a `.claude/AGENTS.md` left by an
   earlier rename.
-- Every `@path` import maintain mode meets becomes a pointer or is inlined, except an
-  import of an `AGENTS.md`. Before, that rule covered only the sole-file migration.
+- Every `@path` import maintain mode meets becomes a pointer or is inlined, except that
+  an import of an `AGENTS.md` is dropped unless it is an adapter line, and an import of
+  a file outside the repository is reported and left as it is. Before, that rule covered
+  only the sole-file migration and made no exception for either import.
 - The judgment checks flag a `.claude/AGENTS.md`, beside `AGENTS.override.md` and
   `AGENTS.local.md`, as a file the two platforms load under different conditions, which
   `references/platforms.md` records.
