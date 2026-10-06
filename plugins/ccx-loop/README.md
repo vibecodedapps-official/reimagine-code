@@ -263,9 +263,7 @@ agents read them directly. In this mode:
 ## Repo config: `.ccx.json`
 
 Place `.ccx.json` at the repo root. Every field is optional. A malformed file ends the
-run in `blocked` before anything is written. So does the file under its old name from
-before the plugin was renamed, with no `.ccx.json` beside it; the report says to
-rename it.
+run in `blocked` before anything is written.
 
 | Field | Default | Meaning |
 |---|---|---|

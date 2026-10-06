@@ -5,24 +5,20 @@
   },
   "metadata": {
     "description": "Claude Code and Codex plugins that work together: a Codex bridge, a plan-and-run loop, a pre-merge audit, code review skills, and repo instruction docs.",
-    "version": "0.3.2"
-  },
-  "renames": {
-    "recode": "ccx",
-    "recode-loop": "ccx-loop"
+    "version": "0.4.0"
   },
   "plugins": [
     {
       "name": "ccx",
       "source": "./plugins/ccx",
       "description": "Hand a task to the Codex CLI, run it once, and print what it said. Also keeps a block of house rules in your CLAUDE.md and AGENTS.md.",
-      "version": "0.3.2"
+      "version": "0.4.0"
     },
     {
       "name": "ccx-loop",
       "source": "./plugins/ccx-loop",
       "description": "Run a tiered plan, review, implement, review, publish loop for one unit of work, with Claude orchestrating, Codex implementing, and Codex or Claude reviewing.",
-      "version": "0.3.2"
+      "version": "0.4.0"
     },
     {
       "name": "cca",

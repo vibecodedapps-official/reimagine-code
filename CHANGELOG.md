@@ -3,6 +3,31 @@
 One changelog for the suite. Each release has a subsection per component. The source
 repos' own changelogs are kept under `docs/history/`.
 
+## 0.4.0 - 2026-10-06
+
+### ccx
+
+- `/ccx:setup` prints only its Codex diagnostics and allow rule. Before, it also
+  listed old plugins and their uninstall commands.
+- `/ccx:rules` recognizes only `ccx:house-rules` blocks. Before, it also read,
+  replaced, and removed blocks carrying the old `recode:house-rules` marker. A file
+  that still carries the old block gets a second block beside it, so remove the old
+  one by hand first.
+- The session-start notice reports only stale current blocks. Before, it also
+  reported blocks carrying the old marker.
+- The catalog carries no `renames` map, and the README gives current installation
+  instructions. Before, they supported migration from the old plugins.
+
+### ccx-loop
+
+- Preflight reads `.ccx.json` without checking for orphaned `.recode.json` or
+  `.ccl.json` files. Before, those old files blocked the run until renamed.
+
+### ccx (Codex)
+
+- The README gives current installation instructions. Before, it also told users
+  to remove entries from the old plugin names and marketplaces.
+
 ## 0.3.2 - 2026-10-05
 
 ### ccx

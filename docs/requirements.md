@@ -59,11 +59,10 @@ requirement below changes it. The audit plugin was not part of v0.1.0; it joined
    Check: review; lint for the LICENSE files.
 6. **ASCII.** Every shipped file is ASCII. Check: lint.
 7. **No old names.** Shipped files match neither `codex[-_]lite` in any case nor the
-   word `ccl`, and name neither `vibecodedapps-codex-lite` nor
-   `vibecodedapps-claude-codex-loop`, except the
-   migration literals lint lists by file: the old plugin and marketplace names in
-   setup's old-plugin report (R16) and `.ccl.json` in the loop's orphaned-config check
-   (R23). The audit plugin's names (`cca`, `/cca:audit`, `cca-manifest.json`) are
+   word `ccl`, and name none of `vibecodedapps-codex-lite`,
+   `vibecodedapps-claude-codex-loop`, and `recode`. The per-file exceptions for
+   migration literals are retired in 0.4.0: the old plugins are gone from every
+   machine. The audit plugin's names (`cca`, `/cca:audit`, `cca-manifest.json`) are
    allowed in `ccx-loop`. Files under `docs/history/` are exempt. Check: lint.
 8. **Always-on cost.** Measured with `claude plugin details` in a logged-in profile,
    `ccx` costs at most 1,300 tokens always on: codex-lite 0.9.0's 1,220 plus about 40
@@ -96,12 +95,8 @@ requirement below changes it. The audit plugin was not part of v0.1.0; it joined
     login, Windows sandbox mode, the write probe, and the allow rules for the new data
     directory. It writes no file. Check: test; acceptance. Since 0.1.2
     (2026-10-04), setup prints only the Bash rule; `docs/decisions.md` Part 8 says why.
-16. **Old plugins.** Setup lists any installed `codex-lite`, `ccl`, or `repo-docs` from
-    their old Claude marketplaces, and any enabled `codex-code-review-general`,
-    `codex-code-review`, or `repo-docs` from an old marketplace in the Codex
-    `config.toml`, with the uninstall command for each.
-    It never runs them and never lists the audit plugin. Check: test with fixture
-    outputs; acceptance.
+16. **Old plugins.** Retired in 0.4.0: the old plugins are gone
+    from every machine, and the suite has one user.
 
 ## Loop: ccx-loop on Claude Code
 
@@ -123,8 +118,8 @@ requirement below changes it. The audit plugin was not part of v0.1.0; it joined
     `.ccx.json`, committed snapshots go to `specs/ccx/<run-id>/`, worktrees are
     `<checkout>-ccx-<run-id>`, and the report header is `# ccx run report`. The run
     directory is excluded through `.git/info/exclude`, as `.ccl/` was. Check: acceptance.
-23. **Orphaned config.** A repo with `.ccl.json` and no `.ccx.json` ends the run in
-    `blocked` with a message to rename the file. Check: acceptance.
+23. **Orphaned config.** Retired in 0.4.0: no machine has a `.ccl.json` or
+    `.recode.json` left, so the loop reads `.ccx.json` alone.
 24. **Skill listing.** The "skill not listed in session" retry is removed, because spike
     M0.6 showed a fresh session lists the dependency's skills after install and after
     an update. Check: review against `docs/decisions.md` Part 1 item 7.
@@ -296,22 +291,15 @@ Added 2026-10-05, when claude-codex-audit 0.8.1 at `eed9fba` joined the suite as
 
 ## Cutover
 
-Cutover follows the release and gates archiving the old repos. It is not part of the
-v0.1.0 acceptance.
+Cutover is complete: the old plugins are gone from every machine, and the suite has one
+user. Its three requirements are retired in 0.4.0 and kept here for their numbers.
 
-58. **forge-ops first.** Both forge-ops installers stop writing `~/.claude/CLAUDE.md` and
-    `~/.codex/AGENTS.md` before a block is written on any machine they manage, and their
-    plugin declarations name the new marketplace and plugins instead of the old ones.
-    forge-ops keeps its policy files until every machine has replaced its import, so no
-    import points at a deleted file. These are changes in another repo, asked for
-    separately.
-59. **Gate.** On each machine forge-ops manages: one full loop run with Codex
-    implementing and Claude publishing; the repo-docs hook firing on both hosts; the
-    rules command on a Windows machine against a file with local overrides below the
-    block. The work machine is out of the gate (`docs/decisions.md` Part 10).
-60. **Retire.** Old plugins are uninstalled on every machine, including Codex's
-    `config.toml` entries. Old repos are archived private only after every machine
-    passes.
+58. **forge-ops first.** Retired in 0.4.0; the forge-ops installers no longer write the
+    home instruction files.
+59. **Gate.** Retired in 0.4.0; the acceptance records hold the runs that gated each
+    release.
+60. **Retire.** Retired in 0.4.0; the old plugins are uninstalled everywhere, and the
+    old repositories are archived or imported under `docs/history/`.
 
 ## Non-goals
 

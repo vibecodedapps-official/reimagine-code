@@ -1,6 +1,6 @@
 {
   "name": "reimagine-code",
-  "version": "0.3.2",
+  "version": "0.4.0",
   "private": true,
   "description": "Claude Code and Codex plugins: a Codex bridge, a plan, review, implement, review, publish loop, house rules, and repo-docs.",
   "license": "Apache-2.0",

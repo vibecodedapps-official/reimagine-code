@@ -65,7 +65,7 @@ every turn and probe, because `--ignore-user-config` would otherwise drop it fro
 | `/ccx:review [--base <ref>] [--model <name>] [--timeout <seconds>]` | `codex exec review <flags>` with `--uncommitted`, or `--base <ref>` (the net difference from the merge base of `<ref>` and `HEAD` to the working tree, tracked files only), plus `--model <name>` if given | `read-only` |
 | `/ccx:do <task>` | `codex exec <flags> -`, the task on stdin | `workspace-write` |
 | `/ccx:implement [--model <name>] [--timeout <seconds>] [--cwd <absolute path>] <task>`, with `--cwd` last and alone on its line, the task below it | as `do`, plus `--model <name>` if given, run in `--cwd` if given | `workspace-write` |
-| `/ccx:setup` | `codex --version`, `codex login status`, and the sandbox probe; on Windows it also reports the Codex sandbox mode. Then it lists the old plugins this suite replaces | `workspace-write`, probe only |
+| `/ccx:setup` | `codex --version`, `codex login status`, and the sandbox probe; on Windows it also reports the Codex sandbox mode | `workspace-write`, probe only |
 
 `/ccx:rules` runs no Codex; see [House rules](#house-rules).
 
@@ -315,9 +315,7 @@ file only when you agree to that file.
   with `<!-- ccx:house-rules end -->`. Your text outside it is kept byte for byte,
   including line endings, a byte order mark, and whether the file ends with a newline.
   Edit the rules by moving lines below the end marker: a block edited by hand is reported
-  and left as it is. A block written under the plugin's earlier name is read too: the
-  session notice names it, `/ccx:rules` rewrites it under this marker, and `--remove`
-  takes it out.
+  and left as it is.
 - **Backups.** Before a change to an existing file, it is copied to
   `<file>.ccx-backup-<YYYYMMDDHHMMSS>`, the time in UTC. If the file changed after the diff was shown,
   nothing is written and the command asks you to run it again.

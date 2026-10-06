@@ -699,10 +699,7 @@ it. Step 0 creates nothing except artifacts.
 
 1. Read the user's instruction files in `$CLAUDE_CONFIG_DIR` (else `~/.claude`), the
    repo's instruction files, and `.ccx.json`. Record every
-   ask-first rule. A malformed `.ccx.json` stops the run in `blocked`. So does a
-   `.recode.json` or a `.ccl.json` at the repo root with no `.ccx.json` beside it: that is
-   the config's name from before the plugin was renamed, and ignoring it would drop its `checks` and
-   `timeouts`. The report says to rename the file to `.ccx.json` and run again. Once
+   ask-first rule. A malformed `.ccx.json` stops the run in `blocked`. Once
    the permission mode has dropped a parallel call in this session, issue Step 0's
    commands one at a time (Approval scope, carve-out 6). Then scan every file input and
    the description for a credential shape, before the permission statement is printed,

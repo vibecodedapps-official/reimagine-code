@@ -1,6 +1,6 @@
 {
   "name": "ccx",
-  "version": "0.3.2",
+  "version": "0.4.0",
   "description": "Hand a task to the Codex CLI, run it once, and print what it said. Also keeps a block of house rules in your CLAUDE.md and AGENTS.md.",
   "author": {
     "name": "vibecodedapps.net"

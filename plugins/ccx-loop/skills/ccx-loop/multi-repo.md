@@ -35,8 +35,7 @@ names, for each repository, and leaves the rest of that step as written.
   the first repository, the primary first and then the `--repo` order, that has a diff. A
   repository with no diff never receives it and gets no PR.
 - `.ccx.json`: the primary's governs `commit` and `timeouts`. Each repository's own `checks`
-  list is read for that repository's Step 3.7.3 and Step 6. A repository that holds the
-  config under its name from before the rename blocks the run, as Step 0 item 1 says.
+  list is read for that repository's Step 3.7.3 and Step 6.
 - `gh` and `git` targets: every `gh` call for an additional repository (PR create and edit,
   checks, CI reads under Step 7.3.1, and issue comments) runs inside one Bash call as `cd
   <path> && ...`, or with `-R <owner>/<repo>` where the subcommand accepts it. `gh api` does

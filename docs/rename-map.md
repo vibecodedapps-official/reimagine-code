@@ -488,6 +488,12 @@ loop skill; the catalog's `renames` keys; and the root README's "From recode 0.1
 Lint lists each in `OLD_NAME_LITERALS` for its file, and its check 10 rejects `recode` in
 any other shipped file.
 
+Correction, 2026-10-06: ccx 0.4.0 (a428d21) removed every item above: the old marker
+reading, the old-plugin lists, the loop's gate on `.recode.json` and `.ccl.json`, the
+catalog's `renames` keys, and the README section. `OLD_NAME_LITERALS` is gone from
+`tools/lint.mjs`, and check 10 rejects the old names in every shipped file
+(`docs/decisions.md` Part 16).
+
 ## 6. The audit plugin, claude-codex-audit 0.8.1 into plugins/cca, 2026-10-05
 
 Built from `vibecodedapps-official/claude-codex-audit` at `eed9fba` (the 0.8.1 release
