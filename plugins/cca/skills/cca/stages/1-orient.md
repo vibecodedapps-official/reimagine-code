@@ -38,8 +38,9 @@ step 1c, right after the baseline, for the same reason.
      (`git -C <path> rev-parse --show-toplevel`); store the top level. For every
      audited repository (bundles, references, and sources of truth), with `<repo>` the
      stored top level, when
-     `git -C <repo> config --local --get-regexp '^(remote\..*\.promisor|extensions\.partialclone)$'`
-     exits 0, stop before stage 1 with one line per such repository,
+     `git -C <repo> config --local --includes --get-regexp '^(remote\..*\.promisor|extensions\.partialclone)$'`
+     exits 0 (`--includes` follows the file's `include` directives, which `--local`
+     alone skips), stop before stage 1 with one line per such repository,
      `<repo>: partial clones are not supported`: the agents' `git show` and
      `git diff` would fetch missing objects over the network, against the read-only
      boundary.
@@ -308,13 +309,14 @@ missing), and only rewrite the stage 1 entry as `running` with its inputs.
    it as `manifest.json` in the run directory.
 6. Add the run to `${CLAUDE_PLUGIN_DATA}/runs.json` with `state: running` (read the
    array under the lock per SKILL.md, State files). Under the lock, after the fresh
-   read, when any entry already has this `run_id`, add nothing: release the lock,
-   remove this run's directory (this run alone created it at D4), and stop before
-   stage 1 with one line naming the id and saying that another audit registered it
-   in the same minute, so run the command again. That stop is not a registry
-   failure. On refusal or failure, continue per that section's three cases; if the
-   entry is absent, use its immediate warning, brief limitation, and manual-entry
-   fallback.
+   read, when any entry already has this `run_id`, or, before acquiring, when a stale
+   lock's owner directory has this run's own `<owner>` name (that section's guard),
+   add nothing: release the lock this run holds, if any, and never another's; remove
+   this run's directory (this run alone created it at D4); and stop before stage 1
+   with one line naming the id and saying that another audit took it in the same
+   minute, so run the command again. That stop is not a registry failure. On refusal
+   or failure, continue per that section's three cases; if the entry is absent, use
+   its immediate warning, brief limitation, and manual-entry fallback.
 7. Write `stages.json` with `plugin_version` `0.9.1`, empty `approvals`, and a stage 1
    entry with status `running` and inputs: the hashes of `manifest.json`, each claims
    file, the questions file, and every `file:` ticket or PR export, and

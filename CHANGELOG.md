@@ -91,9 +91,12 @@ repos' own changelogs are kept under `docs/history/`.
   registry only while its owner directory is still there. A lock older than about a
   minute is stale: an interactive run asks whether another cca audit or resume is
   running before removing it, and a headless run removes it without asking, since a
-  session whose lock was removed before its replace command rereads and rewrites.
-  Before, two audits running at once could lose each other's entry, so `/cca:resume`
-  and `/cca:act` could not find a run.
+  session whose lock was removed before its replace command rereads and rewrites. A
+  stale lock whose owner name is the run's own, left by a second audit of one id
+  started in the same second, is never removed: the run stops before stage 1 as a
+  duplicate id, or reports a registry failure after stage 1. Before, two audits
+  running at once could lose each other's entry, so `/cca:resume` and `/cca:act`
+  could not find a run.
 - A refused or failed `runs.json` update no longer ends with a bare `/cca:resume <run-id>`
   that cannot work. When the run's entry is missing, the run says at once that resume
   and act cannot find it, records that in the brief during stage 1 or in the stage's

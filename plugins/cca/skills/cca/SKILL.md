@@ -29,7 +29,7 @@ allowed-tools:
   - Bash(git -C * grep *)
   - Bash(git config --list --local)
   - Bash(git -C * config --list --local)
-  - Bash(git -C * config --local --get-regexp *)
+  - Bash(git -C * config --local --includes --get-regexp *)
   - Bash(git remote -v)
   - Bash(git -C * remote -v)
   - Bash(git ls-files *)
@@ -367,7 +367,9 @@ replace command finds its test failing and acquires again, so no entry is lost o
 a supported path (the known limit below stands). Never remove a stale lock whose
 owner directory has this session's own `<owner>` name: another invocation with this
 id started in the same second, and the replace test below could not tell the two
-locks apart; take the registry-failure rule instead.
+locks apart. This session holds no lock then and runs no release, since that owner
+directory is the other invocation's; at stage 1 D6 it stops as the duplicate-id
+rule says, and elsewhere it takes the registry-failure rule.
 
 Holding the lock, read `runs.json` afresh with the Read tool (or start an array
 when absent), then write `<tmp>` = `${CLAUDE_PLUGIN_DATA}/runs.json.<owner>.tmp`,

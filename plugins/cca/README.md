@@ -479,7 +479,9 @@ recorded in `runs.json` in cca's plugin data directory, so `/cca:resume` and
 run reports. Each update holds the lock directory `runs.json.lock`. A lock more than
 about a minute old is stale: an interactive session asks you whether another audit or
 resume is running and removes it on "no", and a headless session, or one that cannot
-tell whether a user can answer, removes it without asking.
+tell whether a user can answer, removes it without asking. A stale lock left by a
+second audit of the same id started in the same second is never removed: the run stops
+before stage 1 with the duplicate-id line, and you run the command again.
 
 The run directory holds all state: the normalized `manifest.json`, `stages.json` (the
 only record of which stages are complete), `audit-brief.md`, `claims.md`, `groups.md`,
