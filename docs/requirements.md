@@ -87,7 +87,7 @@ requirement below changes it. The audit plugin was not part of v0.1.0; it joined
     command text or the hook's `args`, and never read it from the environment. Depends
     on spike M0.4 for the hook. Check: test; lint.
 14. **Runtime budget.** `ccx.mjs` and `codex.mjs` together stay at or under 710 lines.
-    `rules.mjs` has its own budget of 610 lines and `suite.mjs` of 200. Check: lint.
+    `rules.mjs` has its own budget of 640 lines and `suite.mjs` of 200. Check: lint.
 
 ## Setup
 
@@ -233,14 +233,20 @@ requirement below changes it. The audit plugin was not part of v0.1.0; it joined
 66. **Overlap and recommendation.** `plan` compares the rules with the units (headings,
     list items, paragraphs, whitespace collapsed) outside the block and in the imported
     files, notes how many of the rules are already present, and prints one `recommend:`
-    line per target with a ready change: `adopt` for in-file overlap, or `decline` when
-    the file is gated (R67) or `--adopt` already ran; `decline` for overlap from imports;
-    else `apply`; `remove` is `apply`. Only a unit of plain shape
+    line per target with a ready change: `adopt` for in-file overlap on a file that is not
+    gated (R67) when `--adopt` was not given; else `decline` only when the rules already
+    present, in the file and in the imports as one set (after `--adopt`, the imports
+    alone), cover every rule; else `apply`; `remove` is `apply`. The overlap, gate, and
+    import notes print in every Claude state that has a block or would have one, even
+    when nothing changes; edited, malformed, and remove plans name the imports without
+    counts. An import chain back to the Claude file does not count its own block. Only a unit of plain shape
     (Part 17 item 7) is compared; anything else is never counted. The command text asks per
     target on that basis. Check: test.
 67. **Adopt.** `plan --adopt` removes the units outside the block that match the rules,
     a matching heading only when its section held nothing else, and one separator blank
-    line, and puts the block, `join=none`, where the first removed line was; the plain
+    line, and puts the block, `join=none`, before the first level 1 or 2 heading at column 0
+    after the first removed line, or at the end of the file, so no user text follows the
+    end marker; the plain
     plan and apply are unchanged. With no overlap it plans as `plan`. A unit outside the
     scope of Part 17 item 7 is never removed; indented text is never a rule, since it may
     belong to a container, and a unit followed directly by an underline, quote, table row,

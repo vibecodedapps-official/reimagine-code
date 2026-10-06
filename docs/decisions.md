@@ -721,26 +721,36 @@ four rounds and reviewed over 21 rounds until a review found nothing.
    sets, never concatenated text. Claude's behavior for a symlinked CLAUDE.md is not
    documented, so each relative import in that file is tried beside the link first, then
    beside its destination, and the first that exists is used; writes still go to the
-   destination.
+   destination. The import scan never reads the Claude file itself: a chain of imports
+   that leads back to it is cut there, so the file's own block is not counted as an import.
    Codex documents no automatic import syntax, so nothing is scanned for it.
-4. **One recommendation per target.** In-file overlap recommends `decline` when the file
-   is gated (item 7) or adopt already ran, else `adopt`; otherwise any overlap from imports
-   recommends `decline`; otherwise `apply`. The command text asks
+4. **One recommendation per target.** In-file overlap on an ungated file recommends
+   `adopt` when `--adopt` was not given; otherwise `decline` only when the rules already
+   present cover every rule, counted over the file and the imports as one set (after
+   adopt moved the file's own copies, over the imports alone); otherwise `apply`, with the
+   overlap notes kept so the duplicates are visible. The user chose this after review:
+   one copied rule beside a table line, or a few imported rules, no longer reads as
+   "decline". The command text asks
    per target and passes the recommendation on; adopt is a second pass per target, so the
    user sees the adopted diff before anything is written.
 5. **Adopt removes the least.** It removes matching units, a matching heading only when
    its section held nothing else, and one blank line after a removed run that had blank
    lines on both sides. Everything else is an original slice. It strips an existing block
-   first and inserts a `join=none` block where the first removed line was, so remove after
-   adopt leaves the trimmed file, not the original, and no removal meets bytes a marker
-   owns. Apply, backup, and decline are unchanged.
-6. **The budget for `rules.mjs` rises from 400 to 610 lines, with no compression.** The
+   first and inserts a `join=none` block before the first level 1 or 2 heading at column 0
+   after the first removed line, else at the end of the file, because a block put where the
+   removed lines were left the user's next lines after the end marker, where they read as
+   part of the block's last section. Remove after adopt leaves the trimmed file, not the
+   original, and no removal meets bytes a marker owns. Apply, backup, and decline are unchanged.
+6. **The budget for `rules.mjs` rises from 400 to 640 lines, with no compression.** The
    units, the import scan, and adopt are pure logic that belongs beside the block logic.
    It rose in steps: to 520 for the plan, 560 after review round 9 (the shared line
    classifier, and readability, since the file stood at the 520 cap with more long lines
    than at HEAD), 570 after round 11 (span-aware comment stripping), 580 after round 12
    (the column-0 invariant), 600 after round 14 (the file-level gate), and 610 after round
-   18 (one shared segmentation for spans and comments). R14 and lint change with it. The
+   18 (one shared segmentation for spans and comments), and 640 after the review of the
+   pull request (block placement before a heading, the root file in the visited set,
+   notes in every state, one pairing rule for spans, and the parse-once import scan).
+   R14 and lint change with it. The
    release is 0.5.0 for the lockstep family.
 7. **Scope of `units()` and `imports()`, set after review rounds 1 to 9.** Each round
    found one more Markdown construct that flattened into a false match or a false import,
@@ -751,6 +761,9 @@ four rounds and reviewed over 21 rounds until a review found nothing.
      top level, indented into an item, or opening on an item's first line; inline code
      spans and inline comments within a paragraph; the ccx begin and end lines as hard
      boundaries that reset every open construct.
+   - A code span is an unescaped backtick run and the next run of the same length; a
+     backslash escapes only an opening run, counting backslashes, and is literal inside
+     a span. One pairing function serves the comment scan and the import scan.
    - Comments and code spans are masked with a non-whitespace character, so they never
      create an import boundary; a token is cut at the first masked character.
    - Out of scope: block quotes, tables, HTML blocks other than comments, nested

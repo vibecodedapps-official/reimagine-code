@@ -111,10 +111,12 @@ export function planTarget({
   target, text, options, recorded, version, texts, platform, declined = [], remove = false, adopt: adopting = false, imported = [],
 }) {
   const found = inspect(text ?? '');
-  if (found.kind === 'malformed') return { state: 'malformed', after: null, note: `${found.reason}, at lines ${found.lines.join(', ')}` };
+  // Where no body is known, the imports are named without counts.
+  const brief = imported.length ? { overlap: { imports: imported.map(({ ref, missed, unreadable }) => ({ ref, missed, unreadable })) } } : {};
+  if (found.kind === 'malformed') return { state: 'malformed', after: null, note: `${found.reason}, at lines ${found.lines.join(', ')}`, ...brief };
   if (remove) {
-    return found.kind === 'absent' ? { state: 'absent', after: null, note: 'there is no block to remove' }
-      : { state: 'remove', after: removeBlock(text, found), options: found.options, recommend: 'apply' };
+    return found.kind === 'absent' ? { state: 'absent', after: null, note: 'there is no block to remove', ...brief }
+      : { state: 'remove', after: removeBlock(text, found), options: found.options, recommend: 'apply', ...brief };
   }
   const eol = eolOf(text ?? '');
   // The state's plan once the body is known: the plain change, or the adopted one when the file already holds rules.
@@ -123,12 +125,11 @@ export function planTarget({
     const ov = overlap(body, base, imported);
     const stop = gate(text ?? '', found), adopt = adopting && ov.n > 0 && !stop;
     const after = adopt ? adoptRules(base, `${beginLine(version, opts, 'none', body)}${eol}${body}${END}${eol}`, body) : plain;
-    if (after === null) return { state, after, options: opts };
-    const recommend = ov.n && stop ? 'decline' : ov.n && !adopting ? 'adopt' : ov.k ? 'decline' : 'apply';
-    return {
-      state, after, digest: digest(body), options: opts, declined: isDeclined(declined, body),
-      overlap: { ...ov, n: adopt ? 0 : ov.n, gate: stop }, recommend,
-    };
+    const { all, ...counts } = ov, shown = { ...counts, n: adopt ? 0 : ov.n, gate: stop };
+    if (after === null) return { state, after, options: opts, ...(ov.n || imported.length ? { overlap: shown } : {}) };
+    // Decline only when what is already present, once adopt has moved the file's own copies, covers every rule.
+    const recommend = ov.n && !stop && !adopting ? 'adopt' : (adopt ? ov.k : all) === ov.total ? 'decline' : 'apply';
+    return { state, after, digest: digest(body), options: opts, declined: isDeclined(declined, body), overlap: shown, recommend };
   };
   if (found.kind === 'absent') {
     const opts = options ?? recorded ?? defaultOptions(platform);
@@ -146,7 +147,7 @@ export function planTarget({
   const opts = options ?? found.options;
   const body = render(target, opts, texts, eol);
   if (digests(body).includes(found.digest) && opts.join() === found.options.join()) {
-    return adopting ? propose('current', opts, body, null) : { state: 'current', after: null, options: opts };
+    return propose('current', opts, body, null);
   }
   const block = beginLine(version, opts, found.join, body) + eol + body + END + eol;
   // The end marker may have lost its line break; the replacement keeps the file's last byte as it was.
@@ -177,22 +178,37 @@ const isBlank = (t) => /^[ \t]*$/.test(t);
 const words = (s) => s.replace(/[ \t]+/g, ' ').replace(/^ | $/g, '');
 const within = (skip, s) => skip && s >= skip.start && s < skip.end;
 
+// The backtick runs of t. A backslash before an odd run escapes its first backtick only; the rest of the run can still open.
+const ticks = (t) => [...t.matchAll(/`+/g)].map((m) => {
+  let b = 0;
+  while (t[m.index - 1 - b] === '\\') b++;
+  return { at: m.index, end: m.index + m[0].length, len: m[0].length, esc: b % 2 === 1, tick: true };
+});
+// The one pairing rule for code spans, shared by strip() and hide(): a run opens a span of its length (less an escaped first
+// backtick) that the next run of that length closes, whole and escaped or not, since backslashes are literal inside a span.
+// Returns that run's index, or -1.
+const opens = (r) => r.len - r.esc;
+const closer = (runs, k) => {
+  for (let j = k + 1; j < runs.length; j++) if (runs[j].tick && runs[j].len === opens(runs[k])) return j;
+  return -1;
+};
+
 // t with its HTML comments blanked, and the comment and code-span state at its end. A backtick run is a code span when a run
-// of the same length follows on the line or, through ahead(), later in the paragraph; a comment mark inside one is text.
+// of the same length follows on the line or, through later(len), later in the paragraph; a comment mark inside one is text.
 // Masked text, in comments and code spans, is NUL: a character that is neither a boundary nor part of an import path.
 const MASK = '\0';
-function strip(t, open, span, ahead) {
-  const marks = [...t.matchAll(/(?<!\\)`+|<!--|-->/g)];
+function strip(t, open, span, later) {
+  const marks = [...ticks(t), ...[...t.matchAll(/<!--|-->/g)].map((m) => ({ at: m.index, s: m[0] }))].sort((x, y) => x.at - y.at);
   let out = '', at = 0;
   for (let k = 0; k < marks.length; k++) {
-    const [mark, x] = [marks[k][0], marks[k].index];
-    if (span) { if (mark[0] === '`' && mark.length === span) span = 0; }
-    else if (open) { if (mark === '-->') { out += MASK.repeat(x + 3 - at); at = x + 3; open = false; } }
-    else if (mark === '<!--') { out += t.slice(at, x); at = x; open = true; }
-    else if (mark[0] === '`') {
-      const partner = marks.findIndex((r, j) => j > k && r[0] === mark);
-      if (partner > 0) k = partner;
-      else if ([...ahead().matchAll(/(?<!\\)`+/g)].some((r) => r[0].length === mark.length)) span = mark.length;
+    const m = marks[k];
+    if (span) { if (m.tick && m.len === span) span = 0; }
+    else if (open) { if (m.s === '-->') { out += MASK.repeat(m.at + 3 - at); at = m.at + 3; open = false; } }
+    else if (m.s === '<!--') { out += t.slice(at, m.at); at = m.at; open = true; }
+    else if (m.tick && opens(m)) {
+      const c = closer(marks, k);
+      if (c >= 0) k = c;
+      else if (later(opens(m))) span = opens(m);
     }
   }
   return [out + (open ? MASK.repeat(t.length - at) : t.slice(at)), open, span];
@@ -207,6 +223,12 @@ export function units(text, skip) {
     const nl = text.indexOf('\n', at), e = nl < 0 ? text.length : nl + 1;
     lines.push({ s: at, e, t: text.slice(at, nl < 0 ? text.length : nl).replace(/\r$/, ''), scan: false });
     at = e;
+  }
+  // last[i] maps a backtick run length to the last line of line i's segment that holds such a run.
+  const last = [];
+  for (let i = lines.length - 1; i >= 0; i--) {
+    last[i] = i + 1 < lines.length && continues(lines[i].t, lines[i + 1].t) ? last[i + 1] : new Map();
+    for (const r of ticks(lines[i].t)) if (!last[i].has(r.len)) last[i].set(r.len, i);
   }
   // own is the list item that an open fence or comment belongs to; html is how the open HTML block ends.
   let cur = null, fence = null, comment = false, html = null, own = null, span = 0;
@@ -228,12 +250,7 @@ export function units(text, skip) {
         if (!isBlank(t)) return;
       }
       if (i && !continues(lines[i - 1].t, t)) span = 0;
-      const ahead = () => {
-        let end = i + 1;
-        while (end < lines.length && continues(lines[end - 1].t, lines[end].t)) end++;
-        return lines.slice(i + 1, end).map((l) => l.t).join('\n');
-      };
-      const [stripped, open, inSpan] = QUOTE.test(t) ? [t, false, span] : strip(t, comment, span, ahead);
+      const [stripped, open, inSpan] = QUOTE.test(t) ? [t, false, span] : strip(t, comment, span, (len) => last[i].get(len) > i);
       const hadComment = comment || stripped !== t;
       comment = open;
       span = inSpan;
@@ -299,7 +316,8 @@ const ruleNorms = (list) => list.filter((u) => u.kind !== 'head' && !u.odd).map(
 function overlap(body, base, imported) {
   const rules = ruleNorms(units(body).list), mine = new Set(ruleNorms(units(base).list));
   const count = (set) => rules.filter((r) => set.has(r)).length;
-  return { total: rules.length, n: count(mine), k: count(new Set(imported.flatMap((i) => [...i.units]))),
+  const theirs = new Set(imported.flatMap((i) => [...i.units]));
+  return { total: rules.length, n: count(mine), k: count(theirs), all: count(new Set([...mine, ...theirs])),
     imports: imported.map(({ ref, units: set, missed, unreadable }) => ({ ref, n: count(set), missed, unreadable })) };
 }
 
@@ -323,26 +341,29 @@ export function adoptRules(text, block, body) {
     while (gone[y + 1]) y++;
     if (i > 0 && blank(i - 1) && y + 1 < lines.length && blank(y + 1)) extra.add(y + 1);
   });
-  let out = text.slice(0, lines[0]?.s ?? 0), put = false;
-  lines.forEach((l, i) => {
-    if (!gone[i] && !extra.has(i)) out += text.slice(l.s, l.e);
-    else if (gone[i] && !put) { out += block; put = true; }
-  });
-  return out;
+  // The block goes before the first level 1 or 2 heading at column 0 after the first removed line, else at the end, so no
+  // user text ends up after the end marker where it would read as part of the block.
+  const first = gone.indexOf(true), eol = eolOf(text);
+  const at = first < 0 ? -1 : list.find((u) => u.kind === 'head' && u.level < 3 && u.a > first && !gone[u.a] && lines[u.a].t.startsWith('#'))?.a ?? lines.length;
+  const kept = (from, to) => lines.slice(from, to).filter((_, k) => !gone[from + k] && !extra.has(from + k));
+  const [pre, post] = [kept(0, at), kept(at, lines.length)];
+  const tail = (l) => text.slice(l.s, l.e);
+  return text.slice(0, lines[0]?.s ?? 0) + pre.map(tail).join('') + (pre.length && !tail(pre.at(-1)).endsWith('\n') ? eol : '') + block
+    + post.map(tail).join('');
 }
 
 // A unit's text with its code spans blanked. A span is a backtick run and the next run of the same length in the unit; a
-// run with no partner, or after a backslash, is literal text.
+// run with no partner, or opened after a backslash, is literal text.
 function hide(par) {
-  const runs = [...par.matchAll(/(?<!\\)`+/g)];
+  const runs = ticks(par);
   let out = '', at = 0;
   for (let k = 0; k < runs.length; k++) {
-    const close = runs.slice(k + 1).find((r) => r[0].length === runs[k][0].length);
-    if (!close) continue;
-    const end = close.index + close[0].length;
-    out += par.slice(at, runs[k].index) + par.slice(runs[k].index, end).replace(/[^\n]/g, MASK);
-    at = end;
-    k = runs.indexOf(close);
+    const c = opens(runs[k]) ? closer(runs, k) : -1;
+    if (c < 0) continue;
+    const from = runs[k].at + runs[k].esc;
+    out += par.slice(at, from) + par.slice(from, runs[c].end).replace(/[^\n]/g, MASK);
+    at = runs[c].end;
+    k = c;
   }
   return out + par.slice(at);
 }
@@ -351,7 +372,7 @@ function hide(par) {
 // code spans; the path runs to the first space not escaped with a backslash, or the first masked character (cut).
 export function imports(text, found) {
   const { lines } = units(text, found?.kind === 'block' ? found : null), groups = new Map(), out = [];
-  lines.forEach((ln, i) => { if (ln.scan && !ln.u.skip) groups.set(ln.u, [...(groups.get(ln.u) ?? []), i]); });
+  lines.forEach((ln, i) => { if (ln.scan && !ln.u.skip) (groups.get(ln.u) ?? groups.set(ln.u, []).get(ln.u)).push(i); });
   // Spans pair within a segment: a run of consecutive scanned lines that continues() joins.
   const runs = [];
   for (const rows of groups.values()) {
@@ -417,10 +438,12 @@ export function scanImports(text, file, found, home, logical = file) {
         const info = statSync(path);
         if (cache.size < MAX_FILES && info.isFile() && info.size <= MAX_BYTES) got = readFileSync(path, 'latin1');
       } catch {}
-      cache.set(key, got);
+      cache.set(key, got === null ? null : { body: got });
     }
     return cache.get(key);
   };
+  const real = (path) => { try { return realpathSync(path); } catch { return path; } };
+  const root = new Set([file, logical, real(file)].map(real));
   const where = (from, raw) => {
     const path = Buffer.from(raw, 'latin1').toString('utf8');
     return path.startsWith('~/') ? join(home, path.slice(2)) : resolve(dirname(from), path);
@@ -429,10 +452,15 @@ export function scanImports(text, file, found, home, logical = file) {
     const beside = where(logical, path), first = beside !== where(file, path) && load(beside) === null ? where(file, path) : beside;
     const reach = { ref: `${n}: ${token}`, units: new Set(), missed: 0, unreadable: false }, seen = new Set([first]);
     for (const queue = [[first, 1]]; queue.length;) {
-      const [at, hop] = queue.shift(), body = load(at);
-      if (body === null) { reach.missed++; reach.unreadable ||= hop === 1; continue; }
-      ruleNorms(units(body).list).forEach((u) => reach.units.add(u));
-      for (const next of imports(body).map((i) => where(at, i.path))) {
+      const [at, hop] = queue.shift();
+      if (root.has(real(at))) continue;
+      const file = load(at);
+      if (file === null) { reach.missed++; reach.unreadable ||= hop === 1; continue; }
+      // Each file is parsed once, whichever import reaches it.
+      file.norms ??= ruleNorms(units(file.body).list);
+      file.paths ??= imports(file.body).map((i) => i.path);
+      file.norms.forEach((u) => reach.units.add(u));
+      for (const next of file.paths.map((p) => where(at, p))) {
         if (seen.has(next)) continue;
         if (hop < HOPS) { seen.add(next); queue.push([next, hop + 1]); }
       }
@@ -493,9 +521,10 @@ function report(name, t, plan) {
   if (plan.options) lines.push(`options: ${plan.options.join(',')}`);
   const ov = plan.overlap;
   for (const i of ov?.imports ?? []) {
-    const holds = i.missed ? `holds at least ${i.n} of ${ov.total} rules; ${i.missed} import${i.missed === 1 ? '' : 's'} could not be read`
+    const holds = ov.total === undefined ? '' : i.missed ? `holds at least ${i.n} of ${ov.total} rules; ${i.missed} import${i.missed === 1 ? '' : 's'} could not be read`
       : i.n ? `holds ${i.n} of ${ov.total} rules` : 'holds none of the rules';
-    lines.push(`note: line ${shown(i.ref)} imports a file that ${i.unreadable ? 'cannot be read' : holds}; it is left as it is`);
+    const what = i.unreadable ? ' that cannot be read' : holds && ` that ${holds}`;
+    lines.push(`note: line ${shown(i.ref)} imports a file${what}; it is left as it is`);
   }
   if (ov?.n) lines.push(`note: ${ov.n} of ${ov.total} rules already present outside the block; applying duplicates them`);
   if (ov?.n && ov.gate) {
@@ -505,7 +534,7 @@ function report(name, t, plan) {
   if (plan.after === null) return [...lines, 'change: none'];
   const advice = {
     adopt: ['note: /ccx:rules --adopt moves those lines into the block'],
-    decline: [`note: ${ov?.k} of ${ov?.total} rules come from imports; applying duplicates them; declining leaves this file unchanged`],
+    decline: ov?.k ? [`note: ${ov.k} of ${ov.total} rules come from imports; applying duplicates them; declining leaves this file unchanged`] : [],
   }[plan.recommend] ?? [];
   const proposed = diff(shown(t.text ?? ''), shown(plan.after), t.path, `${t.path} (proposed)`);
   return [...lines, 'change: ready', `recommend: ${plan.recommend}`, ...advice, proposed];
@@ -573,7 +602,7 @@ function run(verb, dataDir, rest, { env, platform, now, home }) {
   let recorded = false;
   for (const [name, t] of Object.entries(all)) {
     if (!t.skip) t.text = readText(t.path);
-    const imported = verb === 'plan' && name === 'claude' && t.text ? scanImports(t.text, t.path, inspect(t.text), home, t.logical) : [];
+    const imported = ['plan', 'remove'].includes(verb) && name === 'claude' && t.text ? scanImports(t.text, t.path, inspect(t.text), home, t.logical) : [];
     const plan = t.skip ? { after: null } : planTarget({ target: name, text: t.text, options, recorded: state.options[name], version, texts, platform,
       declined: state.declined[name] ?? [], remove: verb === 'remove', adopt, imported });
     if (verb === 'status') {

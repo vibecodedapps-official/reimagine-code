@@ -325,11 +325,12 @@ file only when you agree to that file.
   that text. Typing `/ccx:rules` offers it again.
 - **Imports.** The command finds the `@` imports in `CLAUDE.md` as Claude does, reads the
   files they reach (read-only, four hops), and says how many of the rules each holds. It
-  never changes an imported file. When an import already holds the rules, it recommends
-  declining.
+  never changes an imported file. When the imports and the file together already hold
+  every rule, it recommends declining; when they hold only some, it recommends applying
+  and shows the duplicates.
 - **Adopting.** If you copied the rules into a file by hand, the command says so and
-  recommends `/ccx:rules --adopt`, which removes those lines and puts the block where they
-  were. Lines you reworded or added are kept. The backup holds the original. If the file
+  recommends `/ccx:rules --adopt`, which removes those lines and puts the block before
+  your next top-level heading, or at the end of the file. Lines you reworded or added are kept. The backup holds the original. If the file
   holds Markdown the command does not handle (comments, code fences, quotes, tables, or
   HTML), it leaves the file alone, names the first such line, and asks you to trim the copy
   by hand.

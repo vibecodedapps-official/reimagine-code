@@ -153,9 +153,9 @@ test('lint rejects a .gitattributes that drops an LF rule', () => fails(
   (d) => dropLine(d, '.gitattributes', '*.sh text eol=lf'),
   '.gitattributes lacks the line: *.sh text eol=lf'));
 
-test('lint rejects rules.mjs over its 610-line budget', () => fails(
-  (d) => appendFileSync(join(d, 'plugins/ccx/scripts/rules.mjs'), '\n'.repeat(610)),
-  'plugins/ccx: rules.mjs total ', ' lines, budget is 610'));
+test('lint rejects rules.mjs over its 640-line budget', () => fails(
+  (d) => appendFileSync(join(d, 'plugins/ccx/scripts/rules.mjs'), '\n'.repeat(640)),
+  'plugins/ccx: rules.mjs total ', ' lines, budget is 640'));
 
 test('lint rejects a rules command the model can invoke', () => fails(
   (d) => dropLine(d, 'plugins/ccx/commands/rules.md', 'disable-model-invocation: true'),

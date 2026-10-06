@@ -11,7 +11,8 @@ repos' own changelogs are kept under `docs/history/`.
   are already there, then recommends adopting, applying, or declining per file. Before,
   it asked with no basis and wrote a second copy.
 - `/ccx:rules --adopt` moves hand-copied rules into the block: it removes the lines
-  and the headings that only held them, and puts the block where they were. A file
+  and the headings that only held them, and puts the block before your next level 1 or 2
+  heading, or at the end of the file, so your own lines never end up after it. A file
   holding comments, code fences, quotes, tables, or HTML is left alone with a note to
   trim by hand. Before, the copies stayed beside the block.
 - `/ccx:rules` follows `@` imports in the Claude file as Claude does, read-only, and

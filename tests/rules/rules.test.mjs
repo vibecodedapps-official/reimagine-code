@@ -654,9 +654,9 @@ test('R66: the overlap counts the rules already outside the block, rewrapped or 
   assert.equal(rich('## Working\n\n## Code\n').overlap.n, 0);
   assert.equal(rich(`mine\n\n${begin('core', 'blank', 'e2baf3da43ffa57d')}\n- one\n- three\n${END}\n`).overlap.n, 0);
   assert.equal(rich(`- one\n\n${begin('core', 'blank', 'b758274ad57880ef')}\n- two wrapped\n${END}\n`).overlap.n, 1);
-  // Nothing is counted for the states that change nothing, or for remove.
+  // A current block still reports the copies beside it, but remove counts nothing.
   assert.equal(rich(`${richBlock()}`).overlap, undefined);
-  assert.equal(rich(`- one\n\n${richBlock()}`).overlap, undefined);
+  assert.deepEqual(rich(`- one\n\n${richBlock()}`).overlap, { total: 3, n: 1, k: 0, imports: [], gate: 0 });
   assert.equal(rich('- one\n', { remove: true }).overlap, undefined);
 });
 
@@ -664,14 +664,16 @@ test('R66: the recommendation is apply, adopt, or decline, and apply for remove'
   const from = (...rules) => [{ ref: '3: @a.md', units: new Set(rules), missed: 0, unreadable: false }];
   assert.equal(rich('mine\n').recommend, 'apply');
   assert.equal(rich('mine\n- one\n').recommend, 'adopt');
-  assert.equal(rich('mine\n', { imported: from('one', 'three') }).recommend, 'decline');
+  assert.equal(rich('mine\n', { imported: from('one', 'two wrapped', 'three') }).recommend, 'decline');
+  assert.equal(rich('mine\n', { imported: from('one', 'three') }).recommend, 'apply');
   assert.deepEqual(rich('mine\n', { imported: from('one', 'three') }).overlap,
     { total: 3, n: 0, k: 2, imports: [{ ref: '3: @a.md', n: 2, missed: 0, unreadable: false }], gate: 0 });
   assert.equal(rich('mine\n', { imported: from('elsewhere') }).recommend, 'apply');
   assert.equal(rich('- one\n', { imported: from('two wrapped') }).recommend, 'adopt');
   const adopted = rich('- one\n', { imported: from('two wrapped'), adopt: true });
-  assert.equal(adopted.recommend, 'decline');
+  assert.equal(adopted.recommend, 'apply');
   assert.equal(adopted.overlap.n, 0);
+  assert.equal(rich('- one\n', { imported: from('one', 'two wrapped', 'three'), adopt: true }).recommend, 'decline');
   assert.equal(rich(richBlock(), { remove: true }).recommend, 'apply');
   assert.equal(rich(`${begin('core', 'blank', 'be1ba97540b68c56')}\nC1\nOLD\n${END}\n`, { texts: TEXTS }).recommend, 'apply');
 });
@@ -691,24 +693,24 @@ test('R67: a fenced example, a differing qualification, and user text under a he
   assert.equal(adoptRules('mine\n\n```\n- one\n```\n\n- one\n', '[B]\n', RICH['core.md']), 'mine\n\n```\n- one\n```\n\n[B]\n');
   const kept = '- one\n\n  but only on Fridays\n';
   assert.equal(rich(kept, { adopt: true }).after, rich(kept).after);
-  assert.equal(rich('## Working\n\n- one\n\n### Mine\n\nmy text\n', { adopt: true }).after, `## Working\n\n${richBlock()}### Mine\n\nmy text\n`);
+  assert.equal(rich('## Working\n\n- one\n\n### Mine\n\nmy text\n', { adopt: true }).after, `## Working\n\n### Mine\n\nmy text\n${richBlock()}`);
   assert.equal(rich('## Code\n\n## Working\n\n- one\n', { adopt: true }).after, `## Code\n\n${richBlock()}`);
   assert.equal(rich('## Working\n\nmine\n- one\n', { adopt: true }).after, `## Working\n\nmine\n${richBlock()}`);
 });
 
 test('R67: one separator blank line goes with a removed run that had blank lines on both sides', () => {
-  assert.equal(adoptRules('a\n\n- one\n\nb\n', '[B]\n', RICH['core.md']), 'a\n\n[B]\nb\n');
-  assert.equal(adoptRules('a\n- one\n\nb\n', '[B]\n', RICH['core.md']), 'a\n[B]\n\nb\n');
+  assert.equal(adoptRules('a\n\n- one\n\nb\n', '[B]\n', RICH['core.md']), 'a\n\nb\n[B]\n');
+  assert.equal(adoptRules('a\n- one\n\nb\n', '[B]\n', RICH['core.md']), 'a\n\nb\n[B]\n');
   assert.equal(adoptRules('a\n\n- one\n## H\n', '[B]\n', RICH['core.md']), 'a\n\n[B]\n## H\n');
-  assert.equal(adoptRules('- one\n\nb\n', '[B]\n', RICH['core.md']), '[B]\n\nb\n');
-  assert.equal(adoptRules('a\n\n- one\n\n- three\n\nb\n', '[B]\n', RICH['core.md']), 'a\n\n[B]\nb\n');
+  assert.equal(adoptRules('- one\n\nb\n', '[B]\n', RICH['core.md']), '\nb\n[B]\n');
+  assert.equal(adoptRules('a\n\n- one\n\n- three\n\nb\n', '[B]\n', RICH['core.md']), 'a\n\nb\n[B]\n');
 });
 
 test('R67: adopt keeps CRLF, a byte order mark, and a missing final newline', () => {
   assert.equal(rich('mine\r\n\r\n- one\r\n- two wrapped\r\n', { adopt: true }).after, `mine\r\n\r\n${richBlock('\r\n')}`);
   assert.equal(rich(`${BOM}mine ${FF}\n\n- one\n`, { adopt: true }).after, `${BOM}mine ${FF}\n\n${richBlock()}`);
   assert.equal(rich('mine\n\n- one', { adopt: true }).after, `mine\n\n${richBlock()}`);
-  assert.equal(rich('mine\n\n- one\n\ntail', { adopt: true }).after, `mine\n\n${richBlock()}tail`);
+  assert.equal(rich('mine\n\n- one\n\ntail', { adopt: true }).after, `mine\n\ntail\n${richBlock()}`);
 });
 
 test('R67: adopt acts on a stale block and on a current one, and takes the old block out first', () => {
@@ -1155,3 +1157,101 @@ test('R44: a symlinked CLAUDE.md resolves imports beside the link first, then be
     { ref: '3: @c.md', units: ['dest c'], missed: 0, unreadable: false },
     { ref: '4: @d.md', units: [], missed: 1, unreadable: true }]);
 }));
+
+test('R67: the block goes before the next level 1 or 2 heading, else at the end, never ahead of user text', () => {
+  const rule = '- three\n';
+  assert.equal(rich(`## Mine\n\n${rule}- Always use tabs in Go files.\n`, { adopt: true }).after, `## Mine\n\n- Always use tabs in Go files.\n${richBlock()}`);
+  assert.equal(rich(`## Mine\n\n${rule}\n## Next\n\nx\n`, { adopt: true }).after, `## Mine\n\n${richBlock()}## Next\n\nx\n`);
+  assert.equal(rich(`## Mine\n\n${rule}\n### Sub\n\nx\n`, { adopt: true }).after, `## Mine\n\n### Sub\n\nx\n${richBlock()}`);
+  assert.equal(rich('- one\n- two wrapped\n', { adopt: true }).after, richBlock());
+  assert.equal(rich('- one\n\nuser paragraph\n', { adopt: true }).after, `\nuser paragraph\n${richBlock()}`);
+});
+
+test('R44: an import chain back to CLAUDE.md does not count the rules in its own block', sandbox((s) => {
+  put(join(s.claudeDir, 'shared.md'), 'see @CLAUDE.md\n');
+  put(s.claude, 'My notes. @shared.md\n');
+  s.run('plan');
+  s.run('apply', ['claude']);
+  const text = readFileSync(s.claude, 'latin1');
+  assert.ok(text.includes('ccx:house-rules begin'));
+  assert.deepEqual(scan(s, text), [{ ref: '1: @shared.md', units: ['see @CLAUDE.md'], missed: 0, unreadable: false }]);
+  const out = s.run('plan', ['--options', 'core']).slice(0, 8);
+  assert.deepEqual(out.filter((l) => l.includes('from imports')), []);
+  assert.ok(out.includes('state: current'));
+}));
+
+const notes = (out) => out.filter((l) => l.startsWith('note:') || l.startsWith('recommend:') || l.startsWith('change:') || l.startsWith('state:'))
+  .slice(0, out.findIndex((l) => l.startsWith('target: codex')) < 0 ? undefined : out.findIndex((l) => l.startsWith('target: codex')));
+const claudeOnly = (out) => out.slice(0, out.findIndex((l) => l.startsWith('target: codex')));
+const ruleLines = (n) => { const u = units(SHIPPED['core.md']); return u.list.filter((x) => x.kind !== 'head').slice(0, n).map((x) => u.lines.slice(x.a, x.b + 1).map((l) => l.t).join('\n')).join('\n'); };
+
+test('R66: a current block reports the copies and the gate beside it, even when nothing changes', sandbox((s) => {
+  put(s.claude, 'mine\n');
+  s.run('plan');
+  s.run('apply', ['claude']);
+  put(s.claude, `${readFileSync(s.claude, 'latin1')}\n${ruleLines(1)}\n\nUse a | b\n`);
+  const keep = (out) => claudeOnly(out).filter((l) => /^(state|note|change|recommend)/.test(l));
+  assert.deepEqual(keep(s.run('plan', ['--adopt'])), ['state: current',
+    'note: 1 of 30 rules already present outside the block; applying duplicates them',
+    'note: adopt leaves this file alone because line 86 holds Markdown it does not handle; trim the copy by hand, then run /ccx:rules',
+    'change: none']);
+  assert.deepEqual(keep(s.run('plan')), ['state: current',
+    'note: 1 of 30 rules already present outside the block; applying duplicates them',
+    'note: adopt leaves this file alone because line 86 holds Markdown it does not handle; trim the copy by hand, then run /ccx:rules',
+    'change: none']);
+}));
+
+test('R66: a current block with an import holding every rule names the import; a gated file names no imports', sandbox((s) => {
+  put(join(s.claudeDir, 'shared.md'), SHIPPED['core.md']);
+  put(s.claude, 'mine\n');
+  s.run('plan');
+  s.run('apply', ['claude']);
+  put(s.claude, `${readFileSync(s.claude, 'latin1')}\n@shared.md\n`);
+  assert.ok(claudeOnly(s.run('plan')).includes('note: line 84: @shared.md imports a file that holds 30 of 30 rules; it is left as it is'));
+  put(s.claude, `${SHIPPED['core.md']}\nUse a | b\n`);
+  const gated = claudeOnly(s.run('plan'));
+  assert.ok(gated.includes('recommend: decline'));
+  assert.deepEqual(gated.filter((l) => l.includes('come from imports')), []);
+}));
+
+test('R66: decline only when the rules already present cover every rule, else apply', sandbox((s) => {
+  const core = SHIPPED['core.md'];
+  put(s.claude, `${ruleLines(1)}\nUse a | b\n`);
+  assert.ok(claudeOnly(s.run('plan')).includes('recommend: apply'));
+  put(join(s.claudeDir, 'shared.md'), ruleLines(12));
+  put(s.claude, 'mine @shared.md\n');
+  const part = claudeOnly(s.run('plan'));
+  assert.ok(part.includes('recommend: apply'));
+  assert.deepEqual(part.filter((l) => l.includes('come from imports')), []);
+  put(join(s.claudeDir, 'shared.md'), core);
+  const all = claudeOnly(s.run('plan'));
+  assert.ok(all.includes('recommend: decline'));
+  assert.ok(all.includes('note: 30 of 30 rules come from imports; applying duplicates them; declining leaves this file unchanged'));
+}));
+
+test('R44: a backslash escapes only an opening backtick; a closing run pairs and spans hide what they hold', () => {
+  const found = (t) => imports(t).map((i) => i.token);
+  assert.deepEqual(found('Use `C:\\repo\\` @rules.md and `other`'), ['@rules.md']);
+  assert.deepEqual(found('Use \\\\`code @rules.md` end'), []);
+  assert.deepEqual(found('Use `see @rules.md` here'), []);
+  assert.deepEqual(found('Use \\`x @a.md` end'), ['@a.md`']);
+  assert.deepEqual(found('`a\\` <!-- @x --> @y'), ['@y']);
+  assert.deepEqual(found('- `a\\`\n  `b` @z\n'), ['@z']);
+});
+
+test('units and imports stay near linear on long stray-backtick and one-paragraph inputs', () => {
+  const time = (fn) => { const t0 = performance.now(); fn(); return performance.now() - t0; };
+  const stray = `${Array.from({ length: 16000 }, (_, i) => `line ${i} with a stray \` tick`).join('\n')}\n`;
+  assert.ok(time(() => assert.equal(units(stray).lines.length, 16000)) < 1000);
+  assert.ok(time(() => assert.deepEqual(imports(stray), [])) < 1000);
+  assert.ok(time(() => assert.equal(imports('a\n'.repeat(131072)).length, 0)) < 1000);
+  assert.ok(time(() => assert.equal(imports(`${'@a.md\n'.repeat(40000)}`).length, 40000)) < 1000);
+});
+
+test('R44: an escaped backtick consumes one of its run; the rest of the run can still open a span', () => {
+  const found = (t) => imports(t).map((i) => i.token);
+  // One backslash, then two backticks: the first is literal, the second opens a span.
+  assert.deepEqual(found('Use \\`` @rules.md ` end'), []);
+  assert.deepEqual(found('Use \\``code` @real.md and `other`'), ['@real.md']);
+  assert.deepEqual(found('Use \\`x @a.md` end'), ['@a.md`']);
+});

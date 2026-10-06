@@ -381,7 +381,8 @@ apart:
   per target; the command text asks on that basis.
 - `plan --adopt` removes the matching units outside the block (and a matching heading
   whose section held only them, and one separator blank line), and puts a `join=none`
-  block where the first one was. Apply, backup, and decline are unchanged.
+  block before the next level 1 or 2 heading, or at the end, so no user text follows the
+  end marker. Apply, backup, and decline are unchanged.
 
 ### Staleness notice
 
