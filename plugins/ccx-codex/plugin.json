@@ -1,7 +1,7 @@
 {
   "$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
   "name": "ccx",
-  "version": "0.3.2",
+  "version": "0.4.0",
   "description": "A generalized adaptation of the openai/codex code-review skills for use on any repository.",
   "author": {
     "name": "vibecodedapps.net",

@@ -38,14 +38,6 @@ const PLUGINS = [
   { dir: "plugins/cca", catalogs: ["claude"], family: false, budgets: [] },
   { dir: "plugins/repo-docs", catalogs: ["claude", "codex"], family: false, budgets: [] },
 ];
-// Old names a shipped file may still contain, by repository-relative path: the migration literals of R7.
-const OLD_NAME_LITERALS = {
-  "plugins/ccx/scripts/rules.mjs": ["recode:house-rules"],
-  "plugins/ccx/scripts/suite.mjs": ["codex-lite@vibecodedapps-codex-lite", "ccl@vibecodedapps-claude-codex-loop", "recode:house-rules", "recode-loop@reimagine-code", "recode@reimagine-code"],
-  "plugins/ccx-codex/README.md": ["recode@reimagine-code"],
-  "plugins/ccx-loop/skills/ccx-loop/SKILL.md": [".ccl.json", ".recode.json"],
-};
-
 // 1. Syntax of every module.
 const modules = ["plugins", "tests", "tools"].flatMap((d) => walk(join(root, d))).filter((p) => p.endsWith(".mjs"));
 for (const p of modules) {
@@ -87,9 +79,7 @@ if (market) {
   if (market.name !== "reimagine-code") fail(`.claude-plugin/marketplace.json: name must be reimagine-code, not ${market.name}`);
   if (!market.metadata?.description) fail(".claude-plugin/marketplace.json: metadata.description is missing, and claude plugin validate --strict requires it");
   if (market.metadata?.version !== pkg?.version) fail(`.claude-plugin/marketplace.json: metadata.version ${market.metadata?.version} differs from the suite version ${pkg?.version}`);
-  if (!isDeepStrictEqual(market.renames, { recode: "ccx", "recode-loop": "ccx-loop" })) {
-    fail(`.claude-plugin/marketplace.json: renames must be exactly ${JSON.stringify({ recode: "ccx", "recode-loop": "ccx-loop" })}, which moves 0.1.x installs and settings to the new names; found ${JSON.stringify(market.renames ?? null)}`);
-  }
+  if (Object.hasOwn(market, "renames")) fail(".claude-plugin/marketplace.json: renames must be absent");
   const entries = market.plugins ?? [];
   for (const e of entries) {
     const src = String(e.source ?? "").replace(/^\.\//, "");
@@ -217,13 +207,11 @@ for (const p of shipped) {
   if (at >= 0) fail(`${rel(p)}:${buf.subarray(0, at).toString("latin1").split("\n").length}: non-ASCII byte`);
 }
 
-// 10. No shipped file names a source plugin or its marketplace (R7), apart from the migration literals listed for it.
-const oldNames = [/codex[-_]lite/i, /\bccl\b/i, /vibecodedapps-claude-codex-loop/i, /recode/i];
+// 10. No shipped file names a source plugin or its marketplace (R7).
+const oldNames = [/codex[-_]lite/i, /\bccl\b/i, /vibecodedapps-claude-codex-loop/i, /recode/i, /codex-code-review/i, /repo-docs@repo-docs/i, /vibecodedapps-claude-codex-audit/i];
 for (const p of shipped) {
-  const allowed = OLD_NAME_LITERALS[rel(p)] ?? [];
   readFileSync(p, "utf8").split("\n").forEach((l, i) => {
-    const rest = allowed.reduce((s, lit) => s.split(lit).join(""), l);
-    const hit = oldNames.find((re) => re.test(rest));
+    const hit = oldNames.find((re) => re.test(l));
     if (hit) fail(`${rel(p)}:${i + 1}: old name /${hit.source}/: ${l.trim()}`);
   });
 }
@@ -301,17 +289,7 @@ for (const f of ["run", "plan"].map((n) => `plugins/ccx-loop/commands/${n}.md`))
   if (text !== null && !text.includes("`${user_config.codex}`")) fail(`${f}: must read the codex option as \`\${user_config.codex}\``);
 }
 
-// 16b. The loop's first preflight item blocks on the config an earlier name of the plugin read, `.recode.json` or `.ccl.json`,
-// when `.ccx.json` is missing, and says to rename it (R23).
-const loopSkill = read("plugins/ccx-loop/skills/ccx-loop/SKILL.md");
-if (loopSkill !== null) {
-  const flat = loopSkill.replace(/\s+/g, " ");
-  if (!/ a `\.recode\.json` or a `\.ccl\.json` at the repo root with no `\.ccx\.json` beside it[^.]*\. .{0,300}says to rename the file to `\.ccx\.json`/.test(flat)) {
-    fail("plugins/ccx-loop/skills/ccx-loop/SKILL.md: Step 0 item 1 must block on a .recode.json or .ccl.json with no .ccx.json beside it, and say to rename the file");
-  }
-}
-
-// 16c. Each loop command lists the effort values low, medium, high, xhigh and no others in its description, its argument hint, and
+// 16b. Each loop command lists the effort values low, medium, high, xhigh and no others in its description, its argument hint, and
 // its flag check.
 for (const f of ["run", "plan"].map((n) => `plugins/ccx-loop/commands/${n}.md`)) {
   const text = read(f);

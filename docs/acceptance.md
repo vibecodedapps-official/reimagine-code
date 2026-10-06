@@ -2,9 +2,8 @@
 
 Hand-run checks for the suite. Each milestone adds its items. An item is
 `N. **Title.** Setup: ... Command: ... Expected: ... Rerun when ...`, and an item not yet
-run says "Not yet run." Runs before cutover use scratch profiles: `CLAUDE_CONFIG_DIR` and
-`CODEX_HOME` pointing at directories outside the repo, so the author's own setup does not
-change.
+run says "Not yet run." Runs use scratch profiles: `CLAUDE_CONFIG_DIR` and `CODEX_HOME`
+pointing at directories outside the repo, so the author's own setup does not change.
 
 The source repos' acceptance files are kept under `docs/history/`. Items from them that
 name a plugin are rerun under the new names and recorded here.
@@ -48,12 +47,11 @@ name a plugin are rerun under the new names and recorded here.
    `/ccx:rules`; after the decline the next session shows nothing. Covers R43 and
    R45. Rerun when `suite.mjs` or the hooks change. Run 2026-10-03, and 2026-10-04 for
    0.1.3 and 0.2.0; see the records.
-5. **Output style and old plugins.** Setup: as item 3, with `codex-lite` also installed
-   from its old marketplace. Command: `/output-style`, then `/ccx:setup`. Expected: the
-   picker lists `ccx:Concise Plain`, and replies follow it once chosen; setup's
-   output ends with `claude plugin uninstall codex-lite@vibecodedapps-codex-lite`, and
-   nothing is uninstalled. Covers R16 and R46. Rerun when the style or the old-plugin
-   list changes. Run 2026-10-03, and 2026-10-04 for 0.2.0; see the records.
+5. **Output style.** Setup: as item 3. Command: `/output-style`. Expected: the picker
+   lists `ccx:Concise Plain`, and replies follow it once chosen. Covers R46. Until
+   0.4.0 the item also checked setup's listing of the old plugins, retired with R16.
+   Rerun when the style changes. Run 2026-10-03, and 2026-10-04 for 0.2.0; see the
+   records.
 6. **Loop install and its dependency.** Setup: a scratch profile with this
    repository's catalog added and neither plugin installed. Command: `claude plugin
    install ccx-loop@reimagine-code`, then `claude plugin disable
@@ -65,20 +63,19 @@ name a plugin are rerun under the new names and recorded here.
    the records.
 7. **Loop plan runs on a local remote.** Setup: scratch git repositories, each with
    `math.mjs`, `test.mjs`, a `package.json` whose `test` script passes, and a local bare
-   `origin`; one also holds `.ccl.json` with `{"checks":["npm test"]}`. Command:
-   `/ccx-loop:plan "<a one-function change>" --effort low`, in headless sessions: with
-   `--no-codex`; in the repository with `.ccl.json`; with `codex` absent from `PATH`;
-   with the `codex` option set to false, never set, and set to true. Expected: each run
-   calls `ccx-loop:ccx-loop` with the invocation block. The `.ccl.json` run ends
-   `blocked` before writing anything and says to rename the file. The others end
-   `plan-only` with the plan and a report headed `# ccx run report` under
-   `.ccx/<run-id>/`, and `.ccx/` in `.git/info/exclude`. With `--no-codex`, `codex`
-   absent, or the option false, no Codex call is made, each Codex role runs on its Claude
-   fallback, and the report says why. With the option unset or true, the block says
-   `no-codex: false` and Codex is called. Covers R17, R20, R21, R23, and part of R22.
-   Rerun when a loop command, the option, or Step 0 changes. Run 2026-10-03, and
+   `origin`. Command: `/ccx-loop:plan "<a one-function change>" --effort low`, in
+   headless sessions: with `--no-codex`; with `codex` absent from `PATH`; with the
+   `codex` option set to false, never set, and set to true. Expected: each run calls
+   `ccx-loop:ccx-loop` with the invocation block and ends `plan-only` with the plan and
+   a report headed `# ccx run report` under `.ccx/<run-id>/`, and `.ccx/` in
+   `.git/info/exclude`. With `--no-codex`, `codex` absent, or the option false, no Codex
+   call is made, each Codex role runs on its Claude fallback, and the report says why.
+   With the option unset or true, the block says `no-codex: false` and Codex is called.
+   Covers R17, R20, R21, and part of R22. Until 0.4.0 the item also ran in a repository
+   holding an old loop's config file, which ended `blocked`; that gate is retired with
+   R23. Rerun when a loop command, the option, or Step 0 changes. Run 2026-10-03, and
    2026-10-04 for 0.2.0 and 0.3.0; see the records.
-8. **Loop runs to the end on a local remote.** Setup: as item 7, without `.ccl.json`.
+8. **Loop runs to the end on a local remote.** Setup: as item 7.
    Command: `/ccx-loop:run "<the same change>" --no-codex --effort low`, in separate
    repositories: with `--no-publish` and a committed `.ccx.json` of
    `{"commit": true}`; with `--no-publish` alone; after `git update-index

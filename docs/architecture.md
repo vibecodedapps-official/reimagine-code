@@ -227,19 +227,10 @@ Behavior carries over from ccl 0.10.0 except as listed.
   substituted into command text, but an option never set stays the literal placeholder.
   The run and plan commands read it while parsing flags: only `false` adds `--no-codex`
   (`docs/decisions.md` Part 4 items 1 and 2).
-- **State names.** Renamed with the plugin:
-
-  | Was | Becomes |
-  |---|---|
-  | `.ccl/<run-id>/` | `.ccx/<run-id>/` |
-  | `.ccl.json` | `.ccx.json` |
-  | `specs/ccl/<run-id>/` | `specs/ccx/<run-id>/` |
-  | `<checkout>-ccl-<run-id>` worktree | `<checkout>-ccx-<run-id>` |
-  | `# ccl run report` | `# ccx run report` |
-
-  A repo with `.ccl.json` and no `.ccx.json` ends the run in `blocked` with a message
-  to rename the file. Silently ignoring it would drop the owner's `checks` and
-  `timeouts`.
+- **State names.** The run directory is `.ccx/<run-id>/`, the repo config is
+  `.ccx.json`, snapshots go to `specs/ccx/<run-id>/`, worktrees are
+  `<checkout>-ccx-<run-id>`, and the report header is `# ccx run report`.
+  Migration is complete; 0.4.0 removes the orphaned-config gate.
 - **Audit coupling.** Unchanged. The loop writes `handoff.md` and `cca-manifest.json` and
   suggests `/cca:audit`, all optional, and works without the audit plugin. These names
   stay until the audit plugin joins the suite.
@@ -454,8 +445,7 @@ ships.
 - **Lint** (`tools/lint.mjs`) generalizes the bridge's lint: manifests and catalog
   entries agree; the ccx family is in lockstep; the loop's dependency range is
   `>=<floor> <1.0.0` with a floor at or below the family version; every catalog source
-  exists; no old names remain in shipped files,
-  apart from the migration literals it lists by file; shipped files are ASCII;
+  exists; no old names remain in shipped files; shipped files are ASCII;
   per-module line budgets; the Codex schema URL is 1.0.0;
   every plugin directory holds LICENSE, and `plugins/ccx-codex/` also NOTICE; a
   plugin changed since its highest `<name>--v<version>` tag carries a higher version,
@@ -495,43 +485,21 @@ ships.
   `docs/build-plan-v0.1.0.md`, and `docs/spec-amendments-draft.md` are excluded from git
   in that repo, so no import carries them. They exist only on the author's disk. They are
   copied by hand into `docs/history/claude-codex-loop/`.
-- **Old plugins.** Setup lists, with uninstall commands: on Claude Code, `codex-lite`,
-  `ccl`, and `repo-docs` from their old marketplaces, and `recode-loop` then `recode`
-  from this one; on Codex, `codex-code-review`, `codex-code-review-general`, and
-  `repo-docs` from an old marketplace, and `recode` from this one. The Claude catalog's
-  `renames` map moves `recode` and `recode-loop` installs to `ccx` and `ccx-loop`, so
-  setup finds the Claude ones only after a move that did not happen. It never lists
-  the audit plugin: its one user moved by hand when it joined (2026-10-05). Running
-  old and new together duplicates the bridge hook and the review skills.
-- **Audit plugin.** It calls the bridge as `codex-lite:ask` and finds it by the
-  `codex-lite@` plugin id on 33 lines. Uninstalling `codex-lite` breaks it until those
-  lines say `ccx`. Decided 2026-10-03: the audit repo switches them to `ccx` before
-  cutover uninstalls `codex-lite`. As of 0.6.0 it has not, so `codex-lite` stays.
-  Done 2026-10-05: the audit plugin joined this repository as `cca` 0.9.0, calling
-  `ccx:ask`, so `codex-lite` can go once `cca` 0.9.0 is installed.
-- **Cutover**, after release, in three steps so no machine is left without rules:
-  1. forge-ops installers stop writing the home instruction files. Today
-     `claude/install.mjs` rewrites `~/.claude/CLAUDE.md` to its one-line import whenever
-     it differs, and `codex/install.mjs` copies over `~/.codex/AGENTS.md`; either would
-     erase the block. Their plugin declarations switch to the new marketplace in the
-     same change: `settings.common.json` enables `codex-lite` and `ccl` from the old
-     marketplaces, and Codex `config.toml` enables `codex-code-review-general`, so the
-     next installer run would reinstall what cutover removes. The policy files stay in
-     forge-ops for now, so existing imports keep working.
-  2. On each machine, the one-line import is replaced by the block plus a Local
-     overrides section, a quoted rule is confirmed in a new session, and the old plugins
-     are uninstalled. The rules command reports the import but never rewrites it, so this
-     is a hand edit with a backup.
-  3. After every machine has moved, forge-ops drops its policy files and the old repos
-     are archived, claude-codex-audit among them once `cca` 0.9.0 is released.
+- **Complete.** The old plugins are gone from every machine, and the suite has one
+  user. The cutover steps and the old-plugin inventory are in `docs/rename-map.md`,
+  `docs/decisions.md`, and the history docs.
+- **Removed in 0.4.0.** The catalog no longer carries a `renames` map; setup no longer
+  lists old plugins; house rules recognize only the current marker; the session notice
+  no longer reports old markers; and the loop no longer blocks on orphaned old configs.
+  The migration instructions, lint allowances, and migration-only tests are removed.
 
 ## Security and permissions
 
 - The bridge's sandboxes are unchanged: ask and review read-only, do and implement
   workspace-write after the probe. Codex has no network.
 - `rules.mjs` touches only the two targets, their backups, and its data directory. It
-  makes no network call and spawns nothing. `suite.mjs` reads the targets and the Codex
-  `config.toml`, runs `claude plugin list --json`, and writes nothing.
+  makes no network call and spawns nothing. `suite.mjs` reads the targets and its data
+  directory, spawns nothing, and writes nothing.
 - The allow rules setup printed in 0.1.0 and 0.1.1 changed with the data directory path,
   so the old rules stop matching. Since 0.1.2 setup prints only the Bash rule, which
   names the installed version's path.
