@@ -760,7 +760,9 @@ four rounds and reviewed over 21 rounds until a review found nothing.
      column to the content column plus three, with no tab; fences and HTML comments at
      top level, indented into an item, or opening on an item's first line; inline code
      spans and inline comments within a paragraph; the ccx begin and end lines as hard
-     boundaries that reset every open construct.
+     boundaries that reset every open construct, except inside an open fence, where they
+     are ordinary text, so a fenced example of a block holds no rules (a marker inside an
+     open comment closes it, as its `-->` does).
    - A code span is an unescaped backtick run and the next run of the same length; a
      backslash escapes only an opening run, counting backslashes, and is literal inside
      a span. One pairing function serves the comment scan and the import scan.
@@ -776,8 +778,9 @@ four rounds and reviewed over 21 rounds until a review found nothing.
      row, lone marker, or HTML right after it makes it odd.
    - File-level gate: `--adopt` removes nothing from a file that, outside the block, has a
      comment mark, a fence line, a quote line, a line with a pipe, or a line starting with `<`;
-     it plans as plain `plan` does, names the first such line, and recommends decline (not
-     adopt) when the file already holds rules, so the command cannot loop.
+     it plans as plain `plan` does, names the first such line, and never recommends adopt,
+     so the command cannot loop; it recommends decline only when every rule is covered
+     (item 4), else apply.
    - Safety direction: a unit outside the scope is marked odd and never matches a rule,
      so `--adopt` never removes it; a line outside it is never scanned for an import, so
      a duplicate there is missed, the recommendation errs toward apply, and the diff shows

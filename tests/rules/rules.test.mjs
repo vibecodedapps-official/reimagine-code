@@ -702,7 +702,7 @@ test('R67: one separator blank line goes with a removed run that had blank lines
   assert.equal(adoptRules('a\n\n- one\n\nb\n', '[B]\n', RICH['core.md']), 'a\n\nb\n[B]\n');
   assert.equal(adoptRules('a\n- one\n\nb\n', '[B]\n', RICH['core.md']), 'a\n\nb\n[B]\n');
   assert.equal(adoptRules('a\n\n- one\n## H\n', '[B]\n', RICH['core.md']), 'a\n\n[B]\n## H\n');
-  assert.equal(adoptRules('- one\n\nb\n', '[B]\n', RICH['core.md']), '\nb\n[B]\n');
+  assert.equal(adoptRules('- one\n\nb\n', '[B]\n', RICH['core.md']), 'b\n[B]\n');
   assert.equal(adoptRules('a\n\n- one\n\n- three\n\nb\n', '[B]\n', RICH['core.md']), 'a\n\nb\n[B]\n');
 });
 
@@ -964,7 +964,6 @@ test('R67: only a plain shape may match a rule, so indented code, tabs, and deep
   assert.equal(plan(`mine\n\n${SHIPPED['core.md']}`, { texts: SHIPPED }).overlap.n, 30);
 });
 
-// Round 9: the scope of units() and imports(). Out-of-scope text is never a matching unit and never scanned.
 test('R67: adopt keeps text that only looks like a rule because the parser flattened a construct around it', () => {
   const R = 'A review is read-only unless I ask for changes.';
   const cases = {
@@ -1015,7 +1014,7 @@ test('R44: quotes, HTML blocks, tables, setext headings, tabs and nested contain
     ['\\` @x `\n', ['@x']], ['- `\n- @x\n- `\n', ['@x']], ['text `\n# heading\n@x\n`\n', ['@x']], ['    `\n@x\n`\n', ['@x']],
     ['-  ~~~\n@x\n', ['@x']], ['- ~~~\n  code\n- @x\n', ['@x']], ['- ~~~\n  code\n\n@x\n', ['@x']],
     ['- <!--\n  comment\n- @x\n', ['@x']], ['- text\n# heading\n    ~~~\n@x\n', ['@x']],
-    [`\`\n${END}\n@x\n\`\n`, ['@x']], [`~~~\n${END}\n@x\n`, ['@x']], [`<!--\n${END}\n@x\n`, ['@x']], [`- text\n${END}\n    ~~~\n@x\n`, ['@x']],
+    [`\`\n${END}\n@x\n\`\n`, ['@x']], [`~~~\n${END}\n@x\n`, []], [`<!--\n${END}\n@x\n`, ['@x']], [`- text\n${END}\n    ~~~\n@x\n`, ['@x']],
   ];
   for (const [text, tokens] of cases) assert.deepEqual(found(text), tokens, JSON.stringify(text));
 });
@@ -1164,7 +1163,7 @@ test('R67: the block goes before the next level 1 or 2 heading, else at the end,
   assert.equal(rich(`## Mine\n\n${rule}\n## Next\n\nx\n`, { adopt: true }).after, `## Mine\n\n${richBlock()}## Next\n\nx\n`);
   assert.equal(rich(`## Mine\n\n${rule}\n### Sub\n\nx\n`, { adopt: true }).after, `## Mine\n\n### Sub\n\nx\n${richBlock()}`);
   assert.equal(rich('- one\n- two wrapped\n', { adopt: true }).after, richBlock());
-  assert.equal(rich('- one\n\nuser paragraph\n', { adopt: true }).after, `\nuser paragraph\n${richBlock()}`);
+  assert.equal(rich('- one\n\nuser paragraph\n', { adopt: true }).after, `user paragraph\n${richBlock()}`);
 });
 
 test('R44: an import chain back to CLAUDE.md does not count the rules in its own block', sandbox((s) => {
@@ -1192,11 +1191,11 @@ test('R66: a current block reports the copies and the gate beside it, even when 
   put(s.claude, `${readFileSync(s.claude, 'latin1')}\n${ruleLines(1)}\n\nUse a | b\n`);
   const keep = (out) => claudeOnly(out).filter((l) => /^(state|note|change|recommend)/.test(l));
   assert.deepEqual(keep(s.run('plan', ['--adopt'])), ['state: current',
-    'note: 1 of 30 rules already present outside the block; applying duplicates them',
+    'note: 1 of 30 rules are also present outside the block, duplicating it',
     'note: adopt leaves this file alone because line 86 holds Markdown it does not handle; trim the copy by hand, then run /ccx:rules',
     'change: none']);
   assert.deepEqual(keep(s.run('plan')), ['state: current',
-    'note: 1 of 30 rules already present outside the block; applying duplicates them',
+    'note: 1 of 30 rules are also present outside the block, duplicating it',
     'note: adopt leaves this file alone because line 86 holds Markdown it does not handle; trim the copy by hand, then run /ccx:rules',
     'change: none']);
 }));
@@ -1239,13 +1238,19 @@ test('R44: a backslash escapes only an opening backtick; a closing run pairs and
   assert.deepEqual(found('- `a\\`\n  `b` @z\n'), ['@z']);
 });
 
-test('units and imports stay near linear on long stray-backtick and one-paragraph inputs', () => {
-  const time = (fn) => { const t0 = performance.now(); fn(); return performance.now() - t0; };
-  const stray = `${Array.from({ length: 16000 }, (_, i) => `line ${i} with a stray \` tick`).join('\n')}\n`;
-  assert.ok(time(() => assert.equal(units(stray).lines.length, 16000)) < 1000);
-  assert.ok(time(() => assert.deepEqual(imports(stray), [])) < 1000);
-  assert.ok(time(() => assert.equal(imports('a\n'.repeat(131072)).length, 0)) < 1000);
-  assert.ok(time(() => assert.equal(imports(`${'@a.md\n'.repeat(40000)}`).length, 40000)) < 1000);
+test('units and imports grow about linearly: four times the input takes under eight times as long', () => {
+  // Linear growth gives a ratio near 4; the quadratic code this guards against gave about 16.
+  const best = (fn) => Math.min(...[0, 1, 2].map(() => { const t0 = performance.now(); fn(); return performance.now() - t0; }));
+  const grows = (make, run, n) => {
+    const [small, large] = [make(n), make(4 * n)];
+    run(small);
+    return best(() => run(large)) / best(() => run(small));
+  };
+  const stray = (n) => `${Array.from({ length: n }, (_, i) => `line ${i} with a stray \` tick`).join('\n')}\n`;
+  assert.ok(grows(stray, (t) => units(t), 8000) < 8);
+  assert.ok(grows(stray, (t) => imports(t), 8000) < 8);
+  assert.ok(grows((n) => 'a\n'.repeat(n), (t) => imports(t), 32768) < 8);
+  assert.ok(grows((n) => '@a.md\n'.repeat(n), (t) => imports(t), 32768) < 8);
 });
 
 test('R44: an escaped backtick consumes one of its run; the rest of the run can still open a span', () => {
@@ -1255,3 +1260,55 @@ test('R44: an escaped backtick consumes one of its run; the rest of the run can 
   assert.deepEqual(found('Use \\``code` @real.md and `other`'), ['@real.md']);
   assert.deepEqual(found('Use \\`x @a.md` end'), ['@a.md`']);
 });
+
+test('R44: an edited block still names the imports of the Claude file', sandbox((s) => {
+  put(join(s.home, 'extra.md'), 'hello\n');
+  put(s.claude, 'mine\n');
+  s.run('plan');
+  s.run('apply', ['claude']);
+  put(s.claude, `@~/extra.md\n${readFileSync(s.claude, 'latin1').replace('## Working', '## Working with edits')}`);
+  assert.deepEqual(claudeOnly(s.run('plan')).filter((l) => /^(state|note)/.test(l)), [
+    'state: edited; the block was edited by hand; move your lines below the end marker, then run /ccx:rules again',
+    'note: line 1: @~/extra.md imports a file; it is left as it is']);
+}));
+
+test('R44: a fenced example of a ccx block in an imported file holds no rules; the marker lines are fence text', sandbox((s) => {
+  const core = SHIPPED['core.md'];
+  put(s.claude, 'See @README.md\n');
+  for (const marked of [true, false]) {
+    const inner = marked ? `${begin('core', 'none', '0000000000000000')}\n${core}${END}\n` : core;
+    put(join(s.claudeDir, 'README.md'), `\`\`\`\n${inner}\`\`\`\n`);
+    const out = claudeOnly(s.run('plan')).filter((l) => /^(note: line|recommend)/.test(l));
+    assert.deepEqual(out, ['note: line 1: @README.md imports a file that holds none of the rules; it is left as it is', 'recommend: apply']);
+  }
+}));
+
+test('R66: with nothing to change, a copy beside the block is called a duplicate and adopt is offered unless the file is gated', sandbox((s) => {
+  put(s.claude, 'mine\n');
+  s.run('plan');
+  s.run('apply', ['claude']);
+  const installed = readFileSync(s.claude, 'latin1');
+  put(s.claude, `${installed}\n${SHIPPED['core.md']}`);
+  const keep = (out) => claudeOnly(out).filter((l) => /^(state|note|change)/.test(l));
+  assert.deepEqual(keep(s.run('plan')), ['state: current', 'note: 30 of 30 rules are also present outside the block, duplicating it',
+    'note: /ccx:rules --adopt moves those lines into the block', 'change: none']);
+  put(s.claude, `${installed}\n${SHIPPED['core.md']}\nUse a | b\n`);
+  assert.deepEqual(keep(s.run('plan')).slice(0, 2), ['state: current', 'note: 30 of 30 rules are also present outside the block, duplicating it']);
+  assert.equal(keep(s.run('plan')).some((l) => l.includes('--adopt moves')), false);
+}));
+
+test('R67: rules at the very top of a file leave no leading blank line', () => {
+  assert.equal(adoptRules('- one\n\n# Project\n\nmine\n', '[B]\n', RICH['core.md']), '[B]\n# Project\n\nmine\n');
+  assert.equal(rich('- one\n\n# Project\n\nmine\n', { adopt: true }).after, `${richBlock()}# Project\n\nmine\n`);
+});
+
+test('R44: a remove plan checks each import is readable and parses nothing', sandbox((s) => {
+  put(join(s.claudeDir, 'a.md'), `${SHIPPED['core.md']}\n@deep.md\n`);
+  put(s.claude, 'mine\n');
+  s.run('plan');
+  s.run('apply', ['claude']);
+  put(s.claude, `@a.md\n@gone.md\n${readFileSync(s.claude, 'latin1')}`);
+  assert.deepEqual(claudeOnly(s.run('remove')).filter((l) => l.startsWith('note')), [
+    'note: line 1: @a.md imports a file; it is left as it is', 'note: line 2: @gone.md imports a file that cannot be read; it is left as it is']);
+  assert.deepEqual(scanImports('@a.md\n', s.claude, inspect(''), s.home, s.claude, true).map((r) => [r.units.size, r.missed]), [[0, 0]]);
+}));

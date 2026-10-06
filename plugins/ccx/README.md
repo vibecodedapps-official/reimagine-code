@@ -330,10 +330,10 @@ file only when you agree to that file.
   and shows the duplicates.
 - **Adopting.** If you copied the rules into a file by hand, the command says so and
   recommends `/ccx:rules --adopt`, which removes those lines and puts the block before
-  your next top-level heading, or at the end of the file. Lines you reworded or added are kept. The backup holds the original. If the file
-  holds Markdown the command does not handle (comments, code fences, quotes, tables, or
-  HTML), it leaves the file alone, names the first such line, and asks you to trim the copy
-  by hand.
+  your next top-level heading, or at the end of the file. Lines you reworded or added are
+  kept. The backup holds the original. If the file holds Markdown the command does not
+  handle (comments, code fences, quotes, tables, or HTML), it leaves the file alone, names
+  the first such line, and asks you to trim the copy by hand.
 
 When a plugin update changes the rules, a new session shows one line naming the file and
 `/ccx:rules`. A version change that leaves the rules as they were shows nothing.

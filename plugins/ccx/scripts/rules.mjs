@@ -142,7 +142,7 @@ export function planTarget({
   const inFile = text.slice(found.bodyStart, found.bodyEnd);
   if (!digests(inFile).includes(found.digest)) {
     return { state: 'edited', after: null, options: found.options, edits: [render(target, found.options, texts, eol), inFile],
-      note: 'the block was edited by hand; move your lines below the end marker, then run /ccx:rules again' };
+      note: 'the block was edited by hand; move your lines below the end marker, then run /ccx:rules again', ...brief };
   }
   const opts = options ?? found.options;
   const body = render(target, opts, texts, eol);
@@ -240,7 +240,7 @@ export function units(text, skip) {
     const nested = () => cur?.kind === 'item' && (indent >= cur.col || !cur.gap);
     const hold = () => { cur.parts.push(t); cur.b = i; cur.gap = false; cur.odd = true; };
     const classify = () => {
-      if (within(skip, s) || t.startsWith(BEGIN_PREFIX) || t === END) { flush(); fence = html = own = null; comment = false; span = 0; return; }
+      if (within(skip, s) || (t.startsWith(BEGIN_PREFIX) || t === END) && !fence && !comment) { flush(); fence = html = own = null; comment = false; span = 0; return; }
       if (own && !isBlank(t) && indent < own.col) { fence = own = null; comment = false; flush(); }
       if (QUOTE.test(t) && (fence || comment)) return;
       if (fence) { fence = fenceAfter(fence, t, own?.col ?? 0); if (own) hold(); return; }
@@ -322,7 +322,8 @@ function overlap(body, base, imported) {
 }
 
 // The text with every rule unit that body also holds taken out, a heading of body too when its section held only such
-// units, and one blank line after a removed run that had blank lines around it. block goes where the first removed line was.
+// units, and one blank line after a removed run that had blank lines around it. block goes before the next level 1 or 2
+// heading after the first removed line, or at the end, so no user text without a heading of its own follows its end marker.
 export function adoptRules(text, block, body) {
   const { lines, list } = units(text), mine = units(body).list;
   const same = (head) => new Set(mine.filter((u) => (u.kind === 'head') === head).map((u) => u.norm));
@@ -339,7 +340,7 @@ export function adoptRules(text, block, body) {
     if (!g || gone[i - 1]) return;
     let y = i;
     while (gone[y + 1]) y++;
-    if (i > 0 && blank(i - 1) && y + 1 < lines.length && blank(y + 1)) extra.add(y + 1);
+    if ((i === 0 || blank(i - 1)) && y + 1 < lines.length && blank(y + 1)) extra.add(y + 1);
   });
   // The block goes before the first level 1 or 2 heading at column 0 after the first removed line, else at the end, so no
   // user text ends up after the end marker where it would read as part of the block.
@@ -426,12 +427,12 @@ export function targets(env, home = homedir()) {
 // Reads what the Claude file imports, as Claude loads it: relative paths against the importing file's directory, breadth
 // first, four hops. Each top-level import gets the rule units of every file it reaches, the count of imports that could
 // not be followed (unreadable or over a bound; imports past the last hop are not loaded by Claude, so are not counted),
-// and whether its own file could not be read.
-export function scanImports(text, file, found, home, logical = file) {
+// and whether its own file could not be read. shallow checks only that each top-level import can be read.
+export function scanImports(text, file, found, home, logical = file, shallow = false) {
   const cache = new Map();
+  const real = (path) => { try { return realpathSync(path); } catch { return path; } };
   const load = (path) => {
-    let key = path;
-    try { key = realpathSync(path); } catch {}
+    const key = real(path);
     if (!cache.has(key)) {
       let got = null;
       try {
@@ -442,8 +443,7 @@ export function scanImports(text, file, found, home, logical = file) {
     }
     return cache.get(key);
   };
-  const real = (path) => { try { return realpathSync(path); } catch { return path; } };
-  const root = new Set([file, logical, real(file)].map(real));
+  const root = new Set([file, logical].map(real));
   const where = (from, raw) => {
     const path = Buffer.from(raw, 'latin1').toString('utf8');
     return path.startsWith('~/') ? join(home, path.slice(2)) : resolve(dirname(from), path);
@@ -456,6 +456,7 @@ export function scanImports(text, file, found, home, logical = file) {
       if (root.has(real(at))) continue;
       const file = load(at);
       if (file === null) { reach.missed++; reach.unreadable ||= hop === 1; continue; }
+      if (shallow) continue;
       // Each file is parsed once, whichever import reaches it.
       file.norms ??= ruleNorms(units(file.body).list);
       file.paths ??= imports(file.body).map((i) => i.path);
@@ -526,7 +527,9 @@ function report(name, t, plan) {
     const what = i.unreadable ? ' that cannot be read' : holds && ` that ${holds}`;
     lines.push(`note: line ${shown(i.ref)} imports a file${what}; it is left as it is`);
   }
-  if (ov?.n) lines.push(`note: ${ov.n} of ${ov.total} rules already present outside the block; applying duplicates them`);
+  const idle = plan.after === null;
+  if (ov?.n) lines.push(idle ? `note: ${ov.n} of ${ov.total} rules are also present outside the block, duplicating it` : `note: ${ov.n} of ${ov.total} rules already present outside the block; applying duplicates them`);
+  if (ov?.n && idle && !ov.gate) lines.push('note: /ccx:rules --adopt moves those lines into the block');
   if (ov?.n && ov.gate) {
     lines.push(`note: adopt leaves this file alone because line ${ov.gate} holds Markdown it does not handle; trim the copy by hand, then run /ccx:rules`);
   }
@@ -602,7 +605,7 @@ function run(verb, dataDir, rest, { env, platform, now, home }) {
   let recorded = false;
   for (const [name, t] of Object.entries(all)) {
     if (!t.skip) t.text = readText(t.path);
-    const imported = ['plan', 'remove'].includes(verb) && name === 'claude' && t.text ? scanImports(t.text, t.path, inspect(t.text), home, t.logical) : [];
+    const imported = ['plan', 'remove'].includes(verb) && name === 'claude' && t.text ? scanImports(t.text, t.path, inspect(t.text), home, t.logical, verb === 'remove') : [];
     const plan = t.skip ? { after: null } : planTarget({ target: name, text: t.text, options, recorded: state.options[name], version, texts, platform,
       declined: state.declined[name] ?? [], remove: verb === 'remove', adopt, imported });
     if (verb === 'status') {

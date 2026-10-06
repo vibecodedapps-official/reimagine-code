@@ -239,21 +239,21 @@ requirement below changes it. The audit plugin was not part of v0.1.0; it joined
     alone), cover every rule; else `apply`; `remove` is `apply`. The overlap, gate, and
     import notes print in every Claude state that has a block or would have one, even
     when nothing changes; edited, malformed, and remove plans name the imports without
-    counts. An import chain back to the Claude file does not count its own block. Only a unit of plain shape
-    (Part 17 item 7) is compared; anything else is never counted. The command text asks per
-    target on that basis. Check: test.
+    counts. An import chain back to the Claude file does not count its own block. Only a
+    unit of plain shape (Part 17 item 7) is compared; anything else is never counted. The
+    command text asks per target on that basis. Check: test.
 67. **Adopt.** `plan --adopt` removes the units outside the block that match the rules,
     a matching heading only when its section held nothing else, and one separator blank
-    line, and puts the block, `join=none`, before the first level 1 or 2 heading at column 0
-    after the first removed line, or at the end of the file, so no user text follows the
-    end marker; the plain
-    plan and apply are unchanged. With no overlap it plans as `plan`. A unit outside the
-    scope of Part 17 item 7 is never removed; indented text is never a rule, since it may
-    belong to a container, and a unit followed directly by an underline, quote, table row,
-    lone marker, or HTML is never a rule. A file holding a comment mark, fence, quote,
-    table pipe, or line starting with `<` outside the block is not edited by `--adopt` at
-    all; the plan names the first such line and does not recommend adopt. `--adopt` with
-    `--remove` is refused. Check: test.
+    line, and puts the block, `join=none`, before the first level 1 or 2 heading at column
+    0 after the first removed line, or at the end of the file, so no user text without a
+    heading of its own follows the end marker; the plain plan and apply are unchanged.
+    With no overlap it plans as `plan`. A unit outside the scope of Part 17 item 7 is
+    never removed; indented text is never a rule, since it may belong to a container, and
+    a unit followed directly by an underline, quote, table row, lone marker, or HTML is
+    never a rule. A file holding a comment mark, fence, quote, table pipe, or line
+    starting with `<` outside the block is not edited by `--adopt` at all; the plan names
+    the first such line and does not recommend adopt. `--adopt` with `--remove` is
+    refused. Check: test.
 
 ## Audit plugin: cca on Claude Code
 
