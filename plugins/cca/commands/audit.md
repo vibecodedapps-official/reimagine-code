@@ -35,7 +35,7 @@ You are a thin forwarder for the cca orchestrator. Do the steps below in order. 
 
    Reject the request with one short line that names the offending token or path, such as `cca: unknown flag --bogus` or `cca: --codex-timeout must be 1 to 3600, got 0`, if any rule in step 1 or step 2 fails. When you reject, run no other command, write no file, and do not load the skill. Do not check anything else here: the orchestrator validates the manifest in full.
 
-3. State the parsed invocation to the user as this block, with every flag at its effective value. List each input on its own line as `- <token>`, in the order typed; with no inputs, write `inputs: none` on one line instead. Paths are written as the user typed them. Under the block, outside the args, add one plain sentence: an editor's automatic fetch, such as VS Code's `git.autofetch`, moves remote refs and can stop the audit, so pause it for the run.
+3. Build this block, with every flag at its effective value, as the args for step 4. List each input on its own line as `- <token>`, in the order typed; with no inputs, write `inputs: none` on one line instead. Paths are written as the user typed them. Show the user a short summary in plain words instead of the block: the command and only the settings they gave or that change the run, never a flag at its default or a field that does not apply, such as `run-id: none` or `per-item: false`. Under the summary, add one plain sentence: an editor's automatic fetch, such as VS Code's `git.autofetch`, moves remote refs and can stop the audit, so pause it for the run.
 
 ```
 command: audit

@@ -52,7 +52,7 @@ stage sections below say.
 The `allowed-tools` list above pre-approves read commands only. Export, snapshot,
 state-file, and probe commands (such as the export script, `rm -rf` and `mkdir` in the run
 directory, the lock's `mkdir` and `rmdir`, `sleep`, `stat`, `find`,
-`sha256sum`, `shasum`, `jq`, `awk`, `mv -f`, `wc -c`, `codex --version`,
+`sha256sum`, `shasum`, `command -v jq`, `jq`, `awk`, `mv -f`, `wc -c`, `codex --version`,
 and the `sh` runs of the scripts in `${CLAUDE_PLUGIN_ROOT}/skills/cca/scripts/`:
 `readonly.sh`, `handoff.sh`, `work-items.sh`, `working-tree.sh`, `live.sh`, and
 `ledger.sh`) follow the session's permission mode; tell the user once, before stage 1,
@@ -99,6 +99,19 @@ counts the blocks in the file from 1. Never rewrite or reorder the file. After a
 compaction, re-read the last block there. A run from 0.4.0 or earlier has no
 `invocations.md`; the block in your context is then the only copy. `audit` goes to Stage
 1. `resume` goes to Resume. `act` goes to Stage 9.
+
+## Talking to the user
+
+What you say to the user is in plain words. Say what happened, what it means for them,
+and the next step, in that order, in short sentences with no stage numbers, flag names, or
+script words unless they need them to act. When a script prints lines for you to judge,
+say what they mean in everyday words and keep the raw lines in the run's records (the
+check file, `stages.json`, the report), not in the message; show a raw line only when the
+user must see it to decide. Lines that other steps parse, such as `blocked <kind>`,
+`readonly:`, `working-tree: refused:`, `work-items:`, and the `revision:` line, are
+never reworded where they are written; the plain explanation goes around them. A stop
+says what is wrong, what to change, and how to continue, with `/cca:resume <id>` when the
+run can resume.
 
 ## Preamble
 
@@ -299,10 +312,10 @@ and before writing that stage's final entry:
    moves.
 2. Read the exit status, the first that holds:
    - `2`: a step of the check failed, so the boundary could not be checked. End the run
-     `blocked` at once and show the script's message.
+     `blocked` at once, with the block message below.
    - `1`: a `blocked` line was printed: a difference in tracked files, untracked
-     non-ignored files, refs, index, stash, or config. End the run `blocked` at once
-     and show the lines.
+     non-ignored files, refs, index, stash, or config. End the run `blocked` at once,
+     with the block message below.
    - `3`: only `remote-ref` or `ignored` lines were printed. Judge each below.
    - `0`: nothing needs judgment. `touched` lines may have been printed.
 3. For each `remote-ref` line (exit 3): it passes only when an approved fetch recorded in
@@ -318,8 +331,8 @@ and before writing that stage's final entry:
    `<repo name>:<ref>`, the decision, the time, and the old and new commits; then continue.
    A later check that sees the same ref at the same old and new commits passes on that
    entry; a further move of the ref asks again. On no, or no answer, end the run
-   `blocked` at once and show the lines. Any `blocked` line still ends the run at once,
-   as above.
+   `blocked` at once, with the block message below. Any `blocked` line still ends the
+   run at once, as above.
 4. For each `ignored` line (exit 3), added, deleted, or changed:
    - If the path is inside `<s>/cca/` of any audited repository, where `<s>` is
      any directory D2 (stage 1) would choose there, and outside this run's
@@ -328,7 +341,7 @@ and before writing that stage's final entry:
    - If any agent with Bash (digester, mapper, auditor, adversary, or the stage 6
      fallback), in any stage, is running or has ended since the previous check (from
      the `agents` lists in `stages.json`), accept it provisionally, as pending.
-   - Otherwise end the run `blocked` at once and show it.
+   - Otherwise end the run `blocked` at once, with the block message below.
 5. Reconcile, after every check that did not exit 1 or 2, including exit 0, so a pending
    write never escapes attribution. Take every pending difference, from this check or
    an earlier one. Once every agent a pending difference was accepted under has ended,
@@ -350,6 +363,12 @@ and before writing that stage's final entry:
 
 With `_test` absent, a user's own edit to an audited repo during a run trips this check
 too; the report says so.
+
+The block message, whenever a check ends the run `blocked`, leads in plain words: what
+changed and in which repo, that the audit stopped to protect the repo, and that
+`/cca:resume <id>` continues it once the change is settled. The raw lines go in
+`baseline/<stage>-check.md` (step 6); show them only when the user asks or must see them
+to decide.
 
 ### Fault injection (`_test`)
 
@@ -424,8 +443,9 @@ The command, with the absolute lock path, is `rmdir <lock>/<owner> <lock>` for t
 `rmdir <lock>/* <lock>` for a stale one, to run only once no cca audit or resume is
 running; each is `rmdir <lock>` when the lock is empty. Say that a later audit or
 resume removes a stale lock itself (a headless one without asking), so removing it by
-hand only saves the wait. Read `runs.json` with the Read tool and branch on this
-run's entry:
+hand only saves the wait. Say it in plain words: the audit could not update its list of
+runs, what that means for `/cca:resume` and `/cca:act`, and the one command or entry to run.
+Read `runs.json` with the Read tool and branch on this run's entry:
 
 - **Absent (D6's add failed, and nothing added it since):** tell the user at once
   that `/cca:resume` and `/cca:act` cannot find this run. At D6, record the

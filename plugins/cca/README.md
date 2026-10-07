@@ -284,6 +284,35 @@ A missing required key stops the run before stage 1 with `export <path>: missing
 A missing optional key is listed in the audit brief as "not in export", and the
 work-item hygiene review reports it.
 
+For Azure DevOps, export each work item and pull request by hand or with `az`, then
+name the files in a manifest. cca does not run the export.
+
+```json
+{
+  "bundles": [
+    { "repo": "../app", "pr": "file:./exports/pr-89.md", "branch": "feature/ab-4567",
+      "base": "origin/main", "tickets": ["file:./exports/ab-4567.md"] }
+  ],
+  "forge_exports": { "command": "az boards work-item show --id 4567",
+                     "exported_at": "2026-10-06" }
+}
+```
+
+`exports/ab-4567.md`, with the same keys in `pr-89.md` as the PR list above requires:
+
+```
+---
+id: AB#4567
+url: https://dev.azure.com/org/project/_workitems/edit/4567
+title: Limit login attempts
+state: Active
+description: Lock the account after five failed logins.
+source: Azure DevOps
+exported_by: az boards work-item show --id 4567
+exported_at: 2026-10-06
+---
+```
+
 ## Audit questions
 
 - `Q1` best practice: does the change follow the ranked sources and the repo's own

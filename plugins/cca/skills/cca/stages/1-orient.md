@@ -9,6 +9,15 @@ taken right after the approved fetch, before any export or other stage 1 work, s
 everything after it is checked. A bundle with `head: working-tree` has its head built in
 step 1c, right after the baseline, for the same reason.
 
+## Tool check
+
+Before section A, run `command -v jq`. When it prints nothing, tell the user before the
+run starts, in plain words: `jq` is not installed, so the work-items file will not be
+checked against the report and a PR cannot be read through `gh`; install it with
+`winget install jqlang.jq` on Windows, `brew install jq` on macOS, or the system package
+manager on Linux. Then continue as today; `work-items.sh` is unchanged and still reports
+`work-items: jq not found`.
+
 ## A. Normalize the inputs
 
 1. Read the manifest, when `manifest` is not `none`. Relative paths in it are relative
@@ -60,11 +69,17 @@ step 1c, right after the baseline, for the same reason.
      scope name, stop with
      one line `groups: <name> collides with the top-up files of <scope>`.
      `cross-cutting` is not reserved: the manifest's `groups` key replaces the merge
-     that produces it. Reject these names; never rename them.
+     that produces it. Reject these names; never rename them. Each of these stops keeps
+     its line and adds one plain sentence on what is wrong and what to change, such as "No
+     group name is left after making it file-safe; give the group a name with letters or
+     digits."
    - Ticket and PR ids to `github:owner/repo#n` or `file:<absolute path>`. A short id
      such as `#159` is accepted only when the bundle's repo has exactly one GitHub
      remote (`git -C <repo> remote -v`); otherwise stop with
-     `<id>: write it as github:owner/repo#n or file:<path>`.
+     `<id>: write it as github:owner/repo#n or file:<path>`, and add that an id is
+     accepted as `github:owner/repo#n`, `#n` (when the repo has one GitHub remote), or
+     `file:<path>`, and that a ticket from another forge goes in through an export file
+     (the README's export route).
    - `<host>`: every GitHub PR and ticket id normalized here has a host, which its
      reads in section C and step 2 name. Settle each bundle's PR first, then its
      tickets. The host is the first of:
@@ -144,7 +159,9 @@ step 1c, right after the baseline, for the same reason.
      the flags as the invocation block gave them, with relative paths made absolute
      against the session's directory, so resume can merge them again from any
      directory.
-4. A bundle needs a repo, a PR or a branch or both, and a base. A bundle whose `pr` is
+4. Every stop line in this step keeps its text and adds one plain sentence on what is
+   wrong and what to change, such as "Bundle app has no base; add a base branch to it in
+   the manifest." A bundle needs a repo, a PR or a branch or both, and a base. A bundle whose `pr` is
    a `file:` export must also give `branch` and `base`. A bundle with no resolvable
    base is rejected: stop with `bundle <name>: no base`. A bundle whose `ticket_token`
    is not a string or a non-empty array of strings, or has an entry that does not hold
@@ -338,7 +355,10 @@ a. For each audited repo (bundles, references, sources of truth), decide which r
    whose `base` is a remote-tracking ref `<remote>/<branch>`; a run with such a bundle
    therefore always asks once. On decline, the local base ref is used as is and the
    brief records "base: local ref, refresh declined", which the report's Coverage
-   repeats. Ask the user once, listing each repo, remote, the refs involved, and the
+   repeats. Ask the user once, in a sentence that says first why the fetch is needed (the local
+   copy of the base or PR may be missing or behind, and a fetch updates only
+   remote-tracking refs, never a branch or a file), then lists each repo, remote, the refs
+   involved, and the
    exact fetch commands below, for approval to `git fetch`. Record the answer in `stages.json`
    `approvals` with kind `fetch`, target `<repo name>:<remote>`, the decision, the
    time, `commands`, the exact fetch commands actually run, and `resolved`, a map from

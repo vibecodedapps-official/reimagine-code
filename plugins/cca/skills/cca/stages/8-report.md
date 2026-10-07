@@ -297,8 +297,9 @@ Outputs: `report.md`, `claims-verdicts.md`, and `work-items.jsonl`. The format o
     per that section's three cases: missing entry, old state, or correct registry
     with a leftover lock.
 
-14. **Print and stop:** the absolute path of `report.md`, the verdict, and the terminal
-    state. For `partial`, also print `/cca:resume <run-id>` when this run's entry
+14. **Print and stop,** in plain words: the verdict said as a sentence, where the report is
+    (the absolute path of `report.md`), and the terminal state. For `partial`, also say that
+    `/cca:resume <run-id>` finishes the missing work, and print it, when this run's entry
     is in `runs.json`. For any terminal state when the entry is absent, print
     the JSON entry and resolved registry path for manual addition per SKILL.md,
     State files instead of a bare resume command. Nothing runs after this;
