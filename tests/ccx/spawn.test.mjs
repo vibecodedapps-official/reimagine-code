@@ -6,7 +6,7 @@ import { existsSync, mkdirSync, readdirSync, readFileSync, symlinkSync, utimesSy
 import { dirname, join } from 'node:path';
 import {
   ASK, ASK_RESUME, FAKE, ID, ID2, RESUME, RESUME2, SANDBOX, SCRIPT, THREAD, THREAD2,
-  alive, calls, cli, dead, git, outputPath, pids, printedPath, probeLeftovers, requestLeft, run, savedThread, spawning, stdin, threadFile, withScratch,
+  alive, calls, cli, dead, git, outputFiles, outputPath, pids, printedPath, probeLeftovers, requestLeft, run, savedThread, spawning, stdin, threadFile, withScratch,
 } from './fixtures/harness.mjs';
 
 test('ask: the recorded argv and stdin match, and a good run renders the answer', spawning, withScratch((s) => {
@@ -36,15 +36,28 @@ test('a failed run still saves its output, with the failed status', spawning, wi
   assert.ok(saved.endsWith('\nstatus: failed\n'));
 }));
 
+test('two calls in one session save to two files, so the second answer does not replace the first', spawning, withScratch((s) => {
+  const printed = (r) => r.stdout.split('\n').find((l) => l.startsWith('output: ')).slice('output: '.length);
+  const first = run(s, 'ask', { request: 'the first question\n' });
+  const second = run(s, 'ask', { request: 'the second question\n', env: { FAKE_CODEX: 'exit1' } });
+  assert.notEqual(printed(first), printed(second));
+  const names = outputFiles(s);
+  assert.equal(names.length, 2, JSON.stringify(names));
+  for (const n of names) assert.match(n, /^output-[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\.txt$/);
+  assert.ok(readFileSync(printed(first), 'utf8').endsWith('\nstatus: ok\n'));
+  assert.ok(readFileSync(printed(second), 'utf8').endsWith('\nstatus: failed\n'));
+}));
+
 test('a save that fails prints a warning in the output line\'s place and keeps the run\'s own status', spawning, withScratch((s) => {
-  mkdirSync(`${outputPath(s)}.tmp`);
-  const r = run(s, 'ask', { request: 'q\n' });
+  const file = outputPath(s, `output-${ID}.txt`);
+  mkdirSync(`${file}.tmp`);
+  const r = run(s, 'ask', { request: 'q\n', env: { CCX_OUTPUT_ID: ID } });
   assert.equal(r.status, 0);
   assert.ok(r.stdout.endsWith('\nstatus: ok\n'));
   const lines = r.stdout.split('\n');
-  assert.ok(lines.at(-3).startsWith(`ccx: warning: could not save the output to ${printedPath(s)}: `), lines.at(-3));
+  assert.ok(lines.at(-3).startsWith(`ccx: warning: could not save the output to ${file.replaceAll('\\', '/')}: `), lines.at(-3));
   assert.equal(lines.some((l) => l.startsWith('output: ')), false);
-  assert.equal(existsSync(outputPath(s)), false);
+  assert.equal(existsSync(file), false);
 }));
 
 test('a run removes output files older than a day and keeps newer ones', spawning, withScratch((s) => {
@@ -58,7 +71,9 @@ test('a run removes output files older than a day and keeps newer ones', spawnin
   make('output-new.txt', 1);
   make('thread-old.txt', 25);
   run(s, 'ask', { request: 'q\n' });
-  assert.deepEqual(readdirSync(s.data).sort(), [`output-${ID}.txt`, 'output-new.txt', `thread-${ID}.txt`, 'thread-old.txt']);
+  const saved = outputFiles(s).filter((n) => n !== 'output-new.txt');
+  assert.equal(saved.length, 1, JSON.stringify(saved));
+  assert.deepEqual(readdirSync(s.data).sort(), [saved[0], 'output-new.txt', `thread-${ID}.txt`, 'thread-old.txt'].sort());
 }));
 
 test('a refused call writes no output file', spawning, withScratch((s) => {
