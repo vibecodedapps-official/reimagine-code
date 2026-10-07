@@ -90,7 +90,8 @@ requirement below changes it. The audit plugin was not part of v0.1.0; it joined
     `rules.mjs` has its own budget of 640 lines and `suite.mjs` of 200. Check: lint.
 70. **Saved output.** A run of `ask`, `review`, `do`, or `implement` that reached Codex
     saves what it prints, without the `output:` line, to `output-<id>.txt` in ccx's data
-    directory and prints `output: <path>`, with forward slashes, as the line before
+    directory, where `<id>` is a new UUID for each call, so two calls in one session keep
+    both answers, and prints `output: <path>`, with forward slashes, as the line before
     `status:`. If the save fails, a `ccx: warning: could not save the output` line takes
     its place and the status is unchanged. A refused call saves nothing. A run removes
     `output-*.txt` and `output-*.txt.tmp` files older than a day. Check: test.

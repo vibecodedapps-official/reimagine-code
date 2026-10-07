@@ -147,8 +147,8 @@ Behavior carries over from codex-lite 0.9.0 unchanged except for names.
   `~/.claude/plugins/data/ccx-reimagine-code/`. It survives updates and is deleted on
   uninstall (verified, docs).
 - **Saved output.** A run that reached Codex writes what it prints, minus the `output:`
-  line, to `output-<id>.txt` there, through a temporary file and a rename, and prints its
-  path before `status:`. Files older than a day are removed when a run starts.
+  line, to `output-<id>.txt` there, `<id>` a new UUID for each call, through a temporary
+  file and a rename, and prints its path before `status:`. Files older than a day are removed when a run starts.
 - **UserPromptSubmit hook.** It prints a routing note only when the prompt matches
   `/codex/i` and does not start with a slash command. It also deletes the session's
   request file, which at a prompt can only be left from a stopped run, so a script call

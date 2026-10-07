@@ -810,8 +810,10 @@ in one pull request.
    so keeping it for an older ccx would keep the defect. An older ccx swaps to
    `cca:adversary`, a supported mode. R63 is amended, R70 and R71 added.
 3. **One file per answer, and a 24-hour cleanup.** ccx saves `output-<id>.txt`, where `<id>`
-   is the request id the caller passed, a fresh UUID per call, so two calls never share a
-   file. cca deletes its source after the copy, and ccx removes `output-*.txt` and
+   is a UUID ccx makes for each call, so two calls never share a file. The request id the
+   caller passes is the Claude session id, the same for every call in a session, so a
+   name built on it let a second call overwrite the first answer; a review of the branch
+   found that before release. cca deletes its source after the copy, and ccx removes `output-*.txt` and
    `output-*.txt.tmp` older than a day when a run starts, for a caller that never deletes
    its file. The cleanup is not a size bound. A refused call writes nothing. The bridge
    line budget rises from 710 to 740.

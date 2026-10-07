@@ -3,6 +3,7 @@
 // Or node ccx.mjs hook <dataDir>, the UserPromptSubmit hook: reads the event on stdin, deletes the session's request file, prints a routing note or nothing, exits 0.
 // The data directory arrives as an argument: inside the Bash tool the environment can carry another plugin's value.
 import { spawn } from 'node:child_process';
+import { randomUUID } from 'node:crypto';
 import { existsSync, mkdtempSync, readdirSync, readFileSync, realpathSync, renameSync, rmSync, statSync, writeFileSync } from 'node:fs';
 import { createRequire } from 'node:module';
 import { homedir } from 'node:os';
@@ -11,7 +12,7 @@ import { NPM_WIN32, WINDOWS_SANDBOXES, buildArgv, decideProbe, parseAskArgs, par
 
 const started = Date.now();
 // Test-only seams, read once. CCX_TIMEOUT_MS replaces both deadlines below; an ask, review or implement --timeout wins for the turn.
-const { CCX_CODEX_BIN, CCX_TIMEOUT_MS, CCX_PROBE_TARGET } = process.env;
+const { CCX_CODEX_BIN, CCX_TIMEOUT_MS, CCX_PROBE_TARGET, CCX_OUTPUT_ID } = process.env;
 const override = Number(CCX_TIMEOUT_MS) > 0 ? Number(CCX_TIMEOUT_MS) : null;
 const TURN_MS = override ?? 60 * 60_000;
 const LOCAL_MS = override ?? 30_000;
@@ -300,7 +301,8 @@ async function main() {
   // The flag bounds the Codex turn only; the local git and probe calls before it keep their own deadline.
   const turnMs = args.timeout === undefined ? TURN_MS : args.timeout * 1000;
   status = 'failed';
-  outputFile = join(dataDir, `output-${id}.txt`);
+  // Named per call, not per session: two calls in one session must not overwrite each other's answer.
+  outputFile = join(dataDir, `output-${CCX_OUTPUT_ID || randomUUID()}.txt`);
   pruneOutputs(dataDir);
   const r = await run(codex, argv, { ms: turnMs, cwd, input: command === 'review' ? undefined : input, onStdout: (b) => reader.write(b) });
   Object.assign(r, reader.end());
