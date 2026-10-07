@@ -31,7 +31,7 @@ const walk = (dir, skip = () => false) => {
 // budgets: the only runtime modules the plugin may hold, in groups, each with its line limit.
 const PLUGINS = [
   { dir: "plugins/ccx", catalogs: ["claude"], family: true, budgets: [
-    { files: ["scripts/codex.mjs", "scripts/ccx.mjs"], max: 710 }, { files: ["scripts/rules.mjs"], max: 640 }, { files: ["scripts/suite.mjs"], max: 200 },
+    { files: ["scripts/codex.mjs", "scripts/ccx.mjs"], max: 710 }, { files: ["scripts/rules.mjs"], max: 640 }, { files: ["scripts/suite.mjs"], max: 200 }, { files: ["scripts/attribution.mjs"], max: 90 },
   ] },
   { dir: "plugins/ccx-loop", catalogs: ["claude"], family: true, budgets: [] },
   { dir: "plugins/ccx-codex", catalogs: ["codex"], family: true, budgets: [] },
@@ -137,13 +137,15 @@ for (const [name, want] of Object.entries(hidden)) {
   if (has !== want) fail(`plugins/ccx/commands/${name}.md: disable-model-invocation must be ${want ? "set" : "absent"}`);
 }
 
-// 5. The plugin's two hooks, each run once in exec form with the data directory as an argument: UserPromptSubmit as
-// node <plugin root>/scripts/ccx.mjs hook, and SessionStart, at startup only, as node <plugin root>/scripts/suite.mjs session-start.
+// 5. The plugin's three hooks, each run once in exec form. UserPromptSubmit as node <plugin root>/scripts/ccx.mjs hook, and
+// SessionStart, at startup only, as node <plugin root>/scripts/suite.mjs session-start, both with the data directory as an
+// argument. PreToolUse, before each Bash and each PowerShell tool call, as node <plugin root>/scripts/attribution.mjs, with none.
 const hooks = json("plugins/ccx/hooks/hooks.json");
 if (hooks) {
   const want = {
     UserPromptSubmit: [{ hooks: [{ type: "command", command: "node", args: ["${CLAUDE_PLUGIN_ROOT}/scripts/ccx.mjs", "hook", "${CLAUDE_PLUGIN_DATA}"] }] }],
     SessionStart: [{ matcher: "startup", hooks: [{ type: "command", command: "node", args: ["${CLAUDE_PLUGIN_ROOT}/scripts/suite.mjs", "session-start", "${CLAUDE_PLUGIN_DATA}"] }] }],
+    PreToolUse: ["Bash", "PowerShell"].map((matcher) => ({ matcher, hooks: [{ type: "command", command: "node", args: ["${CLAUDE_PLUGIN_ROOT}/scripts/attribution.mjs"] }] })),
   };
   if (!isDeepStrictEqual(hooks.hooks, want)) fail(`plugins/ccx/hooks/hooks.json must declare exactly these hooks: ${JSON.stringify(want)}`);
 }
