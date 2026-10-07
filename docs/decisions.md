@@ -791,3 +791,45 @@ four rounds and reviewed over 21 rounds until a review found nothing.
      odd, which means a rule that holds a pipe would never match (none ships with one);
      a fence or comment under an item at column 0 with no blank line stays with the item
      but a later dedented line ends it; an unclosed comment hides the rest of its segment.
+
+## Part 19: cca 0.10.0 and ccx 0.6.0, fixes from the Windows audit run, 2026-10-06
+
+Found in a 2026-10-06 audit run on Windows 11 with Git Bash (issue #36), planned and built
+in one pull request.
+
+1. **A background fetch asks; it does not warn.** The check stays strict: a moved
+   remote-tracking ref with no approved fetch still ends the run `blocked`, unless the
+   user says a background fetch explains it. Reason: any other change still blocks at once,
+   an agent's unapproved fetch is still caught unless the user vouches for that exact change,
+   and a run left with an editor's auto-fetch on is not lost. A warning alone stays strict
+   but loses the run. The answer is recorded as a `background-fetch` entry per ref with its
+   old and new commits, so a later check passes on it and a further move asks again. The
+   start summary tells the user to pause auto-fetch. The ask and no paths are orchestrator
+   prose with no script behind them, so they are hand checks (`docs/acceptance.md`).
+2. **Stage 6 needs ccx 0.6.0; there is no retyping fallback.** The defect is the retyping,
+   so keeping it for an older ccx would keep the defect. An older ccx swaps to
+   `cca:adversary`, a supported mode. R63 is amended, R70 and R71 added.
+3. **One file per answer, and a 24-hour cleanup.** ccx saves `output-<id>.txt`, where `<id>`
+   is the request id the caller passed, a fresh UUID per call, so two calls never share a
+   file. cca deletes its source after the copy, and ccx removes `output-*.txt` and
+   `output-*.txt.tmp` older than a day when a run starts, for a caller that never deletes
+   its file. The cleanup is not a size bound. A refused call writes nothing. The bridge
+   line budget rises from 710 to 740.
+4. **The scratch folder.** `<run dir>/tmp/agents/<stage>-<scope>[-<n>]/`, one level below
+   the orchestrator's own `tmp/`, unique per launch, created by the orchestrator and named
+   in the agent's prompt. It lies outside what the ledger reads (`pass1`, `pass2`,
+   `live/carried`, `codex`), outside the ignored-file list of `readonly.sh`, and resume moves
+   `tmp/` away whole. Stage 2 removes `<run dir>/tmp/` before it launches, so it never removes
+   an agent folder. Steps that list or glob the run directory: none found. The merger has no
+   Bash and gets no folder. `sed -i` and any in-place edit are barred for agents.
+5. **Build output is grouped by logged run.** The rule stays: the same repo and a logged
+   `runs:` entry. Ignored changes under `bin/` or `obj/` of such a repo since the last check
+   become one record under that run, listing every path, with no question. Accepting any
+   `bin/` or `obj/` change whenever a `dotnet` run is logged was rejected: it would loosen
+   the check.
+6. **The message rewrite kept the parsed lines.** Unchanged: every script's printed format,
+   including `blocked <kind>`, `readonly:`, `working-tree: refused:`, and `work-items:`
+   lines; the verdict values; the terminal states; the `revision:` line; the three
+   `plugin_version` lines; and ccx's `status:` line, still last. The args block the commands
+   pass to the skill keeps every flag; only what the user is shown changed. Plain wording
+   goes around the stop lines, never in place of them.

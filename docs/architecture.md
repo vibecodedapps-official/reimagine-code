@@ -146,6 +146,9 @@ Behavior carries over from codex-lite 0.9.0 unchanged except for names.
   `args` is checked in spike M0.4. The directory becomes
   `~/.claude/plugins/data/ccx-reimagine-code/`. It survives updates and is deleted on
   uninstall (verified, docs).
+- **Saved output.** A run that reached Codex writes what it prints, minus the `output:`
+  line, to `output-<id>.txt` there, through a temporary file and a rename, and prints its
+  path before `status:`. Files older than a day are removed when a run starts.
 - **UserPromptSubmit hook.** It prints a routing note only when the prompt matches
   `/codex/i` and does not start with a slash command. It also deletes the session's
   request file, which at a prompt can only be left from a stopped run, so a script call
@@ -242,9 +245,8 @@ over unchanged except for names: four commands (`audit`, `resume`, `act`, `hando
 five agents, and one orchestrator skill with its stage files and eight POSIX sh scripts.
 
 - **Bridge.** Stage 6 calls `ccx:ask` and takes the version of the plugin id starting
-  `ccx@` from `claude plugin list --json`; it must be 0.1.0 or later, since the
-  `status:` line and `--timeout` it relies on, added in codex-lite 0.7.0, are in every
-  `ccx`. There is no `dependencies` entry: the second opinion swaps to `cca:adversary`
+  `ccx@` from `claude plugin list --json`; it must be 0.6.0 or later, the first version
+  that saves each answer to a file, which stage 6 copies instead of retyping it. There is no `dependencies` entry: the second opinion swaps to `cca:adversary`
   when the bridge or Codex is absent, and that fallback is a supported mode.
 - **Version line.** Its own, like repo-docs, tagged `cca--v<version>` and set by
   `tools/release.mjs cca <version>`, which also sets the three `plugin_version` literals
@@ -254,6 +256,10 @@ five agents, and one orchestrator skill with its stage files and eight POSIX sh 
 - **Tests.** The sh suites and fixtures in `tests/cca/`, run by `tests/cca/sh.test.mjs`
   under `npm test`, with an Ubuntu-only mawk step in CI. `tests/cca/lint.sh` runs with
   `plugins/cca` as its root and leaves the catalog to `tools/lint.mjs`.
+- **Saved answer.** Stage 6 copies the file named by ccx's `output:` line to
+  `codex/response.md` with one shell command and deletes the source after the copy.
+- **Agent scratch.** Each Bash agent gets `tmp/agents/<stage>-<scope>[-<n>]/` in the run
+  directory for raw command output; the folder is outside every collected input.
 - **Loop coupling.** The names the loop writes, `handoff.md`, `cca-manifest.json`, and
   `/cca:audit`, are shared interfaces in one repository and stay frozen.
 

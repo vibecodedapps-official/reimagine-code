@@ -5,6 +5,42 @@ repos' own changelogs are kept under `docs/history/`.
 
 ## 0.6.0 - 2026-10-06
 
+### ccx
+
+- A run of `ask`, `review`, `do`, or `implement` that reached Codex saves what it prints
+  to `output-<id>.txt` in ccx's data directory and prints `output: <path>`, with forward
+  slashes, as the line before `status:`. A failed save prints a warning in its place and
+  leaves the status as the run's own. Files older than a day are removed on the next run.
+  Before, the answer was only printed, so a caller that needed it in a file had to retype it.
+
+### cca
+
+- cca 0.10.0. Fixes from a Windows audit run (issue #36).
+- Stage 6 copies the answer from the file ccx saves into `codex/response.md` with one shell
+  command, then deletes the file, so the model never retypes it. It needs ccx 0.6.0; an
+  older ccx swaps to `cca:adversary`. Before, the orchestrator retyped the answer through
+  the model, which could change a sentinel or a position.
+- When only remote-tracking refs moved and nothing else changed, the audit asks whether a
+  background fetch, such as an editor's auto-fetch, explains them. A yes is recorded in
+  `approvals` as `background-fetch` and the run goes on; a no ends it `blocked` as before.
+  The start summary tells the user to pause auto-fetch. Before, the first moved ref ended
+  the run after the auditors had finished.
+- Each agent with Bash gets `tmp/agents/<stage>-<scope>/` in the run directory for raw
+  command output, and no agent edits a file in place. Before, command output had nowhere
+  to go, and one agent ran `sed -i` on its own output file.
+- Ignored-file changes under `bin/` or `obj/` of a repo with a logged run are grouped under
+  that run in one record that lists every path. Before, each rerun of a build was matched by
+  hand.
+- Every lock release command names the absolute lock path, with the reason. Before, the
+  word was missing, and Claude Code's permission check could refuse `rmdir` on a path built
+  from a shell variable.
+- Run messages are in plain words: the start summary shows only the settings that matter,
+  stops and the block message say what is wrong and the next step, the fetch question
+  gives its reason, and the final message says the verdict in words. Rejected ids name
+  the accepted forms. A missing `jq` is reported before the run starts, with an install
+  hint. The README has an Azure DevOps export example. Script output, the verdict values,
+  and the terminal states are unchanged.
+
 ## 0.5.0 - 2026-10-06
 
 ### ccx
