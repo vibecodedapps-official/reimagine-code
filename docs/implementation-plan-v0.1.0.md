@@ -29,8 +29,7 @@ the next starts.
 | M4 | Loop | `plugins/recode-loop` with the dependency, `codex` option, state renames | M2 |
 | M5 | Codex plugin and repo-docs | `plugins/recode-codex`, `plugins/repo-docs`, the Codex catalog | M2 |
 | M6 | Release | Versions, changelog, README, tags, install from GitHub | M2 to M5 |
-| M7 | Cutover | earlier source repository change, old plugins removed, old repos
-archived | M6, separate asks |
+| M7 | Cutover | Earlier source repository change, old plugins removed, old repos archived | M6, separate asks |
 
 M5 needs the Claude catalog and the lint from M2. It can run beside M3 and M4.
 

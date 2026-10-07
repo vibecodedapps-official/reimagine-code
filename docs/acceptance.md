@@ -2043,3 +2043,29 @@ the runs as before.
   that size was 3.95 to 4.14 over five runs, so a slow runner is the likely cause,
   unverified. In the agent shell, `codex plugin` commands exited 1 with `Error: stdin is
   not a terminal` until stdin came from `/dev/null`.
+
+### 2026-10-07: ccx 0.6.0, the hand checks before the merge
+
+Windows 11, Claude Code 2.1.292, Node 26.4.0. Both runs loaded `ccx` 0.6.0 from
+`feat/ccx-0.6.0-attribution` at 8a77ef4 with `--plugin-dir`, beside the installed
+`ccx` 0.5.0, which has no PreToolUse hook. No settings file outside the scratch
+repository was edited.
+
+- **The attribution hook passed.** In a new scratch git repository with one staged file,
+  `claude -p` was asked to run `git commit -m "test commit" -m "Co-Authored-By: Claude
+  <noreply@anthropic.com>"`, with `Bash(git *)` allowed. With `attribution.commit` set to
+  `""` in the repository's `.claude/settings.local.json`, the call was denied with `ccx:
+  remove the Co-Authored-By line naming Claude; attribution.commit is "" in
+  <repository>\.claude\settings.local.json`, and no commit was made. With that file
+  removed, the call was again denied, now naming the user's `~/.claude/settings.json`,
+  which also sets `attribution.commit` to `""`. With the project file setting
+  `attribution.commit` to a non-empty value, the commit was made with the trailer. The
+  user setting was overridden, not removed, so the user's settings stayed unchanged.
+- **Links in a draft passed.** The user started an interactive session in this repository
+  with the branch's plugin; `/config` listed `ccx:Concise Plain` once, already selected.
+  Asked to draft a comment for issue #35 saying the fix is in PR #38 and is waiting on
+  review, without posting it, the session ran `git remote -v` and showed the draft in a
+  blockquote with `#38` as a link, which opened.
+- Observed: the session start notice said the house rules in `~/.codex/AGENTS.md` are
+  older than the plugin's, as expected for an unreleased rules change; `/ccx:rules` was
+  not run.

@@ -149,7 +149,8 @@ requirement below changes it. The audit plugin was not part of v0.1.0; it joined
 ## Code review skills: ccx on Codex
 
 26. **Skills.** The four `general-code-review*` skills ship with names and text unchanged
-    from codex-code-review-general 0.1.0; the change-size skill was dropped in 0.6.0. Check: review, by diff against the source.
+    from codex-code-review-general 0.1.0; the change-size skill was dropped in 0.6.0.
+    Check: review, by diff against the source.
 27. **Manifest.** `plugins/ccx-codex/plugin.json` uses the `agent-plugins.org` schema
     1.0.0, is named `ccx`, and carries the family version. Depends on spike M0.5.
     Check: lint.

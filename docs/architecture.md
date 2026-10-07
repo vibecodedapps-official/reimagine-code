@@ -39,8 +39,8 @@ reimagine-code/
     ccx/                           Claude only
       .claude-plugin/plugin.json
       commands/                       ask review do implement setup rules
-      scripts/                        ccx.mjs codex.mjs rules.mjs suite.mjs
-      hooks/hooks.json                UserPromptSubmit, SessionStart
+      scripts/                        ccx.mjs codex.mjs rules.mjs suite.mjs attribution.mjs
+      hooks/hooks.json                UserPromptSubmit, SessionStart, PreToolUse
       rules/                          house rules sources
       output-styles/                  the Writing style, opt-in
       chat/                           claude.ai and ChatGPT blocks, copy by hand
@@ -155,6 +155,10 @@ Behavior carries over from codex-lite 0.9.0 unchanged except for names.
 - **SessionStart hook.** New. `suite.mjs` prints one line to the user when a house rules
   block is stale (see below) and nothing otherwise. Claude Code has no install or update
   hook; a SessionStart check is the documented pattern (verified, docs).
+- **Attribution hook.** `scripts/attribution.mjs`, run as a PreToolUse hook for the Bash
+  and PowerShell matchers, in exec form with no data directory argument. It imports only
+  `node:` built-ins, so its start stays cheap on every shell call, and it fails open
+  (R68).
 - **Setup.** Keeps today's diagnostics: Codex version, login, Windows sandbox mode, the
   write probe, and the allow rule to paste, for the bridge script only since 0.1.2
   (2026-10-04, `docs/decisions.md` Part 8). Adds one section from `suite.mjs`: old
@@ -187,9 +191,6 @@ loop, so they are frozen across 0.x:
   implement.
 - One request file and one thread file per Claude session, in the plugin data
   directory, so calls are serial.
-- **Attribution hook.** `scripts/attribution.mjs`, run as a PreToolUse hook for the Bash and
-  PowerShell matchers, in exec form with no data directory argument. It imports only `node:`
-  built-ins, so its start stays cheap on every shell call, and it fails open (R68).
 
 A caller that wants Codex to read a file puts it under a directory the repository
 ignores; that is why the loop's run directory must stay ignored. The message prefix
@@ -467,8 +468,8 @@ ships.
   install and uninstall blocks name every catalog plugin; cca's three `plugin_version`
   literals equal its manifest version; every `gh api` command in the loop's shipped text
   passes `--hostname`, each in one backtick span on one line; every `tests/` path the cca
-  README names in a code span or fenced block exists; and the changelog has a dated
-  heading for the suite version.
+  README names in a code span or fenced block exists; no tracked file names the retired
+  source repository; and the changelog has a dated heading for the suite version.
 - **Release** (`tools/release.mjs`): `ccx <version> [--floor <version>]`,
   `repo-docs <version>`, or `cca <version>` sets the version line in every manifest and
   catalog entry that carries it, with `--floor` the loop's dependency range, and for cca
