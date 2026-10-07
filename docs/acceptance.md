@@ -274,6 +274,19 @@ name a plugin are rerun under the new names and recorded here.
     bridge, read as `ccx`; it was never run there. Every other case keeps its result and
     reruns under that file's conditions. Expected: M3-c's own result. Rerun when stage 6
     changes. Not yet run.
+24. **cca background-fetch question.** Setup: as item 21, interactive, in a session
+    whose directory is the fixture's `app` repository, after
+    `git update-ref refs/remotes/origin/main HEAD` there. Command: `/cca:audit <manifest>
+    --no-codex`; while stage 4 runs, move that ref from a second shell with
+    `git update-ref refs/remotes/origin/main HEAD~1`. Expected:
+    the next boundary check names the ref with its old and new commits and asks whether
+    a background fetch explains it. On yes, `stages.json` `approvals` gains one
+    `background-fetch` entry with target `app:refs/remotes/origin/main` and both
+    commits, the run goes on, and the next check passes without asking. Moving the ref
+    again asks again. On no, the run ends `blocked`. Moving the ref together with an
+    edit to a tracked file ends the run `blocked` without asking. Covers Part 19 item 1
+    in `docs/decisions.md`. Rerun when the boundary check in the cca skill changes. Not
+    yet run.
 
 ## Record of runs
 
