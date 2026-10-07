@@ -128,7 +128,7 @@ name a plugin are rerun under the new names and recorded here.
     and they install at the versions their manifests give. Covers R2. Rerun when the
     Codex catalog or a Codex manifest changes. Run 2026-10-03, 2026-10-04 for 0.2.0 and
     0.3.0, 2026-10-05 for 0.3.1, and 2026-10-06 for 0.3.2 and repo-docs 0.1.5, for
-    0.4.0, and for 0.5.0; see the records.
+    0.4.0, and for 0.5.0, and 2026-10-07 for 0.6.0 on Windows; see the records.
 12. **Code review on Codex.** Setup: as item 11, in a scratch git repository with
     `math.mjs`, `test.mjs`, and a `package.json` whose `test` script passes, then an
     uncommitted change that renames an export, gives `add` a third argument with a
@@ -179,8 +179,8 @@ name a plugin are rerun under the new names and recorded here.
     Expected: "Always-on" at most 1,300 tokens for `ccx` and at most 510 for
     `ccx-loop`. Covers R8. Rerun at each release. Run 2026-10-03 for 0.1.0, and
     2026-10-04 for 0.1.1, 0.1.2, 0.1.3, 0.2.0, and 0.3.0, 2026-10-05 for 0.3.1 before
-    and after the merge, and 2026-10-06 for 0.3.2 and 0.4.0 before the merge; see the
-    records.
+    and after the merge, 2026-10-06 for 0.3.2 and 0.4.0 before the merge, and
+    2026-10-07 for 0.6.0 on Windows; see the records.
 17. **Tags.** Setup: the release commit on `main`. Command: `claude plugin tag --push`
     on `plugins/ccx`, then `plugins/ccx-loop`, then `plugins/repo-docs`; then
     `git ls-remote --tags origin`. Expected: each tag command checks the manifest against
@@ -203,7 +203,8 @@ name a plugin are rerun under the new names and recorded here.
     and on Windows from the public one. Run 2026-10-04 for 0.1.2, 0.1.3, 0.2.0, and
     0.3.0, and 2026-10-05 for 0.3.1, each on macOS and Windows, from the public
     repository, 2026-10-06 for 0.3.2, cca 0.9.1, and repo-docs 0.1.5 on macOS and
-    Windows, and 2026-10-06 for 0.4.0 and 0.5.0 on macOS; see the records.
+    Windows, 2026-10-06 for 0.4.0 and 0.5.0 on macOS, and 2026-10-07 for 0.6.0 and cca
+    0.10.0 on Windows; see the records.
 19. **Windows.** Setup: a Windows 11 machine with both CLIs from npm, the suite
     installed as in item 18, and a test repository checked out under a path that holds
     a space. Command: `/ccx:ask` and `/ccx:implement` with a one-line change;
@@ -2216,3 +2217,46 @@ observations below). repo-docs 0.1.5 was not released again.
   0.5.0; neither PR changed that code. The `main` run's macOS job first failed
   `working-tree.sh` case 6n, "the object count changed", the check tracked in issue 40.
   Both reruns passed.
+
+### 2026-10-07: release ccx 0.6.0, ccx-loop 0.6.0, and cca 0.10.0, Windows
+
+Windows 11 Pro 10.0.26200, Claude Code 2.1.292, codex-cli 0.160.1, Node 26.4.0,
+PowerShell 7.6.6, Git 2.55.0.windows.5. Git credentials were turned off
+(`GIT_CONFIG_GLOBAL` set to an empty file): `git config --global --list` printed
+nothing. `git ls-remote` read the three new tags peeling to a75040c and `main` at
+50a4867, the merge of PR 42, which changed only `docs/acceptance.md`; so the installs
+came from 50a4867 with the same plugin files as a75040c. The macOS half of item 18 was
+not run.
+
+- **Item 16 passed for 0.6.0.** In `claude-m6`, `claude plugin details` reported about
+  1,245 always-on tokens for `ccx` (of 1,300; 1,241 at 0.4.0), 504 for `ccx-loop` (of
+  510), 180 for `repo-docs`, and 1,173 for `cca`.
+- **Item 11 passed for 0.6.0.** A new scratch `CODEX_HOME` held a `config.toml` with
+  only the model, effort, sandbox, and approval settings and `[windows] sandbox =
+  "elevated"`, and a copy of the author's Codex login. `codex plugin marketplace add
+  vibecodedapps-official/reimagine-code` cloned 50a4867; the `reimagine-code`
+  marketplace listed exactly `ccx` from `plugins/ccx-codex` and `repo-docs` from
+  `plugins/repo-docs`. Both installed and showed as enabled, at 0.6.0 and 0.1.5;
+  the installed `ccx` holds `general-code-review` and its three companions only.
+- **Item 18 passed on Windows for 0.6.0, from the public repository.**
+  - In `claude-m6`, with the catalog removed (which uninstalled the four old plugins)
+    and added again with no ref, `ccx`, `ccx-loop`, `cca`, and `repo-docs` installed at
+    0.6.0, 0.6.0, 0.10.0, and 0.1.5, enabled, each recording 50a4867; with `ccx`
+    installed first, the loop printed no dependency line.
+  - The Codex plugins are as in item 11.
+  - In a new repository under `C:\recode accept\ccx060\repo`, headless `/ccx:setup`
+    passed in 43 s: `windows sandbox: elevated` read from the scratch `config.toml`,
+    the ChatGPT login, `workspace-write` proven, and one allow rule naming the 0.6.0
+    `scripts/ccx.mjs` with forward slashes. No administrator prompt appeared.
+    `/ccx:ask` in auto mode printed "51" and `status: ok`, and `git status` stayed
+    clean.
+  - The copy of the Codex login was deleted afterward. Four of the real profile's five
+    files had the same sha256 after the runs as before. `~/.claude.json` differed, but
+    it also changed between two reads 45 s apart with no scratch run, so the session
+    driving the runs wrote it; the scratch runs used `claude-m6`'s own copy.
+- Observed: installing `ccx-loop` printed "1 userConfig option not yet set", followed by
+  how to set it with `/plugin configure` or `--config`. The option is `codex`, which
+  defaults to true, so the loop works unset. No earlier record shows this line; it
+  probably comes from Claude Code 2.1.292.
+- Left on the machine: the scratch `CODEX_HOME` at
+  `~/.cache/recode-acceptance/codex-060`, without the login, and the test repository.
