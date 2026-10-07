@@ -137,7 +137,9 @@ mean, in addition:
    a bundle with `test_command`, also writes in
    `${CLAUDE_PLUGIN_DATA}/revert-work/<run id>/`, which `revert-tests.sh` removes, and
    runs the bundle's own test commands there, which may write outside the run directory
-   as a test run does (hard rule 1).
+   as a test run does (hard rule 1). Stage 6 step 9 also deletes, in ccx's data
+   directory, the one file named by a call's `output:` line, and only after copying it
+   into the run directory exits 0.
 3. You call Codex only through the Skill tool, `ccx:ask`, with
    `--model <full id>` and `--timeout <seconds>`, plus `--resume <thread id>` for the
    one allowed follow-up. You never run the `codex` CLI except `codex --version`.

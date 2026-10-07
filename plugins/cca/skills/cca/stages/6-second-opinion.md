@@ -248,8 +248,7 @@ for each batch `<k>` it answers, numbered from 2 (step 9).
    unchanged at step 8 before the missing ids are computed, and never retyped. With
    one shell command and absolute paths, run `cp -- "<src>" "<run dir>/codex/response.md"`,
    where `<src>` is the path of the `output:` line of step 7. For a follow-up, run
-   `printf '%s
-' '--- follow-up, thread <id> ---' >> "<run dir>/codex/response.md"` and
+   `printf '%s\n' '--- follow-up, thread <id> ---' >> "<run dir>/codex/response.md"` and
    then `cat -- "<src>" >> "<run dir>/codex/response.md"`, with the follow-up's own
    path. Only after the command exits 0, run `rm -f -- "<src>"`. On a failed copy, keep
    the source and stop stage 6 as a write failure. The fallback batches of step 4.3 are known once
