@@ -294,8 +294,10 @@ Added 2026-10-05, when claude-codex-audit 0.8.1 at `eed9fba` joined the suite as
 71. **Saved answer copied.** Stage 6 copies the file named by ccx's `output:` line to
     `codex/response.md` with one shell command, never retyping it, and deletes the source
     after the copy exits 0. A missing `output:` line on an `ok` call swaps to
-    `cca:adversary`; a refused call keeps ccx's message as the reason. Check: review of
-    stage 6.
+    `cca:adversary`; a refused call keeps ccx's message as the reason. Check:
+    acceptance (item 22) for the copy, a follow-up, and the deletion; review of stage 6
+    for a failed copy and an `ok` call with no `output:` line, which neither plugin can
+    be made to produce on demand.
 
 ## Release
 

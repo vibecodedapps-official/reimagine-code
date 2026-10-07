@@ -266,8 +266,14 @@ name a plugin are rerun under the new names and recorded here.
     whether a user can answer, and its ledger entry has `codex.called` true, a
     `codex.ccx_version`, and that `codex_timeout`; in the second, the stage swaps to
     `cca:adversary` with the reason "ccx not installed or version unreadable" and the
-    run still ends `reported`. Covers R63. Rerun when stage 6, the bridge's output
-    lines, or the catalog changes. Run 2026-10-06 for 0.9.1; see the records.
+    run still ends `reported`. From cca 0.10.0 and ccx 0.6.0, also in the first run:
+    the session's tool calls include `cp -- "<src>" "<run dir>/codex/response.md"` and
+    no Write or Edit of that file; `codex/response.md` starts with the text ccx printed
+    for the call, without its `output:` line; the `<src>` file is gone from ccx's data
+    directory afterward; and when step 8 makes a follow-up, its answer is appended after
+    a `--- follow-up, thread <id> ---` line of its own. Covers R63 and R71. Rerun when
+    stage 6, the bridge's output lines, or the catalog changes. Run 2026-10-06 for
+    0.9.1; see the records.
 23. **cca items under the new names.** The list was drawn 2026-10-05 from
     `docs/history/claude-codex-audit/acceptance.md`: only case M3-c (a session started
     outside any git repository, where the bridge refuses and the run swaps) names the
