@@ -871,8 +871,9 @@ Claude Code, so the hand check in the PR is what confirms them.
       the root's value wins (settings docs, "Where Claude Code keeps the local file in a git
       repository", read 2026-10-07). The hook now finds the root with `git rev-parse
       --git-common-dir`, and keeps the project directory when that is not `<root>/.git`, as
-      in a submodule or a bare repository; the docs do not say what Claude Code does there. Windows keeps the file in the project directory, so only the
-      Windows case ran here; the macOS and Linux case runs in CI.
+      in a submodule or a bare repository; the docs do not say what Claude Code does there.
+      Windows keeps the file in the project directory, so only the Windows case ran here;
+      the macOS and Linux case runs in CI.
     - Managed settings also merge `managed-settings.d/*.json` after `managed-settings.json`,
       in name order, a later value replacing an earlier one (managed settings docs, read
       2026-10-07). The hook reads them last name first. The managed directory is a fixed
@@ -887,8 +888,8 @@ Claude Code, so the hand check in the PR is what confirms them.
     - In a Bash call on Windows, `-F /c/...` (or any `/<letter>/`) and `-F /tmp/...` name
       files Git Bash reads at `C:/...` and in the temp directory, but the hook read them as
       Windows paths and found nothing. A message file under `/tmp` is a likely way for
-      Claude to commit, so this was the most important. The hook now reads them as Git Bash does, and reads an unquoted
-      leading `~` as the home directory in any Bash call.
+      Claude to commit, so this was the most important. The hook now reads them as Git
+      Bash does, and reads an unquoted leading `~` as the home directory in any Bash call.
     - `& "git.exe" commit` in PowerShell was not a commit: a quote before the name was
       accepted only before a path.
     - Item 10's `-C` scan read the option text as a string, so `-c "core.editor=code -C x"`
