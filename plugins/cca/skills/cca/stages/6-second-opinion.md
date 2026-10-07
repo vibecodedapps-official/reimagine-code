@@ -48,10 +48,11 @@ for each batch `<k>` it answers, numbered from 2 (step 9).
    - Otherwise check availability. Run `codex --version`; if it does not exit 0, swap
      to the fallback with the reason "codex --version failed". Run
      `claude plugin list --json` with Bash and take the `version` of the entry whose id
-     starts with `ccx@`; it must be 0.1.0 or later. If the command fails, the
+     starts with `ccx@`; it must be 0.6.0 or later, the first version that saves each
+     answer to a file, which step 9 copies instead of retyping it. If the command fails, the
      entry is absent, or the version cannot be read, swap to the fallback with the
-     reason "ccx not installed or version unreadable"; if it is older than 0.1.0,
-     swap with the reason "ccx <version> is older than 0.1.0". On any swap here,
+     reason "ccx not installed or version unreadable"; if it is older than 0.6.0,
+     swap with the reason "ccx <version> is older than 0.6.0". On any swap here,
      build the request (step 4), then go to step 11. Record both versions in the stage
      entry. The orchestrator never runs the `codex` CLI for anything else.
 
@@ -156,7 +157,13 @@ for each batch `<k>` it answers, numbered from 2 (step 9).
 7. **Parse the result.** ccx ends its output with a line `status: <value>`, where
    the value is `ok`, `failed`, `refused`, or `timeout`, and prints a line
    `thread <id>` when a thread started. Take the last `status:` line and the `thread`
-   line. Then:
+   line. A run that reached Codex also prints `output: <path>` as the line immediately
+   before the final `status:` line: the saved copy of the answer, which step 9 copies.
+   Take only that line, never an `output:` line elsewhere in the answer. A refused call
+   saves nothing, so check the line only when the status is `ok`: if it is missing
+   there, or the line there is `ccx: warning: could not save the output`, treat the
+   call as failed and swap to the fallback with the reason "ccx saved no output file",
+   with no retry. Otherwise:
 
    | Status | Handling |
    |---|---|
@@ -237,10 +244,14 @@ for each batch `<k>` it answers, numbered from 2 (step 9).
    or the follow-up asked for and still missing after the follow-up is handled in step
    10. Ids neither carried are not part of the follow-up: step 11 launches them.
 
-9. **Save the answer verbatim** in `codex/response.md`: the ccx output as
-   returned, unchanged, written at step 8 before the missing ids are computed. A
-   follow-up's output is appended after a line
-   `--- follow-up, thread <id> ---`. The fallback batches of step 4.3 are known once
+9. **Save the answer verbatim** in `codex/response.md`: the file ccx saved, copied
+   unchanged at step 8 before the missing ids are computed, and never retyped. With
+   one shell command and absolute paths, run `cp -- "<src>" "<run dir>/codex/response.md"`,
+   where `<src>` is the path of the `output:` line of step 7. For a follow-up, run
+   `printf '%s\n' '--- follow-up, thread <id> ---' >> "<run dir>/codex/response.md"` and
+   then `cat -- "<src>" >> "<run dir>/codex/response.md"`, with the follow-up's own
+   path. Only after the command exits 0, run `rm -f -- "<src>"`. On a failed copy, keep
+   the source and stop stage 6 as a write failure. The fallback batches of step 4.3 are known once
    step 8 has composed the follow-up, so launch them then, before the follow-up call
    (they are Agent launches, not Codex calls), and wait for them before step 10.
    Number them `<k>` from 2 upward in id order over the ids neither the request nor
@@ -321,7 +332,8 @@ for each batch `<k>` it answers, numbered from 2 (step 9).
     request nor its follow-up carried, step 4.3, a partial swap), all together, after first writing
     `codex/request-<k>.md` for each batch `<k>` from 2. Each launch is a separate agent
     in the stage entry, with scope `second-opinion-<k>` for batch `<k>` (scope
-    `second-opinion` when it fills the role with one batch). The prompt holds the paths
+    `second-opinion` when it fills the role with one batch). The prompt holds the scratch
+    folder `tmp/agents/second-opinion[-<k>]/` and the paths
     of `audit-brief.md`, `common.md`, and that batch's request (`codex/request.md` or
     `codex/request-<k>.md`, which the fallback reads by path), with the
     instruction to answer the request as it asks, within its caps, and write the answer

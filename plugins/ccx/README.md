@@ -452,6 +452,7 @@ Test-only environment variables, read once at startup:
   every other process. An `ask`, `review` or `implement` `--timeout` still wins for the Codex turn.
 - `CCX_PROBE_TARGET`: the file the sandbox probe tries to write outside the working
   directory. Defaults to `~/.ccx-sandbox-probe-<pid>`, one file per run.
+- `CCX_OUTPUT_ID`: replaces the random UUID in the saved answer's file name, `output-<id>.txt`.
 
 To try a change by hand, start Claude Code from a scratch git repository with the working
 tree loaded as a plugin:

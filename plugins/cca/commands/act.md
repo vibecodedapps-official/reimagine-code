@@ -21,7 +21,7 @@ You are a thin forwarder for the cca orchestrator. Do the steps below in order. 
 
    Reject the request with one short line that names the offending token, such as `cca: unknown flag --bogus`, `cca: not an item id: X4`, or `cca: run <run-id> not found in runs.json`, if any rule in step 1 or step 2 fails. When you reject, run no other command, write no file, and do not load the skill.
 
-3. State the parsed invocation to the user as this block, with every flag at its effective value. List the item ids in the order typed.
+3. Build this block, with every flag at its effective value, as the args for step 4. List the item ids in the order typed. Show the user a short summary in plain words instead of the block: the command and only the settings they gave or that change the run, never a flag at its default or a field that does not apply, such as `run-id: none` or `per-item: false`.
 
 ```
 command: act

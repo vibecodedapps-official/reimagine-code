@@ -40,7 +40,7 @@ repository records five full multi-agent audit runs on the
   files); the report then says the forge was not queried.
 - `jq` for `/cca:resume --live`, on any forge. Without it, the import stops before it
   keeps anything.
-- Optional: the Codex CLI and the `ccx` plugin, 0.1.0 or later, for the second
+- Optional: the Codex CLI and the `ccx` plugin, 0.6.0 or later, for the second
   opinion. ccx runs Codex from the session's repository root, with no network
   access.
 
@@ -283,6 +283,35 @@ frontmatter block or as JSON, and name it as `file:<path>`.
 A missing required key stops the run before stage 1 with `export <path>: missing <key>`.
 A missing optional key is listed in the audit brief as "not in export", and the
 work-item hygiene review reports it.
+
+For Azure DevOps, export each work item and pull request by hand or with `az`, then
+name the files in a manifest. cca does not run the export.
+
+```json
+{
+  "bundles": [
+    { "repo": "../app", "pr": "file:./exports/pr-89.md", "branch": "feature/ab-4567",
+      "base": "origin/main", "tickets": ["file:./exports/ab-4567.md"] }
+  ],
+  "forge_exports": { "command": "az boards work-item show --id 4567",
+                     "exported_at": "2026-10-06" }
+}
+```
+
+`exports/ab-4567.md`, with the same keys in `pr-89.md` as the PR list above requires:
+
+```
+---
+id: AB#4567
+url: https://dev.azure.com/org/project/_workitems/edit/4567
+title: Limit login attempts
+state: Active
+description: Lock the account after five failed logins.
+source: Azure DevOps
+exported_by: az boards work-item show --id 4567
+exported_at: 2026-10-06
+---
+```
 
 ## Audit questions
 

@@ -52,7 +52,7 @@ stage sections below say.
 The `allowed-tools` list above pre-approves read commands only. Export, snapshot,
 state-file, and probe commands (such as the export script, `rm -rf` and `mkdir` in the run
 directory, the lock's `mkdir` and `rmdir`, `sleep`, `stat`, `find`,
-`sha256sum`, `shasum`, `jq`, `awk`, `mv -f`, `wc -c`, `codex --version`,
+`sha256sum`, `shasum`, `command -v jq`, `jq`, `awk`, `mv -f`, `wc -c`, `codex --version`,
 and the `sh` runs of the scripts in `${CLAUDE_PLUGIN_ROOT}/skills/cca/scripts/`:
 `readonly.sh`, `handoff.sh`, `work-items.sh`, `working-tree.sh`, `live.sh`, and
 `ledger.sh`) follow the session's permission mode; tell the user once, before stage 1,
@@ -100,6 +100,19 @@ compaction, re-read the last block there. A run from 0.4.0 or earlier has no
 `invocations.md`; the block in your context is then the only copy. `audit` goes to Stage
 1. `resume` goes to Resume. `act` goes to Stage 9.
 
+## Talking to the user
+
+What you say to the user is in plain words. Say what happened, what it means for them,
+and the next step, in that order, in short sentences with no stage numbers, flag names, or
+script words unless they need them to act. When a script prints lines for you to judge,
+say what they mean in everyday words and keep the raw lines in the run's records (the
+check file, `stages.json`, the report), not in the message; show a raw line only when the
+user must see it to decide. Lines that other steps parse, such as `blocked <kind>`,
+`readonly:`, `working-tree: refused:`, `work-items:`, and the `revision:` line, are
+never reworded where they are written; the plain explanation goes around them. A stop
+says what is wrong, what to change, and how to continue, with `/cca:resume <id>` when the
+run can resume.
+
 ## Preamble
 
 ### Hard rules
@@ -111,7 +124,7 @@ mean, in addition:
 1. You are the only component that talks to the user, calls Codex, runs `git fetch`,
    exports pinned trees, and writes `stages.json`, `runs.json`, the ledger files,
    `usage.md`, and `report.md`. Agents read the run directory and the audited trees
-   and write only their own output file.
+   and write only their own output file and, in their scratch folder, raw command output.
 2. During audit and resume you write only inside the run directory and to
    `${CLAUDE_PLUGIN_DATA}/runs.json`, its `runs.json.lock` directory (including
    the owner directory), and its `runs.json.<owner>.tmp` temporary file. You never
@@ -124,7 +137,9 @@ mean, in addition:
    a bundle with `test_command`, also writes in
    `${CLAUDE_PLUGIN_DATA}/revert-work/<run id>/`, which `revert-tests.sh` removes, and
    runs the bundle's own test commands there, which may write outside the run directory
-   as a test run does (hard rule 1).
+   as a test run does (hard rule 1). Stage 6 step 9 also deletes, in ccx's data
+   directory, the one file named by a call's `output:` line, and only after copying it
+   into the run directory exits 0.
 3. You call Codex only through the Skill tool, `ccx:ask`, with
    `--model <full id>` and `--timeout <seconds>`, plus `--resume <thread id>` for the
    one allowed follow-up. You never run the `codex` CLI except `codex --version`.
@@ -186,7 +201,11 @@ is recorded and the run ends `partial`.
    not learn the effective model, so the report says "requested", never "used".
 3. Keep the prompt short: the absolute paths of `audit-brief.md`, `common.md`, the
    scope file or scope list, and the output file, plus the scope's questions and any
-   stage-specific item the stage file names. The agent definition holds the standing
+   stage-specific item the stage file names. An agent with Bash (digester, mapper,
+   auditor, adversary) also gets its scratch folder, `<run dir>/tmp/agents/<stage>-<scope>[-<n>]/`,
+   unique per launch (`<n>` for a top-up or a batch), which you create before the launch
+   and name in the prompt next to the output file. It is for the agent's own command
+   output; the merger has no Bash and gets none. The agent definition holds the standing
    instructions; do not restate them.
 4. Each agent returns only its path and one line. Read the file to judge it; the last
    line must be `status: complete`.
@@ -295,15 +314,27 @@ and before writing that stage's final entry:
    moves.
 2. Read the exit status, the first that holds:
    - `2`: a step of the check failed, so the boundary could not be checked. End the run
-     `blocked` at once and show the script's message.
+     `blocked` at once, with the block message below.
    - `1`: a `blocked` line was printed: a difference in tracked files, untracked
-     non-ignored files, refs, index, stash, or config. End the run `blocked` at once
-     and show the lines.
+     non-ignored files, refs, index, stash, or config. End the run `blocked` at once,
+     with the block message below.
    - `3`: only `remote-ref` or `ignored` lines were printed. Judge each below.
    - `0`: nothing needs judgment. `touched` lines may have been printed.
 3. For each `remote-ref` line (exit 3): it passes only when an approved fetch recorded in
-   `approvals` after the baseline explains it. Otherwise end the run `blocked` at once
-   and show it.
+   `approvals` after the baseline explains it, or a `background-fetch` entry for the same
+   ref with the same old and new commits does. Otherwise, with no `blocked` line in the
+   output, ask the user whether a background fetch explains the moved refs. The
+   line format is `remote-ref <-|+> <sha> <type><TAB><ref>`: a moved ref has a `-` line
+   with the old commit and a `+` line with the new one, a new ref only a `+` line, a
+   deleted ref only a `-` line. Name each ref with its old and new commit, or "new" or
+   "deleted", and say that an editor's automatic fetch, such as VS Code's
+   `git.autofetch`, can move them. On yes, append to `stages.json` `approvals` one entry
+   per ref, in the form of the stage 1 fetch entries: kind `background-fetch`, target
+   `<repo name>:<ref>`, the decision, the time, and the old and new commits; then continue.
+   A later check that sees the same ref at the same old and new commits passes on that
+   entry; a further move of the ref asks again. On no, or no answer, end the run
+   `blocked` at once, with the block message below. Any `blocked` line still ends the
+   run at once, as above.
 4. For each `ignored` line (exit 3), added, deleted, or changed:
    - If the path is inside `<s>/cca/` of any audited repository, where `<s>` is
      any directory D2 (stage 1) would choose there, and outside this run's
@@ -312,14 +343,16 @@ and before writing that stage's final entry:
    - If any agent with Bash (digester, mapper, auditor, adversary, or the stage 6
      fallback), in any stage, is running or has ended since the previous check (from
      the `agents` lists in `stages.json`), accept it provisionally, as pending.
-   - Otherwise end the run `blocked` at once and show it.
+   - Otherwise end the run `blocked` at once, with the block message below.
 5. Reconcile, after every check that did not exit 1 or 2, including exit 0, so a pending
    write never escapes attribution. Take every pending difference, from this check or
    an earlier one. Once every agent a pending difference was accepted under has ended,
    read those agents' `runs:` headings. A difference is accounted for when a logged run's
    directory is inside that repo. Any pending difference no logged run accounts for
    ends the run `blocked` now. Differences still waiting on running agents stay
-   pending.
+   pending. Ignored-file changes under `bin/` or `obj/` of a repo with a logged run since
+   the last check are grouped under that run in one record in the check file that lists
+   every path, without asking; changes with no matching logged run are handled as above.
 6. Write `baseline/<stage>-check.md`: the stage, the time, the repos checked, the
    result (`pass` or `blocked: <reason>`), the ignored-file differences accepted (each
    labeled as another cca run's or a handoff's file, or with the agent and run that accounts
@@ -332,6 +365,12 @@ and before writing that stage's final entry:
 
 With `_test` absent, a user's own edit to an audited repo during a run trips this check
 too; the report says so.
+
+The block message, whenever a check ends the run `blocked`, leads in plain words: what
+changed and in which repo, that the audit stopped to protect the repo, and that
+`/cca:resume <id>` continues it once the change is settled. The raw lines go in
+`baseline/<stage>-check.md` (step 6); show them only when the user asks or must see them
+to decide.
 
 ### Fault injection (`_test`)
 
@@ -346,7 +385,10 @@ the destination with `mv -f`. Never edit state files in place.
 
 For every `runs.json` update, use `<owner>` = `<run-id>-<HHMMSS>`, the run id
 and this invocation's start time in hours, minutes, and seconds, so a resume of the
-same run gets its own token. `<lock>` is `${CLAUDE_PLUGIN_DATA}/runs.json.lock`.
+same run gets its own token. `<lock>` is `${CLAUDE_PLUGIN_DATA}/runs.json.lock`; every `rmdir` below uses the
+absolute lock path, written out, never a path built from a shell variable, because
+Claude Code's permission check can refuse `rmdir` on a path built from a shell variable
+and accept a literal one (reported, not reproduced).
 Acquire with `mkdir <lock> && mkdir <lock>/<owner>` (no `-p`), never one `mkdir`
 with both operands: a failed first operand would plant this owner in another
 session's lock. While `mkdir <lock>` fails because the lock exists, wait 5 seconds
@@ -357,12 +399,12 @@ mtime: `find <lock> -maxdepth 0 -mmin +1` lists it after a minute on GNU `find`,
 after two on BSD and busybox `find`. Never judge by how long this session waited.
 For a stale lock, ask only when a user can answer in this session whether another
 cca audit or resume is running, including one waiting at a prompt. On "no", remove
-it with `rmdir <lock>/* <lock>` (`rmdir <lock>` when empty), then acquire. On "yes",
+it with `rmdir <lock>/* <lock>` (`rmdir <lock>` when empty), with the absolute lock path, then acquire. On "yes",
 keep the 5-second retries for five more minutes, then ask once more. A second
 "yes", or a user who declines removal, takes the registry-failure rule below.
 In a headless session, or when unsure whether a user can answer, remove a stale
 lock without asking, with `rmdir <lock>/* <lock>` (`rmdir <lock>` when it is
-empty), then acquire. This is safe: a session whose lock was removed before its
+empty) and the absolute lock path, then acquire. This is safe: a session whose lock was removed before its
 replace command finds its test failing and acquires again, so no entry is lost on
 a supported path (the known limit below stands). Interactive or headless, a stale
 lock whose owner directory (seen with `ls <lock>`) has this session's own `<owner>`
@@ -386,7 +428,7 @@ that one command for over a minute could still overwrite a takeover; no supporte
 path stops it there (a permission prompt comes before the command, machine sleep
 pauses every session, a timeout kills the command), so this is a known limit, not
 handled. On every failure path, release any lock this session holds with
-`rmdir <lock>/<owner> <lock>`, then with `rmdir <lock>` once its owner directory is
+`rmdir <lock>/<owner> <lock>` with the absolute lock path, then with `rmdir <lock>` once its owner directory is
 gone and the lock is left; another session's lock holds its own owner directory, so
 this release cannot remove it, except a same-owner lock, which this session never
 holds and so never releases (the guard above).
@@ -399,12 +441,13 @@ this session's owner directory or nothing (the release was refused or failed, or
 only the data directory turned non-writable mid-update and left an empty lock), or
 when a stale lock stays because the user declined its removal or answered yes twice,
 or because its owner directory has this session's own name.
-The command is `rmdir <lock>/<owner> <lock>` for this session's lock and
+The command, with the absolute lock path, is `rmdir <lock>/<owner> <lock>` for this session's lock and
 `rmdir <lock>/* <lock>` for a stale one, to run only once no cca audit or resume is
 running; each is `rmdir <lock>` when the lock is empty. Say that a later audit or
 resume removes a stale lock itself (a headless one without asking), so removing it by
-hand only saves the wait. Read `runs.json` with the Read tool and branch on this
-run's entry:
+hand only saves the wait. Say it in plain words: the audit could not update its list of
+runs, what that means for `/cca:resume` and `/cca:act`, and the one command or entry to run.
+Read `runs.json` with the Read tool and branch on this run's entry:
 
 - **Absent (D6's add failed, and nothing added it since):** tell the user at once
   that `/cca:resume` and `/cca:act` cannot find this run. At D6, record the
@@ -435,7 +478,7 @@ run's entry:
 
 ```json
 {
-  "plugin_version": "0.9.1",
+  "plugin_version": "0.10.0",
   "approvals": [ { "kind": "fetch", "target": "<repo name>:<remote>",
                    "decision": "approved", "time": "2026-09-30T14:15:00Z",
                    "commands": ["git -C <repo> fetch --no-tags --refmap= ..."] } ],

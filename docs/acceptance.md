@@ -266,14 +266,33 @@ name a plugin are rerun under the new names and recorded here.
     whether a user can answer, and its ledger entry has `codex.called` true, a
     `codex.ccx_version`, and that `codex_timeout`; in the second, the stage swaps to
     `cca:adversary` with the reason "ccx not installed or version unreadable" and the
-    run still ends `reported`. Covers R63. Rerun when stage 6, the bridge's output
-    lines, or the catalog changes. Run 2026-10-06 for 0.9.1; see the records.
+    run still ends `reported`. From cca 0.10.0 and ccx 0.6.0, also in the first run:
+    the session's tool calls include `cp -- "<src>" "<run dir>/codex/response.md"` and
+    no Write or Edit of that file; `codex/response.md` starts with the text ccx printed
+    for the call, without its `output:` line; the `<src>` file is gone from ccx's data
+    directory afterward; and when step 8 makes a follow-up, its answer is appended after
+    a `--- follow-up, thread <id> ---` line of its own. Covers R63 and R71. Rerun when
+    stage 6, the bridge's output lines, or the catalog changes. Run 2026-10-06 for
+    0.9.1, and 2026-10-07 for cca 0.10.0 and ccx 0.6.0 on Windows; see the records.
 23. **cca items under the new names.** The list was drawn 2026-10-05 from
     `docs/history/claude-codex-audit/acceptance.md`: only case M3-c (a session started
     outside any git repository, where the bridge refuses and the run swaps) names the
     bridge, read as `ccx`; it was never run there. Every other case keeps its result and
     reruns under that file's conditions. Expected: M3-c's own result. Rerun when stage 6
-    changes. Not yet run.
+    changes. Run 2026-10-07 for cca 0.10.0 and ccx 0.6.0 on Windows; see the records.
+24. **cca background-fetch question.** Setup: as item 21, interactive, in a session
+    whose directory is the fixture's `app` repository, after
+    `git update-ref refs/remotes/origin/main HEAD` there. Command: `/cca:audit <manifest>
+    --no-codex`; while stage 4 runs, move that ref from a second shell with
+    `git update-ref refs/remotes/origin/main HEAD~1`. Expected:
+    the next boundary check names the ref with its old and new commits and asks whether
+    a background fetch explains it. On yes, `stages.json` `approvals` gains one
+    `background-fetch` entry with target `app:refs/remotes/origin/main` and both
+    commits, the run goes on, and the next check passes without asking. Moving the ref
+    again asks again. On no, the run ends `blocked`. Moving the ref together with an
+    edit to a tracked file ends the run `blocked` without asking. Covers Part 19 item 1
+    in `docs/decisions.md`. Rerun when the boundary check in the cca skill changes. Run
+    2026-10-07 for 0.10.0 on Windows; see the records.
 
 ## Record of runs
 
@@ -2092,3 +2111,79 @@ and `ccx` installed at 0.6.0 with `general-code-review` and its three companions
   failed: -1073283067` starting the Store `pwsh.exe`. With `"elevated"`, the first try
   failed with `ShellExecuteExW failed to launch setup helper: 1223`, a cancelled
   administrator prompt; the passing run followed once the author approved that prompt.
+
+### 2026-10-07: cca 0.10.0, before the merge, Windows
+
+Windows 11 Pro, Git Bash, Claude Code 2.1.292, Node 26.4.0, git 2.55.0. The branch head
+was 69961c1. Each run used a new `solo` fixture with `refs/remotes/origin/main` set to
+`0c23936` first and a manifest copy with `"scratch": "./app/.test-output/cca"`, in an
+interactive session under a scratch `CLAUDE_CONFIG_DIR` with cca loaded by
+`--plugin-dir` from the branch, not installed from the catalog. Each ran
+`/cca:audit <manifest> --no-codex --effort low`, and the ref was moved by hand from a
+second shell with `git update-ref`.
+
+- **Item 24 passed.** Three runs covered its five cases.
+  - Run A: the stage 4 check named the move `0c23936 -> 9c5f77c` and asked. On yes,
+    `approvals` gained one `background-fetch` entry for `app:refs/remotes/origin/main`
+    with both full commits, and the run went on. A second move, to `2b5e8f3`, was seen by
+    the stage 5 check, which asked again. On no, stage 5 was recorded `failed` with a
+    `blocked:` reason and `runs.json` showed `blocked`.
+  - Run B: the ref move and an edit to `README.md` together ended the run `blocked` at
+    the stage 1 check, with `blocked hashes` and `blocked status` lines and no question;
+    `approvals` stayed empty.
+  - Run C: one move, approved at the stage 5 check. The checks of stages 6, 7, and 8
+    passed on that entry without asking, and the run ended `reported`.
+- Observed: Run A's question left out the line the skill asks for, that an editor's
+  automatic fetch such as `git.autofetch` can move refs; it said a fetch looked unlikely
+  since the fixture has no remote, and recommended no. Runs B and C made their run
+  directory at `<scratch>/cca/<run-id>/`, as stage 1 says; Run A made it one level
+  higher, at `.test-output/cca/<run-id>/`. Neither was investigated further.
+
+### 2026-10-07: cca 0.10.0 and ccx 0.6.0, item 22, before the merge, Windows
+
+Windows 11 Pro, Git Bash, Claude Code 2.1.292, codex-cli 0.160.1, Node 26.4.0. The branch
+head was 0977f6a. A scratch `CLAUDE_CONFIG_DIR` added the branch's working tree as a
+local catalog and installed `ccx` 0.6.0 and `cca` 0.10.0 from it; Codex used the real
+login. The `patterns` fixture ran with a manifest copy holding
+`"scratch": "./app/.test-output/cca"`, in an interactive session.
+
+- **Item 22 passed, except the follow-up, which did not occur.** `/cca:audit <manifest>
+  --effort low` called `ccx:ask` with `--timeout 1200` and recorded `ccx_version`
+  `0.6.0`, `called` true, status `ok`, no retry, and no follow-up, since every input was
+  acknowledged. The session log shows one Bash call, `cp -- "$SRC"
+  "$RD/codex/response.md" && rm -f -- "$SRC" && echo copied`, which printed `copied`,
+  with `$SRC` the path of the `output:` line, and no Write or Edit of
+  `codex/response.md`. The copied file was byte for byte the text ccx printed without
+  its `output:` line (6517 bytes, `cmp` equal). After `claude plugin uninstall
+  ccx@reimagine-code`, `/cca:resume <run-id> --from 6` swapped to `cca:adversary` with
+  the reason "ccx not installed or version unreadable", moved the first answer to
+  `superseded/1/codex/`, and the run ended `reported`.
+- Observed: the run directory was `.test-output/cca/<run-id>/`, one level short of
+  `<scratch>/cca/<run-id>/`, as in item 24's Run A (issue #41). With a local catalog the
+  installed `ccx` ran its script from the branch's working tree, not from the plugin
+  cache.
+
+### 2026-10-07: cca 0.10.0 and ccx 0.6.0, items 22 and 23, before the merge, Windows
+
+Windows 11 Pro, Git Bash, Claude Code 2.1.292, codex-cli 0.160.1, Node 26.4.0. The branch
+head was c4e5eaa. As in the item 22 record above, a scratch `CLAUDE_CONFIG_DIR` installed
+`ccx` 0.6.0 and `cca` 0.10.0 from the branch's working tree, and Codex used the real
+login. Two `patterns` fixtures ran at the same time, in two interactive sessions, each
+with `"scratch": "./app/.test-output/cca"` and `--effort low`.
+
+- **Item 22's follow-up passed.** The manifest held `"_test": {"drop_ack": {"input":
+  "ledger/5.md", "times": 1}}`. The first answer was copied with `cp -- "$SRC"
+  "$RD/codex/response.md" && rm -f -- "$SRC"`. The follow-up went to the same thread
+  with `--resume`, and its answer was appended with `printf '%s
+' '--- follow-up,
+  thread <id> ---' >> ... && cat -- "$SRC" >> ... && rm -f -- "$SRC"`. No Write or Edit
+  touched `codex/response.md`. The file was byte for byte the first printed answer, the
+  header line, and the second printed answer, each without its `output:` line (7057
+  bytes, `cmp` equal). The stage 6 entry recorded `follow_up` true, status `ok`, and no
+  unacknowledged input. ccx's data directory held no `output-*.txt` file afterward.
+- **Item 23 passed (M3-c).** The session started in the fixture's root, outside any git
+  repository. `ccx:ask` printed `ccx: not inside a git repository, so nothing was run
+  (...)` and `status: refused`, with no retry. Stage 6 swapped to `cca:adversary` with
+  the reason "ccx refused: not inside a git repository, so nothing was run", recorded
+  `called` true and status `refused`, and the run ended `reported`.
+- Both run directories were at `<scratch>/cca/<run-id>/`, as stage 1 says.

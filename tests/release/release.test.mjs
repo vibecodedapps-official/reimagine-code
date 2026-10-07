@@ -52,7 +52,7 @@ test('release sets the suite version and the range everywhere, then lint asks fo
   assert.ok(r.out.includes('CHANGELOG.md: no heading "## 0.7.0 - <YYYY-MM-DD>" for the suite version'), r.out);
   assert.deepEqual(versions(d), {
     suite: '0.7.0', ccx: '0.7.0', loop: '0.7.0', range: '>=0.7.0 <1.0.0', codex: '0.7.0',
-    docsClaude: '0.1.5', docsCodex: '0.1.5', cca: '0.9.1', catalog: '0.7.0', entries: { ccx: '0.7.0', 'ccx-loop': '0.7.0', cca: '0.9.1', 'repo-docs': '0.1.5' },
+    docsClaude: '0.1.5', docsCodex: '0.1.5', cca: '0.10.0', catalog: '0.7.0', entries: { ccx: '0.7.0', 'ccx-loop': '0.7.0', cca: '0.10.0', 'repo-docs': '0.1.5' },
   });
   assert.ok(lines(d, 'plugins/ccx-loop/.claude-plugin/plugin.json').includes('    { "name": "ccx", "version": ">=0.7.0 <1.0.0" }'));
   heading(d, '## 0.7.0 - 2026-10-04');
@@ -66,22 +66,22 @@ test('release sets repo-docs in its two manifests and its catalog entry only', (
   assert.equal(r.status, 0, r.out);
   assert.deepEqual(versions(d), {
     suite: '0.6.0', ccx: '0.6.0', loop: '0.6.0', range: '>=0.2.0 <1.0.0', codex: '0.6.0',
-    docsClaude: '0.1.6', docsCodex: '0.1.6', cca: '0.9.1', catalog: '0.6.0', entries: { ccx: '0.6.0', 'ccx-loop': '0.6.0', cca: '0.9.1', 'repo-docs': '0.1.6' },
+    docsClaude: '0.1.6', docsCodex: '0.1.6', cca: '0.10.0', catalog: '0.6.0', entries: { ccx: '0.6.0', 'ccx-loop': '0.6.0', cca: '0.10.0', 'repo-docs': '0.1.6' },
   });
   assert.ok(lines(d, 'plugins/repo-docs/.codex-plugin/plugin.json').includes('  "author": { "name": "vibecodedapps.net" },'));
 }));
 
 test('release sets cca in its manifest and its catalog entry only', () => inCopy((d) => {
-  const r = release(d, 'cca', '0.9.2');
+  const r = release(d, 'cca', '0.10.1');
   assert.equal(r.status, 0, r.out);
   assert.deepEqual(versions(d), {
     suite: '0.6.0', ccx: '0.6.0', loop: '0.6.0', range: '>=0.2.0 <1.0.0', codex: '0.6.0',
-    docsClaude: '0.1.5', docsCodex: '0.1.5', cca: '0.9.2', catalog: '0.6.0', entries: { ccx: '0.6.0', 'ccx-loop': '0.6.0', cca: '0.9.2', 'repo-docs': '0.1.5' },
+    docsClaude: '0.1.5', docsCodex: '0.1.5', cca: '0.10.1', catalog: '0.6.0', entries: { ccx: '0.6.0', 'ccx-loop': '0.6.0', cca: '0.10.1', 'repo-docs': '0.1.5' },
   });
   assert.ok(lines(d, 'plugins/cca/.claude-plugin/plugin.json').includes('  "license": "Apache-2.0",'));
-  assert.ok(lines(d, 'plugins/cca/skills/cca/SKILL.md').includes('  "plugin_version": "0.9.2",'));
-  assert.ok(lines(d, 'plugins/cca/skills/cca/stages/1-orient.md').some((l) => l.includes('`plugin_version` `0.9.2`, empty `approvals`')));
-  assert.ok(lines(d, 'plugins/cca/skills/cca/stages/resume.md').includes('   - `plugin_version`, which for this release is `0.9.2`.'));
+  assert.ok(lines(d, 'plugins/cca/skills/cca/SKILL.md').includes('  "plugin_version": "0.10.1",'));
+  assert.ok(lines(d, 'plugins/cca/skills/cca/stages/1-orient.md').some((l) => l.includes('`plugin_version` `0.10.1`, empty `approvals`')));
+  assert.ok(lines(d, 'plugins/cca/skills/cca/stages/resume.md').includes('   - `plugin_version`, which for this release is `0.10.1`.'));
   assert.ok(r.out.includes('plugins/cca/skills/cca/SKILL.md, plugins/cca/skills/cca/stages/1-orient.md, plugins/cca/skills/cca/stages/resume.md'), r.out);
 }));
 

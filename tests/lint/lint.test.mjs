@@ -49,9 +49,9 @@ test('lint rejects a runtime module no budget lists', () => fails(
   (d) => writeFileSync(join(d, 'plugins/ccx/scripts/extra.mjs'), 'export {};\n'),
   'runtime modules no plugin budget lists: plugins/ccx/scripts/extra.mjs'));
 
-test('lint rejects bridge scripts over their 710-line budget', () => fails(
+test('lint rejects bridge scripts over their 740-line budget', () => fails(
   (d) => appendFileSync(join(d, 'plugins/ccx/scripts/codex.mjs'), '\n'.repeat(700)),
-  'plugins/ccx: codex.mjs + ccx.mjs total ', ' lines, budget is 710'));
+  'plugins/ccx: codex.mjs + ccx.mjs total ', ' lines, budget is 740'));
 
 test('lint rejects a plugin directory with no row in its table', () => fails(
   (d) => { mkdirSync(join(d, 'plugins/foo')); writeFileSync(join(d, 'plugins/foo/x.md'), 'x\n'); },
@@ -103,10 +103,10 @@ for (const file of ['SKILL.md', 'stages/1-orient.md', 'stages/resume.md']) {
     (d) => {
       const p = join(d, path);
       const s = readFileSync(p, 'utf8');
-      assert.ok(s.includes('0.9.1'), `${path} lacks the version`);
-      writeFileSync(p, s.replace('0.9.1', '0.9.0'));
+      assert.ok(s.includes('0.10.0'), `${path} lacks the version`);
+      writeFileSync(p, s.replace('0.10.0', '0.9.0'));
     },
-    `${path}: plugin_version 0.9.0 differs from the cca manifest version 0.9.1`));
+    `${path}: plugin_version 0.9.0 differs from the cca manifest version 0.10.0`));
 }
 
 test('lint rejects a non-ASCII byte in a shipped file', () => fails(

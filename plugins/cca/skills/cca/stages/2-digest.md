@@ -60,7 +60,8 @@ auditors cite the original document at its pinned sha, never the digest.
    them but launch none until the named stage's initial agents have ended. The prompt
    gives the absolute paths of `audit-brief.md`, `common.md`, `claims.md`,
    `groups.md`, every `diffs/<bundle>.stat`, the chunk file
-   `guidelines/chunk-N.md`, and the output file `guidelines/digest-N.md`, and says:
+   `guidelines/chunk-N.md`, the output file `guidelines/digest-N.md`, and the scratch folder `tmp/agents/digest-N/`
+   (SKILL.md, Agent launch, step 3), and says:
    read every file in the chunk in full, or for a byte-range chunk the range the chunk
    file names, read in slices of at most 24000 bytes (a Bash result is cut near 30,000
    characters), and end `status: failed at byte <offset>`, never `complete`, if the

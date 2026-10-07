@@ -27,7 +27,8 @@ auditors: auditors cite the source at its pinned sha, never the map.
    rules; maps launch after digests and before pass one). With `_test` `hold` naming
    stage 3, queue them but launch none until the named stage's initial agents have ended. The
    prompt gives the absolute paths of `audit-brief.md`, `common.md`, the question file,
-   and the output file `domain/<source>-map.md`, the source's read path and sha from
+   the output file `domain/<source>-map.md`, the scratch folder `tmp/agents/domain-<source>/`
+   (SKILL.md, Agent launch, step 3), the source's read path and sha from
    the brief, and the read paths and shas of the other code bases, and says: answer
    every question against this source with quotes (`repo@sha:path:line`), write
    `not found` with the search that shows it where the source has no answer, and note
