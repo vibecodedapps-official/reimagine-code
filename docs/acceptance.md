@@ -127,8 +127,8 @@ name a plugin are rerun under the new names and recorded here.
     exactly `ccx` and `repo-docs`, from `plugins/ccx-codex` and `plugins/repo-docs`,
     and they install at the versions their manifests give. Covers R2. Rerun when the
     Codex catalog or a Codex manifest changes. Run 2026-10-03, 2026-10-04 for 0.2.0 and
-    0.3.0, 2026-10-05 for 0.3.1, and 2026-10-06 for 0.3.2 and repo-docs 0.1.5, and for
-    0.4.0; see the records.
+    0.3.0, 2026-10-05 for 0.3.1, and 2026-10-06 for 0.3.2 and repo-docs 0.1.5, for
+    0.4.0, and for 0.5.0; see the records.
 12. **Code review on Codex.** Setup: as item 11, in a scratch git repository with
     `math.mjs`, `test.mjs`, and a `package.json` whose `test` script passes, then an
     uncommitted change that renames an export, gives `add` a third argument with a
@@ -188,7 +188,7 @@ name a plugin are rerun under the new names and recorded here.
     plugin's new version, and no bare `v` tag. Covers R49. Rerun at each release. Run
     2026-10-03 for 0.1.0, 2026-10-04 for 0.1.1, 0.1.2, 0.1.3, 0.2.0, and 0.3.0,
     2026-10-05 for 0.3.1 and cca 0.9.0, and 2026-10-06 for 0.3.2, cca 0.9.1, and
-    repo-docs 0.1.5, and for 0.4.0; see the records.
+    repo-docs 0.1.5, for 0.4.0, and for 0.5.0; see the records.
 18. **Install from GitHub.** Setup: on macOS and on Windows 11 with both CLIs from npm,
     new scratch profiles on each host. Command: the four lines of R3, then `claude plugin
     install ccx-loop@reimagine-code` and `codex plugin add
@@ -202,7 +202,7 @@ name a plugin are rerun under the new names and recorded here.
     and on Windows from the public one. Run 2026-10-04 for 0.1.2, 0.1.3, 0.2.0, and
     0.3.0, and 2026-10-05 for 0.3.1, each on macOS and Windows, from the public
     repository, 2026-10-06 for 0.3.2, cca 0.9.1, and repo-docs 0.1.5 on macOS and
-    Windows, and 2026-10-06 for 0.4.0 on macOS; see the records.
+    Windows, and 2026-10-06 for 0.4.0 and 0.5.0 on macOS; see the records.
 19. **Windows.** Setup: a Windows 11 machine with both CLIs from npm, the suite
     installed as in item 18, and a test repository checked out under a path that holds
     a space. Command: `/ccx:ask` and `/ccx:implement` with a one-line change;
@@ -2001,3 +2001,37 @@ core rules, and a `## Mine` section with one line of its own.
   nothing (no `installed_plugins.json`, `/reload-plugins` reported 0 plugins); `claude
   plugin install ccx@reimagine-code` run from the shell with the same
   `CLAUDE_CONFIG_DIR` installed it. Not investigated further.
+
+### 2026-10-06: release ccx 0.5.0 and ccx-loop 0.5.0
+
+macOS 27.0, Claude Code 2.1.292, codex-cli 0.160.0, Node 26.4.0. The release commit was
+95e66bc, the merge of PR 34; its tree equals 4a14bee, whose PR CI run 37547103100 passed
+on ubuntu-latest, macos-latest, and windows-latest after one rerun of the macOS job (see
+the observation below), and the `main` run for the merge, 37551283726, passed on all
+three. cca 0.9.1 and repo-docs 0.1.5 were not released again. The
+GitHub runs used new scratch profiles under `/tmp/ccx-rel-050`, deleted afterward. The
+real `~/.claude` and `~/.codex` files had the same sha256 and modification times after
+the runs as before.
+
+- **Item 17 passed for this release.** The dry runs named `ccx--v0.5.0` and
+  `ccx-loop--v0.5.0` at HEAD. `claude plugin tag --push` created and pushed both at
+  95e66bc, `ccx` first; `git ls-remote` showed both tags peeling to 95e66bc, and no bare
+  `v` tag. `npm run lint` on `main` printed `lint: ok` with the tags present.
+- **Item 18 passed on macOS for this release, from the public repository, except for
+  setup and ask.** `git ls-remote` read `main` at 95e66bc. In a new scratch Claude
+  profile, installing the loop alone printed "(+ 1 dependency: ccx)"; `ccx-loop` 0.5.0,
+  `ccx` 0.5.0, `cca` 0.9.1, and `repo-docs` 0.1.5 installed, each recording 95e66bc. In a
+  new scratch Codex home, `ccx` 0.5.0 and `repo-docs` 0.1.5 installed and showed as
+  enabled. `/ccx:setup` and `/ccx:ask` were not run: the scratch profiles had no login.
+- **Item 11 passed for this release.** In a new Codex home with no login, `codex plugin
+  marketplace add vibecodedapps-official/reimagine-code` cloned 95e66bc. `codex plugin
+  list` showed exactly `ccx`, from `plugins/ccx-codex`, and `repo-docs`, which installed
+  at 0.5.0 and 0.1.5.
+- Not run: item 16, the always-on token check; the update from GitHub of a profile
+  holding 0.4.0; and Windows, items 18 and 19.
+- Observed: the PR's macOS job first failed the rules speed test, `not ok 446 - units and
+  imports grow about linearly: four times the input takes under eight times as long`,
+  at `grows(stray, (t) => imports(t), 8000) < 8`; the rerun passed. Locally the ratio at
+  that size was 3.95 to 4.14 over five runs, so a slow runner is the likely cause,
+  unverified. In the agent shell, `codex plugin` commands exited 1 with `Error: stdin is
+  not a terminal` until stdin came from `/dev/null`.
