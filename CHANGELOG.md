@@ -430,7 +430,8 @@ at 0.1.3.
 
 ### recode
 
-- The house rules gain two rules, from forge-ops at commit 9faabda. Under Working:
+- The house rules gain two rules, from the earlier source repository at commit 9faabda.
+  Under Working:
   before naming a cause or acting on one, run the check that could rule it out, or call
   the cause unverified. Under Code: a code comment only where the code is unclear, with
   ticket numbers and change history in the commit message. If you added the rules
@@ -524,7 +525,8 @@ at 0.1.3.
   script refuses instead.
 - Added `/recode:rules`, which adds, updates, or removes one marked block of house rules in
   the Claude `CLAUDE.md` and the Codex `AGENTS.md`. Each change is shown as a diff and made
-  only when the user agrees to that file, after a backup. The rules come from forge-ops at
+  only when the user agrees to that file, after a backup. The rules come from the
+  earlier source repository at
   commit 948ce5f.
 - Added a session start notice for when the house rules block is older than the plugin's.
 - `/recode:setup` now lists the old plugins this suite replaces, with the command that

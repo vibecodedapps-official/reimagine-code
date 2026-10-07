@@ -85,7 +85,8 @@ Run on macOS with Claude Code 2.1.284 from the native installer, and 2.1.283 fro
 
 ## Part 3: M3 house rules, 2026-10-03
 
-1. **The rules come from forge-ops commit 948ce5f.** `rules/core.md` is lines 6 to the
+1. **The rules come from commit 948ce5f of the earlier source repository.**
+   `rules/core.md` is lines 6 to the
    end of `claude/CLAUDE.md`, and `rules/windows-claude.md` is lines 1 to 4.
    `rules/windows-codex.md` is lines 1 to 2 of `codex/AGENTS.md`, and
    `rules/writing-codex.md` is its lines 78 to the end. The Windows part, an empty line,
@@ -240,8 +241,9 @@ scratch profiles, with recode 0.1.0 and 0.1.1 installed from GitHub.
 
 ## Part 9: recode 0.1.3, the rules sync and the symlink fix, 2026-10-04
 
-1. **The core rules come from forge-ops commit 9faabda.** Since 948ce5f, forge-ops had
-   added two bullets to both of its files: the cause check under Working, from its PR
+1. **The core rules come from commit 9faabda of the earlier source repository.** Since
+   948ce5f, it had added two bullets to both of its files: the cause check under
+   Working, from its PR
    68, and the code comment rule under Code. M7 step 2 replaces each machine's import
    of those files with the block, so a block without them would drop both. `rules/core.md`
    is again lines 6 to the end of `claude/CLAUDE.md`, now at 9faabda. The other three
@@ -250,7 +252,7 @@ scratch profiles, with recode 0.1.0 and 0.1.1 installed from GitHub.
    are unchanged. The Windows part, an empty line, and the core rebuild
    `claude/CLAUDE.md` byte for byte, and the Codex parts rebuild `codex/AGENTS.md`, whose
    Writing section now starts at line 83. Checked with `cmp` on 2026-10-04. This
-   repository stays the source; a later forge-ops change reaches the block only through a
+   repository stays the source; a later change there reaches the block only through a
    sync like this one.
 2. **The rules and suite scripts compare their path after resolving it.** Each ran its
    `main()` only when `import.meta.url` equalled `process.argv[1]` as a file URL. Node
@@ -268,12 +270,15 @@ Run on macOS with Claude Code 2.1.288 and codex-cli 0.159.2, and on a personal W
 with recode 0.1.3. `docs/acceptance.md` has both records.
 
 1. **The work machine is out of the gate.** Decided by the author on 2026-10-04. It has
-   no forge-ops checkout, and its `CLAUDE.md` and `AGENTS.md` are kept by hand on
-   purpose. It may adopt the block from a brief without the forge-ops steps, with its own
+   no checkout of the earlier source repository, and its `CLAUDE.md` and `AGENTS.md` are
+   kept by hand on
+   purpose. It may adopt the block from a brief without the steps for that repository,
+   with its own
    lines below the end marker, but runs no gate. R59's rules check, against a file with
    local overrides below the block, ran on the personal Windows machine instead: its
    Codex file keeps a Links section there, and `/recode:rules` read `current` and
-   changed nothing. forge-ops' second change waits only for machines that import its
+   changed nothing. The second change to the earlier source repository waits only for
+   machines that import its
    files.
 2. **The loop asks before publishing once the house rules are in the user's file.** The
    rules' Ask first list covers commits, pushes, PRs, and comments, so a headless run on
@@ -292,8 +297,9 @@ with recode 0.1.3. `docs/acceptance.md` has both records.
    Windows, Codex started from PowerShell needs `Git\bin` on the user `PATH`: without it
    a commit got no message, and Git Bash hides the gap because it passes its own
    `usr\bin` to child processes.
-5. **An old forge-ops checkout must not run its installer after step 2.** Before
-   forge-ops 0847634 (its PR 67), `claude/install.mjs` rewrites `~/.claude/CLAUDE.md` to
+5. **An old checkout of the earlier source repository must not run its installer after
+   step 2.** Before its commit 0847634 (its PR 67), `claude/install.mjs` rewrites
+   `~/.claude/CLAUDE.md` to
    the one-line import, which erases the block. Each machine's checkout was confirmed at
    or after 9faabda first; the Windows one was fast-forwarded from e5429ef.
 6. **A line-ending change makes the block read as edited by hand.** Found on Windows and

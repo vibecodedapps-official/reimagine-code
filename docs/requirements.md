@@ -169,9 +169,9 @@ requirement below changes it. The audit plugin was not part of v0.1.0; it joined
     the Codex target alone. It never edits `settings.json`. Depends on spike M0.7.
     Check: test with temporary directories for both variables.
 34. **Content.** The core text is the ask-first line plus the Working, Code, Tests, Done,
-    and Ask first sections of forge-ops `claude/CLAUDE.md` at its `main` when M3 starts,
-    byte for byte, with that commit recorded. Check: review at import; afterwards this
-    repository is the source. Release 0.1.3 synced it to forge-ops 9faabda on 2026-10-04;
+    and Ask first sections, held in `plugins/ccx/rules/core.md`; this repository is the
+    source. Check: review at import. Release 0.1.3 synced it to the earlier source
+    repository at 9faabda on 2026-10-04;
     `docs/decisions.md` Part 9.
 35. **Options.** `core` is on by default. `windows` is offered only when the command runs
     on Windows and is on by default there. `writing` is off by default. On a rerun the
@@ -222,7 +222,7 @@ requirement below changes it. The audit plugin was not part of v0.1.0; it joined
     user sees one line naming the file and `/ccx:rules`. Otherwise the hook prints
     nothing and writes nothing. Depends on spike M0.4. Check: test for the output;
     acceptance for what the user sees.
-46. **Writing style.** The plugin ships forge-ops Concise Plain v4.4 as an output style
+46. **Writing style.** The plugin ships Concise Plain v4.5 as an output style
     named `Concise Plain`, selectable in `/output-style` as `ccx:Concise Plain`. When
     `writing` is chosen, the command prints how to select it and adds Codex's Writing
     section to the Codex block. Depends on spike M0.3. Check: acceptance.
@@ -332,7 +332,8 @@ Added 2026-10-05, when claude-codex-audit 0.8.1 at `eed9fba` joined the suite as
 Cutover is complete: the old plugins are gone from every machine, and the suite has one
 user. Its three requirements are retired in 0.4.0 and kept here for their numbers.
 
-58. **forge-ops first.** Retired in 0.4.0; the forge-ops installers no longer write the
+58. **Source repository first.** Retired in 0.4.0; the earlier source repository's
+    installers no longer write the
     home instruction files.
 59. **Gate.** Retired in 0.4.0; the acceptance records hold the runs that gated each
     release.

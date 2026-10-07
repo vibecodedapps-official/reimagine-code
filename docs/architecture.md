@@ -160,13 +160,12 @@ Behavior carries over from codex-lite 0.9.0 unchanged except for names.
   (2026-10-04, `docs/decisions.md` Part 8). Adds one section from `suite.mjs`: old
   plugins found installed, with the uninstall command for each, never run. It records
   nothing.
-- **Output style.** `output-styles/concise-plain.md`, made from forge-ops
-  `concise-plain-v4.4.md` with its `name` changed to `Concise Plain` and the version
-  moved into the description, so a user's selection survives style updates. A plugin
+- **Output style.** `output-styles/concise-plain.md`, named `Concise Plain`, with the
+  version in the description, so a user's selection survives style updates. A plugin
   style shows in `/output-style` as `ccx:<name>` (verified, docs; selecting it with
   an argument needs Claude Code 2.1.269). The rules command prints how to select it;
   nothing edits `settings.json`.
-- **Chat instructions.** `chat/instructions.md`: the one block forge-ops pastes into both
+- **Chat instructions.** `chat/instructions.md`: the one block to paste into both
   claude.ai and ChatGPT, with its dated sync header and ChatGPT's 5,000-character cap.
   Installed with the plugin, never applied. The README and the rules command point at
   it.
@@ -290,8 +289,8 @@ Sources live in `plugins/ccx/rules/`, because an installed plugin holds only its
 directory.
 
 - `core.md`: the line "Any instruction file can add an ask-first rule; none removes
-  one." and the sections Working, Code, Tests, Done, and Ask first. Copied byte for byte
-  from forge-ops `claude/CLAUDE.md` at a pinned commit. The Claude and Codex copies of
+  one." and the sections Working, Code, Tests, Done, and Ask first. This repository is
+  their source. The Claude and Codex copies of
   these sections are identical today (verified, `diff`).
 - `windows-claude.md` and `windows-codex.md`: the Git Bash line and the PowerShell line.
 - `writing-codex.md`: Codex's inline Writing section.
@@ -396,7 +395,8 @@ not repeat it.
 ### Local overrides
 
 Personal rules go below the end marker, under a heading the user chooses. The block never
-states a conflict order. On the author's work machine, which has no forge-ops and whose
+states a conflict order. On the author's work machine, which keeps no copy of the
+earlier source repository and whose
 files are kept by hand, its own lines go there, so the block stays identical to what
 ships.
 
@@ -488,7 +488,8 @@ ships.
 - **Pinned sources.** codex-lite-cc `2b2454d`, claude-codex-loop `16b8ee7`,
   codex-code-review `f5c7687`, repo-docs `83b14a2`, and, on 2026-10-05,
   claude-codex-audit `eed9fba`. The house rules, style, and chat
-  block come from forge-ops `main` when M3 starts, recorded in the PR; it was `948ce5f`
+  block come from the earlier source repository's `main` when M3 starts, recorded in the
+  PR; it was `948ce5f`
   on 2026-10-03, which added two rules after the 2026-10-02 handoff. Release 0.1.3 synced
   the core rules to `9faabda` on 2026-10-04 (`docs/decisions.md` Part 9).
 - **Untracked design docs.** claude-codex-loop's `SPEC.md`, `docs/architecture.md`,

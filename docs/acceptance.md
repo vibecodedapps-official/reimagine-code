@@ -810,7 +810,7 @@ work machine and reported here.
   orphaned `recode` after any uninstall; `repo-docs` declares no dependency.
 - The settings were restored and the copy of the Codex login was deleted afterward.
 
-### 2026-10-04: recode 0.1.3, the rules synced to forge-ops
+### 2026-10-04: recode 0.1.3, the rules synced to the earlier source repository
 
 macOS 27.0, Claude Code 2.1.288, Node 26.4.0. recode was installed in the M4 profile
 from a local catalog: the branch commit 526139d exported with `git archive`, and the
@@ -819,8 +819,9 @@ Codex home was a new scratch directory. The real `~/.claude/CLAUDE.md` and
 `~/.codex/AGENTS.md` had the same sha256 after the runs as before. Afterward the profile
 got back its own `CLAUDE.md` and the GitHub catalog at 0.1.2.
 
-- **The rebuild.** The shipped Windows part, an empty line, and `core.md` equal forge-ops
-  `claude/CLAUDE.md` at 9faabda, and the Codex parts equal its `codex/AGENTS.md` (`cmp`).
+- **The rebuild.** The shipped Windows part, an empty line, and `core.md` equal the
+  earlier source repository's `claude/CLAUDE.md` at 9faabda, and the Codex parts equal
+  its `codex/AGENTS.md` (`cmp`).
 - **An old block is reported.** In a scratch home, a block written with the 0.1.2 rules
   got no session start notice. After the sync, the notice named both files, `status`
   said `stale` for both, and a plan and apply made both `current` and kept the text
@@ -922,16 +923,20 @@ machine and reported here.
 ### 2026-10-04: M7 step 2, macOS
 
 macOS 27.0, Claude Code 2.1.288, codex-cli 0.159.2, Node 26.4.0. The author's real
-profiles, with forge-ops at 9faabda. `codex-lite` stays, because cca 0.6.0 still calls
+profiles, with the earlier source repository at 9faabda. `codex-lite` stays, because cca
+0.6.0 still calls
 `codex-lite:ask`. The home files, both settings files, and the plugin lists were backed
 up with their sha256 first.
 
 - **Update and rules.** `recode` and `recode-loop` went from 0.1.2 to 0.1.3 on Claude
-  Code and `recode` on Codex. `/recode:rules --options core,writing` noted the forge-ops
-  import on line 1 of `CLAUDE.md`, showed both diffs, and wrote both blocks after "yes"
+  Code and `recode` on Codex. `/recode:rules --options core,writing` noted the import of
+  the earlier source repository on line 1 of `CLAUDE.md`, showed both diffs, and wrote
+  both blocks after "yes"
   to each. The text above each block was then removed by hand: the import in
-  `CLAUDE.md`, and in `AGENTS.md` an old copy of forge-ops `codex/AGENTS.md` that lacked
-  only the cause-check rule. No local overrides: the rules parts equal forge-ops' files
+  `CLAUDE.md`, and in `AGENTS.md` an old copy of the earlier source repository's
+  `codex/AGENTS.md` that lacked
+  only the cause-check rule. No local overrides: the rules parts equal that repository's
+  files
   apart from blank lines. `rules.mjs status` then read `current` for both.
 - **Quoted rule.** New `claude -p` and `codex exec -s read-only` sessions each quoted the
   cause-check rule word for word. The old Codex copy lacked that rule, so the quote came
@@ -960,14 +965,17 @@ reported here, first as a dry run in scratch profiles, then on the real profile.
 was committed in this repository.
 
 - **Dry run.** Every step passed in scratch profiles, and the real home files kept their
-  hashes. It found forge-ops at e5429ef, behind 9faabda, and only `Git\cmd` on the
+  hashes. It found the earlier source repository at e5429ef, behind 9faabda, and only
+  `Git\cmd` on the
   Windows `PATH`. Two scratch steps were denied in auto mode as "Security Weaken". The
   loop opened PR 17, which the session then closed as agreed.
 - **Start of the real run.** Claude Code had `ccl` 0.10.0, `repo-docs@repo-docs` 0.1.1,
   `codex-lite` 0.9.0, and `cca` 0.5.0; Codex had `codex-code-review-general` 0.1.0;
-  neither host had the `reimagine-code` marketplace. `CLAUDE.md` was the forge-ops
-  import and `AGENTS.md` equalled forge-ops `codex/AGENTS.md`, CRLF included. With the
-  author's approval, forge-ops was fast-forwarded to 9faabda, with no installer run, and
+  neither host had the `reimagine-code` marketplace. `CLAUDE.md` was the import of the
+  earlier source repository and `AGENTS.md` equalled its `codex/AGENTS.md`, CRLF
+  included. With the
+  author's approval, that repository was fast-forwarded to 9faabda, with no installer
+  run, and
   `C:\Program Files\Git\bin` was added to the user `PATH`.
 - **Install and rules.** The marketplace and the 0.1.3 plugins were added on both hosts.
   `/recode:rules --options core,windows,writing` wrote both blocks after "yes" to each.
