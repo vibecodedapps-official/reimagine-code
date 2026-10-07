@@ -136,9 +136,9 @@ name a plugin are rerun under the new names and recorded here.
     the general-code-review skill on the uncommitted changes in this repository." <
     /dev/null`. Expected: a review with findings; under `$CODEX_HOME/sessions`, the main
     session reads `general-code-review/SKILL.md` and its subagent sessions read each of
-    `general-code-review-breaking-changes`, `-context`, and `-testing`
-    from the installed plugin. Covers R29. Rerun when a skill changes. Run 2026-10-03;
-    see the record.
+    `general-code-review-breaking-changes`, `-context`, and `-testing` from the installed
+    plugin. Covers R29. Rerun when a skill changes. Run 2026-10-03, and 2026-10-07 for
+    0.6.0 on Windows; see the records.
 13. **repo-docs on Codex.** Setup: as item 11, in a scratch git repository whose
     `AGENTS.md` index points to `docs/style.md`, which exists, and `docs/missing.md`,
     which does not. Command: `codex exec --json -s read-only "Use repo-docs to audit this
@@ -2069,3 +2069,26 @@ repository was edited.
 - Observed: the session start notice said the house rules in `~/.codex/AGENTS.md` are
   older than the plugin's, as expected for an unreleased rules change; `/ccx:rules` was
   not run.
+
+### 2026-10-07: ccx 0.6.0, item 12 on Windows before the merge
+
+Windows 11 Pro 10.0.26200, codex-cli 0.160.1, Node 26.4.0, PowerShell 7.6.6 from the
+Microsoft Store. A new scratch `CODEX_HOME` held a `config.toml` with only the model,
+effort, sandbox, and approval settings and `[windows] sandbox = "elevated"`, and a copy of
+the author's Codex login, deleted after the run. `codex plugin marketplace add
+vibecodedapps-official/reimagine-code --ref feat/ccx-0.6.0-attribution` cloned c00c3c7,
+and `ccx` installed at 0.6.0 with `general-code-review` and its three companions only.
+
+- **Item 12 passed.** The scratch repository's change renamed `mul` to `multiply`, gave
+  `add` a third argument `c = 0`, and added `div`. The review gave three findings: P1,
+  restore the `mul` export, since `test.mjs` fails to load; P2, keep two-argument `add`
+  behavior, since `add(1n, 2n)` now throws; P2, test the new operations. It changed no
+  file. The main session read `general-code-review/SKILL.md`, and three subagent sessions,
+  `breaking`, `context`, and `testing`, read `general-code-review-breaking-changes`,
+  `-context`, and `-testing`, all from the installed 0.6.0. No session mentions
+  change-size.
+- Observed: two earlier tries failed before the review, with no file changed. With
+  `[windows] sandbox = "unelevated"`, every shell call failed with `CreateProcessAsUserW
+  failed: -1073283067` starting the Store `pwsh.exe`. With `"elevated"`, the first try
+  failed with `ShellExecuteExW failed to launch setup helper: 1223`, a cancelled
+  administrator prompt; the passing run followed once the author approved that prompt.
