@@ -47,11 +47,11 @@ function optOut(all, key) {
 function check(payload) {
   const command = payload?.tool_input?.command;
   if (typeof command !== "string") return null;
-  const key = COMMIT.test(command) ? "commit" : PR.test(command) ? "pr" : null;
-  if (!key) return null;
+  const keys = [COMMIT.test(command) && "commit", PR.test(command) && "pr"].filter(Boolean);
+  if (!keys.length) return null;
   const cwd = typeof payload.cwd === "string" ? payload.cwd : process.cwd();
   const all = sources(process.env.CLAUDE_PROJECT_DIR || cwd);
-  const off = optOut(all, key);
+  const off = keys.map((k) => optOut(all, k)).find(Boolean);
   if (!off) return null;
   let text = command;
   for (const m of command.matchAll(FILE)) {

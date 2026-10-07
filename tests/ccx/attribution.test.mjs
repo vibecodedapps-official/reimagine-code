@@ -63,6 +63,11 @@ test('a gh pr create body file with the Generated with line is denied when attri
   assert.equal(r.out.trim(), denial(`ccx: remove the Generated with Claude Code line; attribution.pr is "" in ${r.userPath}`));
 });
 
+test('a pull request chained after a clean commit is still checked against attribution.pr', () => {
+  const r = scenario({ user: { attribution: { pr: '' } } }, 'Bash', 'git commit -m clean && gh pr create --body "Generated with Claude Code"');
+  assert.equal(r.out.trim(), denial(`ccx: remove the Generated with Claude Code line; attribution.pr is "" in ${r.userPath}`));
+});
+
 test('nothing is denied when no settings file sets attribution', () => {
   const r = scenario({}, 'Bash', `git commit -m "${TRAILER}"`);
   assert.deepEqual([r.status, r.out, r.err], [0, '', '']);

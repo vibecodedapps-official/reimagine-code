@@ -832,7 +832,9 @@ Claude Code, so the hand check in the PR is what confirms them.
    moves where a `-F` file is found; a git alias for commit. A commit chained with a search
    for the same text, such as `git commit ... && git log --grep "Co-Authored-By: Claude"`,
    is read as one text and denied. Text that only quotes `git commit`, as in an `echo`, is
-   treated as a commit. Any error allows the call.
+   treated as a commit. A call holding both a commit and a PR command is checked as one
+   text against whichever of the two settings is off, so a commit-only opt-out can deny a
+   PR body in the same call. Any error allows the call.
 5. **The tests spawn the module with `process.execPath`**, not the ccx harness, which skips on
    Windows. The module honors `CLAUDE_CONFIG_DIR` and `CLAUDE_PROJECT_DIR`, so no test-only
    override was needed.
