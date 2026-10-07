@@ -2,12 +2,16 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { spawn, spawnSync } from 'node:child_process';
-import { existsSync, mkdirSync, readdirSync, symlinkSync, utimesSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, readdirSync, readFileSync, symlinkSync, utimesSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import {
   ASK, ASK_RESUME, FAKE, ID, ID2, RESUME, RESUME2, SANDBOX, SCRIPT, THREAD, THREAD2,
   alive, calls, cli, dead, git, pids, probeLeftovers, requestLeft, run, savedThread, spawning, stdin, threadFile, withScratch,
 } from './fixtures/harness.mjs';
+
+// The saved answer's file, and the path ccx prints for it, which has forward slashes on every platform.
+const outputPath = (s, name = `output-${ID}.txt`) => join(s.data, name);
+const printedPath = (s) => outputPath(s).replaceAll('\\', '/');
 
 test('ask: the recorded argv and stdin match, and a good run renders the answer', spawning, withScratch((s) => {
   const request = 'say "hi" `x` $(id) \\ back\n--dangerously-leading-hyphen\n';
@@ -16,9 +20,55 @@ test('ask: the recorded argv and stdin match, and a good run renders the answer'
   assert.equal(stdin(s), request);
   assert.equal(r.stdout, 'requested: codex exec --json --ignore-user-config -c approval_policy="never" -c sandbox_mode="read-only" -\n' +
     `cwd: ${s.repo}\nnetwork: none in the read-only sandbox; Codex cannot fetch issues, pull requests or pages\n\nfake answer\n\n` +
-    `thread ${THREAD}\n${RESUME}\nstatus: ok\n`);
+    `thread ${THREAD}\n${RESUME}\noutput: ${printedPath(s)}\nstatus: ok\n`);
   assert.equal(r.status, 0);
   assert.equal(requestLeft(s), false);
+}));
+
+test('ask saves what it prints, minus the output line, and prints the file path just before the status', spawning, withScratch((s) => {
+  const r = run(s, 'ask', { request: 'q\n' });
+  assert.deepEqual(r.stdout.split('\n').slice(-4), [RESUME, `output: ${printedPath(s)}`, 'status: ok', '']);
+  assert.equal(readFileSync(outputPath(s), 'utf8'), r.stdout.replace(`output: ${printedPath(s)}\n`, ''));
+  assert.match(readFileSync(outputPath(s), 'utf8'), /\n\nfake answer\n\n/);
+}));
+
+test('a failed run still saves its output, with the failed status', spawning, withScratch((s) => {
+  const r = run(s, 'ask', { request: 'q', env: { FAKE_CODEX: 'exit1' } });
+  assert.ok(r.stdout.endsWith(`\noutput: ${printedPath(s)}\nstatus: failed\n`));
+  const saved = readFileSync(outputPath(s), 'utf8');
+  assert.match(saved, /ccx: the run failed: codex exited with status 1\nfake failure on stderr\n/);
+  assert.ok(saved.endsWith('\nstatus: failed\n'));
+}));
+
+test('a save that fails prints a warning in the output line\'s place and keeps the run\'s own status', spawning, withScratch((s) => {
+  mkdirSync(`${outputPath(s)}.tmp`);
+  const r = run(s, 'ask', { request: 'q\n' });
+  assert.equal(r.status, 0);
+  assert.ok(r.stdout.endsWith('\nstatus: ok\n'));
+  const lines = r.stdout.split('\n');
+  assert.ok(lines.at(-3).startsWith(`ccx: warning: could not save the output to ${printedPath(s)}: `), lines.at(-3));
+  assert.equal(lines.some((l) => l.startsWith('output: ')), false);
+  assert.equal(existsSync(outputPath(s)), false);
+}));
+
+test('a run removes output files older than a day and keeps newer ones', spawning, withScratch((s) => {
+  const make = (name, hours) => {
+    writeFileSync(outputPath(s, name), 'x');
+    const t = new Date(Date.now() - hours * 3_600_000);
+    utimesSync(outputPath(s, name), t, t);
+  };
+  make('output-old.txt', 25);
+  make('output-old2.txt.tmp', 25);
+  make('output-new.txt', 1);
+  make('thread-old.txt', 25);
+  run(s, 'ask', { request: 'q\n' });
+  assert.deepEqual(readdirSync(s.data).sort(), [`output-${ID}.txt`, 'output-new.txt', `thread-${ID}.txt`, 'thread-old.txt']);
+}));
+
+test('a refused call writes no output file', spawning, withScratch((s) => {
+  const r = run(s, 'ask', { request: '--model gpt-5\n' });
+  assert.ok(r.stdout.endsWith('status: refused\n'));
+  assert.deepEqual(readdirSync(s.data), []);
 }));
 
 test('ask with a leading --model passes it to Codex and sends only the question', spawning, withScratch((s) => {
