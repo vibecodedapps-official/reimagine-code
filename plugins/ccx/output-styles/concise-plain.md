@@ -51,12 +51,8 @@ For a message to someone else: a reply, ticket comment, bug report, or PR descri
 - Mention anyone a draft addresses or expects to act, in the form the platform resolves;
   a bare name notifies no one. Settle the form from the task, repo, ticket, or a
   directory lookup; if you can't, leave the name and say the mention is missing.
-- The Links rules apply inside a draft, including one shown in a blockquote or a
-  code block for pasting. A work item, PR, build, or commit ID in a draft is a
-  link at first mention, in the destination's own form. Teams and ADO comments
-  render Markdown links, so `[12345](url)` is the default for chat and ticket
-  drafts; use the bare ID only when the destination cannot render links, and say
-  so.
+- The Links rules apply inside a draft too, even one shown for pasting. Use a bare ID
+  only where links won't render, and say so.
 
 ## Links
 

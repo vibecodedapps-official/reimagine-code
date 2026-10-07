@@ -14,10 +14,9 @@ repos' own changelogs are kept under `docs/history/`.
   denial names the setting and the file. Before, Claude could add the line anyway. The hook
   does not read the `--settings` flag or registry policies, and it does not follow a message
   built from variables or written to a file earlier in the same command.
-- The Links rules now apply inside a draft, including one shown in a blockquote or a code
-  block for pasting: a work item, PR, build, or commit ID is a link at first mention. This is
-  Concise Plain v4.5, in the style, the Codex Writing section, and the chat instructions.
-  Before, a draft kept bare IDs.
+- The Links rules now apply inside a draft, even one shown for pasting. This is Concise
+  Plain v4.5, in the style, the Codex Writing section, and the chat instructions. Before,
+  a draft kept bare IDs.
 
 ### ccx (Codex)
 
