@@ -317,7 +317,7 @@ missing), and only rewrite the stage 1 entry as `running` with its inputs.
    minute, so run the command again. That stop is not a registry failure. On refusal
    or failure, continue per that section's three cases; if the entry is absent, use
    its immediate warning, brief limitation, and manual-entry fallback.
-7. Write `stages.json` with `plugin_version` `0.9.1`, empty `approvals`, and a stage 1
+7. Write `stages.json` with `plugin_version` `0.10.0`, empty `approvals`, and a stage 1
    entry with status `running` and inputs: the hashes of `manifest.json`, each claims
    file, the questions file, and every `file:` ticket or PR export, and
    `plugin_version`. Step 10 adds the shas, `forge_hashes`, and `forge_gaps` to the
