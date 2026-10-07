@@ -362,3 +362,18 @@ test('lint rejects a missing cca README test path in a backtick span', () => fai
 test('lint rejects a missing cca README test path in a fenced block', () => fails(
   (d) => appendFileSync(join(d, 'plugins/cca/README.md'), '\n```sh\nsh tests/cca/missing.sh\n```\n'),
   'missing test path tests/cca/missing.sh'));
+
+// The token is built from parts so that this file does not hold the name it checks for.
+const RETIRED = ['forge', 'ops'].join('-');
+
+test('lint rejects a tracked doc that names the retired source repository', () => fails(
+  (d) => appendFileSync(join(d, 'docs/decisions.md'), `\nThe rules came from ${RETIRED.toUpperCase()}.\n`),
+  'docs/decisions.md:', 'names the retired source repository'));
+
+test('lint ignores the retired source repository named only under .scratch', () => {
+  const r = lint((d) => {
+    mkdirSync(join(d, '.scratch'));
+    writeFileSync(join(d, '.scratch', 'note.md'), `${RETIRED}\n`);
+  });
+  assert.equal(r.status, 0, r.out);
+});

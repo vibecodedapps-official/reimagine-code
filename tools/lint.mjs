@@ -371,6 +371,23 @@ if (changelog !== null && pkg && !new RegExp(`^## ${String(pkg.version).replace(
   fail(`CHANGELOG.md: no heading "## ${pkg.version} - <YYYY-MM-DD>" for the suite version`);
 }
 
+// 20. No tracked file names the retired source repository (R69). In a work tree the files are the tracked ones, read from
+// the working tree; outside one, as in the lint tests' copies, they are every file but those under .git, node_modules and .scratch.
+const retired = new RegExp(["forge", "ops"].join("-"), "i");
+let checked20 = [];
+if (git("rev-parse", "--is-inside-work-tree").stdout?.trim() === "true") {
+  const listed = git("ls-files", "-z");
+  if (listed.status !== 0) fail(`git ls-files failed: ${listed.stderr.trim()}`);
+  else checked20 = listed.stdout.split("\0").filter(Boolean);
+} else {
+  checked20 = walk(root, (p) => /(^|\/)(\.git|node_modules|\.scratch)$/.test(p)).map(rel);
+}
+for (const f of checked20) {
+  let text;
+  try { text = readFileSync(join(root, f), "utf8"); } catch { continue; }
+  text.split("\n").forEach((line, i) => { if (retired.test(line)) fail(`${f}:${i + 1}: names the retired source repository`); });
+}
+
 if (failures.length) {
   console.error(`lint: ${failures.length} failure(s)\n${failures.map((f) => `- ${f}`).join("\n")}`);
   process.exit(1);
