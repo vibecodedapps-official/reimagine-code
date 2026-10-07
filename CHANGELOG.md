@@ -9,8 +9,8 @@ repos' own changelogs are kept under `docs/history/`.
 
 - A run of `ask`, `review`, `do`, or `implement` that reached Codex saves what it prints
   to `output-<id>.txt` in ccx's data directory, where `<id>` is a new UUID for each call,
-  and prints `output: <path>`, with forward slashes, as the line before `status:`. A failed save prints a warning in its place and
-  leaves the status as the run's own. Files older than a day are removed on the next run.
+  and prints `output: <path>`, with forward slashes, as the line before `status:`. A
+  failed save prints a warning in its place and leaves the status as the run's own. Files older than a day are removed on the next run.
   Before, the answer was only printed, so a caller that needed it in a file had to retype it.
 
 ### cca
