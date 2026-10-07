@@ -87,22 +87,25 @@ requirement below changes it. The audit plugin was not part of v0.1.0; it joined
     command text or the hook's `args`, and never read it from the environment. Depends
     on spike M0.4 for the hook. Check: test; lint.
 14. **Runtime budget.** `ccx.mjs` and `codex.mjs` together stay at or under 710 lines.
-    `rules.mjs` has its own budget of 640 lines, `suite.mjs` of 200, and `attribution.mjs` of 90.
-    Check: lint.
+    `rules.mjs` has its own budget of 640 lines, `suite.mjs` of 200, and `attribution.mjs`
+    of 120. Check: lint.
 68. **Attribution hook.** A PreToolUse hook, `scripts/attribution.mjs`, runs before each Bash and
     each PowerShell call. It acts only on a `git commit` (`git` or `git.exe`, bare or by path,
-    with any options, including those that take a separate value such as `-C`, `-c`,
-    `--config-env`, and `--attr-source`) or a `gh pr create` or `gh pr edit`; any other command
-    returns at once with no file read. It checks the whole command and the files named by `-F`,
-    `--file`, or `--body-file`, resolved against the call's `cwd`, or, for a file named after
-    the commit and not after a later `gh` call, against the directory the commit's `-C`
-    options move to; `-`, a missing file, and a path holding `$` or `%` are skipped. It denies
-    the call when the text has a `Co-Authored-By:` line whose value holds an `@anthropic.com`
-    address or names Claude alone or with Code, Opus, Sonnet,
-    Haiku, or Fable and a version, or a "Generated with Claude Code" line, and the settings turn
-    that attribution off: `attribution.commit` is `""` for a commit, `attribution.pr` is `""`
-    for a PR, or, for a commit with `attribution.commit` unset everywhere, `includeCoAuthoredBy`
-    is `false`. Settings come from the managed drop-ins `managed-settings.d/*.json`, last name
+    either one quoted, with any options, including those that take a separate value such as
+    `-C`, `-c`, `--config-env`, and `--attr-source`) or a `gh pr create` or `gh pr edit`; any
+    other command returns at once with no file read. It checks the whole command and the files
+    named by `-F`, `--file`, or `--body-file`. Each file is resolved against the directory of
+    the nearest commit before it, which is the call's `cwd` moved by that commit's own `-C`
+    arguments, or against the call's `cwd` when a `gh` call or nothing comes before it. In a
+    Bash call, an unquoted leading `~` is the home directory, and on Windows a leading `/tmp`
+    is the temp directory and `/c/` is drive C, as Git Bash reads them. `-`, a missing file,
+    and a path holding `$` or `%` are skipped. It denies the call when the text has a
+    `Co-Authored-By:` line whose value holds an `@anthropic.com` address or names Claude alone
+    or with Code, Opus, Sonnet, Haiku, or Fable and a version, followed by an email, the end
+    of the line, or the end of the quoted message, or a "Generated with Claude Code" line, and
+    the settings turn that attribution off: `attribution.commit` is `""` for a commit,
+    `attribution.pr` is `""` for a PR, or, for a commit with `attribution.commit` unset
+    everywhere, `includeCoAuthoredBy` is `false`. Settings come from the managed drop-ins `managed-settings.d/*.json`, last name
     first and hidden files skipped, then the managed settings file; then, on macOS and Linux,
     `.claude/settings.local.json` at the repository root, which in a linked worktree is the main
     checkout's root (not outside git, at the home directory, when the git directory is not

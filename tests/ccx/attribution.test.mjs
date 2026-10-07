@@ -11,25 +11,30 @@ import { fileURLToPath, pathToFileURL } from 'node:url';
 const MODULE = fileURLToPath(new URL('../../plugins/ccx/scripts/attribution.mjs', import.meta.url));
 const TRAILER = 'Co-Authored-By: Claude <noreply@anthropic.com>';
 
-// A temp tree with a user config dir and a project dir; user and project are their settings objects, files extra project files.
+// A temp tree with a user config dir, a home dir, and a project dir; user and project are their settings objects, files
+// extra project files (a name starting with ~/ goes in the home dir), and command a string or a function of the project dir.
 function scenario({ user, project, files = {} }, tool, command) {
   const root = mkdtempSync(join(tmpdir(), 'ccx-attr-'));
   try {
     const cfg = join(root, 'config');
+    const home = join(root, 'home');
     const proj = join(root, 'proj');
     mkdirSync(join(proj, '.claude'), { recursive: true });
     mkdirSync(cfg, { recursive: true });
+    mkdirSync(home);
     if (user) writeFileSync(join(cfg, 'settings.json'), JSON.stringify(user));
     if (project) writeFileSync(join(proj, '.claude', 'settings.json'), JSON.stringify(project));
     for (const [name, text] of Object.entries(files)) {
-      mkdirSync(dirname(join(proj, name)), { recursive: true });
-      writeFileSync(join(proj, name), text);
+      const path = name.startsWith('~/') ? join(home, name.slice(2)) : join(proj, name);
+      mkdirSync(dirname(path), { recursive: true });
+      writeFileSync(path, text);
     }
-    const payload = typeof command === 'string'
-      ? JSON.stringify({ tool_name: tool, tool_input: { command }, cwd: proj }) : command.raw;
+    const text = typeof command === 'function' ? command(proj) : command;
+    const payload = typeof text === 'string'
+      ? JSON.stringify({ tool_name: tool, tool_input: { command: text }, cwd: proj }) : command.raw;
     const r = spawnSync(process.execPath, [MODULE], {
       input: payload, encoding: 'utf8',
-      env: { ...process.env, CLAUDE_CONFIG_DIR: cfg, CLAUDE_PROJECT_DIR: proj },
+      env: { ...process.env, CLAUDE_CONFIG_DIR: cfg, CLAUDE_PROJECT_DIR: proj, HOME: home, USERPROFILE: home },
     });
     return { status: r.status, out: r.stdout, err: r.stderr, userPath: join(cfg, 'settings.json') };
   } finally { rmSync(root, { recursive: true, force: true }); }
@@ -179,4 +184,52 @@ test('in a linked worktree the local settings file is read from the main checkou
     assert.equal(r.stdout, process.platform === 'win32' ? ''
       : denial(`ccx: remove the Co-Authored-By line naming Claude; attribution.commit is "" in ${local}`));
   } finally { rmSync(root, { recursive: true, force: true }); }
+});
+
+test('a message file named by a Git Bash drive path is read on Windows', { skip: process.platform !== 'win32' }, () => {
+  const toBash = (p) => `/${p[0].toLowerCase()}${p.slice(2).split('\\').join('/')}`;
+  const r = scenario({ user: OFF, files: { 'msg.txt': `fix: x\n\n${TRAILER}\n` } }, 'Bash', (proj) => `git commit -F ${toBash(join(proj, 'msg.txt'))}`);
+  assert.match(r.out, /"permissionDecision":"deny"/);
+});
+
+test('a message file under /tmp in a Bash call is read, which Git Bash maps to the temp directory on Windows', () => {
+  const name = `ccx-attr-${process.pid}-${Date.now()}.txt`;
+  const path = process.platform === 'win32' ? join(tmpdir(), name) : join('/tmp', name);
+  writeFileSync(path, `fix: x\n\n${TRAILER}\n`);
+  try {
+    const r = scenario({ user: OFF }, 'Bash', `git commit -F /tmp/${name}`);
+    assert.match(r.out, /"permissionDecision":"deny"/);
+  } finally { rmSync(path, { force: true }); }
+});
+
+test('a message file under ~/ in a Bash call is read from the home directory', () => {
+  const r = scenario({ user: OFF, files: { '~/msg.txt': `fix: x\n\n${TRAILER}\n` } }, 'Bash', 'git commit -F ~/msg.txt');
+  assert.match(r.out, /"permissionDecision":"deny"/);
+});
+
+test('a quoted bare git.exe called with & in PowerShell is a commit', () => {
+  const r = scenario({ user: OFF }, 'PowerShell', `& "git.exe" commit -m "${TRAILER}"`);
+  assert.match(r.out, /"permissionDecision":"deny"/);
+});
+
+test('a -C inside a quoted -c value does not move where the message file is read', () => {
+  const files = { 'b/msg.txt': `fix: x\n\n${TRAILER}\n` };
+  const r = scenario({ user: OFF, files }, 'Bash', 'git -c "core.editor=code -C missing" -C b commit -F msg.txt');
+  assert.match(r.out, /"permissionDecision":"deny"/);
+});
+
+test('each commit in a call reads its message file from its own -C directory', () => {
+  const files = { 'b/msg.txt': `fix: x\n\n${TRAILER}\n`, 'a/.keep': '' };
+  const r = scenario({ user: OFF, files }, 'Bash', 'git -C a commit -m clean && git -C b commit -F msg.txt');
+  assert.match(r.out, /"permissionDecision":"deny"/);
+});
+
+test('a trailer naming only Claude is denied when an option follows the message', () => {
+  const r = scenario({ user: OFF }, 'Bash', 'git commit -m "Co-Authored-By: Claude" --allow-empty');
+  assert.match(r.out, /"permissionDecision":"deny"/);
+});
+
+test('a trailer naming someone whose name starts with Claude is allowed when an option follows the message', () => {
+  const r = scenario({ user: OFF }, 'Bash', 'git commit -m "Co-Authored-By: Claudette" --allow-empty');
+  assert.deepEqual([r.status, r.out], [0, '']);
 });

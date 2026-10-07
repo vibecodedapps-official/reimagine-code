@@ -31,7 +31,7 @@ const walk = (dir, skip = () => false) => {
 // budgets: the only runtime modules the plugin may hold, in groups, each with its line limit.
 const PLUGINS = [
   { dir: "plugins/ccx", catalogs: ["claude"], family: true, budgets: [
-    { files: ["scripts/codex.mjs", "scripts/ccx.mjs"], max: 710 }, { files: ["scripts/rules.mjs"], max: 640 }, { files: ["scripts/suite.mjs"], max: 200 }, { files: ["scripts/attribution.mjs"], max: 90 },
+    { files: ["scripts/codex.mjs", "scripts/ccx.mjs"], max: 710 }, { files: ["scripts/rules.mjs"], max: 640 }, { files: ["scripts/suite.mjs"], max: 200 }, { files: ["scripts/attribution.mjs"], max: 120 },
   ] },
   { dir: "plugins/ccx-loop", catalogs: ["claude"], family: true, budgets: [] },
   { dir: "plugins/ccx-codex", catalogs: ["codex"], family: true, budgets: [] },
