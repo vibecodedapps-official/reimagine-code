@@ -869,7 +869,8 @@ Claude Code, so the hand check in the PR is what confirms them.
       directory, or under another owner; it still reads a copy in the starting directory, and
       the root's value wins (settings docs, "Where Claude Code keeps the local file in a git
       repository", read 2026-10-07). The hook now finds the root with `git rev-parse
-      --git-common-dir`. Windows keeps the file in the project directory, so only the
+      --git-common-dir`, and keeps the project directory when that is not `<root>/.git`, as
+      in a submodule or a bare repository; the docs do not say what Claude Code does there. Windows keeps the file in the project directory, so only the
       Windows case ran here; the macOS and Linux case runs in CI.
     - Managed settings also merge `managed-settings.d/*.json` after `managed-settings.json`,
       in name order, a later value replacing an earlier one (managed settings docs, read

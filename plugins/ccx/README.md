@@ -374,9 +374,10 @@ named by `-F`, `--file`, or `--body-file`, carries a `Co-Authored-By` line namin
 "Generated with Claude Code" line, and your settings turn that attribution off:
 `attribution.commit` or `attribution.pr` set to `""`, or `includeCoAuthoredBy` set to `false`
 for commits. It reads the managed settings file and its `managed-settings.d` drop-ins, the
-project's `.claude/settings.local.json` (on macOS and Linux, the one at the repository root,
-which is the main checkout's root in a worktree) and `.claude/settings.json`, then your user
-`settings.json`; the first that sets the key wins.
+project's `.claude/settings.local.json` and `.claude/settings.json`, then your user
+`settings.json`; the first that sets the key wins. On macOS and Linux it first reads the
+`.claude/settings.local.json` at the repository root, the main checkout's root in a worktree,
+whose value wins over the project's copy.
 The denial names the setting and the file. It does not read the `--settings` flag or registry
 and MDM policies, and it does not follow a message built from variables or written to a file
 earlier in the same command. On any error it allows the call.
