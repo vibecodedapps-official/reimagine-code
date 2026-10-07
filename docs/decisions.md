@@ -810,7 +810,9 @@ Claude Code, so the hand check in the PR is what confirms them.
    Windows 11 (AMD64 Family 26 Model 68), Node v26.4.0, 50 runs each, timed one at a time:
    a payload that is not a commit has a median of 53 ms and a slowest of 119 ms; a commit
    with no opt-out set has a median of 52 ms and a slowest of 115 ms. Most of it is Node's
-   own start. Its lint budget is 90 lines; it is 69.
+   own start. Its lint budget is 90 lines; it was 69, and 90 after item 10. Item 10 adds one
+   `git rev-parse` on macOS and Linux, for a commit or PR call only; its cost is not
+   measured, since only Windows was at hand.
 2. **Settings order and what is not read.** The docs order managed, `--settings`, local
    project, shared project, then user. The hook reads managed (Windows
    `C:\Program Files\ClaudeCode\managed-settings.json`, macOS
@@ -822,7 +824,8 @@ Claude Code, so the hand check in the PR is what confirms them.
    first file that sets `includeCoAuthoredBy` sets it false. The agent's summary said "false
    (or omitting it)" removes the trailer; only an explicit false counts here, since the
    default adds the trailer. A managed file on the machine that runs the tests would override
-   their settings; none is isolated.
+   their settings; none is isolated. Item 10 adds the managed drop-ins and the local file at
+   the repository root.
 3. **Deny form.** JSON on stdout with exit 0, `permissionDecision: deny`, and the line in
    `permissionDecisionReason`. The line names the matched text (the Co-Authored-By line or the
    Generated with line), the setting, and the file that set it.
@@ -853,3 +856,27 @@ Claude Code, so the hand check in the PR is what confirms them.
    and the Writing rule count. The release commit left them at 0.5.0, so they were raised to
    0.6.0 (and the release tests' next version to 0.7.0, the Writing count to 41) in the
    commits that needed them.
+10. **Fixes from the 2026-10-07 review.** A review of the PR found four gaps; each was
+    checked before the fix.
+    - `git --config-env <name>=<var> commit` and `git --attr-source <tree> commit` were not
+      read as commits; git accepts both (git 2.55.0). The review's third case, `git -C.
+      commit`, is not a fix: git rejects it with `unknown option`, so nothing commits.
+    - A `-F` file after `git -C <dir> commit` was read from the call's `cwd`, but git reads
+      it from `<dir>`. The test for it placed the file where git would not look. A file named
+      after a later `gh` call still resolves against `cwd`.
+    - On macOS and Linux, Claude Code keeps `.claude/settings.local.json` at the repository
+      root, the main checkout's root in a linked worktree, except outside git, at the home
+      directory, or under another owner; it still reads a copy in the starting directory, and
+      the root's value wins (settings docs, "Where Claude Code keeps the local file in a git
+      repository", read 2026-10-07). The hook now finds the root with `git rev-parse
+      --git-common-dir`. Windows keeps the file in the project directory, so only the
+      Windows case ran here; the macOS and Linux case runs in CI.
+    - Managed settings also merge `managed-settings.d/*.json` after `managed-settings.json`,
+      in name order, a later value replacing an earlier one (managed settings docs, read
+      2026-10-07). The hook reads them last name first. The managed directory is a fixed
+      system path, so its test loads `tests/ccx/fixtures/managed-dir.mjs`, a preload that
+      redirects reads under that path to a temp directory; the hook itself has no test seam.
+    - Left as a limit: after a session moves into a worktree mid-session, `CLAUDE_PROJECT_DIR`
+      keeps the starting directory, while Claude Code reads the shared settings from the new
+      one. The review's first point, a very long settings path in the denial, needs a path of
+      thousands of characters and is not bounded.

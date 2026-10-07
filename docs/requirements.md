@@ -91,17 +91,23 @@ requirement below changes it. The audit plugin was not part of v0.1.0; it joined
     Check: lint.
 68. **Attribution hook.** A PreToolUse hook, `scripts/attribution.mjs`, runs before each Bash and
     each PowerShell call. It acts only on a `git commit` (`git` or `git.exe`, bare or by path,
-    with any options) or a `gh pr create` or `gh pr edit`; any other command returns at once
-    with no file read. It checks the whole command and the files named by `-F`, `--file`, or
-    `--body-file`, resolved against the call's `cwd`; `-`, a missing file, and a path holding
-    `$` or `%` are skipped. It denies the call when the text has a `Co-Authored-By:` line whose
+    with any options, including those that take a separate value such as `-C`, `-c`,
+    `--config-env`, and `--attr-source`) or a `gh pr create` or `gh pr edit`; any other command
+    returns at once with no file read. It checks the whole command and the files named by `-F`,
+    `--file`, or `--body-file`, resolved against the call's `cwd`, or, for a file named after
+    the commit and not after a later `gh` call, against the directory the commit's `-C`
+    options move to; `-`, a missing file, and a path holding `$` or `%` are skipped. It denies the call when the text has a `Co-Authored-By:` line whose
     value holds an `@anthropic.com` address or names Claude alone or with Code, Opus, Sonnet,
     Haiku, or Fable and a version, or a "Generated with Claude Code" line, and the settings turn
     that attribution off: `attribution.commit` is `""` for a commit, `attribution.pr` is `""`
     for a PR, or, for a commit with `attribution.commit` unset everywhere, `includeCoAuthoredBy`
-    is `false`. Settings come from the managed settings file, then `.claude/settings.local.json`
-    and `.claude/settings.json` under `CLAUDE_PROJECT_DIR` (else the call's `cwd`), then
-    `settings.json` under `CLAUDE_CONFIG_DIR` (else `~/.claude`); the first file that sets the
+    is `false`. Settings come from the managed drop-ins `managed-settings.d/*.json`, last name
+    first and hidden files skipped, then the managed settings file; then, on macOS and Linux,
+    `.claude/settings.local.json` at the repository root, which in a linked worktree is the main
+    checkout's root (not outside git, at the home directory, or when the root, its `.git`, or
+    its `.claude` has another owner); then `.claude/settings.local.json` and
+    `.claude/settings.json` under `CLAUDE_PROJECT_DIR` (else the call's `cwd`); then
+    `settings.json` under `CLAUDE_CONFIG_DIR` (else `~/.claude`). The first file that sets the
     key wins, and a missing or invalid file is skipped. Not read: the `--settings` flag and
     managed policies from the registry or MDM. The denial is JSON with `permissionDecision:
     deny` and one line, such as `ccx: remove the Co-Authored-By line naming Claude;
