@@ -87,7 +87,7 @@ requirement below changes it. The audit plugin was not part of v0.1.0; it joined
     command text or the hook's `args`, and never read it from the environment. Depends
     on spike M0.4 for the hook. Check: test; lint.
 14. **Runtime budget.** `ccx.mjs` and `codex.mjs` together stay at or under 710 lines.
-    `rules.mjs` has its own budget of 400 lines and `suite.mjs` of 200. Check: lint.
+    `rules.mjs` has its own budget of 640 lines and `suite.mjs` of 200. Check: lint.
 
 ## Setup
 
@@ -161,7 +161,8 @@ requirement below changes it. The audit plugin was not part of v0.1.0; it joined
     data directory. A symlinked target is written at the file it points to, with its
     backup and temporary file beside that file; a hard-linked target or a link to a
     missing file is refused; a Codex target that is the same file as the Claude target
-    is skipped; the target's permissions are kept.
+    is skipped; the target's permissions are kept. `plan` also reads, read-only, the
+    files the Claude file imports.
     It creates the Claude file if missing. It never creates the Codex
     home or anything in it when that directory is absent. When `AGENTS.override.md`
     exists in the Codex home, it reports that Codex reads that file instead and leaves
@@ -179,31 +180,44 @@ requirement below changes it. The audit plugin was not part of v0.1.0; it joined
     `<!-- ccx:house-rules begin version=<v> options=<list> join=<j> digest=<hex> -->`
     and ends with `<!-- ccx:house-rules end -->`. `join` is `none`, `blank`, or
     `newline`, as the architecture defines. The digest covers the body with CRLF read as
-    LF; a digest of the CRLF body is accepted too.
+    LF; a digest of the CRLF body is accepted too. A block inserted by `--adopt` has
+    `join=none`.
     Check: test.
 37. **States.** The command tells apart absent, current, stale, edited, malformed, and
     declined, and acts as the architecture's table says. It writes nothing for current,
-    edited, or malformed. Check: test, one case per state.
+    edited, or malformed, except that `--adopt` also acts on current (R67). For absent
+    and stale it notes the rules the file already holds outside the block (R66).
+    Check: test, one case per state.
 38. **Consent.** Each target's change is shown as a diff and applied only after the user
     agrees to that target. Check: acceptance.
 39. **Plan and apply.** Applying refuses when the target changed after the diff was
     shown. Check: test.
 40. **Preservation.** Text outside the block is unchanged byte for byte, including line
     endings, a byte order mark, and the presence or absence of a final newline. The
-    block uses the file's line ending. Check: test with LF, CRLF, BOM, and
-    no-final-newline fixtures.
+    block uses the file's line ending. This holds for every byte `--adopt` does not
+    remove, and `--adopt` removes exactly the matching rule units, the matching headings
+    whose section held only them, and one separator blank line (R67). Check: test with
+    LF, CRLF, BOM, and no-final-newline fixtures.
 41. **Safe write.** A change to an existing file first copies it to
     `<file>.ccx-backup-<timestamp>`. A missing Claude file is created and recorded as
     created. Every write goes to a temporary file in the same directory, renamed over
     the target. Check: test.
 42. **Remove.** `/ccx:rules --remove` deletes the block and the bytes its `join`
     names. After install then remove, an existing file equals its original bytes, and a
-    file the command created is deleted if nothing else was added. Check: test, one case
-    per `join` value.
+    file the command created is deleted if nothing else was added. After `--adopt` then
+    remove, the file is the trimmed file, not the original. Check: test, one case per
+    `join` value.
 43. **Decline.** A decline is recorded with the target and digest. The staleness notice
     stays quiet for that digest. Check: test.
-44. **Imports.** An `@` import line in the Claude file is reported as a possible
-    duplicate. The command neither follows nor changes it. Check: test.
+44. **Imports.** The `@` imports in the Claude file are detected as Claude reads them
+    (a line start or after white space, outside code spans, fences, quotes, and the
+    block; `~/`, absolute, and relative paths; an escaped space). `plan` follows them
+    read-only, four hops, 50 files, 256 KiB each, and notes how many rules each file
+    holds, or that a read failed. It never changes an imported file. What is scanned is
+    bounded by the scope in `docs/decisions.md` Part 17 item 7: top-level text at indent
+    0 to 3, one level of plain list items, and the prose of those units outside code
+    spans and HTML comments. Everything out of scope is not scanned, so a duplicate there
+    is missed and the recommendation errs toward apply. Check: test.
 45. **Staleness notice.** At session start, when a block is stale and not declined, the
     user sees one line naming the file and `/ccx:rules`. Otherwise the hook prints
     nothing and writes nothing. Depends on spike M0.4. Check: test for the output;
@@ -216,6 +230,30 @@ requirement below changes it. The audit plugin was not part of v0.1.0; it joined
     used for both claude.ai and ChatGPT, with its dated sync header and a note of
     ChatGPT's 5,000-character cap, which the block fits. Nothing installs it. The README
     and the rules command name its path. Check: lint for presence and length; review.
+66. **Overlap and recommendation.** `plan` compares the rules with the units (headings,
+    list items, paragraphs, whitespace collapsed) outside the block and in the imported
+    files, notes how many of the rules are already present, and prints one `recommend:`
+    line per target with a ready change: `adopt` for in-file overlap on a file that is not
+    gated (R67) when `--adopt` was not given; else `decline` only when the rules already
+    present, in the file and in the imports as one set (after `--adopt`, the imports
+    alone), cover every rule; else `apply`; `remove` is `apply`. The overlap, gate, and
+    import notes print in every Claude state that has a block or would have one, even
+    when nothing changes; edited, malformed, and remove plans name the imports without
+    counts. An import chain back to the Claude file does not count its own block. Only a
+    unit of plain shape (Part 17 item 7) is compared; anything else is never counted. The
+    command text asks per target on that basis. Check: test.
+67. **Adopt.** `plan --adopt` removes the units outside the block that match the rules,
+    a matching heading only when its section held nothing else, and one separator blank
+    line, and puts the block, `join=none`, before the first level 1 or 2 heading at column
+    0 after the first removed line, or at the end of the file, so no user text without a
+    heading of its own follows the end marker; the plain plan and apply are unchanged.
+    With no overlap it plans as `plan`. A unit outside the scope of Part 17 item 7 is
+    never removed; indented text is never a rule, since it may belong to a container, and
+    a unit followed directly by an underline, quote, table row, lone marker, or HTML is
+    never a rule. A file holding a comment mark, fence, quote, table pipe, or line
+    starting with `<` outside the block is not edited by `--adopt` at all; the plan names
+    the first such line and does not recommend adopt. `--adopt` with `--remove` is
+    refused. Check: test.
 
 ## Audit plugin: cca on Claude Code
 

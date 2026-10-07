@@ -1,11 +1,11 @@
 #!/usr/bin/env node
-// House rules: node rules.mjs <status|plan|remove|apply|decline> <dataDir> [args]. Keeps one marked block of rules in the
+// House rules: node rules.mjs <status|plan|remove|apply|decline> <dataDir> [args]; plan takes --options <list> and --adopt. Keeps one marked block of rules in the
 // user's Claude CLAUDE.md and Codex AGENTS.md. Everything above main() is pure: it takes file text, options and rule texts.
 // Instruction files use latin1, so every byte outside the block, a BOM or a stray non-UTF-8 byte included, survives.
 import { createHash } from 'node:crypto';
 import { chmodSync, constants, lstatSync, copyFileSync, existsSync, mkdirSync, readFileSync, realpathSync, renameSync, rmSync, statSync, writeFileSync } from 'node:fs';
 import { homedir } from 'node:os';
-import { dirname, join } from 'node:path';
+import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 
 export const OPTIONS = ['core', 'windows', 'writing'];
@@ -19,6 +19,8 @@ export const END = '<!-- ccx:house-rules end -->';
 const BEGIN_PREFIX = '<!-- ccx:house-rules begin';
 const BEGIN = /^<!-- ccx:house-rules begin version=(\S+) options=([a-z,]+) join=(none|blank|newline) digest=([0-9a-f]{16}) -->$/;
 const JOINS = { none: 0, blank: 1, newline: 2 };
+const BOM = '\u00ef\u00bb\u00bf';
+const HOPS = 4, MAX_FILES = 50, MAX_BYTES = 256 * 1024;
 const PLAN_FILE = 'rules-plan.json';
 const STATE_FILE = 'rules-state.json';
 
@@ -59,7 +61,7 @@ const beginLine = (version, options, join, body) =>
 // Finds the block. Line numbers in a malformed report are 1-based.
 export function inspect(text) {
   const begins = [], ends = [];
-  let at = text.startsWith('\u00ef\u00bb\u00bf') ? 3 : 0, n = 0;
+  let at = text.startsWith(BOM) ? 3 : 0, n = 0;
   while (at < text.length) {
     const nl = text.indexOf('\n', at);
     const next = nl < 0 ? text.length : nl + 1;
@@ -88,52 +90,304 @@ export function removeBlock(text, found) {
   return text.slice(0, from) + text.slice(found.end);
 }
 
+// The first line (1-based) outside the block that holds Markdown adopt does not handle: a comment mark, a fence, a quote, a
+// table pipe, or a line starting with `<`. Adopt only edits a file with none; 0 when there is none.
+export function gate(text, found) {
+  const bad = (t) => t.includes('<!--') || t.includes('-->') || t.includes('|') || /^[ \t]*(`{3,}|~{3,}|>|<)/.test(t);
+  let n = 0, at = text.startsWith(BOM) ? 3 : 0;
+  while (at < text.length) {
+    const nl = text.indexOf('\n', at), end = nl < 0 ? text.length : nl + 1;
+    n++;
+    if (!(found?.kind === 'block' && at >= found.start && at < found.end) && bad(text.slice(at, end).replace(/\r?\n$/, ''))) return n;
+    at = end;
+  }
+  return 0;
+}
+
 // One target's plan. text is the file's content, or null when it does not exist. Returns the state, the content to
-// write (null for no change), the digest of the proposed body, and the options it records.
-export function planTarget({ target, text, options, recorded, version, texts, platform, declined = [], remove = false }) {
+// write (null for no change), the digest of the proposed body, and the options it records. imported holds what scanImports
+// found in the files the Claude file imports; adopt moves rules the file already holds into the block.
+export function planTarget({
+  target, text, options, recorded, version, texts, platform, declined = [], remove = false, adopt: adopting = false, imported = [],
+}) {
   const found = inspect(text ?? '');
-  if (found.kind === 'malformed') return { state: 'malformed', after: null, note: `${found.reason}, at lines ${found.lines.join(', ')}` };
+  // Where no body is known, the imports are named without counts.
+  const brief = imported.length ? { overlap: { imports: imported.map(({ ref, missed, unreadable }) => ({ ref, missed, unreadable })) } } : {};
+  if (found.kind === 'malformed') return { state: 'malformed', after: null, note: `${found.reason}, at lines ${found.lines.join(', ')}`, ...brief };
   if (remove) {
-    return found.kind === 'absent' ? { state: 'absent', after: null, note: 'there is no block to remove' }
-      : { state: 'remove', after: removeBlock(text, found), options: found.options };
+    return found.kind === 'absent' ? { state: 'absent', after: null, note: 'there is no block to remove', ...brief }
+      : { state: 'remove', after: removeBlock(text, found), options: found.options, recommend: 'apply', ...brief };
   }
   const eol = eolOf(text ?? '');
+  // The state's plan once the body is known: the plain change, or the adopted one when the file already holds rules.
+  const propose = (state, opts, body, plain) => {
+    const base = found.kind === 'block' ? removeBlock(text, found) : text ?? '';
+    const ov = overlap(body, base, imported);
+    const stop = gate(text ?? '', found), adopt = adopting && ov.n > 0 && !stop;
+    const after = adopt ? adoptRules(base, `${beginLine(version, opts, 'none', body)}${eol}${body}${END}${eol}`, body) : plain;
+    const { all, ...counts } = ov, shown = { ...counts, n: adopt ? 0 : ov.n, gate: stop };
+    if (after === null) return { state, after, options: opts, ...(ov.n || imported.length ? { overlap: shown } : {}) };
+    // Decline only when what is already present, once adopt has moved the file's own copies, covers every rule.
+    const recommend = ov.n && !stop && !adopting ? 'adopt' : (adopt ? ov.k : all) === ov.total ? 'decline' : 'apply';
+    return { state, after, digest: digest(body), options: opts, declined: isDeclined(declined, body), overlap: shown, recommend };
+  };
   if (found.kind === 'absent') {
     const opts = options ?? recorded ?? defaultOptions(platform);
     const body = render(target, opts, texts, eol);
     if (!body) return { state: 'absent', after: null, note: 'these options add nothing for this target' };
     const before = text ?? '';
     const join = before === '' ? 'none' : before.endsWith('\n') ? 'blank' : 'newline';
-    const after = before + eol.repeat(JOINS[join]) + beginLine(version, opts, join, body) + eol + body + END + eol;
-    return { state: 'absent', after, digest: digest(body), options: opts, declined: isDeclined(declined, body) };
+    return propose('absent', opts, body, before + eol.repeat(JOINS[join]) + beginLine(version, opts, join, body) + eol + body + END + eol);
   }
   const inFile = text.slice(found.bodyStart, found.bodyEnd);
   if (!digests(inFile).includes(found.digest)) {
     return { state: 'edited', after: null, options: found.options, edits: [render(target, found.options, texts, eol), inFile],
-      note: 'the block was edited by hand; move your lines below the end marker, then run /ccx:rules again' };
+      note: 'the block was edited by hand; move your lines below the end marker, then run /ccx:rules again', ...brief };
   }
   const opts = options ?? found.options;
   const body = render(target, opts, texts, eol);
-  if (digests(body).includes(found.digest) && opts.join() === found.options.join()) return { state: 'current', after: null, options: opts };
+  if (digests(body).includes(found.digest) && opts.join() === found.options.join()) {
+    return propose('current', opts, body, null);
+  }
   const block = beginLine(version, opts, found.join, body) + eol + body + END + eol;
   // The end marker may have lost its line break; the replacement keeps the file's last byte as it was.
   const tail = found.end === text.length && !text.endsWith('\n') ? block.slice(0, -eol.length) : block;
-  const after = text.slice(0, found.start) + tail + text.slice(found.end);
-  return { state: 'stale', after, digest: digest(body), options: opts, declined: isDeclined(declined, body) };
+  return propose('stale', opts, body, text.slice(0, found.start) + tail + text.slice(found.end));
 }
 
-// Lines that import another file into Claude's instructions, outside the block: they may carry the same rules.
-export function imports(text) {
-  const found = inspect(text);
-  const lines = [];
-  let at = 0;
-  text.split('\n').forEach((l, i) => {
-    const inside = found.kind === 'block' && at >= found.start && at < found.end;
-    const line = i === 0 ? l.replace(/^\u00ef\u00bb\u00bf/, '') : l;
-    if (!inside && /^@\S/.test(line)) lines.push(`${i + 1}: ${line.replace(/\r$/, '')}`);
-    at += l.length + 1;
+const ITEM = /^( {0,3})([-*+]|\d{1,9}[.)])( +|$)(.*)$/;
+const QUOTE = /^ *>/;
+const BREAK = /^ {0,3}(=+|-{2,}|\*{3,}|_{3,})[ \t]*$/;
+const HTML = /^ {0,3}<([A-Za-z]|\/)/;
+const RAW_OPEN = /^ {0,3}<(script|pre|style|textarea)\b/i, RAW_CLOSE = /<\/(script|pre|style|textarea)>/i;
+const lead = (t) => { const m = t.match(ITEM); return m ? lead(m[4]) : t; };
+const itemCol = (m) => m[1].length + m[2].length + Math.min(m[3].length, 4);
+// The fence state after a line: the opening run while inside a fenced block, else null. extra is the indent a list item allows.
+const fenceAfter = (fence, t, extra = 0) => {
+  const m = t.match(new RegExp(`^ {0,${3 + extra}}(\`{3,}|~{3,})(.*)$`));
+  if (!fence) return m && !(m[1][0] === '`' && m[2].includes('`')) ? m[1] : null;
+  return m && m[1][0] === fence[0] && m[1].length >= fence.length && isBlank(m[2]) ? null : fence;
+};
+// Text is latin1, where the byte A0 of a UTF-8 character reads as U+00A0, so white space here is a space or a tab only.
+const HEAD = /^ {0,3}#{1,6}([ \t]|$)/;
+// The one definition of a segment, within which code spans pair: a heading line, or consecutive lines up to a blank line, a
+// marker, a heading, a new list item, a fence, or a quote. continues(prev, t) says whether line t joins the segment of prev.
+const continues = (prev, t) => !(HEAD.test(prev) || isBlank(t) || t.startsWith(BEGIN_PREFIX) || t === END
+  || ITEM.test(t) || HEAD.test(t) || QUOTE.test(t) || fenceAfter(null, t));
+const isBlank = (t) => /^[ \t]*$/.test(t);
+const words = (s) => s.replace(/[ \t]+/g, ' ').replace(/^ | $/g, '');
+const within = (skip, s) => skip && s >= skip.start && s < skip.end;
+
+// The backtick runs of t. A backslash before an odd run escapes its first backtick only; the rest of the run can still open.
+const ticks = (t) => [...t.matchAll(/`+/g)].map((m) => {
+  let b = 0;
+  while (t[m.index - 1 - b] === '\\') b++;
+  return { at: m.index, end: m.index + m[0].length, len: m[0].length, esc: b % 2 === 1, tick: true };
+});
+// The one pairing rule for code spans, shared by strip() and hide(): a run opens a span of its length (less an escaped first
+// backtick) that the next run of that length closes, whole and escaped or not, since backslashes are literal inside a span.
+// Returns that run's index, or -1.
+const opens = (r) => r.len - r.esc;
+const closer = (runs, k) => {
+  for (let j = k + 1; j < runs.length; j++) if (runs[j].tick && runs[j].len === opens(runs[k])) return j;
+  return -1;
+};
+
+// t with its HTML comments blanked, and the comment and code-span state at its end. A backtick run is a code span when a run
+// of the same length follows on the line or, through later(len), later in the paragraph; a comment mark inside one is text.
+// Masked text, in comments and code spans, is NUL: a character that is neither a boundary nor part of an import path.
+const MASK = '\0';
+function strip(t, open, span, later) {
+  const marks = [...ticks(t), ...[...t.matchAll(/<!--|-->/g)].map((m) => ({ at: m.index, s: m[0] }))].sort((x, y) => x.at - y.at);
+  let out = '', at = 0;
+  for (let k = 0; k < marks.length; k++) {
+    const m = marks[k];
+    if (span) { if (m.tick && m.len === span) span = 0; }
+    else if (open) { if (m.s === '-->') { out += MASK.repeat(m.at + 3 - at); at = m.at + 3; open = false; } }
+    else if (m.s === '<!--') { out += t.slice(at, m.at); at = m.at; open = true; }
+    else if (m.tick && opens(m)) {
+      const c = closer(marks, k);
+      if (c >= 0) k = c;
+      else if (later(opens(m))) span = opens(m);
+    }
+  }
+  return [out + (open ? MASK.repeat(t.length - at) : t.slice(at)), open, span];
+}
+
+// The lines of a text (byte offsets in the original, a BOM left out) and its units: headings, list items and paragraphs,
+// each with its first and last line, its normalized text, and whether it is odd. A unit may match a rule only in the
+// plain shape described in docs/decisions.md Part 17; every line also records whether it is scanned for imports.
+export function units(text, skip) {
+  const lines = [], list = [];
+  for (let at = text.startsWith(BOM) ? 3 : 0; at < text.length;) {
+    const nl = text.indexOf('\n', at), e = nl < 0 ? text.length : nl + 1;
+    lines.push({ s: at, e, t: text.slice(at, nl < 0 ? text.length : nl).replace(/\r$/, ''), scan: false });
+    at = e;
+  }
+  // last[i] maps a backtick run length to the last line of line i's segment that holds such a run.
+  const last = [];
+  for (let i = lines.length - 1; i >= 0; i--) {
+    last[i] = i + 1 < lines.length && continues(lines[i].t, lines[i + 1].t) ? last[i + 1] : new Map();
+    for (const r of ticks(lines[i].t)) if (!last[i].has(r.len)) last[i].set(r.len, i);
+  }
+  // own is the list item that an open fence or comment belongs to; html is how the open HTML block ends.
+  let cur = null, fence = null, comment = false, html = null, own = null, span = 0;
+  const flush = () => { if (cur) { cur.norm = words(cur.parts.join(' ')); list.push(cur); } cur = null; };
+  lines.forEach((ln, i) => {
+    const { s, t } = ln;
+    const indent = t.match(/^[ \t]*/)[0].replace(/\t/g, '    ').length;
+    const start = (kind, parts, more) => { flush(); cur = { kind, a: i, b: i, parts, odd: false, bad: false, ...more }; };
+    const nested = () => cur?.kind === 'item' && (indent >= cur.col || !cur.gap);
+    const hold = () => { cur.parts.push(t); cur.b = i; cur.gap = false; cur.odd = true; };
+    const classify = () => {
+      if (within(skip, s) || (t.startsWith(BEGIN_PREFIX) || t === END) && !fence && !comment) { flush(); fence = html = own = null; comment = false; span = 0; return; }
+      if (own && !isBlank(t) && indent < own.col) { fence = own = null; comment = false; flush(); }
+      if (QUOTE.test(t) && (fence || comment)) return;
+      if (fence) { fence = fenceAfter(fence, t, own?.col ?? 0); if (own) hold(); return; }
+      if (html) {
+        if (!(html === 'blank' ? isBlank(t) : html.test(t))) return;
+        html = null;
+        if (!isBlank(t)) return;
+      }
+      if (i && !continues(lines[i - 1].t, t)) span = 0;
+      const [stripped, open, inSpan] = QUOTE.test(t) ? [t, false, span] : strip(t, comment, span, (len) => last[i].get(len) > i);
+      const hadComment = comment || stripped !== t;
+      comment = open;
+      span = inSpan;
+      const rebase = (x) => ' '.repeat(indent) + x.replace(/^[ \t]+/, '').replace(/[ \t]+$/, ' ');
+      const m = stripped === t ? t : rebase(stripped.replaceAll(MASK, ' ')), shown = stripped === t ? t : rebase(stripped);
+      if (hadComment && isBlank(m)) { if (nested()) { cur.odd = true; cur.gap = false; } else flush(); return; }
+      if (isBlank(m)) { if (cur?.kind === 'item') cur.gap = true; else flush(); return; }
+      if (QUOTE.test(m) || BREAK.test(m) || HTML.test(m)) {
+        if (cur) { cur.odd = true; cur.skip ||= cur.kind === 'para' && BREAK.test(m); }
+        flush();
+        if (HTML.test(m)) html = RAW_OPEN.test(m) ? (RAW_CLOSE.test(m) ? null : RAW_CLOSE) : 'blank';
+        return;
+      }
+      const item = m.match(ITEM), head = m.match(/^ {0,3}(#{1,6})(?:[ \t]+(.*))?$/);
+      const starts = item && !(cur?.kind === 'item' && item[1].length > cur.indent);
+      if (fence = fenceAfter(null, item ? lead(m) : m, cur?.kind === 'item' ? cur.col : 0)) {
+        if (starts) { start('item', [item[4]], { indent: item[1].length, col: itemCol(item) }); cur.odd = true; }
+        else if (nested()) hold(); else flush();
+        return;
+      }
+      if (head && !(cur?.kind === 'item' && indent >= cur.col)) {
+        flush();
+        list.push(ln.u = { kind: 'head', level: head[1].length, a: i, b: i, odd: false, norm: words(`${head[1]} ${head[2] ?? ''}`) });
+        ln.m = shown;
+        ln.scan = !t.includes('\t');
+        return;
+      }
+      if (starts) start('item', [item[4]], { indent: item[1].length, col: itemCol(item) });
+      else if (cur?.kind === 'item' && cur.gap && indent < cur.col) start('para', [m]);
+      else if (cur) { cur.gap = false; cur.parts.push(m); cur.b = i; }
+      else if (indent < 4) start('para', [m]);
+      else return;
+      const plain = starts ? item[3].length === 1 && item[4] !== '' && !ITEM.test(item[4]) && !QUOTE.test(item[4])
+        : cur.a === i || cur.kind === 'para' ? indent <= 3 : indent >= cur.col && indent <= cur.col + 3 && !item && !head;
+      cur.bad ||= !plain || t.includes('\t') || m.includes('|');
+      cur.odd ||= cur.bad || hadComment;
+      ln.u = cur;
+      ln.m = shown;
+      ln.scan = !cur.bad;
+    };
+    const wasOpen = !!(fence || comment);
+    classify();
+    if (!wasOpen && (fence || comment)) own = cur?.kind === 'item' && (cur.a === i || indent >= cur.col) ? cur : null;
+    if (!fence && !comment) own = null;
   });
-  return lines;
+  flush();
+  // A unit matches only when it starts at column 0, since indented text may belong to a container, when its raw lines are
+  // its match text (nothing was stripped or hidden from it), and when what follows it ends it: a blank line, the end, a
+  // heading, a ccx marker, or a plain item.
+  const ends = (t) => t === undefined || isBlank(t) || /^#{1,6}([ \t]|$)/.test(t) || t.startsWith(BEGIN_PREFIX) || t === END
+    || /^([-*+]|\d{1,9}[.)]) [^ \t]/.test(t);
+  for (const u of list) {
+    u.odd ||= /^[ \t]/.test(lines[u.a].t) || !ends(lines[u.b + 1]?.t);
+    const raw = words(lines.slice(u.a, u.b + 1).map((l) => l.t).join(' '));
+    u.odd ||= raw.replace(u.kind === 'item' ? /^([-*+]|\d{1,9}[.)])( |$)/ : /^$/, '') !== u.norm;
+  }
+  return { lines, list };
+}
+const ruleNorms = (list) => list.filter((u) => u.kind !== 'head' && !u.odd).map((u) => u.norm);
+
+// How the rules in body overlap what is already there: n of them in base (the file without its block), k in what the
+// imported files hold, and per import. total counts the body's items and paragraphs, not its headings.
+function overlap(body, base, imported) {
+  const rules = ruleNorms(units(body).list), mine = new Set(ruleNorms(units(base).list));
+  const count = (set) => rules.filter((r) => set.has(r)).length;
+  const theirs = new Set(imported.flatMap((i) => [...i.units]));
+  return { total: rules.length, n: count(mine), k: count(theirs), all: count(new Set([...mine, ...theirs])),
+    imports: imported.map(({ ref, units: set, missed, unreadable }) => ({ ref, n: count(set), missed, unreadable })) };
+}
+
+// The text with every rule unit that body also holds taken out, a heading of body too when its section held only such
+// units, and one blank line after a removed run that had blank lines around it. block goes before the next level 1 or 2
+// heading after the first removed line, or at the end, so no user text without a heading of its own follows its end marker.
+export function adoptRules(text, block, body) {
+  const { lines, list } = units(text), mine = units(body).list;
+  const same = (head) => new Set(mine.filter((u) => (u.kind === 'head') === head).map((u) => u.norm));
+  const rules = same(false), heads = same(true), gone = lines.map(() => false), extra = new Set();
+  const blank = (i) => isBlank(lines[i].t);
+  list.filter((u) => u.kind !== 'head' && !u.odd && rules.has(u.norm)).forEach((u) => { for (let i = u.a; i <= u.b; i++) gone[i] = true; });
+  // Last heading first, so a removed subheading counts when its parent's section is judged.
+  list.filter((u) => u.kind === 'head' && !u.odd && heads.has(u.norm)).reverse().forEach((h) => {
+    const end = list.find((u) => u.kind === 'head' && u.a > h.a && u.level <= h.level)?.a ?? lines.length;
+    const only = lines.slice(h.a + 1, end).every((_, i) => blank(h.a + 1 + i) || gone[h.a + 1 + i]);
+    if (only && list.some((u) => u.kind !== 'head' && u.a > h.a && u.a < end && gone[u.a])) gone[h.a] = true;
+  });
+  gone.forEach((g, i) => {
+    if (!g || gone[i - 1]) return;
+    let y = i;
+    while (gone[y + 1]) y++;
+    if ((i === 0 || blank(i - 1)) && y + 1 < lines.length && blank(y + 1)) extra.add(y + 1);
+  });
+  // The block goes before the first level 1 or 2 heading at column 0 after the first removed line, else at the end, so no
+  // user text ends up after the end marker where it would read as part of the block.
+  const first = gone.indexOf(true), eol = eolOf(text);
+  const at = first < 0 ? -1 : list.find((u) => u.kind === 'head' && u.level < 3 && u.a > first && !gone[u.a] && lines[u.a].t.startsWith('#'))?.a ?? lines.length;
+  const kept = (from, to) => lines.slice(from, to).filter((_, k) => !gone[from + k] && !extra.has(from + k));
+  const [pre, post] = [kept(0, at), kept(at, lines.length)];
+  const tail = (l) => text.slice(l.s, l.e);
+  return text.slice(0, lines[0]?.s ?? 0) + pre.map(tail).join('') + (pre.length && !tail(pre.at(-1)).endsWith('\n') ? eol : '') + block
+    + post.map(tail).join('');
+}
+
+// A unit's text with its code spans blanked. A span is a backtick run and the next run of the same length in the unit; a
+// run with no partner, or opened after a backslash, is literal text.
+function hide(par) {
+  const runs = ticks(par);
+  let out = '', at = 0;
+  for (let k = 0; k < runs.length; k++) {
+    const c = opens(runs[k]) ? closer(runs, k) : -1;
+    if (c < 0) continue;
+    const from = runs[k].at + runs[k].esc;
+    out += par.slice(at, from) + par.slice(from, runs[c].end).replace(/[^\n]/g, MASK);
+    at = runs[c].end;
+    k = c;
+  }
+  return out + par.slice(at);
+}
+
+// Imports as Claude reads them: an @ at a line start or after white space, in the lines units() marks as scanned, outside
+// code spans; the path runs to the first space not escaped with a backslash, or the first masked character (cut).
+export function imports(text, found) {
+  const { lines } = units(text, found?.kind === 'block' ? found : null), groups = new Map(), out = [];
+  lines.forEach((ln, i) => { if (ln.scan && !ln.u.skip) (groups.get(ln.u) ?? groups.set(ln.u, []).get(ln.u)).push(i); });
+  // Spans pair within a segment: a run of consecutive scanned lines that continues() joins.
+  const runs = [];
+  for (const rows of groups.values()) {
+    rows.forEach((i, k) => (rows[k - 1] === i - 1 && continues(lines[i - 1].t, lines[i].t) ? runs.at(-1).push(i) : runs.push([i])));
+  }
+  for (const rows of runs) {
+    const seen = hide(rows.map((i) => lines[i].m).join('\n')).split('\n');
+    rows.forEach((i, k) => {
+      for (const m of seen[k].matchAll(/(?<=^|[ \t])@(?!["'])((?:\\ |[^ \t\0])+)/g)) {
+        out.push({ n: i + 1, token: `@${m[1]}`, path: m[1].replace(/\\ /g, ' ') });
+      }
+    });
+  }
+  return out;
 }
 
 // A small line diff: the changed run between the common head and tail, with three lines of context on each side.
@@ -157,7 +411,7 @@ export function targets(env, home = homedir()) {
   const codexDir = env.CODEX_HOME || join(home, '.codex');
   const resolved = (path) => existsSync(path) && lstatSync(path).isSymbolicLink() ? realpathSync(path) : path;
   const all = {
-    claude: { path: resolved(join(claudeDir, 'CLAUDE.md')) },
+    claude: { path: resolved(join(claudeDir, 'CLAUDE.md')), logical: join(claudeDir, 'CLAUDE.md') },
     codex: !existsSync(codexDir) ? { path: join(codexDir, 'AGENTS.md'), skip: `there is no Codex home at ${codexDir}, so nothing is written there` }
       : existsSync(join(codexDir, 'AGENTS.override.md'))
         ? { path: join(codexDir, 'AGENTS.md'), skip: `Codex reads ${join(codexDir, 'AGENTS.override.md')} instead of AGENTS.md, so the Codex file is left alone` }
@@ -168,6 +422,52 @@ export function targets(env, home = homedir()) {
     if (a.ino !== 0n && a.dev === b.dev && a.ino === b.ino) all.codex.skip = 'it is the same file as the Claude target, so the Codex file is left alone';
   }
   return all;
+}
+
+// Reads what the Claude file imports, as Claude loads it: relative paths against the importing file's directory, breadth
+// first, four hops. Each top-level import gets the rule units of every file it reaches, the count of imports that could
+// not be followed (unreadable or over a bound; imports past the last hop are not loaded by Claude, so are not counted),
+// and whether its own file could not be read. shallow checks only that each top-level import can be read.
+export function scanImports(text, file, found, home, logical = file, shallow = false) {
+  const cache = new Map();
+  const real = (path) => { try { return realpathSync(path); } catch { return path; } };
+  const load = (path) => {
+    const key = real(path);
+    if (!cache.has(key)) {
+      let got = null;
+      try {
+        const info = statSync(path);
+        if (cache.size < MAX_FILES && info.isFile() && info.size <= MAX_BYTES) got = readFileSync(path, 'latin1');
+      } catch {}
+      cache.set(key, got === null ? null : { body: got });
+    }
+    return cache.get(key);
+  };
+  const root = new Set([file, logical].map(real));
+  const where = (from, raw) => {
+    const path = Buffer.from(raw, 'latin1').toString('utf8');
+    return path.startsWith('~/') ? join(home, path.slice(2)) : resolve(dirname(from), path);
+  };
+  return imports(text, found).map(({ n, token, path }) => {
+    const beside = where(logical, path), first = beside !== where(file, path) && load(beside) === null ? where(file, path) : beside;
+    const reach = { ref: `${n}: ${token}`, units: new Set(), missed: 0, unreadable: false }, seen = new Set([first]);
+    for (const queue = [[first, 1]]; queue.length;) {
+      const [at, hop] = queue.shift();
+      if (root.has(real(at))) continue;
+      const file = load(at);
+      if (file === null) { reach.missed++; reach.unreadable ||= hop === 1; continue; }
+      if (shallow) continue;
+      // Each file is parsed once, whichever import reaches it.
+      file.norms ??= ruleNorms(units(file.body).list);
+      file.paths ??= imports(file.body).map((i) => i.path);
+      file.norms.forEach((u) => reach.units.add(u));
+      for (const next of file.paths.map((p) => where(at, p))) {
+        if (seen.has(next)) continue;
+        if (hop < HOPS) { seen.add(next); queue.push([next, hop + 1]); }
+      }
+    }
+    return reach;
+  });
 }
 
 const ROOT = fileURLToPath(new URL('..', import.meta.url));
@@ -220,10 +520,27 @@ function report(name, t, plan) {
   const declined = plan.declined ? ' (you declined this text before)' : '';
   lines.push(`state: ${plan.state}${declined}${plan.note ? `; ${plan.note}` : ''}`);
   if (plan.options) lines.push(`options: ${plan.options.join(',')}`);
-  for (const l of name === 'claude' && t.text ? imports(t.text) : []) lines.push(`note: line ${shown(l)} imports a file that may hold the same rules; it is left as it is`);
+  const ov = plan.overlap;
+  for (const i of ov?.imports ?? []) {
+    const holds = ov.total === undefined ? '' : i.missed ? `holds at least ${i.n} of ${ov.total} rules; ${i.missed} import${i.missed === 1 ? '' : 's'} could not be read`
+      : i.n ? `holds ${i.n} of ${ov.total} rules` : 'holds none of the rules';
+    const what = i.unreadable ? ' that cannot be read' : holds && ` that ${holds}`;
+    lines.push(`note: line ${shown(i.ref)} imports a file${what}; it is left as it is`);
+  }
+  const idle = plan.after === null;
+  if (ov?.n) lines.push(idle ? `note: ${ov.n} of ${ov.total} rules are also present outside the block, duplicating it` : `note: ${ov.n} of ${ov.total} rules already present outside the block; applying duplicates them`);
+  if (ov?.n && idle && !ov.gate) lines.push('note: /ccx:rules --adopt moves those lines into the block');
+  if (ov?.n && ov.gate) {
+    lines.push(`note: adopt leaves this file alone because line ${ov.gate} holds Markdown it does not handle; trim the copy by hand, then run /ccx:rules`);
+  }
   if (plan.edits) lines.push(diff(...plan.edits.map(shown), 'the rules this plugin would write', `the block in ${t.path}`));
   if (plan.after === null) return [...lines, 'change: none'];
-  return [...lines, 'change: ready', diff(shown(t.text ?? ''), shown(plan.after), t.path, `${t.path} (proposed)`)];
+  const advice = {
+    adopt: ['note: /ccx:rules --adopt moves those lines into the block'],
+    decline: ov?.k ? [`note: ${ov.k} of ${ov.total} rules come from imports; applying duplicates them; declining leaves this file unchanged`] : [],
+  }[plan.recommend] ?? [];
+  const proposed = diff(shown(t.text ?? ''), shown(plan.after), t.path, `${t.path} (proposed)`);
+  return [...lines, 'change: ready', `recommend: ${plan.recommend}`, ...advice, proposed];
 }
 
 export function main(argv, { env = process.env, platform = process.platform, now = new Date(), home = homedir() } = {}) {
@@ -276,17 +593,21 @@ function run(verb, dataDir, rest, { env, platform, now, home }) {
     return [`ccx: wrote ${p.path}${backup ? `; the earlier content is in ${backup}` : ''}`];
   }
   let options;
-  const at = rest.indexOf('--options');
-  if (at >= 0 && rest.length > at + 2) refuse(`unexpected argument "${rest[at + 2]}" after --options list`);
-  if (at >= 0) options = parseOptions(rest[at + 1], platform);
+  const adopt = rest.includes('--adopt');
+  if (adopt && verb !== 'plan') refuse(`--adopt goes with plan, not ${verb}`);
+  const args = rest.filter((a) => a !== '--adopt');
+  const at = args.indexOf('--options');
+  if (at >= 0 && args.length > at + 2) refuse(`unexpected argument "${args[at + 2]}" after --options list`);
+  if (at >= 0) options = parseOptions(args[at + 1], platform);
   const texts = loadTexts();
   const version = pluginVersion();
   const out = [], plans = {};
   let recorded = false;
   for (const [name, t] of Object.entries(all)) {
     if (!t.skip) t.text = readText(t.path);
+    const imported = ['plan', 'remove'].includes(verb) && name === 'claude' && t.text ? scanImports(t.text, t.path, inspect(t.text), home, t.logical, verb === 'remove') : [];
     const plan = t.skip ? { after: null } : planTarget({ target: name, text: t.text, options, recorded: state.options[name], version, texts, platform,
-      declined: state.declined[name] ?? [], remove: verb === 'remove' });
+      declined: state.declined[name] ?? [], remove: verb === 'remove', adopt, imported });
     if (verb === 'status') {
       const kept = ['current', 'stale', 'edited'].includes(plan.state) || state.options[name];
       if (kept) recorded = true;

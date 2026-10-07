@@ -39,6 +39,11 @@ name a plugin are rerun under the new names and recorded here.
    Covers R33, R38, R41, and R42. Rerun when `rules.mjs`, the rules command, or a rules
    file changes. Run 2026-10-03, 2026-10-04 for 0.1.3 and 0.2.0, 2026-10-05 for 0.3.1,
    and 2026-10-06 for 0.3.2 and 0.4.0; see the records.
+   Adopt run, added for 0.5.0: put the shipped core rules into the scratch `AGENTS.md`
+   by hand under a heading of your own, run `/ccx:rules`, and expect the note that the
+   rules are already there with `recommend: adopt`; choose adopt, then apply; expected:
+   the heading and the block remain, the hand copy is gone, and `/ccx:rules --remove`
+   leaves the heading. Covers R66 and R67. Run 2026-10-06 for 0.5.0; see the record.
 4. **Staleness notice and decline.** Setup: as item 3, with this block after the text
    of `CLAUDE.md` and an empty line, whose digest matches its body: begin line
    `<!-- ccx:house-rules begin version=0.0.1 options=core join=blank digest=6d3e610aaf815551 -->`,
@@ -1968,3 +1973,31 @@ released versions before the runs, and its two house-rules blocks read as curren
   and Windows passed and the same tree had passed the PR's macOS job minutes earlier;
   the `main` run for PR 30, 37472970721, failed the same job on `revert-tests.sh`.
   Neither suite changed since 0.9.1.
+
+### 2026-10-06: ccx 0.5.0, adopt run before the merge
+
+macOS 27.0, Claude Code 2.1.292, Node 26.4.0. The user ran item 3's adopt run by hand in
+an interactive session, in scratch profiles under `/tmp/ccx-accept-050` (a
+`CLAUDE_CONFIG_DIR` and a `CODEX_HOME`, deleted afterward), with `ccx` 0.5.0 installed
+from `feat/rules-adopt` at 482496e. No Codex run was needed. The scratch `CLAUDE.md`
+held a note of its own; the scratch `AGENTS.md` held `# My Codex notes`, the shipped
+core rules, and a `## Mine` section with one line of its own.
+
+- **The adopt run passed.** `/ccx:rules` with `core` showed `claude` as `absent` with
+  `recommend: apply` and no overlap note, and `codex` with `note: 30 of 30 rules already
+  present outside the block; applying duplicates them`, `recommend: adopt`, and the
+  `--adopt` hint. The user declined `claude` and chose adopt for `codex`; the second
+  pass showed `recommend: apply` and a diff that removed the hand copy and put the block
+  after `# My Codex notes`, before `## Mine`. After apply, `AGENTS.md` equalled the
+  planned content byte for byte, held one copy of the rules, inside the block, and kept
+  `## Mine` and its line; the backup equalled the original file's sha256, and
+  `CLAUDE.md` was unchanged.
+- **Remove after adopt left the headings.** `/ccx:rules --remove` showed `claude` as
+  having no block and a `codex` diff that removed only the block lines. After apply,
+  `AGENTS.md` was exactly `# My Codex notes`, `## Mine`, and its line, as R42 says for
+  a file adopted into. Before the confirmation, the session warned that removing the
+  adopted block also removes the rules the file held before adopting.
+- Observed: `/plugin install ccx@reimagine-code` typed in the scratch session installed
+  nothing (no `installed_plugins.json`, `/reload-plugins` reported 0 plugins); `claude
+  plugin install ccx@reimagine-code` run from the shell with the same
+  `CLAUDE_CONFIG_DIR` installed it. Not investigated further.

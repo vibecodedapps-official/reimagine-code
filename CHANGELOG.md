@@ -3,6 +3,22 @@
 One changelog for the suite. Each release has a subsection per component. The source
 repos' own changelogs are kept under `docs/history/`.
 
+## 0.5.0 - 2026-10-06
+
+### ccx
+
+- `/ccx:rules` compares the rules with what each file already holds and notes how many
+  are already there, then recommends adopting, applying, or declining per file. Before,
+  it asked with no basis and wrote a second copy.
+- `/ccx:rules --adopt` moves hand-copied rules into the block: it removes the lines
+  and the headings that only held them, and puts the block before your next level 1 or 2
+  heading, or at the end of the file, so your own lines never end up after it. A file
+  holding comments, code fences, quotes, tables, or HTML is left alone with a note to
+  trim by hand. Before, the copies stayed beside the block.
+- `/ccx:rules` follows `@` imports in the Claude file as Claude does, read-only, and
+  notes how many of the rules each imported file holds. Before, it only listed the
+  import lines.
+
 ## 0.4.0 - 2026-10-06
 
 ### ccx

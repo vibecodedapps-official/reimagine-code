@@ -689,3 +689,105 @@ a428d21.
    marks the dropped behaviors in 0.x, as Part 11 item 8 did; the bridge contract (R10)
    does not change, so the loop's range stays `>=0.2.0 <1.0.0`. cca and repo-docs are
    unchanged.
+
+## Part 17: ccx 0.5.0, rules already present are found, recommended on, and adopted, 2026-10-06
+
+Found 2026-10-06 on main b0c7b6d, then planned with a Codex `gpt-6-astra` review over
+four rounds and reviewed over 21 rounds until a review found nothing.
+
+1. **The finding.** `plan` never compared the rules with the text outside the block. Its
+   only signal was `imports()`, which matched a line-start `@` and never read the file.
+   The command text asked per target with no basis for a recommendation, and a user who
+   had copied the rules by hand got a second copy beside the block with no way to move
+   them in. The check: a Claude file holding the shipped core, rewrapped, planned as a
+   plain `absent` with no note.
+2. **Units, not lines or files.** The comparison unit is a heading, a list item, or a
+   paragraph, with whitespace collapsed and the list marker dropped, so a rewrapped copy
+   matches and a reworded line does not. A list item takes the lines indented from its
+   content column to three columns past it, so a qualification keeps the whole item; a
+   lazy or deeper line makes the item odd (item 7), and an odd unit never matches. Fenced
+   code, HTML comments, and indented code are never units. A reworded unit is never
+   partly removed. Headings are not counted as rules.
+3. **Imports follow Claude's documented rules.** Source:
+   https://code.claude.com/docs/en/memory, "Import additional files", checked
+   2026-10-06: relative to the importing file, `~/` is home, absolute allowed, at most
+   four hops here, code spans and fences skipped, `@` may appear mid-line, `\ ` escapes a
+   space, a quoted path is not an import. Traversal is breadth first, keyed by the path as
+   written so a symlinked file resolves its relative imports against its own directory,
+   with reads cached by real path and bounds of four hops, 50 files, and 256 KiB. Every
+   read error and size or count bound hit is recorded as incomplete and reported as "at
+   least", never as an exact count. An import past the fourth hop is neither followed nor
+   counted, since Claude does not load it. Overlap is over the union of each file's unit
+   sets, never concatenated text. Claude's behavior for a symlinked CLAUDE.md is not
+   documented, so each relative import in that file is tried beside the link first, then
+   beside its destination, and the first that exists is used; writes still go to the
+   destination. The import scan never reads the Claude file itself: a chain of imports
+   that leads back to it is cut there, so the file's own block is not counted as an import.
+   Codex documents no automatic import syntax, so nothing is scanned for it.
+4. **One recommendation per target.** In-file overlap on an ungated file recommends
+   `adopt` when `--adopt` was not given; otherwise `decline` only when the rules already
+   present cover every rule, counted over the file and the imports as one set (after
+   adopt moved the file's own copies, over the imports alone); otherwise `apply`, with the
+   overlap notes kept so the duplicates are visible. The user chose this after review:
+   one copied rule beside a table line, or a few imported rules, no longer reads as
+   "decline". The command text asks
+   per target and passes the recommendation on; adopt is a second pass per target, so the
+   user sees the adopted diff before anything is written.
+5. **Adopt removes the least.** It removes matching units, a matching heading only when
+   its section held nothing else, and one blank line after a removed run that had blank
+   lines on both sides. Everything else is an original slice. It strips an existing block
+   first and inserts a `join=none` block before the first level 1 or 2 heading at column 0
+   after the first removed line, else at the end of the file, because a block put where the
+   removed lines were left the user's next lines after the end marker, where they read as
+   part of the block's last section. Remove after adopt leaves the trimmed file, not the
+   original, and no removal meets bytes a marker owns. Apply, backup, and decline are unchanged.
+6. **The budget for `rules.mjs` rises from 400 to 640 lines, with no compression.** The
+   units, the import scan, and adopt are pure logic that belongs beside the block logic.
+   It rose in steps: to 520 for the plan, 560 after review round 9 (the shared line
+   classifier, and readability, since the file stood at the 520 cap with more long lines
+   than at HEAD), 570 after round 11 (span-aware comment stripping), 580 after round 12
+   (the column-0 invariant), 600 after round 14 (the file-level gate), and 610 after round
+   18 (one shared segmentation for spans and comments), and 640 after the review of the
+   pull request (block placement before a heading, the root file in the visited set,
+   notes in every state, one pairing rule for spans, and the parse-once import scan).
+   R14 and lint change with it. The
+   release is 0.5.0 for the lockstep family.
+7. **Scope of `units()` and `imports()`, set after review rounds 1 to 9.** Each round
+   found one more Markdown construct that flattened into a false match or a false import,
+   so the contract is now stated and everything else is out of scope by rule.
+   - Handled: top-level text at indent 0 to 3; one level of list items in plain shape,
+     meaning a marker followed by one space and continuations indented from the content
+     column to the content column plus three, with no tab; fences and HTML comments at
+     top level, indented into an item, or opening on an item's first line; inline code
+     spans and inline comments within a paragraph; the ccx begin and end lines as hard
+     boundaries that reset every open construct, except inside an open fence, where they
+     are ordinary text, so a fenced example of a block holds no rules (a marker inside an
+     open comment closes it, as its `-->` does).
+   - A code span is an unescaped backtick run and the next run of the same length; a
+     backslash escapes only an opening run, counting backslashes, and is literal inside
+     a span. One pairing function serves the comment scan and the import scan.
+   - Comments and code spans are masked with a non-whitespace character, so they never
+     create an import boundary; a token is cut at the first masked character.
+   - Out of scope: block quotes, tables, HTML blocks other than comments, nested
+     containers, setext headings, thematic breaks, tab-indented text, and indented code.
+   - Indented text is never a rule, since it may belong to a container: a unit matches or
+     is removed only when its first line starts at column 0 and its raw lines equal its
+     match text.
+   - A unit also matches only when the line after it is blank, the end of the text, a
+     column-0 heading, a ccx marker, or a column-0 plain item, so an underline, quote, table
+     row, lone marker, or HTML right after it makes it odd.
+   - File-level gate: `--adopt` removes nothing from a file that, outside the block, has a
+     comment mark, a fence line, a quote line, a line with a pipe, or a line starting with `<`;
+     it plans as plain `plan` does, names the first such line, and never recommends adopt,
+     so the command cannot loop; it recommends decline only when every rule is covered
+     (item 4), else apply.
+   - Safety direction: a unit outside the scope is marked odd and never matches a rule,
+     so `--adopt` never removes it; a line outside it is never scanned for an import, so
+     a duplicate there is missed, the recommendation errs toward apply, and the diff shows
+     the duplicate. A false negative costs a duplicate line the user can see; a false
+     positive would delete the user's text or hide a real import.
+   - Left as debatable, so decided conservatively: any tab on a line stops it from being
+     scanned, although Claude may scan text after a tab; a pipe anywhere in a unit makes it
+     odd, which means a rule that holds a pipe would never match (none ships with one);
+     a fence or comment under an item at column 0 with no blank line stays with the item
+     but a later dedented line ends it; an unclosed comment hides the rest of its segment.

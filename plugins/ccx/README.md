@@ -323,8 +323,17 @@ file only when you agree to that file.
   added in front. A file the command created, holding nothing else, is deleted.
 - **Declining.** Saying no to a change is recorded, so the session notice stays quiet for
   that text. Typing `/ccx:rules` offers it again.
-- **Imports.** An `@` import line in `CLAUDE.md` may pull in the same rules. The command
-  names it and leaves it alone.
+- **Imports.** The command finds the `@` imports in `CLAUDE.md` as Claude does, reads the
+  files they reach (read-only, four hops), and says how many of the rules each holds. It
+  never changes an imported file. When the imports and the file together already hold
+  every rule, it recommends declining; when they hold only some, it recommends applying
+  and shows the duplicates.
+- **Adopting.** If you copied the rules into a file by hand, the command says so and
+  recommends `/ccx:rules --adopt`, which removes those lines and puts the block before
+  your next top-level heading, or at the end of the file. Lines you reworded or added are
+  kept. The backup holds the original. If the file holds Markdown the command does not
+  handle (comments, code fences, quotes, tables, or HTML), it leaves the file alone, names
+  the first such line, and asks you to trim the copy by hand.
 
 When a plugin update changes the rules, a new session shows one line naming the file and
 `/ccx:rules`. A version change that leaves the rules as they were shows nothing.

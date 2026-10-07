@@ -8,7 +8,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import {
-  defaultOptions, diff, imports, inspect, loadTexts, main, parseOptions, planTarget, removeBlock, render, targets,
+  adoptRules, defaultOptions, diff, imports, inspect, loadTexts, main, parseOptions, planTarget, removeBlock, render, scanImports, targets, units,
 } from '../../plugins/ccx/scripts/rules.mjs';
 
 const SCRIPT = fileURLToPath(new URL('../../plugins/ccx/scripts/rules.mjs', import.meta.url));
@@ -175,7 +175,7 @@ test('R42: remove takes the block and the bytes of its join, for each join value
   // Join bytes the user has since deleted are not taken from the user's text.
   assert.equal(removeBlock(`mine\n${b('blank').replace('blank', 'newline')}`, inspect(`mine\n${b('newline')}`)), 'mine\n');
   const middle = `top\n\n${b('blank')}below\n`;
-  assert.deepEqual(plan(middle, { remove: true }), { state: 'remove', after: 'top\nbelow\n', options: ['core'] });
+  assert.deepEqual(plan(middle, { remove: true }), { state: 'remove', after: 'top\nbelow\n', options: ['core'], recommend: 'apply' });
   assert.deepEqual(plan('mine\n', { remove: true }), { state: 'absent', after: null, note: 'there is no block to remove' });
 });
 
@@ -184,12 +184,6 @@ test('R42: install then remove gives back the original bytes for LF, CRLF, BOM a
     const installed = plan(original).after;
     assert.equal(plan(installed, { remove: true }).after, original, JSON.stringify(original));
   }
-});
-
-test('R44: @ import lines outside the block are listed with their line numbers, and lines in the block are not', () => {
-  const text = `@~/extra.md\nmine\n\n${begin('core', 'blank', 'd0c78d0f2fb160ad')}\n@x\n${END}\n@after.md\r\n email@example.com\n`;
-  assert.deepEqual(imports(text), ['1: @~/extra.md', '7: @after.md']);
-  assert.deepEqual(imports('no imports\n'), []);
 });
 
 test('diff shows the changed lines with three lines of context', () => {
@@ -243,7 +237,7 @@ test('A1-U2-2: reports decode UTF-8 text while preserving paths and file bytes',
   put(path, original);
   const out = s.run('plan');
   assert.equal(out[0], `target: claude ${path}`);
-  assert.equal(out.includes('note: line 2: @notes-\u00fc.md imports a file that may hold the same rules; it is left as it is'), true);
+  assert.equal(out.includes('note: line 2: @notes-\u00fc.md imports a file that cannot be read; it is left as it is'), true);
   const shown = out.find((line) => line.startsWith('--- '));
   assert.equal(shown.split('\n').includes(' # Jos\u00e9'), true);
   assert.equal(shown.split('\n')[0], `--- ${path}`);
@@ -265,7 +259,7 @@ test('O1-U2-1: options refuse leftover arguments and empty list items', sandbox(
 }));
 
 test('R33: the targets come from CLAUDE_CONFIG_DIR and CODEX_HOME, else from the home directory', sandbox((s) => {
-  assert.deepEqual(targets(s.env, s.home), { claude: { path: s.claude }, codex: { path: s.codex } });
+  assert.deepEqual(targets(s.env, s.home), { claude: { path: s.claude, logical: s.claude }, codex: { path: s.codex } });
   const t = targets({}, s.home);
   assert.equal(t.claude.path, join(s.home, '.claude', 'CLAUDE.md'));
   assert.equal(t.codex.skip, `there is no Codex home at ${join(s.home, '.codex')}, so nothing is written there`);
@@ -325,7 +319,7 @@ test('R35, R46: the writing option adds the shipped Writing section to the Codex
   assert.equal(codexBody, `${SHIPPED['core.md']}\n${SHIPPED['writing-codex.md']}${END}\n`);
   assert.equal(bytes(s.claude).split('\n').slice(1).join('\n'), `${SHIPPED['core.md']}${END}\n`);
   assert.match(bytes(s.codex).split('\n')[0],
-    /^<!-- ccx:house-rules begin version=0\.4\.0 options=core,writing join=none digest=[0-9a-f]{16} -->$/);
+    /^<!-- ccx:house-rules begin version=0\.5\.0 options=core,writing join=none digest=[0-9a-f]{16} -->$/);
 }));
 
 test('R37: plan writes nothing for current, edited and malformed targets', sandbox((s) => {
@@ -373,7 +367,7 @@ test('R41: an existing file is backed up with the time in its name, and no tempo
     [`ccx: wrote ${s.claude}; the earlier content is in ${s.claude}.ccx-backup-20261003120000`]);
   assert.deepEqual(readdirSync(s.claudeDir).sort(), ['CLAUDE.md', 'CLAUDE.md.ccx-backup-20261003120000']);
   assert.equal(bytes(`${s.claude}.ccx-backup-20261003120000`), 'mine\n');
-  assert.ok(bytes(s.claude).startsWith('mine\n\n<!-- ccx:house-rules begin version=0.4.0 options=core join=blank digest='));
+  assert.ok(bytes(s.claude).startsWith('mine\n\n<!-- ccx:house-rules begin version=0.5.0 options=core join=blank digest='));
   assert.deepEqual(s.state().created, {});
   assert.deepEqual(readdirSync(s.data).sort(), ['rules-plan.json', 'rules-state.json']);
 }));
@@ -457,7 +451,7 @@ test('R43: a decline is recorded with its digest, and the next plan says so', sa
 test('R44: an @ import in the Claude file is noted and left as it is', sandbox((s) => {
   put(s.claude, '@~/shared/rules.md\nmine\n');
   const out = s.run('plan');
-  assert.ok(out.includes('note: line 1: @~/shared/rules.md imports a file that may hold the same rules; it is left as it is'));
+  assert.ok(out.includes('note: line 1: @~/shared/rules.md imports a file that cannot be read; it is left as it is'));
   s.run('apply', ['claude']);
   assert.ok(bytes(s.claude).startsWith('@~/shared/rules.md\nmine\n\n<!-- ccx:house-rules begin'));
 }));
@@ -619,6 +613,702 @@ test('R37, R40, R42: a BOM before the first block preserves offsets, updates and
   assert.equal(plan(stale, { remove: true }).after, BOM);
 });
 
-test('R44: a BOM before the first import preserves the duplicate report', () => {
-  assert.deepEqual(imports(`${BOM}@~/extra.md\n`), ['1: @~/extra.md']);
+// Overlap, adopt and imports. RICH is a core text with headings, wrapped items and three rules.
+const RICH = { ...TEXTS, 'core.md': '## Working\n\n- one\n- two\n  wrapped\n\n## Code\n\n- three\n' };
+const rich = (text, more = {}) => plan(text, { texts: RICH, ...more });
+const kinds = (text) => units(text).list.map((u) => `${u.kind}:${u.norm}`);
+const richBlock = (eol = '\n') => `${begin('core', 'none', '63857e438c8dd232', '9.9.9')}${eol}${RICH['core.md'].replace(/\n/g, eol)}${END}${eol}`;
+
+test('units: items, paragraphs and headings read as a Markdown reader sees them', () => {
+  assert.deepEqual(kinds('- one\n  two\n'), ['item:one two']);
+  assert.deepEqual(kinds('- one\ntwo\n- three'), ['item:one two', 'item:three']);
+  assert.deepEqual(kinds('- one\n\n  but not on Fridays\n\nnext\n'), ['item:one but not on Fridays', 'para:next']);
+  assert.deepEqual(kinds('* x\n- x\n1. x\n'), ['item:x', 'item:x', 'item:x']);
+  assert.deepEqual(kinds('# T\npara   line\nmore\n\n## Sub  title\n'), ['head:# T', 'para:para line more', 'head:## Sub title']);
 });
+
+test('units: fenced code, HTML comments and indented code are not units', () => {
+  assert.deepEqual(kinds('```\n- x\n```\n- y\n'), ['item:y']);
+  assert.deepEqual(kinds('~~~sh\n- x\n```\n~~~\n- y\n'), ['item:y']);
+  assert.deepEqual(kinds('<!-- a\n- x\n-->\n- y\n\n<!-- one -->\n- z\n'), ['item:y', 'item:z']);
+  assert.deepEqual(kinds('    - code\n\n- y\n'), ['item:y']);
+  assert.deepEqual(kinds('- y\n\n    - nested code\n'), ['item:y - nested code']);
+});
+
+test('units: CRLF and a byte order mark leave the byte spans of the original', () => {
+  const crlf = units('- a\r\n  b\r\n\r\npara\r\n');
+  assert.deepEqual(crlf.list.map((u) => `${u.kind}:${u.norm}:${u.a}-${u.b}`), ['item:a b:0-1', 'para:para:3-3']);
+  assert.deepEqual(crlf.lines.map((l) => [l.s, l.e]), [[0, 5], [5, 10], [10, 12], [12, 18]]);
+  const bom = units(`${BOM}# H\n- x\n`);
+  assert.deepEqual(bom.list.map((u) => u.norm), ['## H'.slice(1), 'x']);
+  assert.equal(bom.lines[0].s, 3);
+});
+
+test('R66: the overlap counts the rules already outside the block, rewrapped or not, and not headings or the block', () => {
+  assert.deepEqual(rich('mine\n\n## Working\n\n- one\n- two wrapped\n\n## Code\n\n- three\n').overlap,
+    { total: 3, n: 3, k: 0, imports: [], gate: 0 });
+    // A continuation may sit from the content column to three columns past it; further in is not a plain shape.
+  assert.equal(rich('- one\n- two\n    wrapped\n').overlap.n, 2);
+  assert.equal(rich('- one\n- two\n      wrapped\n').overlap.n, 1);
+  assert.equal(rich('- one\n- two wrapped, and more\n- three\n').overlap.n, 2);
+  assert.equal(rich('## Working\n\n## Code\n').overlap.n, 0);
+  assert.equal(rich(`mine\n\n${begin('core', 'blank', 'e2baf3da43ffa57d')}\n- one\n- three\n${END}\n`).overlap.n, 0);
+  assert.equal(rich(`- one\n\n${begin('core', 'blank', 'b758274ad57880ef')}\n- two wrapped\n${END}\n`).overlap.n, 1);
+  // A current block still reports the copies beside it, but remove counts nothing.
+  assert.equal(rich(`${richBlock()}`).overlap, undefined);
+  assert.deepEqual(rich(`- one\n\n${richBlock()}`).overlap, { total: 3, n: 1, k: 0, imports: [], gate: 0 });
+  assert.equal(rich('- one\n', { remove: true }).overlap, undefined);
+});
+
+test('R66: the recommendation is apply, adopt, or decline, and apply for remove', () => {
+  const from = (...rules) => [{ ref: '3: @a.md', units: new Set(rules), missed: 0, unreadable: false }];
+  assert.equal(rich('mine\n').recommend, 'apply');
+  assert.equal(rich('mine\n- one\n').recommend, 'adopt');
+  assert.equal(rich('mine\n', { imported: from('one', 'two wrapped', 'three') }).recommend, 'decline');
+  assert.equal(rich('mine\n', { imported: from('one', 'three') }).recommend, 'apply');
+  assert.deepEqual(rich('mine\n', { imported: from('one', 'three') }).overlap,
+    { total: 3, n: 0, k: 2, imports: [{ ref: '3: @a.md', n: 2, missed: 0, unreadable: false }], gate: 0 });
+  assert.equal(rich('mine\n', { imported: from('elsewhere') }).recommend, 'apply');
+  assert.equal(rich('- one\n', { imported: from('two wrapped') }).recommend, 'adopt');
+  const adopted = rich('- one\n', { imported: from('two wrapped'), adopt: true });
+  assert.equal(adopted.recommend, 'apply');
+  assert.equal(adopted.overlap.n, 0);
+  assert.equal(rich('- one\n', { imported: from('one', 'two wrapped', 'three'), adopt: true }).recommend, 'decline');
+  assert.equal(rich(richBlock(), { remove: true }).recommend, 'apply');
+  assert.equal(rich(`${begin('core', 'blank', 'be1ba97540b68c56')}\nC1\nOLD\n${END}\n`, { texts: TEXTS }).recommend, 'apply');
+});
+
+test('R67: adopt removes a full copy, headings included, and puts the block where it was', () => {
+  const p = rich('# Mine\n\n## Working\n\n- one\n- two wrapped\n\n## Code\n\n- three\n', { adopt: true });
+  assert.equal(p.after, `# Mine\n\n${richBlock()}`);
+  assert.equal(p.state, 'absent');
+  assert.equal(p.recommend, 'apply');
+  // No overlap: adopt plans as the plain plan does.
+  assert.equal(rich('mine\n', { adopt: true }).after, rich('mine\n').after);
+  assert.equal(rich('mine\n', { adopt: true }).after, `mine\n\n${begin('core', 'blank', '63857e438c8dd232', '9.9.9')}\n${RICH['core.md']}${END}\n`);
+});
+
+test('R67: a fenced example, a differing qualification, and user text under a heading are kept', () => {
+  // The parser alone keeps the fenced example; plan --adopt leaves a file with a fence alone (the gate).
+  assert.equal(adoptRules('mine\n\n```\n- one\n```\n\n- one\n', '[B]\n', RICH['core.md']), 'mine\n\n```\n- one\n```\n\n[B]\n');
+  const kept = '- one\n\n  but only on Fridays\n';
+  assert.equal(rich(kept, { adopt: true }).after, rich(kept).after);
+  assert.equal(rich('## Working\n\n- one\n\n### Mine\n\nmy text\n', { adopt: true }).after, `## Working\n\n### Mine\n\nmy text\n${richBlock()}`);
+  assert.equal(rich('## Code\n\n## Working\n\n- one\n', { adopt: true }).after, `## Code\n\n${richBlock()}`);
+  assert.equal(rich('## Working\n\nmine\n- one\n', { adopt: true }).after, `## Working\n\nmine\n${richBlock()}`);
+});
+
+test('R67: one separator blank line goes with a removed run that had blank lines on both sides', () => {
+  assert.equal(adoptRules('a\n\n- one\n\nb\n', '[B]\n', RICH['core.md']), 'a\n\nb\n[B]\n');
+  assert.equal(adoptRules('a\n- one\n\nb\n', '[B]\n', RICH['core.md']), 'a\n\nb\n[B]\n');
+  assert.equal(adoptRules('a\n\n- one\n## H\n', '[B]\n', RICH['core.md']), 'a\n\n[B]\n## H\n');
+  assert.equal(adoptRules('- one\n\nb\n', '[B]\n', RICH['core.md']), 'b\n[B]\n');
+  assert.equal(adoptRules('a\n\n- one\n\n- three\n\nb\n', '[B]\n', RICH['core.md']), 'a\n\nb\n[B]\n');
+});
+
+test('R67: adopt keeps CRLF, a byte order mark, and a missing final newline', () => {
+  assert.equal(rich('mine\r\n\r\n- one\r\n- two wrapped\r\n', { adopt: true }).after, `mine\r\n\r\n${richBlock('\r\n')}`);
+  assert.equal(rich(`${BOM}mine ${FF}\n\n- one\n`, { adopt: true }).after, `${BOM}mine ${FF}\n\n${richBlock()}`);
+  assert.equal(rich('mine\n\n- one', { adopt: true }).after, `mine\n\n${richBlock()}`);
+  assert.equal(rich('mine\n\n- one\n\ntail', { adopt: true }).after, `mine\n\ntail\n${richBlock()}`);
+});
+
+test('R67: adopt acts on a stale block and on a current one, and takes the old block out first', () => {
+  const stale = rich(`mine\n\n- one\n\n${begin('core', 'blank', 'f93ce92b5912b8dc')}\n- OLD\n${END}\n`, { adopt: true });
+  assert.equal(stale.state, 'stale');
+  assert.equal(stale.after, `mine\n\n${richBlock()}`);
+  const current = rich(`mine\n\n- one\n\n${richBlock().replace('none', 'blank')}`, { adopt: true });
+  assert.equal(current.state, 'current');
+  assert.equal(current.after, `mine\n\n${richBlock()}`);
+  assert.deepEqual(rich(`mine\n\n${richBlock().replace('none', 'blank')}`, { adopt: true }), { state: 'current', after: null, options: ['core'] });
+});
+
+test('R42, R67: remove after adopt leaves the trimmed file, for join=blank and join=newline blocks', () => {
+  const DUP = { ...TEXTS, 'core.md': '- duplicate\n' };
+  for (const [original, trimmed] of [['user\n\n- duplicate\n', 'user\n\n'], ['user\n- duplicate', 'user\n']]) {
+    const installed = plan(original, { texts: DUP }).after;
+    const adopted = plan(installed, { texts: DUP, adopt: true });
+    assert.equal(adopted.state, 'current');
+    assert.equal(plan(adopted.after, { texts: DUP, remove: true }).after, trimmed);
+  }
+});
+
+test('R44: imports are found at a line start or after white space, and not in code, fences, quotes, words, or the block', () => {
+  const text = [
+    '@start.md', 'see @mid.md and @two.md', 'an @esc\\ aped/file.md here', '`@span.md` and ``@a`b.md``', '```', '@fenced.md', '```',
+    '"@quoted.md" and @"q p.md"', 'mail a@b.c', `${begin('core', 'blank', 'd0c78d0f2fb160ad')}`, '@inblock.md', END, '\t@tab.md\r', '@~/home.md', '',
+  ].join('\n');
+  assert.deepEqual(imports(text, inspect(text)).map((i) => `${i.n} ${i.token} ${i.path}`), [
+    '1 @start.md start.md', '2 @mid.md mid.md', '2 @two.md two.md', '3 @esc\\ aped/file.md esc aped/file.md', '14 @~/home.md ~/home.md']);
+  assert.deepEqual(imports('no imports\n'), []);
+  assert.deepEqual(imports(`${BOM}@~/extra.md\n`).map((i) => [i.n, i.token]), [[1, '@~/extra.md']]);
+});
+
+// scanImports on temporary files: each top-level import reaches its own files.
+const reached = (rows) => rows.map(({ ref, units: set, missed, unreadable }) => ({ ref, units: [...set], missed, unreadable }));
+const scan = (s, text) => reached(scanImports(text, s.claude, inspect(text), s.home));
+
+test('R44: imports resolve relative to the importing file, from home with ~/, and as absolute paths', sandbox((s) => {
+  put(join(s.claudeDir, 'toolkit', 'a.md'), '- one\n\n@nested.md\n');
+  put(join(s.claudeDir, 'toolkit', 'nested.md'), '- two\n');
+  put(join(s.home, 'shared.md'), '- three\n');
+  put(join(s.root, 'abs.md'), '- four\n');
+  const text = `@toolkit/a.md\n@~/shared.md\n@${join(s.root, 'abs.md')}\n@none.md\n`;
+  assert.deepEqual(scan(s, text), [
+    { ref: '1: @toolkit/a.md', units: ['one', '@nested.md', 'two'], missed: 0, unreadable: false },
+    { ref: '2: @~/shared.md', units: ['three'], missed: 0, unreadable: false },
+    { ref: `3: @${join(s.root, 'abs.md')}`, units: ['four'], missed: 0, unreadable: false },
+    { ref: '4: @none.md', units: [], missed: 1, unreadable: true },
+  ]);
+}));
+
+test('R44: a Unicode path is decoded from latin1 bytes, and an escaped space is one path', sandbox((s) => {
+  put(join(s.claudeDir, 'né漢 x.md'), '- uni\n');
+  const text = Buffer.from('@né漢\\ x.md\n', 'utf8').toString('latin1');
+  assert.deepEqual(scan(s, text), [{ ref: `1: ${Buffer.from('@né漢\\ x.md', 'utf8').toString('latin1')}`, units: ['uni'], missed: 0, unreadable: false }]);
+}));
+
+test('R44: four hops are followed and the fifth is not, a cycle ends, and a missing nested file is incomplete', sandbox((s) => {
+  const chain = ['f1', 'f2', 'f3', 'f4', 'f5'];
+  chain.forEach((f, i) => put(join(s.claudeDir, `${f}.md`), `- ${f}\n\n${chain[i + 1] ? `@${chain[i + 1]}.md\n` : ''}`));
+  assert.deepEqual(scan(s, '@f1.md\n'), [{ ref: '1: @f1.md', units: ['f1', '@f2.md', 'f2', '@f3.md', 'f3', '@f4.md', 'f4', '@f5.md'], missed: 0, unreadable: false }]);
+  put(join(s.claudeDir, 'c1.md'), '- c1\n\n@c2.md\n');
+  put(join(s.claudeDir, 'c2.md'), '- c2\n\n@c1.md\n');
+  assert.deepEqual(scan(s, '@c1.md\n'), [{ ref: '1: @c1.md', units: ['c1', '@c2.md', 'c2', '@c1.md'], missed: 0, unreadable: false }]);
+  put(join(s.claudeDir, 'm.md'), '- m\n\n@gone.md\n');
+  assert.deepEqual(scan(s, '@m.md\n'), [{ ref: '1: @m.md', units: ['m', '@gone.md'], missed: 1, unreadable: false }]);
+}));
+
+test('R44: a directory, a file over 256 KiB, and the fifty-first file are read errors, not skipped', sandbox((s) => {
+  mkdirSync(join(s.claudeDir, 'dir'), { recursive: true });
+  put(join(s.claudeDir, 'big.md'), `- big\n<!-- ${'x'.repeat(256 * 1024)} -->`);
+  put(join(s.claudeDir, 'ok.md'), `- ok\n\n<!-- ${'x'.repeat(256 * 1024 - 15)} -->`);
+  assert.deepEqual(scan(s, '@dir\n@big.md\n@ok.md\n').map((r) => [r.unreadable, r.units]), [[true, []], [true, []], [false, ['ok']]]);
+  const many = Array.from({ length: 51 }, (_, i) => `d${i}.md`);
+  many.forEach((f) => put(join(s.claudeDir, f), `- ${f}\n`));
+  const rows = scan(s, many.map((f) => `@${f}\n`).join(''));
+  assert.deepEqual(rows.filter((r) => r.unreadable).map((r) => r.ref), ['51: @d50.md']);
+  assert.equal(rows[0].units[0], 'd0.md');
+}));
+
+test('R44: a symlinked import resolves its own relative imports against the path it was reached by', { skip: process.platform === 'win32' }, sandbox((s) => {
+  put(join(s.root, 'real', 'x.md'), '- x\n\n@sib.md\n');
+  put(join(s.claudeDir, 'sib.md'), '- sib\n');
+  symlinkSync(join(s.root, 'real', 'x.md'), join(s.claudeDir, 'link.md'));
+  assert.deepEqual(scan(s, '@link.md\n'), [{ ref: '1: @link.md', units: ['x', '@sib.md', 'sib'], missed: 0, unreadable: false }]);
+}));
+
+test('R44, R66: the plan names what each import holds, and the units of a file are never joined across files', sandbox((s) => {
+  const core = SHIPPED['core.md'];
+  put(join(s.claudeDir, 'toolkit', 'a.md'), core);
+  put(join(s.claudeDir, 'b.md'), 'nothing here\n');
+  put(join(s.claudeDir, 'half.md'), `${core.split('\n').slice(0, 10).join('\n')}\n\n@gone.md\n`);
+  put(s.claude, '# Mine\n\n@toolkit/a.md\n@b.md\n@half.md\n@missing.md\n');
+  const out = s.run('plan', ['--options', 'core']);
+  const claude = out.slice(0, out.indexOf(`target: codex ${s.codex}`));
+  assert.deepEqual(claude.slice(0, 10), [`target: claude ${s.claude}`, 'state: absent', 'options: core',
+    'note: line 3: @toolkit/a.md imports a file that holds 30 of 30 rules; it is left as it is',
+    'note: line 4: @b.md imports a file that holds none of the rules; it is left as it is',
+    'note: line 5: @half.md imports a file that holds at least 2 of 30 rules; 1 import could not be read; it is left as it is',
+    'note: line 6: @missing.md imports a file that cannot be read; it is left as it is',
+    'change: ready', 'recommend: decline',
+    'note: 30 of 30 rules come from imports; applying duplicates them; declining leaves this file unchanged']);
+  assert.equal(claude.some((l) => l.includes('already present outside the block')), false);
+  assert.deepEqual(s.run('status').filter((l) => l.includes('note')), []);
+}));
+
+test('R66: the overlap note and the recommendation for a hand copy, and adopt then apply writes a backup', sandbox((s) => {
+  const copy = `# Mine\n\n${SHIPPED['core.md']}`;
+  put(s.codex, copy);
+  const out = s.run('plan', ['--options', 'core']);
+  const codex = out.slice(out.indexOf(`target: codex ${s.codex}`));
+  assert.deepEqual(codex.slice(0, 7), [`target: codex ${s.codex}`, 'state: absent', 'options: core',
+    'note: 30 of 30 rules already present outside the block; applying duplicates them', 'change: ready', 'recommend: adopt',
+    'note: /ccx:rules --adopt moves those lines into the block']);
+  const adopted = s.run('plan', ['--adopt', '--options', 'core']);
+  const section = adopted.slice(adopted.indexOf(`target: codex ${s.codex}`));
+  assert.deepEqual(section.slice(0, 5), [`target: codex ${s.codex}`, 'state: absent', 'options: core', 'change: ready', 'recommend: apply']);
+  assert.equal(section[5].includes('-Any instruction file can add an ask-first rule; none removes one.'), true);
+  assert.deepEqual(s.run('apply', ['codex'], { now: AT }), [`ccx: wrote ${s.codex}; the earlier content is in ${s.codex}.ccx-backup-20261003120000`]);
+  assert.equal(bytes(`${s.codex}.ccx-backup-20261003120000`), copy);
+  const after = bytes(s.codex);
+  assert.equal(after.startsWith('# Mine\n\n<!-- ccx:house-rules begin version=0.5.0 options=core join=none digest='), true);
+  assert.equal(after.split('Make the smallest correct change').length, 2);
+  assert.equal(s.run('plan', ['--options', 'core']).includes('state: current'), true);
+  s.run('remove');
+  s.run('apply', ['codex'], { now: LATER });
+  assert.equal(bytes(s.codex), '# Mine\n\n');
+}));
+
+test('R67: --adopt is read in either order, and refused with --remove, or with any verb but plan', sandbox((s) => {
+  const flat = (rest) => s.run('plan', rest).join('\n');
+  assert.equal(flat(['--adopt', '--options', 'core']), flat(['--options', 'core', '--adopt']));
+  assert.equal(s.run('plan', ['--adopt']).includes('options: core'), true);
+  assert.throws(() => s.run('remove', ['--adopt']), { message: '--adopt goes with plan, not remove' });
+  assert.throws(() => s.run('status', ['--adopt']), { message: '--adopt goes with plan, not status' });
+  assert.throws(() => s.run('plan', ['--adopt', '--options', 'core', 'writing']), { message: 'unexpected argument "writing" after --options list' });
+}));
+
+test('units: a fence indented into an item, with a qualification after it, belongs to the item, which then matches no rule', () => {
+  const item = '- A review is read-only unless I ask for changes.\n\n  ```\n  example\n  ```\n\n  Exception: none.\n';
+  assert.deepEqual(kinds(item), ['item:A review is read-only unless I ask for changes. ``` example ``` Exception: none.']);
+  assert.deepEqual(kinds('- a\n\n```\nx\n```\n- b\n'), ['item:a', 'item:b']);
+  const only = { ...TEXTS, 'core.md': '- A review is read-only unless I ask for changes.\n' };
+  const p = plan(item, { texts: only, adopt: true });
+  assert.equal(p.overlap.n, 0);
+  assert.equal(p.after, plan(item, { texts: only }).after);
+});
+
+test('R44: a code span that opens on one line and closes on the next hides its @path, and a blank line ends an open span', () => {
+  const found = (text) => imports(text).map((i) => i.token);
+  assert.deepEqual(found('see `@a.md\nmore` and @b.md\n'), ['@b.md']);
+  assert.deepEqual(found('see ``@a.md ` @c.md\n@d.md`` @e.md\n'), ['@e.md']);
+  assert.deepEqual(found('an `unclosed @f.md\n\n@g.md\n'), ['@f.md', '@g.md']);
+  assert.deepEqual(found('`@h.md` @i.md\n'), ['@i.md']);
+});
+
+test('units: any nested construct indented into an item, or directly after its line, belongs to the item and keeps it from matching', () => {
+  const rule = '- A review is read-only unless I ask for changes.';
+  const only = { ...TEXTS, 'core.md': `${rule}\n` };
+  const cases = {
+    comment: [`${rule}\n  <!-- exception -->\n  Except for generated files.\n`, 'item:A review is read-only unless I ask for changes. Except for generated files.'],
+    'multi-line comment': [`${rule}\n\n  <!-- a\n  b -->\n\n  Except it.\n`, 'item:A review is read-only unless I ask for changes. Except it.'],
+    'comment at column 0 with no blank line': [`${rule}\n<!-- note -->\nmore\n`, 'item:A review is read-only unless I ask for changes. more'],
+    'fence at column 0 with no blank line': [`${rule}\n\`\`\`\nx\n\`\`\`\n`, 'item:A review is read-only unless I ask for changes. ```'],
+    'indented code': [`${rule}\n\n      code\n\n  Except it.\n`, 'item:A review is read-only unless I ask for changes. code Except it.'],
+    'indented heading': [`${rule}\n\n  # Note\n`, 'item:A review is read-only unless I ask for changes. # Note'],
+  };
+  for (const [name, [text, norm]] of Object.entries(cases)) {
+    assert.deepEqual(kinds(text), [norm], name);
+    const p = plan(text, { texts: only, adopt: true });
+    assert.equal(p.overlap.n, 0, name);
+    assert.equal(p.after, plan(text, { texts: only }).after, name);
+  }
+  // After a blank line, a comment or fence below the item's column ends it.
+  assert.deepEqual(kinds(`${rule}\n\n<!-- note -->\nafter\n`), ['item:A review is read-only unless I ask for changes.', 'para:after']);
+});
+
+test('R44: an unmatched backtick is literal text, and a fence nested in a list item may be indented past three spaces', () => {
+  const found = (text) => imports(text).map((i) => i.token);
+  assert.deepEqual(found('prose then @rules.md\n'), ['@rules.md']);
+  assert.deepEqual(found('prose ` then @rules.md\n'), ['@rules.md']);
+  assert.deepEqual(found('a `x`` @one.md\nb @two.md\n'), ['@one.md', '@two.md']);
+  assert.deepEqual(found('a ``x` @one.md\nb `` @two.md\n'), ['@two.md']);
+  assert.deepEqual(found('a ``x` @one.md `` @two.md\n'), ['@two.md']);
+  assert.deepEqual(found('1. step\n\n    ~~~\n    @x.md\n    ~~~\n\n@y.md\n'), ['@y.md']);
+  assert.deepEqual(found('1. step\n\n   ~~~\n   @x.md\n   ~~~\n\n@y.md\n'), ['@y.md']);
+  assert.deepEqual(found('1. step\n\n@z.md\n\n    ~~~\n    @x.md\n'), ['@z.md']);
+});
+
+test('a fence or comment that opens on a list item first line belongs to that item, in imports and in units', () => {
+  const found = (text) => imports(text).map((i) => i.token);
+  assert.deepEqual(found('- ```\n  @fake.md\n  ```\n\n@real.md\n'), ['@real.md']);
+  assert.deepEqual(found('1. ~~~sh\n    @fake.md\n    ~~~\n\n@real.md\n'), ['@real.md']);
+  assert.deepEqual(found('- - ```\n    @fake.md\n    ```\n\n@real.md\n'), ['@real.md']);
+  assert.deepEqual(kinds('- ```\n  @fake.md\n  ```\n\n@real.md\n'), ['item:``` @fake.md ```', 'para:@real.md']);
+  assert.deepEqual(kinds('- <!-- a\n  b -->\n\n- one\n- <!-- c --> two\n'), ['item:', 'item:one', 'item:two']);
+  // The fence state stays right after such an item, so the rule below it is still found and adopted.
+  assert.deepEqual(kinds('- ```\n  - one\n  ```\n\n- one\n'), ['item:``` - one ```', 'item:one']);
+  assert.equal(adoptRules('- ```\n  - one\n  ```\n\n- one\n', '[B]\n', RICH['core.md']), '- ```\n  - one\n  ```\n\n[B]\n');
+});
+
+test('R44: a ccx marker line is a hard boundary for units, so a managed block in an imported file keeps all its rules', sandbox((s) => {
+  put(join(s.claudeDir, 'managed.md'), plan(null, { texts: SHIPPED }).after);
+  const [row] = scan(s, '@managed.md\n');
+  assert.equal(row.missed, 0);
+  const p = plan('mine\n', { texts: SHIPPED, imported: [{ ref: '1: @managed.md', units: new Set(row.units), missed: 0, unreadable: false }] });
+  assert.equal(p.overlap.k, 30);
+  assert.equal(p.overlap.total, 30);
+  assert.deepEqual(kinds(`- user\n${END}\n- next\n`), ['item:user', 'item:next']);
+  assert.deepEqual(kinds(`- user\n${begin('core', 'none', 'cb477dddc15de845')}\nafter\n`), ['item:user', 'para:after']);
+}));
+
+test('R44: an import of a FIFO or a directory is a read error, and the scan returns', { skip: process.platform === 'win32' }, sandbox((s) => {
+  const fifo = join(s.claudeDir, 'pipe');
+  mkdirSync(s.claudeDir, { recursive: true });
+  assert.equal(spawnSync('mkfifo', [fifo]).status, 0);
+  mkdirSync(join(s.claudeDir, 'dir'));
+  assert.deepEqual(scan(s, '@pipe\n@dir\n'), [
+    { ref: '1: @pipe', units: [], missed: 1, unreadable: true },
+    { ref: '2: @dir', units: [], missed: 1, unreadable: true },
+  ]);
+}));
+
+test('R44: text is latin1, so the byte A0 of a UTF-8 character is not white space for paths or for unit text', sandbox((s) => {
+  const latin = (text) => Buffer.from(text, 'utf8').toString('latin1');
+  put(join(s.claudeDir, '\u00e0.md'), '- one\n');
+  put(join(s.claudeDir, '\u6f22.md'), '- two\n');
+  assert.deepEqual(imports(latin('@\u00e0.md and @\u6f22.md\n')).map((i) => i.token), [latin('@\u00e0.md'), latin('@\u6f22.md')]);
+  assert.deepEqual(scan(s, latin('@\u00e0.md\n@\u6f22.md\n')).map((r) => [r.ref, r.units, r.unreadable]), [
+    [`1: ${latin('@\u00e0.md')}`, ['one'], false], [`2: ${latin('@\u6f22.md')}`, ['two'], false]]);
+  assert.deepEqual(kinds(latin('- caf\u00e0 x\n')), ['item:caf\u00c3\u00a0 x']);
+}));
+
+test('R67: only a plain shape may match a rule, so indented code, tabs, and deeper continuations are kept by adopt', () => {
+  const only = { ...TEXTS, 'core.md': '- A review is read-only unless I ask for changes.\n' };
+  const rule = 'A review is read-only unless I ask for changes.';
+  const cases = {
+    'five spaces after the marker': `-     ${rule}\n`,
+    'tab after the marker': `-\t${rule}\n`,
+    'tab in a continuation': `- A review is read-only\n\tunless I ask for changes.\n`,
+    'continuation past the content column': `- A review is read-only\n      unless I ask for changes.\n`,
+    'tab in a paragraph': `A review is read-only\n\tunless I ask for changes.\n`,
+    'paragraph line at column 4': `A review is read-only\n    unless I ask for changes.\n`,
+  };
+  for (const [name, text] of Object.entries(cases)) {
+    const p = plan(text, { texts: only, adopt: true });
+    assert.equal(p.overlap.n, 0, name);
+    assert.equal(p.after, plan(text, { texts: only }).after, name);
+  }
+  assert.equal(plan(`- ${rule}\n`, { texts: only, adopt: true }).after, `${begin('core', 'none', '6f5144b9eecde4b6', '9.9.9')}\n- ${rule}\n${END}\n`);
+  assert.equal(plan(`mine\n\n${SHIPPED['core.md']}`, { texts: SHIPPED }).overlap.n, 30);
+});
+
+test('R67: adopt keeps text that only looks like a rule because the parser flattened a construct around it', () => {
+  const R = 'A review is read-only unless I ask for changes.';
+  const cases = {
+    'lazy continuation': [`- ${R}\ntail\n`, `- ${R} tail\n`],
+    'quote attached to an item': [`- ${R}\n> note\n`, `- ${R} > note\n`],
+    'quote after a blank, in the item': [`- ${R}\n\n  > exception\n`, `- ${R}\n`],
+    'parenthesis item nested': [`- ${R}\n  1) child\n`, `- ${R} 1) child\n`],
+    'nested list after a blank': [`- ${R}\n\n  - exception\n`, `- ${R}\n`],
+    'indented code after a blank': [`- ${R}\n\n      exception\n`, `- ${R}\n`],
+    'item-owned fence after a blank': [`- ${R}\n\n  ~~~\n  example\n  ~~~\n`, `- ${R}\n`],
+    'item-owned comment after a blank': [`- ${R}\n\n  <!-- exception -->\n`, `- ${R}\n`],
+    'setext heading with ===': [`${R}\n===\n`, `- ${R} ===\n`],
+    'setext heading with ---': [`${R}\n---\n`, `- ${R} ---\n`],
+    'table': [`${R} | j\n--- | ---\nx | y\n`, `- ${R} | j --- | --- x | y\n`],
+    'HTML block': [`<div>\n- ${R}\n- other\n</div>\n`, `- ${R}\n`],
+    'raw HTML across a blank line': [`<script>\n- ${R}\n\n</script>\n`, `- ${R}\n`],
+    'comment opened after prose': [`text <!--\n- ${R}\n- other -->\n`, `- ${R}\n`],
+    'quote': [`> - ${R}\n`, `- ${R}\n`],
+  };
+  for (const [name, [text, rule]] of Object.entries(cases)) {
+    const texts = { ...TEXTS, 'core.md': rule };
+    assert.equal(plan(text, { texts, adopt: true }).after, plan(text, { texts }).after, name);
+  }
+  // The plain shape is still adopted, and so is a four-space wrap under a two-column item.
+  const texts = { ...TEXTS, 'core.md': `- ${R}\n` };
+  assert.equal(plan(`mine\n\n- ${R}\n`, { texts, adopt: true }).after, `mine\n\n${begin('core', 'none', '6f5144b9eecde4b6', '9.9.9')}\n- ${R}\n${END}\n`);
+  assert.equal(plan('- A review is read-only\n    unless I ask for changes.\n', { texts, adopt: true }).after, `${begin('core', 'none', '6f5144b9eecde4b6', '9.9.9')}\n- ${R}\n${END}\n`);
+});
+
+test('R44: quotes, HTML blocks, tables, setext headings, tabs and nested containers are never scanned for imports', () => {
+  const found = (text) => imports(text).map((i) => i.token);
+  const cases = [
+    ['> @x\n', []], ['  > @x\n', []], ['   > @x\n', []],
+    ['> ~~~\n@x\n', ['@x']], ['~~~\n> ~~~\n@x\n~~~\n', []], ['> `\n@x\n`\n', ['@x']],
+    ['> <!--\n@x\n', ['@x']], ['<!--\n> -->\n@x\n-->\n', []],
+    ['   @x\n\n    @y\n', ['@x']],
+    ['\t@x\n', []], ['text\t@x\n', []], ['-\t@x\n', []], ['-  @x\n', []], ['-     @x\n', []],
+    ['- outer\n  - @x\n', []], ['- - @x\n', []], ['- > @x\n', []],
+    ['- text\n  @a\n     @b\n      @c\n', ['@a', '@b']], ['- text\n @x\n', []],
+    ['10. text\n    @a\n       @b\n        @c\n', ['@a', '@b']], ['1) ~~~\n   @x\n   ~~~\n', []],
+    ['h | j\n--- | ---\n@x | y\n', []], ['| h | j |\n| --- | --- |\n| @x | y |\n', []],
+    ['@x\n===\n', []], ['@x\n---\n', []],
+    ['<div>\n@x\n</div>\n', []], ['<script>\n\n@x\n</script>\n', []],
+    ['<!-- @x -->\n', []], ['<!--\n@x\n-->\n', []], ['<!--\n\n@x\n\n-->\n', []],
+    ['@a <!-- @x --> @b\n', ['@a', '@b']], ['<!-- @a --> <!-- @b --> @c\n', ['@c']], ['<!--\n--> @x\n', ['@x']],
+    ['- <!-- @x -->\n', []], ['- <!--\n  @x\n  -->\n', []], ['- text\n  <!--\n  @x\n  -->\n', []],
+    ['<!--\n~~~\n-->\n@x\n', ['@x']], ['<!-- ` -->\n@x\n`\n', ['@x']], ['`<!--` @x\n', ['@x']],
+    ['\\` @x `\n', ['@x']], ['- `\n- @x\n- `\n', ['@x']], ['text `\n# heading\n@x\n`\n', ['@x']], ['    `\n@x\n`\n', ['@x']],
+    ['-  ~~~\n@x\n', ['@x']], ['- ~~~\n  code\n- @x\n', ['@x']], ['- ~~~\n  code\n\n@x\n', ['@x']],
+    ['- <!--\n  comment\n- @x\n', ['@x']], ['- text\n# heading\n    ~~~\n@x\n', ['@x']],
+    [`\`\n${END}\n@x\n\`\n`, ['@x']], [`~~~\n${END}\n@x\n`, []], [`<!--\n${END}\n@x\n`, ['@x']], [`- text\n${END}\n    ~~~\n@x\n`, ['@x']],
+  ];
+  for (const [text, tokens] of cases) assert.deepEqual(found(text), tokens, JSON.stringify(text));
+});
+
+test('R67: a unit whose raw lines differ from its match text, because a comment was stripped, is never counted or removed', () => {
+  // The commented heading stays; the rules under it, and the heading that held only rules, are still adopted.
+  const file = '## Working <!-- Keep this project-specific note. -->\n\n- one\n- two wrapped\n\n## Code\n\n- three\n';
+  assert.equal(adoptRules(file, '[B]\n', RICH['core.md']), '## Working <!-- Keep this project-specific note. -->\n\n[B]\n');
+  for (const [text, texts] of [['- one <!-- x -->\n', RICH], ['C1 <!-- x -->\nC2\n', TEXTS], ['<!-- x -->\n- one\n  <!-- y -->\n  more\n', RICH]]) {
+    const p = plan(text, { texts, adopt: true });
+    assert.equal(p.after, plan(text, { texts }).after, text);
+  }
+  assert.equal(adoptRules('## Code <!-- x -->\n\n- three\n', '[B]\n', RICH['core.md']), '## Code <!-- x -->\n\n[B]\n');
+});
+
+test('R44: comment marks inside a code span that wraps across lines are text, and a real comment ends only at its own mark', () => {
+  const found = (text) => imports(text).map((i) => i.token);
+  assert.deepEqual(found('a `b <!--\nc` @real.md\n\n@later.md\n'), ['@real.md', '@later.md']);
+  assert.deepEqual(found('a `b <!--\nc --> d` @real.md\n\n@later.md\n'), ['@real.md', '@later.md']);
+  assert.deepEqual(found('<!-- real `\n--> @y `\n'), ['@y']);
+  assert.deepEqual(found('a `b --> c` @one.md <!-- @x --> @two.md\n'), ['@one.md', '@two.md']);
+  assert.deepEqual(found('a ` <!--\nc `\n\n@later.md\n'), ['@later.md']);
+  // A real comment, opened outside any span and never closed, hides the rest of its segment.
+  assert.deepEqual(found('a ` <!--\n\n@later.md\n'), []);
+  assert.deepEqual(found('`<!--` @x\n\n<!-- @y -->\n@z\n'), ['@x', '@z']);
+});
+
+test('R67: indented text is never a rule, since it may belong to a container', () => {
+  const R = 'A review is read-only unless I ask for changes.';
+  const only = { ...TEXTS, 'core.md': `- ${R}\n` };
+  const cases = {
+    'nested rule after a quote': `- outer\n  > note\n\n  - ${R}\n`,
+    'nested rule under a user item': `- outer\n\n  - ${R}\n`,
+    'indented paragraph': `   ${R}\n`,
+    'indented item': `  - ${R}\n`,
+  };
+  for (const [name, text] of Object.entries(cases)) {
+    assert.equal(plan(text, { texts: only, adopt: true }).after, plan(text, { texts: only }).after, name);
+  }
+  assert.equal(plan(`mine\n\n${SHIPPED['core.md']}`, { texts: SHIPPED }).overlap.n, 30);
+  assert.equal(plan(`mine\n\n${SHIPPED['core.md'].replace(/^/gm, '  ')}`, { texts: SHIPPED }).overlap.n, 0);
+});
+
+test('R67: a unit followed by anything but a blank line, the end, a heading, or a plain item is never a rule', () => {
+  const R = 'A review is read-only unless I ask for changes.';
+  const only = { ...TEXTS, 'core.md': `${R}\n` };
+  const cases = {
+    'single hyphen underline': `${R}\n-\n`, 'equals underline': `${R}\n=\n`, 'quote': `${R}\n> note\n`,
+    'table row': `${R}\n| a | b |\n`, 'lone marker': `${R}\n-\n`, 'lone number': `${R}\n1.\n`, 'HTML': `${R}\n<div>\n`,
+    'item then quote': `- ${R}\n> note\n`,
+  };
+  for (const [name, text] of Object.entries(cases)) {
+    const texts = name.startsWith('item') ? { ...TEXTS, 'core.md': `- ${R}\n` } : only;
+    assert.equal(plan(text, { texts, adopt: true }).after, plan(text, { texts }).after, name);
+  }
+  // Blank, end of text, a heading, a marker line, and a plain item after it are all fine.
+  for (const text of [`${R}\n`, `${R}`, `${R}\n\nx\n`, `${R}\n# H\n`, `${R}\n- next\n`]) {
+    assert.notEqual(plan(text, { texts: only, adopt: true }).after, plan(text, { texts: only }).after, text);
+  }
+  // The shipped texts still match in full, alone and as a managed block inside an imported file.
+  const all = render('codex', ['windows', 'core', 'writing'], SHIPPED);
+  assert.equal(plan(`mine\n\n${all}`, { target: 'codex', texts: SHIPPED, platform: 'win32', options: ['core', 'windows', 'writing'] }).overlap.n, 40);
+  assert.equal(plan(`mine\n\n${SHIPPED['core.md']}`, { texts: SHIPPED }).overlap.n, 30);
+});
+
+test('R67: a file that holds Markdown adopt does not handle is left alone, and plan recommends decline for it', () => {
+  const R = 'A review is read-only unless I ask for changes.';
+  const only = { ...TEXTS, 'core.md': `- ${R}\n` };
+  const triggers = {
+    'comment opener': ['mine\n<!-- note -->\n', 2], 'comment closer': ['mine\n\nx -->\n', 3], 'backtick fence': ['mine\n  ```\n  ```\n', 2],
+    'tilde fence': ['~~~\n~~~\n', 1], 'quote': ['a\nb\n  > q\n', 3], 'pipe': ['a | b\n', 1], 'HTML block': ['a\n\n<div>\n', 3], 'closing tag': ['</div>\n', 1],
+  };
+  for (const [name, [extra, line]] of Object.entries(triggers)) {
+    const text = `${extra}\n- ${R}\n`;
+    const p = plan(text, { texts: only, adopt: true });
+    assert.equal(p.after, plan(text, { texts: only }).after, name);
+    assert.deepEqual([p.overlap.n, p.overlap.gate, p.recommend], [1, line, 'decline'], name);
+    assert.deepEqual([plan(text, { texts: only }).overlap.gate, plan(text, { texts: only }).recommend], [line, 'decline'], name);
+  }
+  // Toggling adopt on a gated file with overlap leaves the recommendation at decline, so the command cannot loop.
+  assert.deepEqual(['a | b\n\n- ' + R + '\n'].flatMap((x) => [false, true].map((adopt) => plan(x, { texts: only, adopt }).recommend)), ['decline', 'decline']);
+  for (const html of ['<![CDATA[', '<?php', '<!DOCTYPE html>', '<pre>']) {
+    assert.equal(plan(`mine\n${html}\n\n- ${R}\n`, { texts: only }).overlap.gate, 2, html);
+  }
+  assert.equal(plan(`a < b and c<d\n\n- ${R}\n`, { texts: only }).overlap.gate, 0);
+  // A gated file with no overlap has nothing to report; the block's own lines never trigger the gate.
+  assert.equal(plan('a | b\n', { texts: only }).recommend, 'apply');
+  assert.equal(plan(`${BOM}mine\n\n- ${R}\n\n${richBlock()}`, { texts: only, adopt: true }).overlap.gate, 0);
+  // A simple hand copy, with an import line, is adopted fully and plain plan recommends adopt.
+  const copy = `# Mine\n\n@toolkit/a.md\n\n## Working\n\n- one\n- two wrapped\n\n## Code\n\n- three\n`;
+  assert.equal(rich(copy, { adopt: true }).after, `# Mine\n\n@toolkit/a.md\n\n${richBlock()}`);
+  assert.equal(rich(copy).recommend, 'adopt');
+});
+
+test('R44: a code span never pairs across the paragraphs of one list item', () => {
+  const found = (text) => imports(text).map((i) => i.token);
+  assert.deepEqual(found('- before `\n\n  @rules.md\n  after `\n'), ['@rules.md']);
+  assert.deepEqual(found('- before `x\n  @hidden.md y` after\n\n  @shown.md\n'), ['@shown.md']);
+});
+
+test('R44: a code span never pairs across list items, so a comment between them stays a comment', () => {
+  assert.deepEqual(imports('- `\n- <!-- @x -->\n- `\n').map((i) => i.token), []);
+  assert.deepEqual(imports('- `\n- @y\n- `\n').map((i) => i.token), ['@y']);
+  assert.deepEqual(imports('a `\n# h\n<!-- @x -->\n`\n').map((i) => i.token), []);
+});
+
+test('R44: one segmentation decides where code spans pair, so a heading backtick never pairs with a later paragraph', () => {
+  const found = (text) => imports(text).map((i) => i.token);
+  assert.deepEqual(found('# h `\n<!-- @x -->\nafter `\n'), []);
+  assert.deepEqual(found('# h `\n\n<!-- @x -->\n\nafter ` @y\n'), ['@y']);
+  assert.deepEqual(found('- a `\n  <!-- @x -->\n  b ` @y\n'), ['@y']);
+  assert.deepEqual(found('para `\n```\n<!-- @x -->\n```\nafter ` @y\n'), ['@y']);
+  assert.deepEqual(found('para `\n> q\n@y `\n'), ['@y']);
+});
+
+test('masked comments and code spans are not an import boundary', () => {
+  const found = (t) => imports(t).map((i) => i.token);
+  assert.deepEqual(found('`example`@plugins/ccx/rules/core.md\n'), []);
+  assert.deepEqual(found('`x` @a.md\n'), ['@a.md']);
+  assert.deepEqual(found('<!-- c -->@b.md\n'), []);
+  assert.deepEqual(found('<!-- c --> @b.md\n'), ['@b.md']);
+  assert.deepEqual(found('@a.md<!-- c -->\n'), ['@a.md']);
+  assert.deepEqual(found('@a.md`x`b\n'), ['@a.md']);
+});
+
+test('R44: a symlinked CLAUDE.md resolves imports beside the link first, then beside its destination', { skip: process.platform === 'win32' }, sandbox((s) => {
+  const dest = join(realpathSync(s.root), 'real', 'CLAUDE.md');
+  put(dest, '@a.md\n@b.md\n');
+  mkdirSync(s.claudeDir, { recursive: true });
+  symlinkSync(dest, s.claude);
+  put(join(s.claudeDir, 'a.md'), '- link a\n');
+  put(join(s.claudeDir, 'b.md'), '- link b\n');
+  put(join(s.root, 'real', 'b.md'), '- dest b\n');
+  put(join(s.root, 'real', 'c.md'), '- dest c\n');
+  const text = '@a.md\n@b.md\n@c.md\n@d.md\n';
+  assert.deepEqual(reached(scanImports(text, dest, inspect(text), s.home, s.claude)), [
+    { ref: '1: @a.md', units: ['link a'], missed: 0, unreadable: false },
+    { ref: '2: @b.md', units: ['link b'], missed: 0, unreadable: false },
+    { ref: '3: @c.md', units: ['dest c'], missed: 0, unreadable: false },
+    { ref: '4: @d.md', units: [], missed: 1, unreadable: true }]);
+}));
+
+test('R67: the block goes before the next level 1 or 2 heading, else at the end, never ahead of user text', () => {
+  const rule = '- three\n';
+  assert.equal(rich(`## Mine\n\n${rule}- Always use tabs in Go files.\n`, { adopt: true }).after, `## Mine\n\n- Always use tabs in Go files.\n${richBlock()}`);
+  assert.equal(rich(`## Mine\n\n${rule}\n## Next\n\nx\n`, { adopt: true }).after, `## Mine\n\n${richBlock()}## Next\n\nx\n`);
+  assert.equal(rich(`## Mine\n\n${rule}\n### Sub\n\nx\n`, { adopt: true }).after, `## Mine\n\n### Sub\n\nx\n${richBlock()}`);
+  assert.equal(rich('- one\n- two wrapped\n', { adopt: true }).after, richBlock());
+  assert.equal(rich('- one\n\nuser paragraph\n', { adopt: true }).after, `user paragraph\n${richBlock()}`);
+});
+
+test('R44: an import chain back to CLAUDE.md does not count the rules in its own block', sandbox((s) => {
+  put(join(s.claudeDir, 'shared.md'), 'see @CLAUDE.md\n');
+  put(s.claude, 'My notes. @shared.md\n');
+  s.run('plan');
+  s.run('apply', ['claude']);
+  const text = readFileSync(s.claude, 'latin1');
+  assert.ok(text.includes('ccx:house-rules begin'));
+  assert.deepEqual(scan(s, text), [{ ref: '1: @shared.md', units: ['see @CLAUDE.md'], missed: 0, unreadable: false }]);
+  const out = s.run('plan', ['--options', 'core']).slice(0, 8);
+  assert.deepEqual(out.filter((l) => l.includes('from imports')), []);
+  assert.ok(out.includes('state: current'));
+}));
+
+const notes = (out) => out.filter((l) => l.startsWith('note:') || l.startsWith('recommend:') || l.startsWith('change:') || l.startsWith('state:'))
+  .slice(0, out.findIndex((l) => l.startsWith('target: codex')) < 0 ? undefined : out.findIndex((l) => l.startsWith('target: codex')));
+const claudeOnly = (out) => out.slice(0, out.findIndex((l) => l.startsWith('target: codex')));
+const ruleLines = (n) => { const u = units(SHIPPED['core.md']); return u.list.filter((x) => x.kind !== 'head').slice(0, n).map((x) => u.lines.slice(x.a, x.b + 1).map((l) => l.t).join('\n')).join('\n'); };
+
+test('R66: a current block reports the copies and the gate beside it, even when nothing changes', sandbox((s) => {
+  put(s.claude, 'mine\n');
+  s.run('plan');
+  s.run('apply', ['claude']);
+  put(s.claude, `${readFileSync(s.claude, 'latin1')}\n${ruleLines(1)}\n\nUse a | b\n`);
+  const keep = (out) => claudeOnly(out).filter((l) => /^(state|note|change|recommend)/.test(l));
+  assert.deepEqual(keep(s.run('plan', ['--adopt'])), ['state: current',
+    'note: 1 of 30 rules are also present outside the block, duplicating it',
+    'note: adopt leaves this file alone because line 86 holds Markdown it does not handle; trim the copy by hand, then run /ccx:rules',
+    'change: none']);
+  assert.deepEqual(keep(s.run('plan')), ['state: current',
+    'note: 1 of 30 rules are also present outside the block, duplicating it',
+    'note: adopt leaves this file alone because line 86 holds Markdown it does not handle; trim the copy by hand, then run /ccx:rules',
+    'change: none']);
+}));
+
+test('R66: a current block with an import holding every rule names the import; a gated file names no imports', sandbox((s) => {
+  put(join(s.claudeDir, 'shared.md'), SHIPPED['core.md']);
+  put(s.claude, 'mine\n');
+  s.run('plan');
+  s.run('apply', ['claude']);
+  put(s.claude, `${readFileSync(s.claude, 'latin1')}\n@shared.md\n`);
+  assert.ok(claudeOnly(s.run('plan')).includes('note: line 84: @shared.md imports a file that holds 30 of 30 rules; it is left as it is'));
+  put(s.claude, `${SHIPPED['core.md']}\nUse a | b\n`);
+  const gated = claudeOnly(s.run('plan'));
+  assert.ok(gated.includes('recommend: decline'));
+  assert.deepEqual(gated.filter((l) => l.includes('come from imports')), []);
+}));
+
+test('R66: decline only when the rules already present cover every rule, else apply', sandbox((s) => {
+  const core = SHIPPED['core.md'];
+  put(s.claude, `${ruleLines(1)}\nUse a | b\n`);
+  assert.ok(claudeOnly(s.run('plan')).includes('recommend: apply'));
+  put(join(s.claudeDir, 'shared.md'), ruleLines(12));
+  put(s.claude, 'mine @shared.md\n');
+  const part = claudeOnly(s.run('plan'));
+  assert.ok(part.includes('recommend: apply'));
+  assert.deepEqual(part.filter((l) => l.includes('come from imports')), []);
+  put(join(s.claudeDir, 'shared.md'), core);
+  const all = claudeOnly(s.run('plan'));
+  assert.ok(all.includes('recommend: decline'));
+  assert.ok(all.includes('note: 30 of 30 rules come from imports; applying duplicates them; declining leaves this file unchanged'));
+}));
+
+test('R44: a backslash escapes only an opening backtick; a closing run pairs and spans hide what they hold', () => {
+  const found = (t) => imports(t).map((i) => i.token);
+  assert.deepEqual(found('Use `C:\\repo\\` @rules.md and `other`'), ['@rules.md']);
+  assert.deepEqual(found('Use \\\\`code @rules.md` end'), []);
+  assert.deepEqual(found('Use `see @rules.md` here'), []);
+  assert.deepEqual(found('Use \\`x @a.md` end'), ['@a.md`']);
+  assert.deepEqual(found('`a\\` <!-- @x --> @y'), ['@y']);
+  assert.deepEqual(found('- `a\\`\n  `b` @z\n'), ['@z']);
+});
+
+test('units and imports grow about linearly: four times the input takes under eight times as long', () => {
+  // Linear growth gives a ratio near 4; the quadratic code this guards against gave about 16.
+  const best = (fn) => Math.min(...[0, 1, 2].map(() => { const t0 = performance.now(); fn(); return performance.now() - t0; }));
+  const grows = (make, run, n) => {
+    const [small, large] = [make(n), make(4 * n)];
+    run(small);
+    return best(() => run(large)) / best(() => run(small));
+  };
+  const stray = (n) => `${Array.from({ length: n }, (_, i) => `line ${i} with a stray \` tick`).join('\n')}\n`;
+  assert.ok(grows(stray, (t) => units(t), 8000) < 8);
+  assert.ok(grows(stray, (t) => imports(t), 8000) < 8);
+  assert.ok(grows((n) => 'a\n'.repeat(n), (t) => imports(t), 32768) < 8);
+  assert.ok(grows((n) => '@a.md\n'.repeat(n), (t) => imports(t), 32768) < 8);
+});
+
+test('R44: an escaped backtick consumes one of its run; the rest of the run can still open a span', () => {
+  const found = (t) => imports(t).map((i) => i.token);
+  // One backslash, then two backticks: the first is literal, the second opens a span.
+  assert.deepEqual(found('Use \\`` @rules.md ` end'), []);
+  assert.deepEqual(found('Use \\``code` @real.md and `other`'), ['@real.md']);
+  assert.deepEqual(found('Use \\`x @a.md` end'), ['@a.md`']);
+});
+
+test('R44: an edited block still names the imports of the Claude file', sandbox((s) => {
+  put(join(s.home, 'extra.md'), 'hello\n');
+  put(s.claude, 'mine\n');
+  s.run('plan');
+  s.run('apply', ['claude']);
+  put(s.claude, `@~/extra.md\n${readFileSync(s.claude, 'latin1').replace('## Working', '## Working with edits')}`);
+  assert.deepEqual(claudeOnly(s.run('plan')).filter((l) => /^(state|note)/.test(l)), [
+    'state: edited; the block was edited by hand; move your lines below the end marker, then run /ccx:rules again',
+    'note: line 1: @~/extra.md imports a file; it is left as it is']);
+}));
+
+test('R44: a fenced example of a ccx block in an imported file holds no rules; the marker lines are fence text', sandbox((s) => {
+  const core = SHIPPED['core.md'];
+  put(s.claude, 'See @README.md\n');
+  for (const marked of [true, false]) {
+    const inner = marked ? `${begin('core', 'none', '0000000000000000')}\n${core}${END}\n` : core;
+    put(join(s.claudeDir, 'README.md'), `\`\`\`\n${inner}\`\`\`\n`);
+    const out = claudeOnly(s.run('plan')).filter((l) => /^(note: line|recommend)/.test(l));
+    assert.deepEqual(out, ['note: line 1: @README.md imports a file that holds none of the rules; it is left as it is', 'recommend: apply']);
+  }
+}));
+
+test('R66: with nothing to change, a copy beside the block is called a duplicate and adopt is offered unless the file is gated', sandbox((s) => {
+  put(s.claude, 'mine\n');
+  s.run('plan');
+  s.run('apply', ['claude']);
+  const installed = readFileSync(s.claude, 'latin1');
+  put(s.claude, `${installed}\n${SHIPPED['core.md']}`);
+  const keep = (out) => claudeOnly(out).filter((l) => /^(state|note|change)/.test(l));
+  assert.deepEqual(keep(s.run('plan')), ['state: current', 'note: 30 of 30 rules are also present outside the block, duplicating it',
+    'note: /ccx:rules --adopt moves those lines into the block', 'change: none']);
+  put(s.claude, `${installed}\n${SHIPPED['core.md']}\nUse a | b\n`);
+  assert.deepEqual(keep(s.run('plan')).slice(0, 2), ['state: current', 'note: 30 of 30 rules are also present outside the block, duplicating it']);
+  assert.equal(keep(s.run('plan')).some((l) => l.includes('--adopt moves')), false);
+}));
+
+test('R67: rules at the very top of a file leave no leading blank line', () => {
+  assert.equal(adoptRules('- one\n\n# Project\n\nmine\n', '[B]\n', RICH['core.md']), '[B]\n# Project\n\nmine\n');
+  assert.equal(rich('- one\n\n# Project\n\nmine\n', { adopt: true }).after, `${richBlock()}# Project\n\nmine\n`);
+});
+
+test('R44: a remove plan checks each import is readable and parses nothing', sandbox((s) => {
+  put(join(s.claudeDir, 'a.md'), `${SHIPPED['core.md']}\n@deep.md\n`);
+  put(s.claude, 'mine\n');
+  s.run('plan');
+  s.run('apply', ['claude']);
+  put(s.claude, `@a.md\n@gone.md\n${readFileSync(s.claude, 'latin1')}`);
+  assert.deepEqual(claudeOnly(s.run('remove')).filter((l) => l.startsWith('note')), [
+    'note: line 1: @a.md imports a file; it is left as it is', 'note: line 2: @gone.md imports a file that cannot be read; it is left as it is']);
+  assert.deepEqual(scanImports('@a.md\n', s.claude, inspect(''), s.home, s.claude, true).map((r) => [r.units.size, r.missed]), [[0, 0]]);
+}));
