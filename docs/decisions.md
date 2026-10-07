@@ -811,9 +811,9 @@ Claude Code, so the hand check in the PR is what confirms them.
    a payload that is not a commit has a median of 53 ms and a slowest of 119 ms; a commit
    with no opt-out set has a median of 52 ms and a slowest of 115 ms. Most of it is Node's
    own start. Its lint budget was 90 lines; the file was 69 lines, 90 after item 10, and
-   118 after item 11, which raised the budget to 120 so its fixes fit with lines wrapped. Item 10 adds one `git rev-parse` on
-   macOS and Linux, for a commit or PR call only; its cost is not measured, since only
-   Windows was at hand.
+   118 after item 11, which raised the budget to 120 so its fixes fit with lines wrapped.
+   Item 10 adds one `git rev-parse` on macOS and Linux, for a commit or PR call only; its
+   cost is not measured, since only Windows was at hand.
 2. **Settings order and what is not read.** The docs order managed, `--settings`, local
    project, shared project, then user. The hook reads managed (Windows
    `C:\Program Files\ClaudeCode\managed-settings.json`, macOS
@@ -885,9 +885,9 @@ Claude Code, so the hand check in the PR is what confirms them.
 11. **Fixes from the second 2026-10-07 review.** A second review found five more ways past
     the hook, each reproduced before the fix:
     - In a Bash call on Windows, `-F /c/...` (or any `/<letter>/`) and `-F /tmp/...` name
-      files Git Bash reads at `C:/...` and in the temp directory, but the hook read them as Windows paths and found
-      nothing. A message file under `/tmp` is a likely way for Claude to commit, so this was
-      the most important. The hook now reads them as Git Bash does, and reads an unquoted
+      files Git Bash reads at `C:/...` and in the temp directory, but the hook read them as
+      Windows paths and found nothing. A message file under `/tmp` is a likely way for
+      Claude to commit, so this was the most important. The hook now reads them as Git Bash does, and reads an unquoted
       leading `~` as the home directory in any Bash call.
     - `& "git.exe" commit` in PowerShell was not a commit: a quote before the name was
       accepted only before a path.

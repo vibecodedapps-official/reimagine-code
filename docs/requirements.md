@@ -109,9 +109,10 @@ requirement below changes it. The audit plugin was not part of v0.1.0; it joined
     everywhere, `includeCoAuthoredBy` is `false`. Settings come from the managed drop-ins
     `managed-settings.d/*.json`, last name first and hidden files skipped, then the managed
     settings file; then, on macOS and Linux, `.claude/settings.local.json` at the repository
-    root, which in a linked worktree is the main checkout's root (not outside git, at the home directory, when the git directory is not
-    `<root>/.git`, as in a submodule or a bare repository, or when the root, its `.git`, or its
-    `.claude` has another owner); then `.claude/settings.local.json` and
+    root, which in a linked worktree is the main checkout's root (not outside git, at the home
+    directory, when the git directory is not `<root>/.git`, as in a submodule or a bare
+    repository, or when the root, its `.git`, or its `.claude` has another owner); then
+    `.claude/settings.local.json` and
     `.claude/settings.json` under `CLAUDE_PROJECT_DIR` (else the call's `cwd`); then
     `settings.json` under `CLAUDE_CONFIG_DIR` (else `~/.claude`). The first file that sets the
     key wins, and a missing or invalid file is skipped. Not read: the `--settings` flag and
