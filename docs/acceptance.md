@@ -285,8 +285,8 @@ name a plugin are rerun under the new names and recorded here.
     commits, the run goes on, and the next check passes without asking. Moving the ref
     again asks again. On no, the run ends `blocked`. Moving the ref together with an
     edit to a tracked file ends the run `blocked` without asking. Covers Part 19 item 1
-    in `docs/decisions.md`. Rerun when the boundary check in the cca skill changes. Not
-    yet run.
+    in `docs/decisions.md`. Rerun when the boundary check in the cca skill changes. Run
+    2026-10-07 for 0.10.0 on Windows; see the records.
 
 ## Record of runs
 
@@ -2048,3 +2048,30 @@ the runs as before.
   that size was 3.95 to 4.14 over five runs, so a slow runner is the likely cause,
   unverified. In the agent shell, `codex plugin` commands exited 1 with `Error: stdin is
   not a terminal` until stdin came from `/dev/null`.
+
+### 2026-10-07: cca 0.10.0, before the merge, Windows
+
+Windows 11 Pro, Git Bash, Claude Code 2.1.292, Node 26.4.0, git 2.55.0. The branch head
+was 69961c1. Each run used a new `solo` fixture with `refs/remotes/origin/main` set to
+`0c23936` first and a manifest copy with `"scratch": "./app/.test-output/cca"`, in an
+interactive session under a scratch `CLAUDE_CONFIG_DIR` with cca loaded by
+`--plugin-dir` from the branch, not installed from the catalog. Each ran
+`/cca:audit <manifest> --no-codex --effort low`, and the ref was moved by hand from a
+second shell with `git update-ref`.
+
+- **Item 24 passed.** Three runs covered its five cases.
+  - Run A: the stage 4 check named the move `0c23936 -> 9c5f77c` and asked. On yes,
+    `approvals` gained one `background-fetch` entry for `app:refs/remotes/origin/main`
+    with both full commits, and the run went on. A second move, to `2b5e8f3`, was seen by
+    the stage 5 check, which asked again. On no, stage 5 was recorded `failed` with a
+    `blocked:` reason and `runs.json` showed `blocked`.
+  - Run B: the ref move and an edit to `README.md` together ended the run `blocked` at
+    the stage 1 check, with `blocked hashes` and `blocked status` lines and no question;
+    `approvals` stayed empty.
+  - Run C: one move, approved at the stage 5 check. The checks of stages 6, 7, and 8
+    passed on that entry without asking, and the run ended `reported`.
+- Observed: Run A's question left out the line the skill asks for, that an editor's
+  automatic fetch such as `git.autofetch` can move refs; it said a fetch looked unlikely
+  since the fixture has no remote, and recommended no. Runs B and C made their run
+  directory at `<scratch>/cca/<run-id>/`, as stage 1 says; Run A made it one level
+  higher, at `.test-output/cca/<run-id>/`. Neither was investigated further.
