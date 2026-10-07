@@ -134,7 +134,7 @@ Behavior carries over from codex-lite 0.9.0 unchanged except for names.
 - **Commands.** `ask`, `review`, `implement` as today. `do` and `setup` keep
   `disable-model-invocation: true`, so they cost nothing until typed. New: `rules`, also
   `disable-model-invocation: true`.
-- **Scripts.** `ccx.mjs` (was `codex-lite.mjs`) and `codex.mjs` keep their 710-line
+- **Scripts.** `ccx.mjs` (was `codex-lite.mjs`) and `codex.mjs` keep their 740-line
   runtime budget; lint prints the lines used on every run.
   New code goes in two new modules with their own budgets: `rules.mjs` (house rules,
   pure file logic, spawns nothing) and `suite.mjs` (the old-plugin report and the

@@ -23,8 +23,9 @@ These hold for every stage, for the orchestrator and every agent.
    of truth. Allowed writes: the run directory; cca's data directory (`runs.json`,
    its `runs.json.lock` directory including the owner directory, and its
    `runs.json.<owner>.tmp` temporary file);
-   ccx's own request and thread files in ccx's data directory, written
-   when cca calls it; `git fetch` into remote-tracking refs, after the user approves it
+   ccx's own request, thread, and output files in ccx's data directory, written
+   when cca calls it, including ccx's own removal of output files older than a day, and
+   the orchestrator's removal of the output file it just copied (stage 6 step 9); `git fetch` into remote-tracking refs, after the user approves it
    once per run; and, for a bundle with `head: working-tree`, the loose git objects that
    `working-tree.sh build` writes in the repo's object store (stage 1 step 1c, and resume
    step 3 when it rebuilds the head), which the report discloses; and, in stage 1 step

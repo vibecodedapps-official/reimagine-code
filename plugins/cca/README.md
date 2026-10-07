@@ -40,7 +40,7 @@ repository records five full multi-agent audit runs on the
   files); the report then says the forge was not queried.
 - `jq` for `/cca:resume --live`, on any forge. Without it, the import stops before it
   keeps anything.
-- Optional: the Codex CLI and the `ccx` plugin, 0.1.0 or later, for the second
+- Optional: the Codex CLI and the `ccx` plugin, 0.6.0 or later, for the second
   opinion. ccx runs Codex from the session's repository root, with no network
   access.
 

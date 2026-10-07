@@ -86,8 +86,14 @@ requirement below changes it. The audit plugin was not part of v0.1.0; it joined
 13. **Data directory.** Scripts receive the data directory as an argument from the
     command text or the hook's `args`, and never read it from the environment. Depends
     on spike M0.4 for the hook. Check: test; lint.
-14. **Runtime budget.** `ccx.mjs` and `codex.mjs` together stay at or under 710 lines.
+14. **Runtime budget.** `ccx.mjs` and `codex.mjs` together stay at or under 740 lines.
     `rules.mjs` has its own budget of 640 lines and `suite.mjs` of 200. Check: lint.
+70. **Saved output.** A run of `ask`, `review`, `do`, or `implement` that reached Codex
+    saves what it prints, without the `output:` line, to `output-<id>.txt` in ccx's data
+    directory and prints `output: <path>`, with forward slashes, as the line before
+    `status:`. If the save fails, a `ccx: warning: could not save the output` line takes
+    its place and the status is unchanged. A refused call saves nothing. A run removes
+    `output-*.txt` and `output-*.txt.tmp` files older than a day. Check: test.
 
 ## Setup
 
@@ -272,7 +278,8 @@ Added 2026-10-05, when claude-codex-audit 0.8.1 at `eed9fba` joined the suite as
     `npm test`, from `tests/cca/`, on the three CI systems, plus mawk on Ubuntu. Check:
     test; acceptance for a run.
 63. **Bridge detection.** Stage 6 calls `ccx:ask` and takes the version of the plugin id
-    starting `ccx@` from `claude plugin list --json`; 0.1.0 or later counts. Without it,
+    starting `ccx@` from `claude plugin list --json`; 0.6.0 or later counts, the first
+    version that saves each answer (R70). Without it,
     with Codex absent, or with `--no-codex`, the second opinion swaps to `cca:adversary`.
     The manifest declares no dependency, so the plugin installs and runs without `ccx`.
     Check: review of stage 6; acceptance.
@@ -283,6 +290,10 @@ Added 2026-10-05, when claude-codex-audit 0.8.1 at `eed9fba` joined the suite as
     `cca-manifest.json` and suggesting `/cca:audit` without reading the audit plugin, so
     R25 holds, and those names, with `cca:` and `cca-handoff: 1`, are frozen interfaces
     inside one repository. Check: acceptance.
+71. **Saved answer copied.** Stage 6 copies the file named by ccx's `output:` line to
+    `codex/response.md` with one shell command, never retyping it, and deletes the source
+    after the copy exits 0. A missing `output:` line swaps to `cca:adversary`. Check:
+    review of stage 6.
 
 ## Release
 
