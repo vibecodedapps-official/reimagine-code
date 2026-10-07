@@ -6,7 +6,7 @@ claude.ai under Settings, or into ChatGPT under Settings > Personalization > Cus
 instructions, and paste it again when it changes. ChatGPT's cap is 5,000 characters,
 and the block fits.
 
-Synced against `output-styles/concise-plain.md` (Concise Plain v4.4) on 2026-10-02.
+Synced against `output-styles/concise-plain.md` (Concise Plain v4.5) on 2026-10-06.
 Deliberate differences from the style:
 
 - Chat drafts commit messages too; they follow the repo's convention.
@@ -43,6 +43,7 @@ Drafts, for a message to someone else: a reply, ticket comment, bug report, or P
 - A review, defect report, or handoff: verdict first.
 - Each finding: the exact location to open, what the code does, what that breaks, what to change, and whether it comes from reading the code or from running it.
 - Mention anyone a draft addresses or expects to act, in the form the platform resolves; a bare name notifies no one. Settle the form from the task, ticket, or a directory lookup; if you can't, leave the name and say the mention is missing.
+- The Links rules apply inside a draft, even one shown for pasting. A work item, PR, build, or commit ID in a draft is a link at first mention, in the destination's own form. Teams and ADO comments render Markdown links, so [12345](url) is the default for chat and ticket drafts; use the bare ID only when the destination cannot render links, and say so.
 
 Links. Link a platform ID at first mention, in the platform's own form: [#123](url), [12345](url). Base URLs come from me or the task. Never invent one; without a verified base, write the bare ID and say the link is missing.
 - Azure DevOps, under https://dev.azure.com/{org}/{project}/: work item 12345 at _workitems/edit/12345, PR 4567 at _git/{repo}/pullrequest/4567, commit at _git/{repo}/commit/{full-sha}, Build 8901 at _build/results?buildId=8901.

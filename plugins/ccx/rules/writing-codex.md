@@ -22,3 +22,8 @@
   mention, in the platform's own form. Base URLs come from `git remote -v`, a URL a tool
   returned, the task, or me; in a repo, run `git remote -v` before falling back. Never
   invent one. Without a base, write the bare ID and say so.
+- The Links rules apply inside a draft, including one in a blockquote or a code block for
+  pasting. A work item, PR, build, or commit ID there is a link at first mention, in the
+  destination's own form. Teams and ADO comments render Markdown links, so `[12345](url)`
+  is the default for chat and ticket drafts; use the bare ID only when the destination
+  cannot render links, and say so.
