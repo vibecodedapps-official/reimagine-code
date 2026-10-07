@@ -302,8 +302,20 @@ and before writing that stage's final entry:
    - `3`: only `remote-ref` or `ignored` lines were printed. Judge each below.
    - `0`: nothing needs judgment. `touched` lines may have been printed.
 3. For each `remote-ref` line (exit 3): it passes only when an approved fetch recorded in
-   `approvals` after the baseline explains it. Otherwise end the run `blocked` at once
-   and show it.
+   `approvals` after the baseline explains it, or a `background-fetch` entry for the same
+   ref with the same old and new commits does. Otherwise, with no `blocked` line in the
+   output, ask the user whether a background fetch explains the moved refs. The
+   line format is `remote-ref <-|+> <sha> <type><TAB><ref>`: a moved ref has a `-` line
+   with the old commit and a `+` line with the new one, a new ref only a `+` line, a
+   deleted ref only a `-` line. Name each ref with its old and new commit, or "new" or
+   "deleted", and say that an editor's automatic fetch, such as VS Code's
+   `git.autofetch`, can move them. On yes, append to `stages.json` `approvals` one entry
+   per ref, in the form of the stage 1 fetch entries: kind `background-fetch`, target
+   `<repo name>:<ref>`, the decision, the time, and the old and new commits; then continue.
+   A later check that sees the same ref at the same old and new commits passes on that
+   entry; a further move of the ref asks again. On no, or no answer, end the run
+   `blocked` at once and show the lines. Any `blocked` line still ends the run at once,
+   as above.
 4. For each `ignored` line (exit 3), added, deleted, or changed:
    - If the path is inside `<s>/cca/` of any audited repository, where `<s>` is
      any directory D2 (stage 1) would choose there, and outside this run's
@@ -346,7 +358,10 @@ the destination with `mv -f`. Never edit state files in place.
 
 For every `runs.json` update, use `<owner>` = `<run-id>-<HHMMSS>`, the run id
 and this invocation's start time in hours, minutes, and seconds, so a resume of the
-same run gets its own token. `<lock>` is `${CLAUDE_PLUGIN_DATA}/runs.json.lock`.
+same run gets its own token. `<lock>` is `${CLAUDE_PLUGIN_DATA}/runs.json.lock`; every `rmdir` below uses the
+absolute lock path, written out, never a path built from a shell variable, because
+Claude Code's permission check can refuse `rmdir` on a path built from a shell variable
+and accept a literal one (reported, not reproduced).
 Acquire with `mkdir <lock> && mkdir <lock>/<owner>` (no `-p`), never one `mkdir`
 with both operands: a failed first operand would plant this owner in another
 session's lock. While `mkdir <lock>` fails because the lock exists, wait 5 seconds
@@ -357,12 +372,12 @@ mtime: `find <lock> -maxdepth 0 -mmin +1` lists it after a minute on GNU `find`,
 after two on BSD and busybox `find`. Never judge by how long this session waited.
 For a stale lock, ask only when a user can answer in this session whether another
 cca audit or resume is running, including one waiting at a prompt. On "no", remove
-it with `rmdir <lock>/* <lock>` (`rmdir <lock>` when empty), then acquire. On "yes",
+it with `rmdir <lock>/* <lock>` (`rmdir <lock>` when empty), with the absolute lock path, then acquire. On "yes",
 keep the 5-second retries for five more minutes, then ask once more. A second
 "yes", or a user who declines removal, takes the registry-failure rule below.
 In a headless session, or when unsure whether a user can answer, remove a stale
 lock without asking, with `rmdir <lock>/* <lock>` (`rmdir <lock>` when it is
-empty), then acquire. This is safe: a session whose lock was removed before its
+empty) and the absolute lock path, then acquire. This is safe: a session whose lock was removed before its
 replace command finds its test failing and acquires again, so no entry is lost on
 a supported path (the known limit below stands). Interactive or headless, a stale
 lock whose owner directory (seen with `ls <lock>`) has this session's own `<owner>`
@@ -386,7 +401,7 @@ that one command for over a minute could still overwrite a takeover; no supporte
 path stops it there (a permission prompt comes before the command, machine sleep
 pauses every session, a timeout kills the command), so this is a known limit, not
 handled. On every failure path, release any lock this session holds with
-`rmdir <lock>/<owner> <lock>`, then with `rmdir <lock>` once its owner directory is
+`rmdir <lock>/<owner> <lock>` with the absolute lock path, then with `rmdir <lock>` once its owner directory is
 gone and the lock is left; another session's lock holds its own owner directory, so
 this release cannot remove it, except a same-owner lock, which this session never
 holds and so never releases (the guard above).
@@ -399,7 +414,7 @@ this session's owner directory or nothing (the release was refused or failed, or
 only the data directory turned non-writable mid-update and left an empty lock), or
 when a stale lock stays because the user declined its removal or answered yes twice,
 or because its owner directory has this session's own name.
-The command is `rmdir <lock>/<owner> <lock>` for this session's lock and
+The command, with the absolute lock path, is `rmdir <lock>/<owner> <lock>` for this session's lock and
 `rmdir <lock>/* <lock>` for a stale one, to run only once no cca audit or resume is
 running; each is `rmdir <lock>` when the lock is empty. Say that a later audit or
 resume removes a stale lock itself (a headless one without asking), so removing it by
