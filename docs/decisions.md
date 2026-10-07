@@ -810,8 +810,8 @@ Claude Code, so the hand check in the PR is what confirms them.
    Windows 11 (AMD64 Family 26 Model 68), Node v26.4.0, 50 runs each, timed one at a time:
    a payload that is not a commit has a median of 53 ms and a slowest of 119 ms; a commit
    with no opt-out set has a median of 52 ms and a slowest of 115 ms. Most of it is Node's
-   own start. Its lint budget was 90 lines; it was 69, and 90 after item 10. Item 11 raised
-   the budget to 120 so its fixes fit with lines wrapped. Item 10 adds one `git rev-parse` on
+   own start. Its lint budget was 90 lines; the file was 69 lines, 90 after item 10, and
+   118 after item 11, which raised the budget to 120 so its fixes fit with lines wrapped. Item 10 adds one `git rev-parse` on
    macOS and Linux, for a commit or PR call only; its cost is not measured, since only
    Windows was at hand.
 2. **Settings order and what is not read.** The docs order managed, `--settings`, local
@@ -884,8 +884,8 @@ Claude Code, so the hand check in the PR is what confirms them.
       thousands of characters and is not bounded.
 11. **Fixes from the second 2026-10-07 review.** A second review found five more ways past
     the hook, each reproduced before the fix:
-    - In a Bash call on Windows, `-F /c/...` and `-F /tmp/...` name files Git Bash reads at
-      `C:/...` and in the temp directory, but the hook read them as Windows paths and found
+    - In a Bash call on Windows, `-F /c/...` (or any `/<letter>/`) and `-F /tmp/...` name
+      files Git Bash reads at `C:/...` and in the temp directory, but the hook read them as Windows paths and found
       nothing. A message file under `/tmp` is a likely way for Claude to commit, so this was
       the most important. The hook now reads them as Git Bash does, and reads an unquoted
       leading `~` as the home directory in any Bash call.
@@ -900,6 +900,7 @@ Claude Code, so the hand check in the PR is what confirms them.
       message, which R68 says is denied. The name may now end at a closing quote that ends
       the argument.
     - Not changed: the denial's path length (item 10) and a request to split the PR by the
-      change-size skill, which item 7 drops. The budget went from 90 to 120 lines.
+      change-size skill, which item 7 drops.
+    - The line budget went from 90 to 120 (item 1).
     - After this round, a further shell form the recognizer misses goes to an issue and does
       not block the release: the hook fails open, and 0.5.0 had no check at all.

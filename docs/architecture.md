@@ -136,9 +136,10 @@ Behavior carries over from codex-lite 0.9.0 unchanged except for names.
   `disable-model-invocation: true`.
 - **Scripts.** `ccx.mjs` (was `codex-lite.mjs`) and `codex.mjs` keep their 710-line
   runtime budget; lint prints the lines used on every run.
-  New code goes in two new modules with their own budgets: `rules.mjs` (house rules,
-  pure file logic, spawns nothing) and `suite.mjs` (the old-plugin report and the
-  SessionStart notice, which spawn `claude plugin list --json` or read files).
+  New code goes in three new modules with their own budgets: `rules.mjs` (house rules,
+  pure file logic, spawns nothing), `suite.mjs` (the old-plugin report and the
+  SessionStart notice, which spawn `claude plugin list --json` or read files), and
+  `attribution.mjs` (the PreToolUse hook).
 - **Data directory.** The command text, or the hook's `args`, passes
   `${CLAUDE_PLUGIN_DATA}` to the script as an argument, never through the environment.
   This is the existing pattern: the variable inside the Bash tool once held another

@@ -98,17 +98,18 @@ requirement below changes it. The audit plugin was not part of v0.1.0; it joined
     the nearest commit before it, which is the call's `cwd` moved by that commit's own `-C`
     arguments, or against the call's `cwd` when a `gh` call or nothing comes before it. In a
     Bash call, an unquoted leading `~` is the home directory, and on Windows a leading `/tmp`
-    is the temp directory and `/c/` is drive C, as Git Bash reads them. `-`, a missing file,
+    is the temp directory and a leading `/<letter>/`, such as `/c/`, is that drive, as Git
+    Bash reads them. `-`, a missing file,
     and a path holding `$` or `%` are skipped. It denies the call when the text has a
     `Co-Authored-By:` line whose value holds an `@anthropic.com` address or names Claude alone
     or with Code, Opus, Sonnet, Haiku, or Fable and a version, followed by an email, the end
     of the line, or the end of the quoted message, or a "Generated with Claude Code" line, and
     the settings turn that attribution off: `attribution.commit` is `""` for a commit,
     `attribution.pr` is `""` for a PR, or, for a commit with `attribution.commit` unset
-    everywhere, `includeCoAuthoredBy` is `false`. Settings come from the managed drop-ins `managed-settings.d/*.json`, last name
-    first and hidden files skipped, then the managed settings file; then, on macOS and Linux,
-    `.claude/settings.local.json` at the repository root, which in a linked worktree is the main
-    checkout's root (not outside git, at the home directory, when the git directory is not
+    everywhere, `includeCoAuthoredBy` is `false`. Settings come from the managed drop-ins
+    `managed-settings.d/*.json`, last name first and hidden files skipped, then the managed
+    settings file; then, on macOS and Linux, `.claude/settings.local.json` at the repository
+    root, which in a linked worktree is the main checkout's root (not outside git, at the home directory, when the git directory is not
     `<root>/.git`, as in a submodule or a bare repository, or when the root, its `.git`, or its
     `.claude` has another owner); then `.claude/settings.local.json` and
     `.claude/settings.json` under `CLAUDE_PROJECT_DIR` (else the call's `cwd`); then

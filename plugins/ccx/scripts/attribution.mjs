@@ -12,8 +12,8 @@ const WS = "[ \\t\\r\\n]+";
 const ARG = `(?:"[^"]*"|'[^']*'|[^\\s"';&|()]+)`;
 // The tool's name, bare or as a path, either one quoted, then its options (captured), then the subcommand words.
 const call = (tool, options, words) => new RegExp(
-  `(?:^|[\\s;&|(\`])(?:["'](?:[^"'\\n]*[\\\\/])?|[^\\s"';&|()]*[\\\\/])?${tool}(?:\\.exe)?["']?((?:${WS}${options})*)${WS}${words}(?![\\w-])`,
-  "g");
+  `(?:^|[\\s;&|(\`])(?:["'](?:[^"'\\n]*[\\\\/])?|[^\\s"';&|()]*[\\\\/])?${tool}(?:\\.exe)?["']?`
+  + `((?:${WS}${options})*)${WS}${words}(?![\\w-])`, "g");
 const COMMIT = call("git",
   `(?:-[Cc]${WS}${ARG}|--(?:git-dir|work-tree|namespace|exec-path|config-env|attr-source)${WS}${ARG}|--?[\\w-]+(?:=${ARG})?)`,
   "commit");
@@ -31,7 +31,7 @@ function claudeLine(text) {
 }
 
 // A path argument as the shell passes it: in Bash, an unquoted ~ is the home directory, and on Windows Git Bash reads
-// /tmp as the temp directory and /c/ as drive C.
+// /tmp as the temp directory and /c/ (any one letter) as that drive.
 function native(arg, bash) {
   if (bash && /^~(?=\/|$)/.test(arg)) return homedir() + arg.slice(1);
   const path = arg.replace(/^(["'])(.*)\1$/, "$2");
@@ -100,7 +100,9 @@ function check(payload) {
     const name = native(m[1], bash);
     if (name === "-" || /[$%]/.test(name)) continue;
     const owner = calls.findLast((c) => c.index < m.index);
-    try { text += `\n${readFileSync(resolve(owner ? owner.dir : cwd, name), "utf8")}`; } catch { /* a missing file is skipped */ }
+    try {
+      text += `\n${readFileSync(resolve(owner ? owner.dir : cwd, name), "utf8")}`;
+    } catch { /* a missing file is skipped */ }
   }
   const line = claudeLine(text);
   return line && `ccx: remove ${line}; ${off}`;
