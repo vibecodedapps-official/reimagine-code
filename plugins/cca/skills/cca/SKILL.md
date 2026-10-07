@@ -111,7 +111,7 @@ mean, in addition:
 1. You are the only component that talks to the user, calls Codex, runs `git fetch`,
    exports pinned trees, and writes `stages.json`, `runs.json`, the ledger files,
    `usage.md`, and `report.md`. Agents read the run directory and the audited trees
-   and write only their own output file.
+   and write only their own output file and, in their scratch folder, raw command output.
 2. During audit and resume you write only inside the run directory and to
    `${CLAUDE_PLUGIN_DATA}/runs.json`, its `runs.json.lock` directory (including
    the owner directory), and its `runs.json.<owner>.tmp` temporary file. You never
@@ -186,7 +186,11 @@ is recorded and the run ends `partial`.
    not learn the effective model, so the report says "requested", never "used".
 3. Keep the prompt short: the absolute paths of `audit-brief.md`, `common.md`, the
    scope file or scope list, and the output file, plus the scope's questions and any
-   stage-specific item the stage file names. The agent definition holds the standing
+   stage-specific item the stage file names. An agent with Bash (digester, mapper,
+   auditor, adversary) also gets its scratch folder, `<run dir>/tmp/agents/<stage>-<scope>[-<n>]/`,
+   unique per launch (`<n>` for a top-up or a batch), which you create before the launch
+   and name in the prompt next to the output file. It is for the agent's own command
+   output; the merger has no Bash and gets none. The agent definition holds the standing
    instructions; do not restate them.
 4. Each agent returns only its path and one line. Read the file to judge it; the last
    line must be `status: complete`.
@@ -331,7 +335,9 @@ and before writing that stage's final entry:
    read those agents' `runs:` headings. A difference is accounted for when a logged run's
    directory is inside that repo. Any pending difference no logged run accounts for
    ends the run `blocked` now. Differences still waiting on running agents stay
-   pending.
+   pending. Ignored-file changes under `bin/` or `obj/` of a repo with a logged run since
+   the last check are grouped under that run in one record in the check file that lists
+   every path, without asking; changes with no matching logged run are handled as above.
 6. Write `baseline/<stage>-check.md`: the stage, the time, the repos checked, the
    result (`pass` or `blocked: <reason>`), the ignored-file differences accepted (each
    labeled as another cca run's or a handoff's file, or with the agent and run that accounts

@@ -331,7 +331,8 @@ for each batch `<k>` it answers, numbered from 2 (step 9).
     request nor its follow-up carried, step 4.3, a partial swap), all together, after first writing
     `codex/request-<k>.md` for each batch `<k>` from 2. Each launch is a separate agent
     in the stage entry, with scope `second-opinion-<k>` for batch `<k>` (scope
-    `second-opinion` when it fills the role with one batch). The prompt holds the paths
+    `second-opinion` when it fills the role with one batch). The prompt holds the scratch
+    folder `tmp/agents/second-opinion[-<k>]/` and the paths
     of `audit-brief.md`, `common.md`, and that batch's request (`codex/request.md` or
     `codex/request-<k>.md`, which the fallback reads by path), with the
     instruction to answer the request as it asks, within its caps, and write the answer

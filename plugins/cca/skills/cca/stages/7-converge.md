@@ -28,7 +28,7 @@ by size has `<group>-<k>` parts), and `converged.md`.
    `live/findings.md`, `live/claims.md`, and each carried file `live/findings.md`
    names, whichever exist. The prompt holds the paths of
    `audit-brief.md`, `common.md`, `ledger/5.md`, and `ledger/6.md`, the output path
-   `late/adversary.md`, and the path of the list of ids to challenge, which the script
+   `late/adversary.md`, the scratch folder `tmp/agents/late/`, and the path of the list of ids to challenge, which the script
    builds, so no id is typed into the prompt: `mkdir -p <run dir>/tmp`, then `sh
    ${CLAUDE_PLUGIN_ROOT}/skills/cca/scripts/ledger.sh late-ids <run dir> --tier <tier>
    --stage6 <complete|failed> > <run dir>/tmp/late-ids.txt` (`--stage6` is stage 6's

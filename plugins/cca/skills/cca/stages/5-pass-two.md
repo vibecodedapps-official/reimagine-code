@@ -26,6 +26,7 @@ corrected map, `pass2/<scope>-topup.md` per map-correction top-up,
    - the path of `common.md`;
    - the path of the one pass-one report, `pass1/<scope>.md`;
    - the output path, `pass2/<scope>.md`;
+   - the scratch folder, `tmp/agents/pass2-<scope>/`;
    - the scope's question ids and text;
    - the Verified OK rule for the tier:
 
@@ -99,7 +100,8 @@ corrected map, `pass2/<scope>-topup.md` per map-correction top-up,
       hash, enqueue a top-up `cca:auditor`, its prompt saying "mode: top-up after a map
       correction", with the paths of `audit-brief.md`,
       `common.md`, `scope/<scope>.md`, and the corrected map, the corrected lines, and
-      the output path `pass2/<scope>-topup.md`, with this instruction: apply the
+      the output path `pass2/<scope>-topup.md`, and the scratch folder
+      `tmp/agents/pass2-<scope>-<n>/` (`<n>` counting the scope's top-ups from 1), with this instruction: apply the
       corrected answers to the scope's files; tag every finding `origin: topup` with an
       id `<scope>-T<n>`; list `runs:` and `consumed:`; end with `status: complete`. The
       completed `pass1/` files do not change.
