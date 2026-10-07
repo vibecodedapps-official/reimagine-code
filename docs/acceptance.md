@@ -188,7 +188,8 @@ name a plugin are rerun under the new names and recorded here.
     plugin's new version, and no bare `v` tag. Covers R49. Rerun at each release. Run
     2026-10-03 for 0.1.0, 2026-10-04 for 0.1.1, 0.1.2, 0.1.3, 0.2.0, and 0.3.0,
     2026-10-05 for 0.3.1 and cca 0.9.0, and 2026-10-06 for 0.3.2, cca 0.9.1, and
-    repo-docs 0.1.5, for 0.4.0, and for 0.5.0; see the records.
+    repo-docs 0.1.5, for 0.4.0, and for 0.5.0, and 2026-10-07 for 0.6.0 and cca 0.10.0;
+    see the records.
 18. **Install from GitHub.** Setup: on macOS and on Windows 11 with both CLIs from npm,
     new scratch profiles on each host. Command: the four lines of R3, then `claude plugin
     install ccx-loop@reimagine-code` and `codex plugin add
@@ -2187,3 +2188,31 @@ with `"scratch": "./app/.test-output/cca"` and `--effort low`.
   the reason "ccx refused: not inside a git repository, so nothing was run", recorded
   `called` true and status `refused`, and the run ended `reported`.
 - Both run directories were at `<scratch>/cca/<run-id>/`, as stage 1 says.
+
+### 2026-10-07: release ccx 0.6.0, ccx-loop 0.6.0, and cca 0.10.0
+
+Windows 11 Pro 10.0.26200, Claude Code 2.1.292, codex-cli 0.160.1, Node 26.4.0. The release
+commit was a75040c, the merge of PR 38. PR 39's branch was merged into PR 38's at df972dd
+first, since both set the ccx family to 0.6.0 and `main` is the release ref: one merge put
+both on `main` together, so no update could get a 0.6.0 missing either. PR 39 then showed as
+merged, and issues 35 and 36 closed. PR 38's CI run 37658661580 at df972dd passed on
+ubuntu-latest, macos-latest, and windows-latest after one rerun of the macOS job, and the
+`main` run for the merge, 37662700159, passed after one rerun of its macOS job (see the
+observations below). repo-docs 0.1.5 was not released again.
+
+- **Item 17 passed for this release.** The dry runs named `ccx--v0.6.0`,
+  `ccx-loop--v0.6.0`, and `cca--v0.10.0` at HEAD. `claude plugin tag --push` created and
+  pushed the three at a75040c in that order; `git ls-remote` showed each peeling to
+  a75040c, and no bare `v` tag. `npm run lint` on `main` printed `lint: ok` with the tags
+  present.
+- Not run: items 11 and 18, the installs from GitHub, for this release; item 16.
+- Observed: pushing df972dd failed four times over about seven minutes with `! [remote
+  rejected] feat/ccx-0.6.0-attribution -> feat/ccx-0.6.0-attribution (Internal Server
+  Error)`, while githubstatus.com read "All Systems Operational" and no ruleset or branch
+  protection applied. The same push succeeded unchanged on a later retry, after
+  17:00:55Z. Cause unknown.
+- Observed: the PR's macOS job first failed the rules speed test, `not ok 482 - units and
+  imports grow about linearly`, at `grows(stray, (t) => units(t), 8000) < 8`, as before
+  0.5.0; neither PR changed that code. The `main` run's macOS job first failed
+  `working-tree.sh` case 6n, "the object count changed", the check tracked in issue 40.
+  Both reruns passed.
