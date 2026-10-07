@@ -56,6 +56,9 @@ export const calls = (s) => (existsSync(join(s.root, 'argv.jsonl')) ? readFileSy
 export const cwds = (s) => (existsSync(join(s.root, 'cwd')) ? readFileSync(join(s.root, 'cwd'), 'utf8').trim().split('\n') : []);
 export const stdin = (s) => readFileSync(join(s.root, 'stdin'), 'utf8');
 export const pids = (s) => readFileSync(join(s.root, 'pids'), 'utf8').trim().split('\n').map(Number);
+// The saved answer's file, and the path ccx prints for it, which has forward slashes on every platform.
+export const outputPath = (s, name = `output-${ID}.txt`) => join(s.data, name);
+export const printedPath = (s) => outputPath(s).replaceAll('\\', '/');
 export const requestLeft = (s) => existsSync(join(s.data, `request-${ID}.txt`));
 export const threadFile = (s, id = ID) => join(s.data, `thread-${id}.txt`);
 export const savedThread = (s, id = ID) => (existsSync(threadFile(s, id)) ? readFileSync(threadFile(s, id), 'utf8') : undefined);

@@ -6,12 +6,8 @@ import { existsSync, mkdirSync, readdirSync, readFileSync, symlinkSync, utimesSy
 import { dirname, join } from 'node:path';
 import {
   ASK, ASK_RESUME, FAKE, ID, ID2, RESUME, RESUME2, SANDBOX, SCRIPT, THREAD, THREAD2,
-  alive, calls, cli, dead, git, pids, probeLeftovers, requestLeft, run, savedThread, spawning, stdin, threadFile, withScratch,
+  alive, calls, cli, dead, git, outputPath, pids, printedPath, probeLeftovers, requestLeft, run, savedThread, spawning, stdin, threadFile, withScratch,
 } from './fixtures/harness.mjs';
-
-// The saved answer's file, and the path ccx prints for it, which has forward slashes on every platform.
-const outputPath = (s, name = `output-${ID}.txt`) => join(s.data, name);
-const printedPath = (s) => outputPath(s).replaceAll('\\', '/');
 
 test('ask: the recorded argv and stdin match, and a good run renders the answer', spawning, withScratch((s) => {
   const request = 'say "hi" `x` $(id) \\ back\n--dangerously-leading-hyphen\n';
@@ -158,7 +154,7 @@ test('the same complete stream followed by exit 1 is a failure that prints Codex
   assert.equal(r.status, 1);
   assert.match(r.stdout, /\n\nccx: the run failed: codex exited with status 1\nfake failure on stderr\n\n/);
   assert.doesNotMatch(r.stdout, /fake answer/);
-  assert.match(r.stdout, /\nthread \S+\nResume: .*\nstatus: failed\n$/);
+  assert.match(r.stdout, /\nthread \S+\nResume: .*\noutput: \S+\nstatus: failed\n$/);
 }));
 
 test('a message with no turn.completed and exit 0 is a failure', spawning, withScratch((s) => {
@@ -496,7 +492,7 @@ test('a child that exits 0 just before the deadline, while its own child holds s
 test('a Codex that cannot be started is a failure for ask and a refusal naming the command for setup', spawning, withScratch((s) => {
   const env = { CCX_CODEX_BIN: join(s.root, 'no-such-codex') };
   const r = run(s, 'ask', { request: 'q', env });
-  assert.match(r.stdout, /\n\nccx: the run failed: could not start codex: spawn \S+no-such-codex ENOENT\n\nstatus: failed\n$/);
+  assert.match(r.stdout, /\n\nccx: the run failed: could not start codex: spawn \S+no-such-codex ENOENT\n\noutput: \S+\nstatus: failed\n$/);
   assert.equal(r.status, 1);
   assert.equal(requestLeft(s), false);
   const d = run(s, 'do', { request: 'go', env });
@@ -578,7 +574,7 @@ test('an explicit --resume id builds the literal resume argv, sends only the que
     assert.equal(stdin(s), 'what about the second objection\n');
     assert.equal(r.stdout, `requested: codex exec resume ${THREAD2} --json --ignore-user-config -c approval_policy="never" -c sandbox_mode="read-only" -\n` +
       `cwd: ${s.repo}\nnetwork: none in the read-only sandbox; Codex cannot fetch issues, pull requests or pages\n\nfake answer\n\n` +
-      `thread ${THREAD2}\n${RESUME2}\nstatus: ok\n`);
+      `thread ${THREAD2}\n${RESUME2}\noutput: ${printedPath(s)}\nstatus: ok\n`);
     assert.equal(r.status, 0);
     assert.equal(requestLeft(s), false);
     assert.equal(savedThread(s), `${THREAD2}\n`);
