@@ -159,9 +159,11 @@ for each batch `<k>` it answers, numbered from 2 (step 9).
    `thread <id>` when a thread started. Take the last `status:` line and the `thread`
    line. A run that reached Codex also prints `output: <path>` as the line immediately
    before the final `status:` line: the saved copy of the answer, which step 9 copies.
-   Take only that line, never an `output:` line elsewhere in the answer. If it is
-   missing, or the line there is `ccx: warning: could not save the output`, treat the
-   call as failed and swap to the fallback with the reason "ccx saved no output file", with no retry. Then:
+   Take only that line, never an `output:` line elsewhere in the answer. A refused call
+   saves nothing, so check the line only when the status is `ok`: if it is missing
+   there, or the line there is `ccx: warning: could not save the output`, treat the
+   call as failed and swap to the fallback with the reason "ccx saved no output file",
+   with no retry. Otherwise:
 
    | Status | Handling |
    |---|---|

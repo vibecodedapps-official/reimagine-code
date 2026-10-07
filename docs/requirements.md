@@ -293,8 +293,9 @@ Added 2026-10-05, when claude-codex-audit 0.8.1 at `eed9fba` joined the suite as
     inside one repository. Check: acceptance.
 71. **Saved answer copied.** Stage 6 copies the file named by ccx's `output:` line to
     `codex/response.md` with one shell command, never retyping it, and deletes the source
-    after the copy exits 0. A missing `output:` line swaps to `cca:adversary`. Check:
-    review of stage 6.
+    after the copy exits 0. A missing `output:` line on an `ok` call swaps to
+    `cca:adversary`; a refused call keeps ccx's message as the reason. Check: review of
+    stage 6.
 
 ## Release
 
