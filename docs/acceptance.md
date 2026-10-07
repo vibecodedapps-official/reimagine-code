@@ -136,7 +136,7 @@ name a plugin are rerun under the new names and recorded here.
     the general-code-review skill on the uncommitted changes in this repository." <
     /dev/null`. Expected: a review with findings; under `$CODEX_HOME/sessions`, the main
     session reads `general-code-review/SKILL.md` and its subagent sessions read each of
-    `general-code-review-breaking-changes`, `-change-size`, `-context`, and `-testing`
+    `general-code-review-breaking-changes`, `-context`, and `-testing`
     from the installed plugin. Covers R29. Rerun when a skill changes. Run 2026-10-03;
     see the record.
 13. **repo-docs on Codex.** Setup: as item 11, in a scratch git repository whose

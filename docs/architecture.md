@@ -258,8 +258,9 @@ five agents, and one orchestrator skill with its stage files and eight POSIX sh 
 
 ### ccx (Codex)
 
-The five `general-code-review*` skills from codex-code-review-general 0.1.0, names and
-text unchanged. The orchestrator skill names its four companions, so the skill names are
+The four `general-code-review*` skills from codex-code-review-general 0.1.0, names and
+text unchanged; the change-size skill was dropped in 0.6.0 (`docs/decisions.md` Part 18).
+The orchestrator skill names its three companions, so the skill names are
 frozen. The directory carries copies of the Apache-2.0 LICENSE and a rewritten NOTICE,
 because an installed plugin holds only its own directory and the upstream attribution
 must travel with it. The old NOTICE says the plugin redistributes upstream skills

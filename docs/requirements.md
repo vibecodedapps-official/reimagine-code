@@ -129,8 +129,8 @@ requirement below changes it. The audit plugin was not part of v0.1.0; it joined
 
 ## Code review skills: ccx on Codex
 
-26. **Skills.** The five `general-code-review*` skills ship with names and text unchanged
-    from codex-code-review-general 0.1.0. Check: review, by diff against the source.
+26. **Skills.** The four `general-code-review*` skills ship with names and text unchanged
+    from codex-code-review-general 0.1.0; the change-size skill was dropped in 0.6.0. Check: review, by diff against the source.
 27. **Manifest.** `plugins/ccx-codex/plugin.json` uses the `agent-plugins.org` schema
     1.0.0, is named `ccx`, and carries the family version. Depends on spike M0.5.
     Check: lint.
@@ -140,7 +140,7 @@ requirement below changes it. The audit plugin was not part of v0.1.0; it joined
     Each skill keeps its provenance comment. Check: lint for the files; review for the
     text.
 29. **Runs on Codex.** Invoking `general-code-review` in a Codex session on a small diff
-    produces a review, and the session shows each of the four companion skills was
+    produces a review, and the session shows each of the three companion skills was
     used. Check: acceptance.
 
 ## repo-docs

@@ -149,7 +149,7 @@ keep the bit (the dry run's `git archive | tar` kept it).
 | `plugins/codex-code-review-general/plugin.json` | `plugins/recode-codex/plugin.json` | edit: `name`, `repository` |
 | `plugins/codex-code-review-general/skills/general-code-review/SKILL.md` | `plugins/recode-codex/skills/general-code-review/SKILL.md` | move, byte-unchanged |
 | `.../general-code-review-breaking-changes/SKILL.md` | `plugins/recode-codex/skills/general-code-review-breaking-changes/SKILL.md` | move, byte-unchanged |
-| `.../general-code-review-change-size/SKILL.md` | `plugins/recode-codex/skills/general-code-review-change-size/SKILL.md` | move, byte-unchanged |
+| `.../general-code-review-change-size/SKILL.md` | `plugins/recode-codex/skills/general-code-review-change-size/SKILL.md` | move, byte-unchanged; dropped in 0.6.0 (decisions Part 18) |
 | `.../general-code-review-context/SKILL.md` | `plugins/recode-codex/skills/general-code-review-context/SKILL.md` | move, byte-unchanged |
 | `.../general-code-review-testing/SKILL.md` | `plugins/recode-codex/skills/general-code-review-testing/SKILL.md` | move, byte-unchanged |
 | `plugins/codex-code-review/plugin.json` | none | dropped: verbatim mirror |
