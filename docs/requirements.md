@@ -86,8 +86,47 @@ requirement below changes it. The audit plugin was not part of v0.1.0; it joined
 13. **Data directory.** Scripts receive the data directory as an argument from the
     command text or the hook's `args`, and never read it from the environment. Depends
     on spike M0.4 for the hook. Check: test; lint.
-14. **Runtime budget.** `ccx.mjs` and `codex.mjs` together stay at or under 710 lines.
-    `rules.mjs` has its own budget of 640 lines and `suite.mjs` of 200. Check: lint.
+14. **Runtime budget.** `ccx.mjs` and `codex.mjs` together stay at or under 740 lines.
+    `rules.mjs` has its own budget of 640 lines, `suite.mjs` of 200, and `attribution.mjs`
+    of 120. Check: lint.
+68. **Attribution hook.** A PreToolUse hook, `scripts/attribution.mjs`, runs before each Bash and
+    each PowerShell call. It acts only on a `git commit` (`git` or `git.exe`, bare or by path,
+    either one quoted, with any options, including those that take a separate value such as
+    `-C`, `-c`, `--config-env`, and `--attr-source`) or a `gh pr create` or `gh pr edit`; any
+    other command returns at once with no file read. It checks the whole command and the files
+    named by `-F`, `--file`, or `--body-file`. Each file is resolved against the directory of
+    the nearest commit before it, which is the call's `cwd` moved by that commit's own `-C`
+    arguments, or against the call's `cwd` when a `gh` call or nothing comes before it. In a
+    Bash call, an unquoted leading `~` is the home directory, and on Windows a leading `/tmp`
+    is the temp directory and a leading `/<letter>/`, such as `/c/`, is that drive, as Git
+    Bash reads them. `-`, a missing file,
+    and a path holding `$` or `%` are skipped. It denies the call when the text has a
+    `Co-Authored-By:` line whose value holds an `@anthropic.com` address or names Claude alone
+    or with Code, Opus, Sonnet, Haiku, or Fable and a version, followed by an email, the end
+    of the line, or the end of the quoted message, or a "Generated with Claude Code" line, and
+    the settings turn that attribution off: `attribution.commit` is `""` for a commit,
+    `attribution.pr` is `""` for a PR, or, for a commit with `attribution.commit` unset
+    everywhere, `includeCoAuthoredBy` is `false`. Settings come from the managed drop-ins
+    `managed-settings.d/*.json`, last name first and hidden files skipped, then the managed
+    settings file; then, on macOS and Linux, `.claude/settings.local.json` at the repository
+    root, which in a linked worktree is the main checkout's root (not outside git, at the home
+    directory, when the git directory is not `<root>/.git`, as in a submodule or a bare
+    repository, or when the root, its `.git`, or its `.claude` has another owner); then
+    `.claude/settings.local.json` and
+    `.claude/settings.json` under `CLAUDE_PROJECT_DIR` (else the call's `cwd`); then
+    `settings.json` under `CLAUDE_CONFIG_DIR` (else `~/.claude`). The first file that sets the
+    key wins, and a missing or invalid file is skipped. Not read: the `--settings` flag and
+    managed policies from the registry or MDM. The denial is JSON with `permissionDecision:
+    deny` and one line, such as `ccx: remove the Co-Authored-By line naming Claude;
+    attribution.commit is "" in <path>`. Any error allows the call and prints nothing. The
+    module imports only `node:` built-ins. Check: test (`tests/ccx/attribution.test.mjs`); lint 5.
+70. **Saved output.** A run of `ask`, `review`, `do`, or `implement` that reached Codex
+    saves what it prints, without the `output:` line, to `output-<id>.txt` in ccx's data
+    directory, where `<id>` is a new UUID for each call, so two calls in one session keep
+    both answers, and prints `output: <path>`, with forward slashes, as the line before
+    `status:`. If the save fails, a `ccx: warning: could not save the output` line takes
+    its place and the status is unchanged. A refused call saves nothing. A run removes
+    `output-*.txt` and `output-*.txt.tmp` files older than a day. Check: test.
 
 ## Setup
 
@@ -129,8 +168,9 @@ requirement below changes it. The audit plugin was not part of v0.1.0; it joined
 
 ## Code review skills: ccx on Codex
 
-26. **Skills.** The five `general-code-review*` skills ship with names and text unchanged
-    from codex-code-review-general 0.1.0. Check: review, by diff against the source.
+26. **Skills.** The four `general-code-review*` skills ship with names and text unchanged
+    from codex-code-review-general 0.1.0; the change-size skill was dropped in 0.6.0.
+    Check: review, by diff against the source.
 27. **Manifest.** `plugins/ccx-codex/plugin.json` uses the `agent-plugins.org` schema
     1.0.0, is named `ccx`, and carries the family version. Depends on spike M0.5.
     Check: lint.
@@ -140,7 +180,7 @@ requirement below changes it. The audit plugin was not part of v0.1.0; it joined
     Each skill keeps its provenance comment. Check: lint for the files; review for the
     text.
 29. **Runs on Codex.** Invoking `general-code-review` in a Codex session on a small diff
-    produces a review, and the session shows each of the four companion skills was
+    produces a review, and the session shows each of the three companion skills was
     used. Check: acceptance.
 
 ## repo-docs
@@ -169,9 +209,9 @@ requirement below changes it. The audit plugin was not part of v0.1.0; it joined
     the Codex target alone. It never edits `settings.json`. Depends on spike M0.7.
     Check: test with temporary directories for both variables.
 34. **Content.** The core text is the ask-first line plus the Working, Code, Tests, Done,
-    and Ask first sections of forge-ops `claude/CLAUDE.md` at its `main` when M3 starts,
-    byte for byte, with that commit recorded. Check: review at import; afterwards this
-    repository is the source. Release 0.1.3 synced it to forge-ops 9faabda on 2026-10-04;
+    and Ask first sections, held in `plugins/ccx/rules/core.md`; this repository is the
+    source. Check: review at import. Release 0.1.3 synced it to the earlier source
+    repository at 9faabda on 2026-10-04;
     `docs/decisions.md` Part 9.
 35. **Options.** `core` is on by default. `windows` is offered only when the command runs
     on Windows and is on by default there. `writing` is off by default. On a rerun the
@@ -222,7 +262,7 @@ requirement below changes it. The audit plugin was not part of v0.1.0; it joined
     user sees one line naming the file and `/ccx:rules`. Otherwise the hook prints
     nothing and writes nothing. Depends on spike M0.4. Check: test for the output;
     acceptance for what the user sees.
-46. **Writing style.** The plugin ships forge-ops Concise Plain v4.4 as an output style
+46. **Writing style.** The plugin ships Concise Plain v4.5 as an output style
     named `Concise Plain`, selectable in `/output-style` as `ccx:Concise Plain`. When
     `writing` is chosen, the command prints how to select it and adds Codex's Writing
     section to the Codex block. Depends on spike M0.3. Check: acceptance.
@@ -272,7 +312,8 @@ Added 2026-10-05, when claude-codex-audit 0.8.1 at `eed9fba` joined the suite as
     `npm test`, from `tests/cca/`, on the three CI systems, plus mawk on Ubuntu. Check:
     test; acceptance for a run.
 63. **Bridge detection.** Stage 6 calls `ccx:ask` and takes the version of the plugin id
-    starting `ccx@` from `claude plugin list --json`; 0.1.0 or later counts. Without it,
+    starting `ccx@` from `claude plugin list --json`; 0.6.0 or later counts, the first
+    version that saves each answer (R70). Without it,
     with Codex absent, or with `--no-codex`, the second opinion swaps to `cca:adversary`.
     The manifest declares no dependency, so the plugin installs and runs without `ccx`.
     Check: review of stage 6; acceptance.
@@ -283,6 +324,13 @@ Added 2026-10-05, when claude-codex-audit 0.8.1 at `eed9fba` joined the suite as
     `cca-manifest.json` and suggesting `/cca:audit` without reading the audit plugin, so
     R25 holds, and those names, with `cca:` and `cca-handoff: 1`, are frozen interfaces
     inside one repository. Check: acceptance.
+71. **Saved answer copied.** Stage 6 copies the file named by ccx's `output:` line to
+    `codex/response.md` with one shell command, never retyping it, and deletes the source
+    after the copy exits 0. A missing `output:` line on an `ok` call swaps to
+    `cca:adversary`; a refused call keeps ccx's message as the reason. Check:
+    acceptance (item 22) for the copy, a follow-up, and the deletion; review of stage 6
+    for a failed copy and an `ok` call with no `output:` line, which neither plugin can
+    be made to produce on demand.
 
 ## Release
 
@@ -314,6 +362,7 @@ Added 2026-10-05, when claude-codex-audit 0.8.1 at `eed9fba` joined the suite as
     Check: acceptance.
 54. **Line endings.** `.gitattributes` keeps `*.sh`, `*.mjs`, and `*.md` at LF. Check:
     lint.
+69. **No retired source.** No tracked file names the retired source repository. Check: lint 20.
 
 ## Migration
 
@@ -332,7 +381,8 @@ Added 2026-10-05, when claude-codex-audit 0.8.1 at `eed9fba` joined the suite as
 Cutover is complete: the old plugins are gone from every machine, and the suite has one
 user. Its three requirements are retired in 0.4.0 and kept here for their numbers.
 
-58. **forge-ops first.** Retired in 0.4.0; the forge-ops installers no longer write the
+58. **Source repository first.** Retired in 0.4.0; the earlier source repository's
+    installers no longer write the
     home instruction files.
 59. **Gate.** Retired in 0.4.0; the acceptance records hold the runs that gated each
     release.

@@ -75,6 +75,7 @@ Outputs: `scope/<scope>.md` and `pass1/<scope>.md` for every pass-one scope.
    - the path of `common.md`;
    - the path of `scope/<scope>.md`;
    - the output path, `pass1/<scope>.md`;
+   - the scratch folder, `tmp/agents/pass1-<scope>/`;
    - the scope's question ids and text.
 
    Finding ids are `<scope>-F<n>`. Record each launch (type, model, scope, start time)
@@ -136,7 +137,8 @@ Outputs: `scope/<scope>.md` and `pass1/<scope>.md` for every pass-one scope.
       `pass1/<scope>.md` to `pass1/<scope>.pre-topup.md`. The prompt says "mode: top-up
       after the barrier" and holds the paths of `audit-brief.md`, `common.md`, and
       `scope/<scope>.md`, the missed digest and map paths with their hashes, the scope's
-      questions, and the output path `pass1/<scope>.md`. The agent's standing
+      questions, the output path `pass1/<scope>.md`, and the scratch folder
+      `tmp/agents/pass1-<scope>-<n>/`, `<n>` counting the scope's top-ups from 1. The agent's standing
       instructions cover the rest: apply every rule in each missed digest and every
       answer in each missed map to the scope's files, not only the `potential finding`
       lines; cite the original document or source at its sha, never the digest or map;

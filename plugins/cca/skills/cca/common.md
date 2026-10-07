@@ -23,8 +23,9 @@ These hold for every stage, for the orchestrator and every agent.
    of truth. Allowed writes: the run directory; cca's data directory (`runs.json`,
    its `runs.json.lock` directory including the owner directory, and its
    `runs.json.<owner>.tmp` temporary file);
-   ccx's own request and thread files in ccx's data directory, written
-   when cca calls it; `git fetch` into remote-tracking refs, after the user approves it
+   ccx's own request, thread, and output files in ccx's data directory, written
+   when cca calls it, including ccx's own removal of output files older than a day, and
+   the orchestrator's removal of the output file it just copied (stage 6 step 9); `git fetch` into remote-tracking refs, after the user approves it
    once per run; and, for a bundle with `head: working-tree`, the loose git objects that
    `working-tree.sh build` writes in the repo's object store (stage 1 step 1c, and resume
    step 3 when it rebuilds the head), which the report discloses; and, in stage 1 step
@@ -47,7 +48,9 @@ These hold for every stage, for the orchestrator and every agent.
    an `rg` over `git ls-files` would miss the untracked files that are part of the head.
    The orchestrator's `git status` runs as `git -C <repo> --no-optional-locks status ...`,
    and the snapshot script sets `GIT_OPTIONAL_LOCKS=0`, so no status check rewrites the
-   index. This is instruction, not enforcement: nothing blocks Bash mechanically. The
+   index. An agent may redirect a command's output into its own scratch folder, which its
+   prompt names (`<run dir>/tmp/agents/...`), and keeps it raw; no agent edits a file in
+   place. This is instruction, not enforcement: nothing blocks Bash mechanically. The
    orchestrator snapshots every audited repo in stage 1 and compares after every stage. A
    change to tracked files, untracked non-ignored files, refs, the index, stashes, or
    config, including an added or deleted file, stops the run `blocked`, unless an approved
@@ -564,7 +567,9 @@ lines are not findings and are not in the ledger files.
 
 Every agent:
 
-1. Writes one output file, at the path its prompt names, and no other file. A pass-one
+1. Writes one output file, at the path its prompt names, and no other file, except
+   command output in its own scratch folder when its prompt names one, kept raw. It runs
+   no `sed -i` or other in-place edit; it rewrites its own output file with Write. A pass-one
    file holds, in order, its findings, `## Verified OK`, `## Outward trace` (a group or
    `combined` scope only), `## Claims`, `## Decisions`, and, in a scope that holds
    `hygiene` claims, `## Scope`. A pass-two file holds its verdicts,

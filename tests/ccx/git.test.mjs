@@ -4,7 +4,7 @@ import assert from 'node:assert/strict';
 import { execFileSync } from 'node:child_process';
 import { chmodSync, existsSync, mkdirSync, readFileSync, renameSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { DO, RESUME, SANDBOX, THREAD, calls, cli, cwds, git, probeLeftovers, requestLeft, run, spawning, stdin, withScratch } from './fixtures/harness.mjs';
+import { DO, RESUME, SANDBOX, THREAD, calls, cli, cwds, git, printedPath, probeLeftovers, requestLeft, run, spawning, stdin, withScratch } from './fixtures/harness.mjs';
 
 const REVIEW = ['exec', 'review', '--json', '--ignore-user-config', '-c', 'approval_policy="never"', '-c', 'sandbox_mode="read-only"'];
 
@@ -246,7 +246,7 @@ test('do: the probe passes, the rows match, and the footer states the tree after
   assert.notEqual(before, after);
   assert.equal(r.stdout, 'requested: codex exec --json --ignore-user-config -c approval_policy="never" -c sandbox_mode="workspace-write" -\n' +
     `cwd: ${s.repo}\nsandbox: workspace-write proven on this host before the run; the system temp directory stays writable\n\nfake answer\n\n` +
-    `HEAD ${before} before, ${after} after\nworking tree after the run:\n   M tracked.txt\n  !! .env\nthread ${THREAD}\n${RESUME}\nstatus: ok\n`);
+    `HEAD ${before} before, ${after} after\nworking tree after the run:\n   M tracked.txt\n  !! .env\nthread ${THREAD}\n${RESUME}\noutput: ${printedPath(s)}\nstatus: ok\n`);
   assert.equal(r.status, 0);
   assert.deepEqual(probeLeftovers(s), [false, []]);
 }));
@@ -261,7 +261,7 @@ test('do from a subdirectory names it as cwd, probes under it, and lists the who
   assert.notEqual(before, after);
   assert.equal(r.stdout, 'requested: codex exec --json --ignore-user-config -c approval_policy="never" -c sandbox_mode="workspace-write" -\n' +
     `cwd: ${s.repo}/a\nsandbox: workspace-write proven on this host before the run; the system temp directory stays writable\n\nfake answer\n\n` +
-    `HEAD ${before} before, ${after} after\nworking tree after the run:\n   M b/file.txt\n  !! a/.env\nthread ${THREAD}\n${RESUME}\nstatus: ok\n`);
+    `HEAD ${before} before, ${after} after\nworking tree after the run:\n   M b/file.txt\n  !! a/.env\nthread ${THREAD}\n${RESUME}\noutput: ${printedPath(s)}\nstatus: ok\n`);
   assert.equal(r.status, 0);
 }));
 
@@ -275,7 +275,7 @@ test('implement prints the do footer lines, passes --model, and sends only the t
   assert.equal(stdin(s), 'fix it');
   assert.equal(r.stdout, 'requested: codex exec --json --ignore-user-config -c approval_policy="never" -c sandbox_mode="workspace-write" --model gpt-x -\n' +
     `cwd: ${s.repo}\nsandbox: workspace-write proven on this host before the run; the system temp directory stays writable\n\nfake answer\n\n` +
-    `HEAD ${before} before, ${after} after\nworking tree after the run:\n  !! .env\nthread ${THREAD}\n${RESUME}\nstatus: ok\n`);
+    `HEAD ${before} before, ${after} after\nworking tree after the run:\n  !! .env\nthread ${THREAD}\n${RESUME}\noutput: ${printedPath(s)}\nstatus: ok\n`);
   assert.equal(r.status, 0);
   assert.deepEqual(probeLeftovers(s), [false, []]);
 }));
@@ -289,7 +289,7 @@ test('implement --cwd to a subdirectory sets cwd and the probe there, and lists 
   assert.deepEqual(cwds(s), [sub, sub, sub]);
   assert.equal(r.stdout, 'requested: codex exec --json --ignore-user-config -c approval_policy="never" -c sandbox_mode="workspace-write" -\n' +
     `cwd: ${s.repo}/a\nsandbox: workspace-write proven on this host before the run; the system temp directory stays writable\n\nfake answer\n\n` +
-    `HEAD ${before} before, ${after} after\nworking tree after the run:\n   M b/file.txt\n  !! a/.env\nthread ${THREAD}\n${RESUME}\nstatus: ok\n`);
+    `HEAD ${before} before, ${after} after\nworking tree after the run:\n   M b/file.txt\n  !! a/.env\nthread ${THREAD}\n${RESUME}\noutput: ${printedPath(s)}\nstatus: ok\n`);
   assert.equal(r.status, 0);
 }));
 
@@ -307,7 +307,7 @@ test('do: a good run whose tree footer cannot be read ends with status: failed',
   const env = shims(s, `case "$*" in *--ignored*) echo 'fatal: footer broken' >&2; exit 1;; esac\n`);
   const r = run(s, 'do', { request: 'go', env });
   assert.equal(calls(s).at(-1)[0], 'exec');
-  assert.match(r.stdout, /\n\nfake answer\n\nccx: git status after the run failed: fatal: footer broken\nthread \S+\nResume: .*\nstatus: failed\n$/);
+  assert.match(r.stdout, /\n\nfake answer\n\nccx: git status after the run failed: fatal: footer broken\nthread \S+\nResume: .*\noutput: \S+\nstatus: failed\n$/);
   assert.equal(r.status, 1);
 }));
 

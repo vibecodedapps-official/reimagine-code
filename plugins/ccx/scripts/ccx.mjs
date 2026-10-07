@@ -3,7 +3,8 @@
 // Or node ccx.mjs hook <dataDir>, the UserPromptSubmit hook: reads the event on stdin, deletes the session's request file, prints a routing note or nothing, exits 0.
 // The data directory arrives as an argument: inside the Bash tool the environment can carry another plugin's value.
 import { spawn } from 'node:child_process';
-import { existsSync, mkdtempSync, readFileSync, realpathSync, renameSync, rmSync, statSync, writeFileSync } from 'node:fs';
+import { randomUUID } from 'node:crypto';
+import { existsSync, mkdtempSync, readdirSync, readFileSync, realpathSync, renameSync, rmSync, statSync, writeFileSync } from 'node:fs';
 import { createRequire } from 'node:module';
 import { homedir } from 'node:os';
 import { delimiter, dirname, isAbsolute, join, relative, sep } from 'node:path';
@@ -11,7 +12,7 @@ import { NPM_WIN32, WINDOWS_SANDBOXES, buildArgv, decideProbe, parseAskArgs, par
 
 const started = Date.now();
 // Test-only seams, read once. CCX_TIMEOUT_MS replaces both deadlines below; an ask, review or implement --timeout wins for the turn.
-const { CCX_CODEX_BIN, CCX_TIMEOUT_MS, CCX_PROBE_TARGET } = process.env;
+const { CCX_CODEX_BIN, CCX_TIMEOUT_MS, CCX_PROBE_TARGET, CCX_OUTPUT_ID } = process.env;
 const override = Number(CCX_TIMEOUT_MS) > 0 ? Number(CCX_TIMEOUT_MS) : null;
 const TURN_MS = override ?? 60 * 60_000;
 const LOCAL_MS = override ?? 30_000;
@@ -29,6 +30,24 @@ const out = [];
 let status;
 // One saved thread id per Claude session, so a bare --resume never picks up another session's thread.
 const threadFile = (dataDir, id) => join(dataDir, `thread-${id}.txt`);
+// Set once a run reaches Codex: the printed result is then also saved here, and its path printed before the status.
+let outputFile;
+const slashed = (p) => (POSIX ? p : p.replaceAll('\\', '/'));
+// Retention for callers that never delete their output file; not a size bound. Errors are ignored.
+function pruneOutputs(dataDir) {
+  try {
+    for (const n of readdirSync(dataDir)) {
+      const file = join(dataDir, n);
+      if (/^output-.*\.txt(\.tmp)?$/.test(n) && started - statSync(file).mtimeMs > 24 * 3_600_000) rmSync(file, { force: true });
+    }
+  } catch {}
+}
+function saveOutput(file, text) {
+  try { writeFileSync(`${file}.tmp`, text); renameSync(`${file}.tmp`, file); return `output: ${slashed(file)}`; } catch (e) {
+    try { rmSync(`${file}.tmp`, { force: true }); } catch {}
+    return `ccx: warning: could not save the output to ${slashed(file)}: ${e.message}`;
+  }
+}
 
 // Every spawn goes through here, and spawn's own timeout option is not used: it signals once and then waits as long
 // as the child lives. On POSIX the child leads its own process group and every signal goes to the group. The wait
@@ -282,6 +301,9 @@ async function main() {
   // The flag bounds the Codex turn only; the local git and probe calls before it keep their own deadline.
   const turnMs = args.timeout === undefined ? TURN_MS : args.timeout * 1000;
   status = 'failed';
+  // Named per call, not per session: two calls in one session must not overwrite each other's answer.
+  outputFile = join(dataDir, `output-${CCX_OUTPUT_ID || randomUUID()}.txt`);
+  pruneOutputs(dataDir);
   const r = await run(codex, argv, { ms: turnMs, cwd, input: command === 'review' ? undefined : input, onStdout: (b) => reader.write(b) });
   Object.assign(r, reader.end());
   const why = failures(r, turnMs);
@@ -391,4 +413,8 @@ else main().then((ok) => { process.exitCode = ok ? 0 : 1; }, (e) => {
   out.push(e instanceof Refusal ? `ccx: ${e.message}` : `ccx: unexpected error: ${e?.stack ?? e}`);
   if (!(e instanceof Refusal) && status) status = 'failed'; // a crash is not a deliberate stop, whichever phase it was in
   process.exitCode = 1;
-}).finally(() => process.stdout.write(`${[...out, ...(status ? [`status: ${status}`] : [])].join('\n')}\n`));
+}).finally(() => {
+  const last = status ? [`status: ${status}`] : [];
+  if (outputFile) out.push(saveOutput(outputFile, `${[...out, ...last].join('\n')}\n`));
+  process.stdout.write(`${[...out, ...last].join('\n')}\n`);
+});

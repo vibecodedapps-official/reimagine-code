@@ -2,11 +2,11 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { spawn, spawnSync } from 'node:child_process';
-import { existsSync, mkdirSync, readdirSync, symlinkSync, utimesSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, readdirSync, readFileSync, symlinkSync, utimesSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import {
   ASK, ASK_RESUME, FAKE, ID, ID2, RESUME, RESUME2, SANDBOX, SCRIPT, THREAD, THREAD2,
-  alive, calls, cli, dead, git, pids, probeLeftovers, requestLeft, run, savedThread, spawning, stdin, threadFile, withScratch,
+  alive, calls, cli, dead, git, outputFiles, outputPath, pids, printedPath, probeLeftovers, requestLeft, run, savedThread, spawning, stdin, threadFile, withScratch,
 } from './fixtures/harness.mjs';
 
 test('ask: the recorded argv and stdin match, and a good run renders the answer', spawning, withScratch((s) => {
@@ -16,9 +16,70 @@ test('ask: the recorded argv and stdin match, and a good run renders the answer'
   assert.equal(stdin(s), request);
   assert.equal(r.stdout, 'requested: codex exec --json --ignore-user-config -c approval_policy="never" -c sandbox_mode="read-only" -\n' +
     `cwd: ${s.repo}\nnetwork: none in the read-only sandbox; Codex cannot fetch issues, pull requests or pages\n\nfake answer\n\n` +
-    `thread ${THREAD}\n${RESUME}\nstatus: ok\n`);
+    `thread ${THREAD}\n${RESUME}\noutput: ${printedPath(s)}\nstatus: ok\n`);
   assert.equal(r.status, 0);
   assert.equal(requestLeft(s), false);
+}));
+
+test('ask saves what it prints, minus the output line, and prints the file path just before the status', spawning, withScratch((s) => {
+  const r = run(s, 'ask', { request: 'q\n' });
+  assert.deepEqual(r.stdout.split('\n').slice(-4), [RESUME, `output: ${printedPath(s)}`, 'status: ok', '']);
+  assert.equal(readFileSync(outputPath(s), 'utf8'), r.stdout.replace(`output: ${printedPath(s)}\n`, ''));
+  assert.match(readFileSync(outputPath(s), 'utf8'), /\n\nfake answer\n\n/);
+}));
+
+test('a failed run still saves its output, with the failed status', spawning, withScratch((s) => {
+  const r = run(s, 'ask', { request: 'q', env: { FAKE_CODEX: 'exit1' } });
+  assert.ok(r.stdout.endsWith(`\noutput: ${printedPath(s)}\nstatus: failed\n`));
+  const saved = readFileSync(outputPath(s), 'utf8');
+  assert.match(saved, /ccx: the run failed: codex exited with status 1\nfake failure on stderr\n/);
+  assert.ok(saved.endsWith('\nstatus: failed\n'));
+}));
+
+test('two calls in one session save to two files, so the second answer does not replace the first', spawning, withScratch((s) => {
+  const printed = (r) => r.stdout.split('\n').find((l) => l.startsWith('output: ')).slice('output: '.length);
+  const first = run(s, 'ask', { request: 'the first question\n' });
+  const second = run(s, 'ask', { request: 'the second question\n', env: { FAKE_CODEX: 'exit1' } });
+  assert.notEqual(printed(first), printed(second));
+  const names = outputFiles(s);
+  assert.equal(names.length, 2, JSON.stringify(names));
+  for (const n of names) assert.match(n, /^output-[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\.txt$/);
+  assert.ok(readFileSync(printed(first), 'utf8').endsWith('\nstatus: ok\n'));
+  assert.ok(readFileSync(printed(second), 'utf8').endsWith('\nstatus: failed\n'));
+}));
+
+test('a save that fails prints a warning in the output line\'s place and keeps the run\'s own status', spawning, withScratch((s) => {
+  const file = outputPath(s, `output-${ID}.txt`);
+  mkdirSync(`${file}.tmp`);
+  const r = run(s, 'ask', { request: 'q\n', env: { CCX_OUTPUT_ID: ID } });
+  assert.equal(r.status, 0);
+  assert.ok(r.stdout.endsWith('\nstatus: ok\n'));
+  const lines = r.stdout.split('\n');
+  assert.ok(lines.at(-3).startsWith(`ccx: warning: could not save the output to ${file.replaceAll('\\', '/')}: `), lines.at(-3));
+  assert.equal(lines.some((l) => l.startsWith('output: ')), false);
+  assert.equal(existsSync(file), false);
+}));
+
+test('a run removes output files older than a day and keeps newer ones', spawning, withScratch((s) => {
+  const make = (name, hours) => {
+    writeFileSync(outputPath(s, name), 'x');
+    const t = new Date(Date.now() - hours * 3_600_000);
+    utimesSync(outputPath(s, name), t, t);
+  };
+  make('output-old.txt', 25);
+  make('output-old2.txt.tmp', 25);
+  make('output-new.txt', 1);
+  make('thread-old.txt', 25);
+  run(s, 'ask', { request: 'q\n' });
+  const saved = outputFiles(s).filter((n) => n !== 'output-new.txt');
+  assert.equal(saved.length, 1, JSON.stringify(saved));
+  assert.deepEqual(readdirSync(s.data).sort(), [saved[0], 'output-new.txt', `thread-${ID}.txt`, 'thread-old.txt'].sort());
+}));
+
+test('a refused call writes no output file', spawning, withScratch((s) => {
+  const r = run(s, 'ask', { request: '--model gpt-5\n' });
+  assert.ok(r.stdout.endsWith('status: refused\n'));
+  assert.deepEqual(readdirSync(s.data), []);
 }));
 
 test('ask with a leading --model passes it to Codex and sends only the question', spawning, withScratch((s) => {
@@ -108,7 +169,7 @@ test('the same complete stream followed by exit 1 is a failure that prints Codex
   assert.equal(r.status, 1);
   assert.match(r.stdout, /\n\nccx: the run failed: codex exited with status 1\nfake failure on stderr\n\n/);
   assert.doesNotMatch(r.stdout, /fake answer/);
-  assert.match(r.stdout, /\nthread \S+\nResume: .*\nstatus: failed\n$/);
+  assert.match(r.stdout, /\nthread \S+\nResume: .*\noutput: \S+\nstatus: failed\n$/);
 }));
 
 test('a message with no turn.completed and exit 0 is a failure', spawning, withScratch((s) => {
@@ -446,7 +507,7 @@ test('a child that exits 0 just before the deadline, while its own child holds s
 test('a Codex that cannot be started is a failure for ask and a refusal naming the command for setup', spawning, withScratch((s) => {
   const env = { CCX_CODEX_BIN: join(s.root, 'no-such-codex') };
   const r = run(s, 'ask', { request: 'q', env });
-  assert.match(r.stdout, /\n\nccx: the run failed: could not start codex: spawn \S+no-such-codex ENOENT\n\nstatus: failed\n$/);
+  assert.match(r.stdout, /\n\nccx: the run failed: could not start codex: spawn \S+no-such-codex ENOENT\n\noutput: \S+\nstatus: failed\n$/);
   assert.equal(r.status, 1);
   assert.equal(requestLeft(s), false);
   const d = run(s, 'do', { request: 'go', env });
@@ -528,7 +589,7 @@ test('an explicit --resume id builds the literal resume argv, sends only the que
     assert.equal(stdin(s), 'what about the second objection\n');
     assert.equal(r.stdout, `requested: codex exec resume ${THREAD2} --json --ignore-user-config -c approval_policy="never" -c sandbox_mode="read-only" -\n` +
       `cwd: ${s.repo}\nnetwork: none in the read-only sandbox; Codex cannot fetch issues, pull requests or pages\n\nfake answer\n\n` +
-      `thread ${THREAD2}\n${RESUME2}\nstatus: ok\n`);
+      `thread ${THREAD2}\n${RESUME2}\noutput: ${printedPath(s)}\nstatus: ok\n`);
     assert.equal(r.status, 0);
     assert.equal(requestLeft(s), false);
     assert.equal(savedThread(s), `${THREAD2}\n`);

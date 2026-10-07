@@ -39,8 +39,8 @@ reimagine-code/
     ccx/                           Claude only
       .claude-plugin/plugin.json
       commands/                       ask review do implement setup rules
-      scripts/                        ccx.mjs codex.mjs rules.mjs suite.mjs
-      hooks/hooks.json                UserPromptSubmit, SessionStart
+      scripts/                        ccx.mjs codex.mjs rules.mjs suite.mjs attribution.mjs
+      hooks/hooks.json                UserPromptSubmit, SessionStart, PreToolUse
       rules/                          house rules sources
       output-styles/                  the Writing style, opt-in
       chat/                           claude.ai and ChatGPT blocks, copy by hand
@@ -134,11 +134,12 @@ Behavior carries over from codex-lite 0.9.0 unchanged except for names.
 - **Commands.** `ask`, `review`, `implement` as today. `do` and `setup` keep
   `disable-model-invocation: true`, so they cost nothing until typed. New: `rules`, also
   `disable-model-invocation: true`.
-- **Scripts.** `ccx.mjs` (was `codex-lite.mjs`) and `codex.mjs` keep their 710-line
+- **Scripts.** `ccx.mjs` (was `codex-lite.mjs`) and `codex.mjs` keep their 740-line
   runtime budget; lint prints the lines used on every run.
-  New code goes in two new modules with their own budgets: `rules.mjs` (house rules,
-  pure file logic, spawns nothing) and `suite.mjs` (the old-plugin report and the
-  SessionStart notice, which spawn `claude plugin list --json` or read files).
+  New code goes in three new modules with their own budgets: `rules.mjs` (house rules,
+  pure file logic, spawns nothing), `suite.mjs` (the old-plugin report and the
+  SessionStart notice, which spawn `claude plugin list --json` or read files), and
+  `attribution.mjs` (the PreToolUse hook).
 - **Data directory.** The command text, or the hook's `args`, passes
   `${CLAUDE_PLUGIN_DATA}` to the script as an argument, never through the environment.
   This is the existing pattern: the variable inside the Bash tool once held another
@@ -146,6 +147,9 @@ Behavior carries over from codex-lite 0.9.0 unchanged except for names.
   `args` is checked in spike M0.4. The directory becomes
   `~/.claude/plugins/data/ccx-reimagine-code/`. It survives updates and is deleted on
   uninstall (verified, docs).
+- **Saved output.** A run that reached Codex writes what it prints, minus the `output:`
+  line, to `output-<id>.txt` there, `<id>` a new UUID for each call, through a temporary
+  file and a rename, and prints its path before `status:`. Files older than a day are removed when a run starts.
 - **UserPromptSubmit hook.** It prints a routing note only when the prompt matches
   `/codex/i` and does not start with a slash command. It also deletes the session's
   request file, which at a prompt can only be left from a stopped run, so a script call
@@ -155,18 +159,21 @@ Behavior carries over from codex-lite 0.9.0 unchanged except for names.
 - **SessionStart hook.** New. `suite.mjs` prints one line to the user when a house rules
   block is stale (see below) and nothing otherwise. Claude Code has no install or update
   hook; a SessionStart check is the documented pattern (verified, docs).
+- **Attribution hook.** `scripts/attribution.mjs`, run as a PreToolUse hook for the Bash
+  and PowerShell matchers, in exec form with no data directory argument. It imports only
+  `node:` built-ins, so its start stays cheap on every shell call, and it fails open
+  (R68).
 - **Setup.** Keeps today's diagnostics: Codex version, login, Windows sandbox mode, the
   write probe, and the allow rule to paste, for the bridge script only since 0.1.2
   (2026-10-04, `docs/decisions.md` Part 8). Adds one section from `suite.mjs`: old
   plugins found installed, with the uninstall command for each, never run. It records
   nothing.
-- **Output style.** `output-styles/concise-plain.md`, made from forge-ops
-  `concise-plain-v4.4.md` with its `name` changed to `Concise Plain` and the version
-  moved into the description, so a user's selection survives style updates. A plugin
+- **Output style.** `output-styles/concise-plain.md`, named `Concise Plain`, with the
+  version in the description, so a user's selection survives style updates. A plugin
   style shows in `/output-style` as `ccx:<name>` (verified, docs; selecting it with
   an argument needs Claude Code 2.1.269). The rules command prints how to select it;
   nothing edits `settings.json`.
-- **Chat instructions.** `chat/instructions.md`: the one block forge-ops pastes into both
+- **Chat instructions.** `chat/instructions.md`: the one block to paste into both
   claude.ai and ChatGPT, with its dated sync header and ChatGPT's 5,000-character cap.
   Installed with the plugin, never applied. The README and the rules command point at
   it.
@@ -242,9 +249,8 @@ over unchanged except for names: four commands (`audit`, `resume`, `act`, `hando
 five agents, and one orchestrator skill with its stage files and eight POSIX sh scripts.
 
 - **Bridge.** Stage 6 calls `ccx:ask` and takes the version of the plugin id starting
-  `ccx@` from `claude plugin list --json`; it must be 0.1.0 or later, since the
-  `status:` line and `--timeout` it relies on, added in codex-lite 0.7.0, are in every
-  `ccx`. There is no `dependencies` entry: the second opinion swaps to `cca:adversary`
+  `ccx@` from `claude plugin list --json`; it must be 0.6.0 or later, the first version
+  that saves each answer to a file, which stage 6 copies instead of retyping it. There is no `dependencies` entry: the second opinion swaps to `cca:adversary`
   when the bridge or Codex is absent, and that fallback is a supported mode.
 - **Version line.** Its own, like repo-docs, tagged `cca--v<version>` and set by
   `tools/release.mjs cca <version>`, which also sets the three `plugin_version` literals
@@ -254,13 +260,18 @@ five agents, and one orchestrator skill with its stage files and eight POSIX sh 
 - **Tests.** The sh suites and fixtures in `tests/cca/`, run by `tests/cca/sh.test.mjs`
   under `npm test`, with an Ubuntu-only mawk step in CI. `tests/cca/lint.sh` runs with
   `plugins/cca` as its root and leaves the catalog to `tools/lint.mjs`.
+- **Saved answer.** Stage 6 copies the file named by ccx's `output:` line to
+  `codex/response.md` with one shell command and deletes the source after the copy.
+- **Agent scratch.** Each Bash agent gets `tmp/agents/<stage>-<scope>[-<n>]/` in the run
+  directory for raw command output; the folder is outside every collected input.
 - **Loop coupling.** The names the loop writes, `handoff.md`, `cca-manifest.json`, and
   `/cca:audit`, are shared interfaces in one repository and stay frozen.
 
 ### ccx (Codex)
 
-The five `general-code-review*` skills from codex-code-review-general 0.1.0, names and
-text unchanged. The orchestrator skill names its four companions, so the skill names are
+The four `general-code-review*` skills from codex-code-review-general 0.1.0, names and
+text unchanged; the change-size skill was dropped in 0.6.0 (`docs/decisions.md` Part 18).
+The orchestrator skill names its three companions, so the skill names are
 frozen. The directory carries copies of the Apache-2.0 LICENSE and a rewritten NOTICE,
 because an installed plugin holds only its own directory and the upstream attribution
 must travel with it. The old NOTICE says the plugin redistributes upstream skills
@@ -290,8 +301,8 @@ Sources live in `plugins/ccx/rules/`, because an installed plugin holds only its
 directory.
 
 - `core.md`: the line "Any instruction file can add an ask-first rule; none removes
-  one." and the sections Working, Code, Tests, Done, and Ask first. Copied byte for byte
-  from forge-ops `claude/CLAUDE.md` at a pinned commit. The Claude and Codex copies of
+  one." and the sections Working, Code, Tests, Done, and Ask first. This repository is
+  their source. The Claude and Codex copies of
   these sections are identical today (verified, `diff`).
 - `windows-claude.md` and `windows-codex.md`: the Git Bash line and the PowerShell line.
 - `writing-codex.md`: Codex's inline Writing section.
@@ -396,7 +407,8 @@ not repeat it.
 ### Local overrides
 
 Personal rules go below the end marker, under a heading the user chooses. The block never
-states a conflict order. On the author's work machine, which has no forge-ops and whose
+states a conflict order. On the author's work machine, which keeps no copy of the
+earlier source repository and whose
 files are kept by hand, its own lines go there, so the block stays identical to what
 ships.
 
@@ -463,8 +475,8 @@ ships.
   install and uninstall blocks name every catalog plugin; cca's three `plugin_version`
   literals equal its manifest version; every `gh api` command in the loop's shipped text
   passes `--hostname`, each in one backtick span on one line; every `tests/` path the cca
-  README names in a code span or fenced block exists; and the changelog has a dated
-  heading for the suite version.
+  README names in a code span or fenced block exists; no tracked file names the retired
+  source repository; and the changelog has a dated heading for the suite version.
 - **Release** (`tools/release.mjs`): `ccx <version> [--floor <version>]`,
   `repo-docs <version>`, or `cca <version>` sets the version line in every manifest and
   catalog entry that carries it, with `--floor` the loop's dependency range, and for cca
@@ -488,7 +500,8 @@ ships.
 - **Pinned sources.** codex-lite-cc `2b2454d`, claude-codex-loop `16b8ee7`,
   codex-code-review `f5c7687`, repo-docs `83b14a2`, and, on 2026-10-05,
   claude-codex-audit `eed9fba`. The house rules, style, and chat
-  block come from forge-ops `main` when M3 starts, recorded in the PR; it was `948ce5f`
+  block come from the earlier source repository's `main` when M3 starts, recorded in the
+  PR; it was `948ce5f`
   on 2026-10-03, which added two rules after the 2026-10-02 handoff. Release 0.1.3 synced
   the core rules to `9faabda` on 2026-10-04 (`docs/decisions.md` Part 9).
 - **Untracked design docs.** claude-codex-loop's `SPEC.md`, `docs/architecture.md`,

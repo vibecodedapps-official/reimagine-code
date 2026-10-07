@@ -29,7 +29,7 @@ the next starts.
 | M4 | Loop | `plugins/recode-loop` with the dependency, `codex` option, state renames | M2 |
 | M5 | Codex plugin and repo-docs | `plugins/recode-codex`, `plugins/repo-docs`, the Codex catalog | M2 |
 | M6 | Release | Versions, changelog, README, tags, install from GitHub | M2 to M5 |
-| M7 | Cutover | forge-ops change, old plugins removed, old repos archived | M6, separate asks |
+| M7 | Cutover | Earlier source repository change, old plugins removed, old repos archived | M6, separate asks |
 
 M5 needs the Claude catalog and the lint from M2. It can run beside M3 and M4.
 
@@ -141,7 +141,8 @@ Check:
 Work items:
 
 1. `plugins/recode/rules/`: `core.md`, `windows-claude.md`, `windows-codex.md`,
-   `writing-codex.md`, cut by section, byte for byte, from forge-ops `main` at M3 start
+   `writing-codex.md`, cut by section, byte for byte, from the earlier source
+   repository's `main` at M3 start
    (`948ce5f` on 2026-10-03). The PR records the commit.
 2. `scripts/rules.mjs` with `status`, `plan`, `apply`, `remove`, and `decline`. Pure
    functions take the target directories and file bytes as inputs, so tests need no
@@ -154,8 +155,9 @@ Work items:
    `config.toml`. A SessionStart entry in `hooks/hooks.json`, exec form, calls it
    directly. `recode.mjs` is not touched, so its budget holds.
 5. `commands/setup.md` runs `recode.mjs setup` as today, then `suite.mjs old-plugins`.
-6. `output-styles/concise-plain.md` from forge-ops `concise-plain-v4.4.md`, with `name`
-   set to `Concise Plain`, and `chat/instructions.md` from forge-ops
+6. `output-styles/concise-plain.md` from the earlier source repository's
+   `concise-plain-v4.4.md`, with `name`
+   set to `Concise Plain`, and `chat/instructions.md` from its
    `claude/chat-instructions.md` with its sync header and the ChatGPT cap note.
 
 Check:
@@ -271,16 +273,19 @@ and 4 are not recorded here.
    in a release after 0.6.0, which still calls `codex-lite:ask`. Until then `codex-lite`
    stays installed on every machine that uses the audit. Done 2026-10-05, in this
    repository instead: the audit plugin joined as `cca` 0.9.0 and calls `ccx:ask`.
-1. forge-ops, first change: both installers stop writing the home instruction files,
+1. The earlier source repository, first change: both installers stop writing the home
+   instruction files,
    and its Claude settings and Codex config declare the new marketplace and plugins in
    place of the old ones. The policy files stay, so existing imports keep working
    (R58).
 2. On each machine: back up the home files, run `/recode:rules`, replace the one-line
    import with Local overrides below the block, confirm a quoted rule in a new session,
    run the cutover gate (R59), then uninstall the old plugins (R60). The work machine
-   has no forge-ops and its files are kept by hand, so it may adopt the block without
+   keeps no copy of the earlier source repository and its files are kept by hand, so it
+   may adopt the block without
    the gate (`docs/decisions.md` Part 10).
-3. forge-ops, second change, after every machine that imports its files has moved: drop
+3. The earlier source repository, second change, after every machine that imports its
+   files has moved: drop
    the policy files and point its README here.
 4. Archive codex-lite-cc, claude-codex-loop, codex-code-review, and repo-docs as private
    after every machine passes and none has `codex-lite` installed.
@@ -321,7 +326,7 @@ To verify:
 4. Whether the repo-docs hook runs under Codex on Windows; covered by R53.
 5. Whether the Codex Windows line, which says the shell is PowerShell 7, holds for other
    users. Windows PowerShell 5.1 users would get a false statement. The text ships as
-   forge-ops has it until you decide on a general wording.
+   the earlier source repository had it until you decide on a general wording.
 
 ## Out of scope
 

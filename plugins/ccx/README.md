@@ -2,8 +2,8 @@
 
 A small Claude Code plugin that hands a task to the Codex CLI, runs it once, and prints what
 it said. It also keeps a set of house rules in your Claude and Codex instruction files, and
-ships the Concise Plain output style. Six commands, a prompt hook and a session hook, no
-daemon, no background jobs of its own.
+ships the Concise Plain output style. Six commands, a prompt hook, a session hook and a
+commit hook, no daemon, no background jobs of its own.
 
 ## Install
 
@@ -344,8 +344,9 @@ Nothing installs them: paste the block into each app's settings.
 
 ## Hooks
 
-The plugin adds a `UserPromptSubmit` hook and a `SessionStart` hook. When a prompt you send mentions Codex, in any
-case, the hook adds a short routing note to Claude's context: use `ask` for questions and plan
+The plugin adds a `UserPromptSubmit` hook, a `SessionStart` hook, and a `PreToolUse` hook.
+When a prompt you send mentions Codex, in any case, the `UserPromptSubmit` hook adds a short
+routing note to Claude's context: use `ask` for questions and plan
 critiques, `review` only for diffs, put options before the question in any order (a model
 choice as `--model <name>`, and for a follow-up in the same Codex thread `--resume <thread id>`
 or a bare `--resume` followed by a line break or another option), send file changes to
@@ -366,6 +367,20 @@ The `SessionStart` hook runs when a session starts, not on resume or clear. It r
 house rules block in each file and prints the notice described under
 [House rules](#house-rules) when the rules are out of date and you have not declined them.
 It writes nothing, and on any error it prints nothing.
+
+The `PreToolUse` hook runs before each Bash and PowerShell call and acts only on a
+`git commit`, `gh pr create`, or `gh pr edit`. It blocks the call when its text, or a file
+named by `-F`, `--file`, or `--body-file`, carries a `Co-Authored-By` line naming Claude or a
+"Generated with Claude Code" line, and your settings turn that attribution off:
+`attribution.commit` or `attribution.pr` set to `""`, or `includeCoAuthoredBy` set to `false`
+for commits. It reads the managed settings file and its `managed-settings.d` drop-ins, the
+project's `.claude/settings.local.json` and `.claude/settings.json`, then your user
+`settings.json`; the first that sets the key wins. On macOS and Linux it first reads the
+`.claude/settings.local.json` at the repository root, the main checkout's root in a worktree,
+whose value wins over the project's copy.
+The denial names the setting and the file. It does not read the `--settings` flag or registry
+and MDM policies, and it does not follow a message built from variables or written to a file
+earlier in the same command. On any error it allows the call.
 
 ## Permissions
 
@@ -437,6 +452,7 @@ Test-only environment variables, read once at startup:
   every other process. An `ask`, `review` or `implement` `--timeout` still wins for the Codex turn.
 - `CCX_PROBE_TARGET`: the file the sandbox probe tries to write outside the working
   directory. Defaults to `~/.ccx-sandbox-probe-<pid>`, one file per run.
+- `CCX_OUTPUT_ID`: replaces the random UUID in the saved answer's file name, `output-<id>.txt`.
 
 To try a change by hand, start Claude Code from a scratch git repository with the working
 tree loaded as a plugin:

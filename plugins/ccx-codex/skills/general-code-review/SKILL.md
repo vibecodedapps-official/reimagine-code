@@ -7,7 +7,6 @@ description: Run a final code review on a pull request or diff, for any reposito
 
 Use subagents to review the change, one subagent per skill, using exactly these skills:
 - general-code-review-breaking-changes
-- general-code-review-change-size
 - general-code-review-context
 - general-code-review-testing
 

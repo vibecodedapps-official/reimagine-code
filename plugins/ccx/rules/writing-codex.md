@@ -22,3 +22,5 @@
   mention, in the platform's own form. Base URLs come from `git remote -v`, a URL a tool
   returned, the task, or me; in a repo, run `git remote -v` before falling back. Never
   invent one. Without a base, write the bare ID and say so.
+- Links apply inside drafts too, even one shown for pasting. Use a bare ID only where
+  links won't render, and say so.

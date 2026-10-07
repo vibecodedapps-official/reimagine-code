@@ -85,7 +85,8 @@ Run on macOS with Claude Code 2.1.284 from the native installer, and 2.1.283 fro
 
 ## Part 3: M3 house rules, 2026-10-03
 
-1. **The rules come from forge-ops commit 948ce5f.** `rules/core.md` is lines 6 to the
+1. **The rules come from commit 948ce5f of the earlier source repository.**
+   `rules/core.md` is lines 6 to the
    end of `claude/CLAUDE.md`, and `rules/windows-claude.md` is lines 1 to 4.
    `rules/windows-codex.md` is lines 1 to 2 of `codex/AGENTS.md`, and
    `rules/writing-codex.md` is its lines 78 to the end. The Windows part, an empty line,
@@ -240,8 +241,9 @@ scratch profiles, with recode 0.1.0 and 0.1.1 installed from GitHub.
 
 ## Part 9: recode 0.1.3, the rules sync and the symlink fix, 2026-10-04
 
-1. **The core rules come from forge-ops commit 9faabda.** Since 948ce5f, forge-ops had
-   added two bullets to both of its files: the cause check under Working, from its PR
+1. **The core rules come from commit 9faabda of the earlier source repository.** Since
+   948ce5f, it had added two bullets to both of its files: the cause check under
+   Working, from its PR
    68, and the code comment rule under Code. M7 step 2 replaces each machine's import
    of those files with the block, so a block without them would drop both. `rules/core.md`
    is again lines 6 to the end of `claude/CLAUDE.md`, now at 9faabda. The other three
@@ -250,7 +252,7 @@ scratch profiles, with recode 0.1.0 and 0.1.1 installed from GitHub.
    are unchanged. The Windows part, an empty line, and the core rebuild
    `claude/CLAUDE.md` byte for byte, and the Codex parts rebuild `codex/AGENTS.md`, whose
    Writing section now starts at line 83. Checked with `cmp` on 2026-10-04. This
-   repository stays the source; a later forge-ops change reaches the block only through a
+   repository stays the source; a later change there reaches the block only through a
    sync like this one.
 2. **The rules and suite scripts compare their path after resolving it.** Each ran its
    `main()` only when `import.meta.url` equalled `process.argv[1]` as a file URL. Node
@@ -268,12 +270,15 @@ Run on macOS with Claude Code 2.1.288 and codex-cli 0.159.2, and on a personal W
 with recode 0.1.3. `docs/acceptance.md` has both records.
 
 1. **The work machine is out of the gate.** Decided by the author on 2026-10-04. It has
-   no forge-ops checkout, and its `CLAUDE.md` and `AGENTS.md` are kept by hand on
-   purpose. It may adopt the block from a brief without the forge-ops steps, with its own
+   no checkout of the earlier source repository, and its `CLAUDE.md` and `AGENTS.md` are
+   kept by hand on
+   purpose. It may adopt the block from a brief without the steps for that repository,
+   with its own
    lines below the end marker, but runs no gate. R59's rules check, against a file with
    local overrides below the block, ran on the personal Windows machine instead: its
    Codex file keeps a Links section there, and `/recode:rules` read `current` and
-   changed nothing. forge-ops' second change waits only for machines that import its
+   changed nothing. The second change to the earlier source repository waits only for
+   machines that import its
    files.
 2. **The loop asks before publishing once the house rules are in the user's file.** The
    rules' Ask first list covers commits, pushes, PRs, and comments, so a headless run on
@@ -292,8 +297,9 @@ with recode 0.1.3. `docs/acceptance.md` has both records.
    Windows, Codex started from PowerShell needs `Git\bin` on the user `PATH`: without it
    a commit got no message, and Git Bash hides the gap because it passes its own
    `usr\bin` to child processes.
-5. **An old forge-ops checkout must not run its installer after step 2.** Before
-   forge-ops 0847634 (its PR 67), `claude/install.mjs` rewrites `~/.claude/CLAUDE.md` to
+5. **An old checkout of the earlier source repository must not run its installer after
+   step 2.** Before its commit 0847634 (its PR 67), `claude/install.mjs` rewrites
+   `~/.claude/CLAUDE.md` to
    the one-line import, which erases the block. Each machine's checkout was confirmed at
    or after 9faabda first; the Windows one was fast-forwarded from e5429ef.
 6. **A line-ending change makes the block read as edited by hand.** Found on Windows and
@@ -791,3 +797,155 @@ four rounds and reviewed over 21 rounds until a review found nothing.
      odd, which means a rule that holds a pipe would never match (none ships with one);
      a fence or comment under an item at column 0 with no blank line stays with the item
      but a later dedented line ends it; an unclosed comment hides the rest of its segment.
+
+## Part 18: ccx 0.6.0, the attribution hook, links in drafts, and the retired source, 2026-10-06
+
+Built for issue #35. The hook's facts come from the Claude Code docs, read on 2026-10-06
+through the claude-code-guide agent: settings.md, managed-settings.md, settings-reference.md,
+and hooks.md under https://code.claude.com/docs/en/. They were not checked against a live
+Claude Code, so the hand check in the PR is what confirms them.
+
+1. **A separate module.** The hook runs before every shell call, so it is its own file that
+   imports only `node:` built-ins, never `rules.mjs` or the bridge. Cost, 2026-10-06 on
+   Windows 11 (AMD64 Family 26 Model 68), Node v26.4.0, 50 runs each, timed one at a time:
+   a payload that is not a commit has a median of 53 ms and a slowest of 119 ms; a commit
+   with no opt-out set has a median of 52 ms and a slowest of 115 ms. Most of it is Node's
+   own start. Its lint budget was 90 lines; the file was 69 lines, 90 after item 10, and
+   118 after item 11, which raised the budget to 120 so its fixes fit with lines wrapped.
+   Item 10 adds one `git rev-parse` on macOS and Linux, for a commit or PR call only; its
+   cost is not measured, since only Windows was at hand.
+2. **Settings order and what is not read.** The docs order managed, `--settings`, local
+   project, shared project, then user. The hook reads managed (Windows
+   `C:\Program Files\ClaudeCode\managed-settings.json`, macOS
+   `/Library/Application Support/ClaudeCode/managed-settings.json`, Linux
+   `/etc/claude-code/managed-settings.json`), the two project files, and the user file under
+   `CLAUDE_CONFIG_DIR` or `~/.claude`. It cannot see the session's `--settings` flag, and it
+   does not read registry or MDM policies. `includeCoAuthoredBy` is deprecated but still
+   honored, so a commit is also denied when `attribution.commit` is unset everywhere and the
+   first file that sets `includeCoAuthoredBy` sets it false. The agent's summary said "false
+   (or omitting it)" removes the trailer; only an explicit false counts here, since the
+   default adds the trailer. A managed file on the machine that runs the tests would override
+   their settings; none is isolated. Item 10 adds the managed drop-ins and the local file at
+   the repository root.
+3. **Deny form.** JSON on stdout with exit 0, `permissionDecision: deny`, and the line in
+   `permissionDecisionReason`. The line names the matched text (the Co-Authored-By line or the
+   Generated with line), the setting, and the file that set it.
+4. **The recognizer and its limits.** It matches `git` or `gh` as a word, any options, then
+   the subcommand words, on the command string. Not handled: a message built from a variable,
+   a pipe, or a file written earlier in the same command; a `cd` before the commit, which
+   moves where a `-F` file is found; a git alias for commit. A commit chained with a search
+   for the same text, such as `git commit ... && git log --grep "Co-Authored-By: Claude"`,
+   is read as one text and denied. Text that only quotes `git commit`, as in an `echo`, is
+   treated as a commit. A call holding both a commit and a PR command is checked as one
+   text against whichever of the two settings is off, so a commit-only opt-out can deny a
+   PR body in the same call. Any error allows the call.
+5. **The tests spawn the module with `process.execPath`**, not the ccx harness, which skips on
+   Windows. The module honors `CLAUDE_CONFIG_DIR` and `CLAUDE_PROJECT_DIR`, so no test-only
+   override was needed.
+6. **v4.5 in the description, not the name.** The issue named the style's name line. The name
+   stays `Concise Plain` so a saved `ccx:Concise Plain` selection survives, and the version
+   already lives in the description (`docs/architecture.md`, Output style).
+7. **The change-size skill is dropped.** It flagged a diff over 800 changed lines (500 for
+   complex logic) and suggested stages; that advice is not wanted in these reviews. The
+   skill directory and its line in `general-code-review` are deleted, the README, R26, R29,
+   and the acceptance item name three companions, and the rename map keeps the row with a
+   note. Past run records keep what ran then.
+8. **The retired source repository.** No tracked file names it. Living text says this
+   repository is the source; past records say "the earlier source repository". R58 stays
+   retired, and lint 20 (R69) fails on a new mention.
+9. **Version literals in tests.** The lint, release, and rules tests quote the suite version
+   and the Writing rule count. The release commit left them at 0.5.0, so they were raised to
+   0.6.0 (and the release tests' next version to 0.7.0, the Writing count to 41) in the
+   commits that needed them.
+10. **Fixes from the 2026-10-07 review.** A review of the PR found four gaps; each was
+    checked before the fix.
+    - `git --config-env <name>=<var> commit` and `git --attr-source <tree> commit` were not
+      read as commits; git accepts both (git 2.55.0). The review's third case, `git -C.
+      commit`, is not a fix: git rejects it with `unknown option`, so nothing commits.
+    - A `-F` file after `git -C <dir> commit` was read from the call's `cwd`, but git reads
+      it from `<dir>`. The test for it placed the file where git would not look. A file named
+      after a later `gh` call still resolves against `cwd`.
+    - On macOS and Linux, Claude Code keeps `.claude/settings.local.json` at the repository
+      root, the main checkout's root in a linked worktree, except outside git, at the home
+      directory, or under another owner; it still reads a copy in the starting directory, and
+      the root's value wins (settings docs, "Where Claude Code keeps the local file in a git
+      repository", read 2026-10-07). The hook now finds the root with `git rev-parse
+      --git-common-dir`, and keeps the project directory when that is not `<root>/.git`, as
+      in a submodule or a bare repository; the docs do not say what Claude Code does there.
+      Windows keeps the file in the project directory, so only the Windows case ran here;
+      the macOS and Linux case runs in CI.
+    - Managed settings also merge `managed-settings.d/*.json` after `managed-settings.json`,
+      in name order, a later value replacing an earlier one (managed settings docs, read
+      2026-10-07). The hook reads them last name first. The managed directory is a fixed
+      system path, so its test loads `tests/ccx/fixtures/managed-dir.mjs`, a preload that
+      redirects reads under that path to a temp directory; the hook itself has no test seam.
+    - Left as a limit: after a session moves into a worktree mid-session, `CLAUDE_PROJECT_DIR`
+      keeps the starting directory, while Claude Code reads the shared settings from the new
+      one. The review's first point, a very long settings path in the denial, needs a path of
+      thousands of characters and is not bounded.
+11. **Fixes from the second 2026-10-07 review.** A second review found five more ways past
+    the hook, each reproduced before the fix:
+    - In a Bash call on Windows, `-F /c/...` (or any `/<letter>/`) and `-F /tmp/...` name
+      files Git Bash reads at `C:/...` and in the temp directory, but the hook read them as
+      Windows paths and found nothing. A message file under `/tmp` is a likely way for
+      Claude to commit, so this was the most important. The hook now reads them as Git
+      Bash does, and reads an unquoted leading `~` as the home directory in any Bash call.
+    - `& "git.exe" commit` in PowerShell was not a commit: a quote before the name was
+      accepted only before a path.
+    - Item 10's `-C` scan read the option text as a string, so `-c "core.editor=code -C x"`
+      moved the directory; it now reads `-C` only as a whole argument.
+    - Item 10 used the first commit's directory for every file, so a second commit with its
+      own `-C` read its file from the wrong place; each file now belongs to the nearest commit
+      or `gh` call before it.
+    - `Co-Authored-By: Claude` with no email was allowed when an option followed the quoted
+      message, which R68 says is denied. The name may now end at a closing quote that ends
+      the argument.
+    - Not changed: the denial's path length (item 10) and a request to split the PR by the
+      change-size skill, which item 7 drops.
+    - The line budget went from 90 to 120 (item 1).
+    - After this round, a further shell form the recognizer misses goes to an issue and does
+      not block the release: the hook fails open, and 0.5.0 had no check at all.
+
+## Part 19: cca 0.10.0 and ccx 0.6.0, fixes from the Windows audit run, 2026-10-06
+
+Found in a 2026-10-06 audit run on Windows 11 with Git Bash (issue #36), planned and built
+in one pull request.
+
+1. **A background fetch asks; it does not warn.** The check stays strict: a moved
+   remote-tracking ref with no approved fetch still ends the run `blocked`, unless the
+   user says a background fetch explains it. Reason: any other change still blocks at once,
+   an agent's unapproved fetch is still caught unless the user vouches for that exact change,
+   and a run left with an editor's auto-fetch on is not lost. A warning alone stays strict
+   but loses the run. The answer is recorded as a `background-fetch` entry per ref with its
+   old and new commits, so a later check passes on it and a further move asks again. The
+   start summary tells the user to pause auto-fetch. The ask and no paths are orchestrator
+   prose with no script behind them, so they are hand checks (`docs/acceptance.md`).
+2. **Stage 6 needs ccx 0.6.0; there is no retyping fallback.** The defect is the retyping,
+   so keeping it for an older ccx would keep the defect. An older ccx swaps to
+   `cca:adversary`, a supported mode. R63 is amended, R70 and R71 added.
+3. **One file per answer, and a 24-hour cleanup.** ccx saves `output-<id>.txt`, where `<id>`
+   is a UUID ccx makes for each call, so two calls never share a file. The request id the
+   caller passes is the Claude session id, the same for every call in a session, so a
+   name built on it let a second call overwrite the first answer; a review of the branch
+   found that before release. cca deletes its source after the copy, and ccx removes `output-*.txt` and
+   `output-*.txt.tmp` older than a day when a run starts, for a caller that never deletes
+   its file. The cleanup is not a size bound. A refused call writes nothing. The bridge
+   line budget rises from 710 to 740.
+4. **The scratch folder.** `<run dir>/tmp/agents/<stage>-<scope>[-<n>]/`, one level below
+   the orchestrator's own `tmp/`, unique per launch, created by the orchestrator and named
+   in the agent's prompt. It lies outside what the ledger reads (`pass1`, `pass2`,
+   `live/carried`, `codex`), outside the ignored-file list of `readonly.sh`, and resume moves
+   `tmp/` away whole. Stage 2 removes `<run dir>/tmp/` before it launches, so it never removes
+   an agent folder. Steps that list or glob the run directory: none found. The merger has no
+   Bash and gets no folder. `sed -i` and any in-place edit are barred for agents.
+5. **Build output is grouped by logged run.** The rule stays: the same repo and a logged
+   `runs:` entry. Ignored changes under `bin/` or `obj/` of such a repo since the last check
+   become one record under that run, listing every path, with no question. Accepting any
+   `bin/` or `obj/` change whenever a `dotnet` run is logged was rejected: it would loosen
+   the check.
+6. **The message rewrite kept the parsed lines.** Unchanged: every script's printed format,
+   including `blocked <kind>`, `readonly:`, `working-tree: refused:`, and `work-items:`
+   lines; the verdict values; the terminal states; the `revision:` line; the three
+   `plugin_version` lines; and ccx's `status:` line, still last. The args block the commands
+   pass to the skill keeps every flag; only what the user is shown changed. Plain wording
+   goes around the stop lines, never in place of them.

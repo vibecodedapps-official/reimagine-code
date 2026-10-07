@@ -136,9 +136,9 @@ name a plugin are rerun under the new names and recorded here.
     the general-code-review skill on the uncommitted changes in this repository." <
     /dev/null`. Expected: a review with findings; under `$CODEX_HOME/sessions`, the main
     session reads `general-code-review/SKILL.md` and its subagent sessions read each of
-    `general-code-review-breaking-changes`, `-change-size`, `-context`, and `-testing`
-    from the installed plugin. Covers R29. Rerun when a skill changes. Run 2026-10-03;
-    see the record.
+    `general-code-review-breaking-changes`, `-context`, and `-testing` from the installed
+    plugin. Covers R29. Rerun when a skill changes. Run 2026-10-03, and 2026-10-07 for
+    0.6.0 on Windows; see the records.
 13. **repo-docs on Codex.** Setup: as item 11, in a scratch git repository whose
     `AGENTS.md` index points to `docs/style.md`, which exists, and `docs/missing.md`,
     which does not. Command: `codex exec --json -s read-only "Use repo-docs to audit this
@@ -266,14 +266,33 @@ name a plugin are rerun under the new names and recorded here.
     whether a user can answer, and its ledger entry has `codex.called` true, a
     `codex.ccx_version`, and that `codex_timeout`; in the second, the stage swaps to
     `cca:adversary` with the reason "ccx not installed or version unreadable" and the
-    run still ends `reported`. Covers R63. Rerun when stage 6, the bridge's output
-    lines, or the catalog changes. Run 2026-10-06 for 0.9.1; see the records.
+    run still ends `reported`. From cca 0.10.0 and ccx 0.6.0, also in the first run:
+    the session's tool calls include `cp -- "<src>" "<run dir>/codex/response.md"` and
+    no Write or Edit of that file; `codex/response.md` starts with the text ccx printed
+    for the call, without its `output:` line; the `<src>` file is gone from ccx's data
+    directory afterward; and when step 8 makes a follow-up, its answer is appended after
+    a `--- follow-up, thread <id> ---` line of its own. Covers R63 and R71. Rerun when
+    stage 6, the bridge's output lines, or the catalog changes. Run 2026-10-06 for
+    0.9.1, and 2026-10-07 for cca 0.10.0 and ccx 0.6.0 on Windows; see the records.
 23. **cca items under the new names.** The list was drawn 2026-10-05 from
     `docs/history/claude-codex-audit/acceptance.md`: only case M3-c (a session started
     outside any git repository, where the bridge refuses and the run swaps) names the
     bridge, read as `ccx`; it was never run there. Every other case keeps its result and
     reruns under that file's conditions. Expected: M3-c's own result. Rerun when stage 6
-    changes. Not yet run.
+    changes. Run 2026-10-07 for cca 0.10.0 and ccx 0.6.0 on Windows; see the records.
+24. **cca background-fetch question.** Setup: as item 21, interactive, in a session
+    whose directory is the fixture's `app` repository, after
+    `git update-ref refs/remotes/origin/main HEAD` there. Command: `/cca:audit <manifest>
+    --no-codex`; while stage 4 runs, move that ref from a second shell with
+    `git update-ref refs/remotes/origin/main HEAD~1`. Expected:
+    the next boundary check names the ref with its old and new commits and asks whether
+    a background fetch explains it. On yes, `stages.json` `approvals` gains one
+    `background-fetch` entry with target `app:refs/remotes/origin/main` and both
+    commits, the run goes on, and the next check passes without asking. Moving the ref
+    again asks again. On no, the run ends `blocked`. Moving the ref together with an
+    edit to a tracked file ends the run `blocked` without asking. Covers Part 19 item 1
+    in `docs/decisions.md`. Rerun when the boundary check in the cca skill changes. Run
+    2026-10-07 for 0.10.0 on Windows; see the records.
 
 ## Record of runs
 
@@ -810,7 +829,7 @@ work machine and reported here.
   orphaned `recode` after any uninstall; `repo-docs` declares no dependency.
 - The settings were restored and the copy of the Codex login was deleted afterward.
 
-### 2026-10-04: recode 0.1.3, the rules synced to forge-ops
+### 2026-10-04: recode 0.1.3, the rules synced to the earlier source repository
 
 macOS 27.0, Claude Code 2.1.288, Node 26.4.0. recode was installed in the M4 profile
 from a local catalog: the branch commit 526139d exported with `git archive`, and the
@@ -819,8 +838,9 @@ Codex home was a new scratch directory. The real `~/.claude/CLAUDE.md` and
 `~/.codex/AGENTS.md` had the same sha256 after the runs as before. Afterward the profile
 got back its own `CLAUDE.md` and the GitHub catalog at 0.1.2.
 
-- **The rebuild.** The shipped Windows part, an empty line, and `core.md` equal forge-ops
-  `claude/CLAUDE.md` at 9faabda, and the Codex parts equal its `codex/AGENTS.md` (`cmp`).
+- **The rebuild.** The shipped Windows part, an empty line, and `core.md` equal the
+  earlier source repository's `claude/CLAUDE.md` at 9faabda, and the Codex parts equal
+  its `codex/AGENTS.md` (`cmp`).
 - **An old block is reported.** In a scratch home, a block written with the 0.1.2 rules
   got no session start notice. After the sync, the notice named both files, `status`
   said `stale` for both, and a plan and apply made both `current` and kept the text
@@ -922,16 +942,20 @@ machine and reported here.
 ### 2026-10-04: M7 step 2, macOS
 
 macOS 27.0, Claude Code 2.1.288, codex-cli 0.159.2, Node 26.4.0. The author's real
-profiles, with forge-ops at 9faabda. `codex-lite` stays, because cca 0.6.0 still calls
+profiles, with the earlier source repository at 9faabda. `codex-lite` stays, because cca
+0.6.0 still calls
 `codex-lite:ask`. The home files, both settings files, and the plugin lists were backed
 up with their sha256 first.
 
 - **Update and rules.** `recode` and `recode-loop` went from 0.1.2 to 0.1.3 on Claude
-  Code and `recode` on Codex. `/recode:rules --options core,writing` noted the forge-ops
-  import on line 1 of `CLAUDE.md`, showed both diffs, and wrote both blocks after "yes"
+  Code and `recode` on Codex. `/recode:rules --options core,writing` noted the import of
+  the earlier source repository on line 1 of `CLAUDE.md`, showed both diffs, and wrote
+  both blocks after "yes"
   to each. The text above each block was then removed by hand: the import in
-  `CLAUDE.md`, and in `AGENTS.md` an old copy of forge-ops `codex/AGENTS.md` that lacked
-  only the cause-check rule. No local overrides: the rules parts equal forge-ops' files
+  `CLAUDE.md`, and in `AGENTS.md` an old copy of the earlier source repository's
+  `codex/AGENTS.md` that lacked
+  only the cause-check rule. No local overrides: the rules parts equal that repository's
+  files
   apart from blank lines. `rules.mjs status` then read `current` for both.
 - **Quoted rule.** New `claude -p` and `codex exec -s read-only` sessions each quoted the
   cause-check rule word for word. The old Codex copy lacked that rule, so the quote came
@@ -960,14 +984,17 @@ reported here, first as a dry run in scratch profiles, then on the real profile.
 was committed in this repository.
 
 - **Dry run.** Every step passed in scratch profiles, and the real home files kept their
-  hashes. It found forge-ops at e5429ef, behind 9faabda, and only `Git\cmd` on the
+  hashes. It found the earlier source repository at e5429ef, behind 9faabda, and only
+  `Git\cmd` on the
   Windows `PATH`. Two scratch steps were denied in auto mode as "Security Weaken". The
   loop opened PR 17, which the session then closed as agreed.
 - **Start of the real run.** Claude Code had `ccl` 0.10.0, `repo-docs@repo-docs` 0.1.1,
   `codex-lite` 0.9.0, and `cca` 0.5.0; Codex had `codex-code-review-general` 0.1.0;
-  neither host had the `reimagine-code` marketplace. `CLAUDE.md` was the forge-ops
-  import and `AGENTS.md` equalled forge-ops `codex/AGENTS.md`, CRLF included. With the
-  author's approval, forge-ops was fast-forwarded to 9faabda, with no installer run, and
+  neither host had the `reimagine-code` marketplace. `CLAUDE.md` was the import of the
+  earlier source repository and `AGENTS.md` equalled its `codex/AGENTS.md`, CRLF
+  included. With the
+  author's approval, that repository was fast-forwarded to 9faabda, with no installer
+  run, and
   `C:\Program Files\Git\bin` was added to the user `PATH`.
 - **Install and rules.** The marketplace and the 0.1.3 plugins were added on both hosts.
   `/recode:rules --options core,windows,writing` wrote both blocks after "yes" to each.
@@ -2035,3 +2062,128 @@ the runs as before.
   that size was 3.95 to 4.14 over five runs, so a slow runner is the likely cause,
   unverified. In the agent shell, `codex plugin` commands exited 1 with `Error: stdin is
   not a terminal` until stdin came from `/dev/null`.
+
+### 2026-10-07: ccx 0.6.0, the hand checks before the merge
+
+Windows 11, Claude Code 2.1.292, Node 26.4.0. Both runs loaded `ccx` 0.6.0 from
+`feat/ccx-0.6.0-attribution` at 8a77ef4 with `--plugin-dir`, beside the installed
+`ccx` 0.5.0, which has no PreToolUse hook. No settings file outside the scratch
+repository was edited.
+
+- **The attribution hook passed.** In a new scratch git repository with one staged file,
+  `claude -p` was asked to run `git commit -m "test commit" -m "Co-Authored-By: Claude
+  <noreply@anthropic.com>"`, with `Bash(git *)` allowed. With `attribution.commit` set to
+  `""` in the repository's `.claude/settings.local.json`, the call was denied with `ccx:
+  remove the Co-Authored-By line naming Claude; attribution.commit is "" in
+  <repository>\.claude\settings.local.json`, and no commit was made. With that file
+  removed, the call was again denied, now naming the user's `~/.claude/settings.json`,
+  which also sets `attribution.commit` to `""`. With the project file setting
+  `attribution.commit` to a non-empty value, the commit was made with the trailer. The
+  user setting was overridden, not removed, so the user's settings stayed unchanged.
+- **Links in a draft passed.** The user started an interactive session in this repository
+  with the branch's plugin; `/config` listed `ccx:Concise Plain` once, already selected.
+  Asked to draft a comment for issue #35 saying the fix is in PR #38 and is waiting on
+  review, without posting it, the session ran `git remote -v` and showed the draft in a
+  blockquote with `#38` as a link, which opened.
+- Observed: the session start notice said the house rules in `~/.codex/AGENTS.md` are
+  older than the plugin's, as expected for an unreleased rules change; `/ccx:rules` was
+  not run.
+
+### 2026-10-07: ccx 0.6.0, item 12 on Windows before the merge
+
+Windows 11 Pro 10.0.26200, codex-cli 0.160.1, Node 26.4.0, PowerShell 7.6.6 from the
+Microsoft Store. A new scratch `CODEX_HOME` held a `config.toml` with only the model,
+effort, sandbox, and approval settings and `[windows] sandbox = "elevated"`, and a copy of
+the author's Codex login, deleted after the run. `codex plugin marketplace add
+vibecodedapps-official/reimagine-code --ref feat/ccx-0.6.0-attribution` cloned c00c3c7,
+and `ccx` installed at 0.6.0 with `general-code-review` and its three companions only.
+
+- **Item 12 passed.** The scratch repository's change renamed `mul` to `multiply`, gave
+  `add` a third argument `c = 0`, and added `div`. The review gave three findings: P1,
+  restore the `mul` export, since `test.mjs` fails to load; P2, keep two-argument `add`
+  behavior, since `add(1n, 2n)` now throws; P2, test the new operations. It changed no
+  file. The main session read `general-code-review/SKILL.md`, and three subagent sessions,
+  `breaking`, `context`, and `testing`, read `general-code-review-breaking-changes`,
+  `-context`, and `-testing`, all from the installed 0.6.0. No session mentions
+  change-size.
+- Observed: two earlier tries failed before the review, with no file changed. With
+  `[windows] sandbox = "unelevated"`, every shell call failed with `CreateProcessAsUserW
+  failed: -1073283067` starting the Store `pwsh.exe`. With `"elevated"`, the first try
+  failed with `ShellExecuteExW failed to launch setup helper: 1223`, a cancelled
+  administrator prompt; the passing run followed once the author approved that prompt.
+
+### 2026-10-07: cca 0.10.0, before the merge, Windows
+
+Windows 11 Pro, Git Bash, Claude Code 2.1.292, Node 26.4.0, git 2.55.0. The branch head
+was 69961c1. Each run used a new `solo` fixture with `refs/remotes/origin/main` set to
+`0c23936` first and a manifest copy with `"scratch": "./app/.test-output/cca"`, in an
+interactive session under a scratch `CLAUDE_CONFIG_DIR` with cca loaded by
+`--plugin-dir` from the branch, not installed from the catalog. Each ran
+`/cca:audit <manifest> --no-codex --effort low`, and the ref was moved by hand from a
+second shell with `git update-ref`.
+
+- **Item 24 passed.** Three runs covered its five cases.
+  - Run A: the stage 4 check named the move `0c23936 -> 9c5f77c` and asked. On yes,
+    `approvals` gained one `background-fetch` entry for `app:refs/remotes/origin/main`
+    with both full commits, and the run went on. A second move, to `2b5e8f3`, was seen by
+    the stage 5 check, which asked again. On no, stage 5 was recorded `failed` with a
+    `blocked:` reason and `runs.json` showed `blocked`.
+  - Run B: the ref move and an edit to `README.md` together ended the run `blocked` at
+    the stage 1 check, with `blocked hashes` and `blocked status` lines and no question;
+    `approvals` stayed empty.
+  - Run C: one move, approved at the stage 5 check. The checks of stages 6, 7, and 8
+    passed on that entry without asking, and the run ended `reported`.
+- Observed: Run A's question left out the line the skill asks for, that an editor's
+  automatic fetch such as `git.autofetch` can move refs; it said a fetch looked unlikely
+  since the fixture has no remote, and recommended no. Runs B and C made their run
+  directory at `<scratch>/cca/<run-id>/`, as stage 1 says; Run A made it one level
+  higher, at `.test-output/cca/<run-id>/`. Neither was investigated further.
+
+### 2026-10-07: cca 0.10.0 and ccx 0.6.0, item 22, before the merge, Windows
+
+Windows 11 Pro, Git Bash, Claude Code 2.1.292, codex-cli 0.160.1, Node 26.4.0. The branch
+head was 0977f6a. A scratch `CLAUDE_CONFIG_DIR` added the branch's working tree as a
+local catalog and installed `ccx` 0.6.0 and `cca` 0.10.0 from it; Codex used the real
+login. The `patterns` fixture ran with a manifest copy holding
+`"scratch": "./app/.test-output/cca"`, in an interactive session.
+
+- **Item 22 passed, except the follow-up, which did not occur.** `/cca:audit <manifest>
+  --effort low` called `ccx:ask` with `--timeout 1200` and recorded `ccx_version`
+  `0.6.0`, `called` true, status `ok`, no retry, and no follow-up, since every input was
+  acknowledged. The session log shows one Bash call, `cp -- "$SRC"
+  "$RD/codex/response.md" && rm -f -- "$SRC" && echo copied`, which printed `copied`,
+  with `$SRC` the path of the `output:` line, and no Write or Edit of
+  `codex/response.md`. The copied file was byte for byte the text ccx printed without
+  its `output:` line (6517 bytes, `cmp` equal). After `claude plugin uninstall
+  ccx@reimagine-code`, `/cca:resume <run-id> --from 6` swapped to `cca:adversary` with
+  the reason "ccx not installed or version unreadable", moved the first answer to
+  `superseded/1/codex/`, and the run ended `reported`.
+- Observed: the run directory was `.test-output/cca/<run-id>/`, one level short of
+  `<scratch>/cca/<run-id>/`, as in item 24's Run A (issue #41). With a local catalog the
+  installed `ccx` ran its script from the branch's working tree, not from the plugin
+  cache.
+
+### 2026-10-07: cca 0.10.0 and ccx 0.6.0, items 22 and 23, before the merge, Windows
+
+Windows 11 Pro, Git Bash, Claude Code 2.1.292, codex-cli 0.160.1, Node 26.4.0. The branch
+head was c4e5eaa. As in the item 22 record above, a scratch `CLAUDE_CONFIG_DIR` installed
+`ccx` 0.6.0 and `cca` 0.10.0 from the branch's working tree, and Codex used the real
+login. Two `patterns` fixtures ran at the same time, in two interactive sessions, each
+with `"scratch": "./app/.test-output/cca"` and `--effort low`.
+
+- **Item 22's follow-up passed.** The manifest held `"_test": {"drop_ack": {"input":
+  "ledger/5.md", "times": 1}}`. The first answer was copied with `cp -- "$SRC"
+  "$RD/codex/response.md" && rm -f -- "$SRC"`. The follow-up went to the same thread
+  with `--resume`, and its answer was appended with `printf '%s
+' '--- follow-up,
+  thread <id> ---' >> ... && cat -- "$SRC" >> ... && rm -f -- "$SRC"`. No Write or Edit
+  touched `codex/response.md`. The file was byte for byte the first printed answer, the
+  header line, and the second printed answer, each without its `output:` line (7057
+  bytes, `cmp` equal). The stage 6 entry recorded `follow_up` true, status `ok`, and no
+  unacknowledged input. ccx's data directory held no `output-*.txt` file afterward.
+- **Item 23 passed (M3-c).** The session started in the fixture's root, outside any git
+  repository. `ccx:ask` printed `ccx: not inside a git repository, so nothing was run
+  (...)` and `status: refused`, with no retry. Stage 6 swapped to `cca:adversary` with
+  the reason "ccx refused: not inside a git repository, so nothing was run", recorded
+  `called` true and status `refused`, and the run ended `reported`.
+- Both run directories were at `<scratch>/cca/<run-id>/`, as stage 1 says.

@@ -9,7 +9,7 @@ import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 
 export const OPTIONS = ['core', 'windows', 'writing'];
-// Body order, as forge-ops lays the files out: the Windows line first, then the core, then Codex's Writing section.
+// Body order: the Windows line first, then the core, then Codex's Writing section.
 const ORDER = ['windows', 'core', 'writing'];
 export const PARTS = {
   claude: { windows: 'windows-claude.md', core: 'core.md' },

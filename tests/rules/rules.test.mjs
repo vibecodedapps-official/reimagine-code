@@ -319,7 +319,7 @@ test('R35, R46: the writing option adds the shipped Writing section to the Codex
   assert.equal(codexBody, `${SHIPPED['core.md']}\n${SHIPPED['writing-codex.md']}${END}\n`);
   assert.equal(bytes(s.claude).split('\n').slice(1).join('\n'), `${SHIPPED['core.md']}${END}\n`);
   assert.match(bytes(s.codex).split('\n')[0],
-    /^<!-- ccx:house-rules begin version=0\.5\.0 options=core,writing join=none digest=[0-9a-f]{16} -->$/);
+    /^<!-- ccx:house-rules begin version=0\.6\.0 options=core,writing join=none digest=[0-9a-f]{16} -->$/);
 }));
 
 test('R37: plan writes nothing for current, edited and malformed targets', sandbox((s) => {
@@ -367,7 +367,7 @@ test('R41: an existing file is backed up with the time in its name, and no tempo
     [`ccx: wrote ${s.claude}; the earlier content is in ${s.claude}.ccx-backup-20261003120000`]);
   assert.deepEqual(readdirSync(s.claudeDir).sort(), ['CLAUDE.md', 'CLAUDE.md.ccx-backup-20261003120000']);
   assert.equal(bytes(`${s.claude}.ccx-backup-20261003120000`), 'mine\n');
-  assert.ok(bytes(s.claude).startsWith('mine\n\n<!-- ccx:house-rules begin version=0.5.0 options=core join=blank digest='));
+  assert.ok(bytes(s.claude).startsWith('mine\n\n<!-- ccx:house-rules begin version=0.6.0 options=core join=blank digest='));
   assert.deepEqual(s.state().created, {});
   assert.deepEqual(readdirSync(s.data).sort(), ['rules-plan.json', 'rules-state.json']);
 }));
@@ -832,7 +832,7 @@ test('R66: the overlap note and the recommendation for a hand copy, and adopt th
   assert.deepEqual(s.run('apply', ['codex'], { now: AT }), [`ccx: wrote ${s.codex}; the earlier content is in ${s.codex}.ccx-backup-20261003120000`]);
   assert.equal(bytes(`${s.codex}.ccx-backup-20261003120000`), copy);
   const after = bytes(s.codex);
-  assert.equal(after.startsWith('# Mine\n\n<!-- ccx:house-rules begin version=0.5.0 options=core join=none digest='), true);
+  assert.equal(after.startsWith('# Mine\n\n<!-- ccx:house-rules begin version=0.6.0 options=core join=none digest='), true);
   assert.equal(after.split('Make the smallest correct change').length, 2);
   assert.equal(s.run('plan', ['--options', 'core']).includes('state: current'), true);
   s.run('remove');
@@ -1076,7 +1076,7 @@ test('R67: a unit followed by anything but a blank line, the end, a heading, or 
   }
   // The shipped texts still match in full, alone and as a managed block inside an imported file.
   const all = render('codex', ['windows', 'core', 'writing'], SHIPPED);
-  assert.equal(plan(`mine\n\n${all}`, { target: 'codex', texts: SHIPPED, platform: 'win32', options: ['core', 'windows', 'writing'] }).overlap.n, 40);
+  assert.equal(plan(`mine\n\n${all}`, { target: 'codex', texts: SHIPPED, platform: 'win32', options: ['core', 'windows', 'writing'] }).overlap.n, 41);
   assert.equal(plan(`mine\n\n${SHIPPED['core.md']}`, { texts: SHIPPED }).overlap.n, 30);
 });
 

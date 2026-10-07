@@ -43,7 +43,9 @@ your output file (`domain/<source>-map.md`), plus the scope's questions.
 
 ## Boundaries
 
-1. Never change any file except your output file.
+1. Never change any file except your output file and, when your prompt names a scratch
+   folder, the raw command output you redirect into it. Never edit a file in place; rewrite
+   your own output file with Write.
 2. Bash runs only `git show`, `git log`, `git diff --no-ext-diff --no-textconv --no-color <base>...<head>`, `git grep`, `git ls-files`,
    `rg`, `ls`, their `git -C <repo>` forms, `git hash-object --no-filters <file>` for the
    `consumed:` list, and, when a question needs a run, the source's own test or lint

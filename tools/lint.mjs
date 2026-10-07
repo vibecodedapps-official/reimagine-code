@@ -31,7 +31,7 @@ const walk = (dir, skip = () => false) => {
 // budgets: the only runtime modules the plugin may hold, in groups, each with its line limit.
 const PLUGINS = [
   { dir: "plugins/ccx", catalogs: ["claude"], family: true, budgets: [
-    { files: ["scripts/codex.mjs", "scripts/ccx.mjs"], max: 710 }, { files: ["scripts/rules.mjs"], max: 640 }, { files: ["scripts/suite.mjs"], max: 200 },
+    { files: ["scripts/codex.mjs", "scripts/ccx.mjs"], max: 740 }, { files: ["scripts/rules.mjs"], max: 640 }, { files: ["scripts/suite.mjs"], max: 200 }, { files: ["scripts/attribution.mjs"], max: 120 },
   ] },
   { dir: "plugins/ccx-loop", catalogs: ["claude"], family: true, budgets: [] },
   { dir: "plugins/ccx-codex", catalogs: ["codex"], family: true, budgets: [] },
@@ -137,13 +137,15 @@ for (const [name, want] of Object.entries(hidden)) {
   if (has !== want) fail(`plugins/ccx/commands/${name}.md: disable-model-invocation must be ${want ? "set" : "absent"}`);
 }
 
-// 5. The plugin's two hooks, each run once in exec form with the data directory as an argument: UserPromptSubmit as
-// node <plugin root>/scripts/ccx.mjs hook, and SessionStart, at startup only, as node <plugin root>/scripts/suite.mjs session-start.
+// 5. The plugin's three hooks, each run once in exec form. UserPromptSubmit as node <plugin root>/scripts/ccx.mjs hook, and
+// SessionStart, at startup only, as node <plugin root>/scripts/suite.mjs session-start, both with the data directory as an
+// argument. PreToolUse, before each Bash and each PowerShell tool call, as node <plugin root>/scripts/attribution.mjs, with none.
 const hooks = json("plugins/ccx/hooks/hooks.json");
 if (hooks) {
   const want = {
     UserPromptSubmit: [{ hooks: [{ type: "command", command: "node", args: ["${CLAUDE_PLUGIN_ROOT}/scripts/ccx.mjs", "hook", "${CLAUDE_PLUGIN_DATA}"] }] }],
     SessionStart: [{ matcher: "startup", hooks: [{ type: "command", command: "node", args: ["${CLAUDE_PLUGIN_ROOT}/scripts/suite.mjs", "session-start", "${CLAUDE_PLUGIN_DATA}"] }] }],
+    PreToolUse: ["Bash", "PowerShell"].map((matcher) => ({ matcher, hooks: [{ type: "command", command: "node", args: ["${CLAUDE_PLUGIN_ROOT}/scripts/attribution.mjs"] }] })),
   };
   if (!isDeepStrictEqual(hooks.hooks, want)) fail(`plugins/ccx/hooks/hooks.json must declare exactly these hooks: ${JSON.stringify(want)}`);
 }
@@ -367,6 +369,23 @@ if (git("rev-parse", "--is-inside-work-tree").stdout?.trim() === "true") {
 const changelog = read("CHANGELOG.md");
 if (changelog !== null && pkg && !new RegExp(`^## ${String(pkg.version).replace(/\./g, "\\.")} - \\d{4}-\\d{2}-\\d{2}$`, "m").test(changelog)) {
   fail(`CHANGELOG.md: no heading "## ${pkg.version} - <YYYY-MM-DD>" for the suite version`);
+}
+
+// 20. No tracked file names the retired source repository (R69). In a work tree the files are the tracked ones, read from
+// the working tree; outside one, as in the lint tests' copies, they are every file but those under .git, node_modules and .scratch.
+const retired = new RegExp(["forge", "ops"].join("-"), "i");
+let checked20 = [];
+if (git("rev-parse", "--is-inside-work-tree").stdout?.trim() === "true") {
+  const listed = git("ls-files", "-z");
+  if (listed.status !== 0) fail(`git ls-files failed: ${listed.stderr.trim()}`);
+  else checked20 = listed.stdout.split("\0").filter(Boolean);
+} else {
+  checked20 = walk(root, (p) => /(^|\/)(\.git|node_modules|\.scratch)$/.test(p)).map(rel);
+}
+for (const f of checked20) {
+  let text;
+  try { text = readFileSync(join(root, f), "utf8"); } catch { continue; }
+  text.split("\n").forEach((line, i) => { if (retired.test(line)) fail(`${f}:${i + 1}: names the retired source repository`); });
 }
 
 if (failures.length) {
