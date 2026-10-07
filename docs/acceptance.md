@@ -279,7 +279,7 @@ name a plugin are rerun under the new names and recorded here.
     outside any git repository, where the bridge refuses and the run swaps) names the
     bridge, read as `ccx`; it was never run there. Every other case keeps its result and
     reruns under that file's conditions. Expected: M3-c's own result. Rerun when stage 6
-    changes. Not yet run.
+    changes. Run 2026-10-07 for cca 0.10.0 and ccx 0.6.0 on Windows; see the records.
 24. **cca background-fetch question.** Setup: as item 21, interactive, in a session
     whose directory is the fixture's `app` repository, after
     `git update-ref refs/remotes/origin/main HEAD` there. Command: `/cca:audit <manifest>
@@ -2105,3 +2105,28 @@ login. The `patterns` fixture ran with a manifest copy holding
   `<scratch>/cca/<run-id>/`, as in item 24's Run A (issue #41). With a local catalog the
   installed `ccx` ran its script from the branch's working tree, not from the plugin
   cache.
+
+### 2026-10-07: cca 0.10.0 and ccx 0.6.0, items 22 and 23, before the merge, Windows
+
+Windows 11 Pro, Git Bash, Claude Code 2.1.292, codex-cli 0.160.1, Node 26.4.0. The branch
+head was c4e5eaa. As in the item 22 record above, a scratch `CLAUDE_CONFIG_DIR` installed
+`ccx` 0.6.0 and `cca` 0.10.0 from the branch's working tree, and Codex used the real
+login. Two `patterns` fixtures ran at the same time, in two interactive sessions, each
+with `"scratch": "./app/.test-output/cca"` and `--effort low`.
+
+- **Item 22's follow-up passed.** The manifest held `"_test": {"drop_ack": {"input":
+  "ledger/5.md", "times": 1}}`. The first answer was copied with `cp -- "$SRC"
+  "$RD/codex/response.md" && rm -f -- "$SRC"`. The follow-up went to the same thread
+  with `--resume`, and its answer was appended with `printf '%s
+' '--- follow-up,
+  thread <id> ---' >> ... && cat -- "$SRC" >> ... && rm -f -- "$SRC"`. No Write or Edit
+  touched `codex/response.md`. The file was byte for byte the first printed answer, the
+  header line, and the second printed answer, each without its `output:` line (7057
+  bytes, `cmp` equal). The stage 6 entry recorded `follow_up` true, status `ok`, and no
+  unacknowledged input. ccx's data directory held no `output-*.txt` file afterward.
+- **Item 23 passed (M3-c).** The session started in the fixture's root, outside any git
+  repository. `ccx:ask` printed `ccx: not inside a git repository, so nothing was run
+  (...)` and `status: refused`, with no retry. Stage 6 swapped to `cca:adversary` with
+  the reason "ccx refused: not inside a git repository, so nothing was run", recorded
+  `called` true and status `refused`, and the run ended `reported`.
+- Both run directories were at `<scratch>/cca/<run-id>/`, as stage 1 says.
