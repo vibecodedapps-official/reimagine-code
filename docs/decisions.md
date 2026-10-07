@@ -797,3 +797,57 @@ four rounds and reviewed over 21 rounds until a review found nothing.
      odd, which means a rule that holds a pipe would never match (none ships with one);
      a fence or comment under an item at column 0 with no blank line stays with the item
      but a later dedented line ends it; an unclosed comment hides the rest of its segment.
+
+## Part 18: ccx 0.6.0, the attribution hook, links in drafts, and the retired source, 2026-10-06
+
+Built for issue #35. The hook's facts come from the Claude Code docs, read on 2026-10-06
+through the claude-code-guide agent: settings.md, managed-settings.md, settings-reference.md,
+and hooks.md under https://code.claude.com/docs/en/. They were not checked against a live
+Claude Code, so the hand check in the PR is what confirms them.
+
+1. **A separate module.** The hook runs before every shell call, so it is its own file that
+   imports only `node:` built-ins, never `rules.mjs` or the bridge. Cost, 2026-10-06 on
+   Windows 11 (AMD64 Family 26 Model 68), Node v26.4.0, 50 runs each, timed one at a time:
+   a payload that is not a commit has a median of 53 ms and a slowest of 119 ms; a commit
+   with no opt-out set has a median of 52 ms and a slowest of 115 ms. Most of it is Node's
+   own start. Its lint budget is 90 lines; it is 69.
+2. **Settings order and what is not read.** The docs order managed, `--settings`, local
+   project, shared project, then user. The hook reads managed (Windows
+   `C:\Program Files\ClaudeCode\managed-settings.json`, macOS
+   `/Library/Application Support/ClaudeCode/managed-settings.json`, Linux
+   `/etc/claude-code/managed-settings.json`), the two project files, and the user file under
+   `CLAUDE_CONFIG_DIR` or `~/.claude`. It cannot see the session's `--settings` flag, and it
+   does not read registry or MDM policies. `includeCoAuthoredBy` is deprecated but still
+   honored, so a commit is also denied when `attribution.commit` is unset everywhere and the
+   first file that sets `includeCoAuthoredBy` sets it false. The agent's summary said "false
+   (or omitting it)" removes the trailer; only an explicit false counts here, since the
+   default adds the trailer. A managed file on the machine that runs the tests would override
+   their settings; none is isolated.
+3. **Deny form.** JSON on stdout with exit 0, `permissionDecision: deny`, and the line in
+   `permissionDecisionReason`. The line names the matched text (the Co-Authored-By line or the
+   Generated with line), the setting, and the file that set it.
+4. **The recognizer and its limits.** It matches `git` or `gh` as a word, any options, then
+   the subcommand words, on the command string. Not handled: a message built from a variable,
+   a pipe, or a file written earlier in the same command; a `cd` before the commit, which
+   moves where a `-F` file is found; a git alias for commit. A commit chained with a search
+   for the same text, such as `git commit ... && git log --grep "Co-Authored-By: Claude"`,
+   is read as one text and denied. Text that only quotes `git commit`, as in an `echo`, is
+   treated as a commit. Any error allows the call.
+5. **The tests spawn the module with `process.execPath`**, not the ccx harness, which skips on
+   Windows. The module honors `CLAUDE_CONFIG_DIR` and `CLAUDE_PROJECT_DIR`, so no test-only
+   override was needed.
+6. **v4.5 in the description, not the name.** The issue named the style's name line. The name
+   stays `Concise Plain` so a saved `ccx:Concise Plain` selection survives, and the version
+   already lives in the description (`docs/architecture.md`, Output style).
+7. **The change-size skill is dropped.** It flagged a diff over 800 changed lines (500 for
+   complex logic) and suggested stages; that advice is not wanted in these reviews. The
+   skill directory and its line in `general-code-review` are deleted, the README, R26, R29,
+   and the acceptance item name three companions, and the rename map keeps the row with a
+   note. Past run records keep what ran then.
+8. **The retired source repository.** No tracked file names it. Living text says this
+   repository is the source; past records say "the earlier source repository". R58 stays
+   retired, and lint 20 (R69) fails on a new mention.
+9. **Version literals in tests.** The lint, release, and rules tests quote the suite version
+   and the Writing rule count. The release commit left them at 0.5.0, so they were raised to
+   0.6.0 (and the release tests' next version to 0.7.0, the Writing count to 41) in the
+   commits that needed them.

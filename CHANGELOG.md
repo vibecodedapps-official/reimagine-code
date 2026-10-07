@@ -5,6 +5,26 @@ repos' own changelogs are kept under `docs/history/`.
 
 ## 0.6.0 - 2026-10-06
 
+### ccx
+
+- A hook on the Bash and PowerShell tools blocks a `git commit`, `gh pr create`, or
+  `gh pr edit` whose text carries a `Co-Authored-By` line naming Claude or a "Generated
+  with Claude Code" line, when your settings turn that attribution off: `attribution.commit`
+  or `attribution.pr` set to an empty string, or `includeCoAuthoredBy` false for commits. The
+  denial names the setting and the file. Before, Claude could add the line anyway. The hook
+  does not read the `--settings` flag or registry policies, and it does not follow a message
+  built from variables or written to a file earlier in the same command.
+- The Links rules now apply inside a draft, including one shown in a blockquote or a code
+  block for pasting: a work item, PR, build, or commit ID is a link at first mention. This is
+  Concise Plain v4.5, in the style, the Codex Writing section, and the chat instructions.
+  Before, a draft kept bare IDs.
+
+### ccx (Codex)
+
+- `general-code-review` runs three companions: breaking-changes, context, and testing.
+  Before, a fourth, change-size, flagged a diff over 800 changed lines and suggested stages;
+  that advice is gone.
+
 ## 0.5.0 - 2026-10-06
 
 ### ccx

@@ -87,7 +87,26 @@ requirement below changes it. The audit plugin was not part of v0.1.0; it joined
     command text or the hook's `args`, and never read it from the environment. Depends
     on spike M0.4 for the hook. Check: test; lint.
 14. **Runtime budget.** `ccx.mjs` and `codex.mjs` together stay at or under 710 lines.
-    `rules.mjs` has its own budget of 640 lines and `suite.mjs` of 200. Check: lint.
+    `rules.mjs` has its own budget of 640 lines, `suite.mjs` of 200, and `attribution.mjs` of 90.
+    Check: lint.
+68. **Attribution hook.** A PreToolUse hook, `scripts/attribution.mjs`, runs before each Bash and
+    each PowerShell call. It acts only on a `git commit` (`git` or `git.exe`, bare or by path,
+    with any options) or a `gh pr create` or `gh pr edit`; any other command returns at once
+    with no file read. It checks the whole command and the files named by `-F`, `--file`, or
+    `--body-file`, resolved against the call's `cwd`; `-`, a missing file, and a path holding
+    `$` or `%` are skipped. It denies the call when the text has a `Co-Authored-By:` line whose
+    value holds an `@anthropic.com` address or names Claude alone or with Code, Opus, Sonnet,
+    Haiku, or Fable and a version, or a "Generated with Claude Code" line, and the settings turn
+    that attribution off: `attribution.commit` is `""` for a commit, `attribution.pr` is `""`
+    for a PR, or, for a commit with `attribution.commit` unset everywhere, `includeCoAuthoredBy`
+    is `false`. Settings come from the managed settings file, then `.claude/settings.local.json`
+    and `.claude/settings.json` under `CLAUDE_PROJECT_DIR` (else the call's `cwd`), then
+    `settings.json` under `CLAUDE_CONFIG_DIR` (else `~/.claude`); the first file that sets the
+    key wins, and a missing or invalid file is skipped. Not read: the `--settings` flag and
+    managed policies from the registry or MDM. The denial is JSON with `permissionDecision:
+    deny` and one line, such as `ccx: remove the Co-Authored-By line naming Claude;
+    attribution.commit is "" in <path>`. Any error allows the call and prints nothing. The
+    module imports only `node:` built-ins. Check: test (`tests/ccx/attribution.test.mjs`); lint 5.
 
 ## Setup
 
@@ -314,6 +333,7 @@ Added 2026-10-05, when claude-codex-audit 0.8.1 at `eed9fba` joined the suite as
     Check: acceptance.
 54. **Line endings.** `.gitattributes` keeps `*.sh`, `*.mjs`, and `*.md` at LF. Check:
     lint.
+69. **No retired source.** No tracked file names the retired source repository. Check: lint 20.
 
 ## Migration
 

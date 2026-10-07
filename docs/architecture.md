@@ -187,6 +187,9 @@ loop, so they are frozen across 0.x:
   implement.
 - One request file and one thread file per Claude session, in the plugin data
   directory, so calls are serial.
+- **Attribution hook.** `scripts/attribution.mjs`, run as a PreToolUse hook for the Bash and
+  PowerShell matchers, in exec form with no data directory argument. It imports only `node:`
+  built-ins, so its start stays cheap on every shell call, and it fails open (R68).
 
 A caller that wants Codex to read a file puts it under a directory the repository
 ignores; that is why the loop's run directory must stay ignored. The message prefix
