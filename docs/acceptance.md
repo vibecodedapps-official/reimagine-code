@@ -273,7 +273,7 @@ name a plugin are rerun under the new names and recorded here.
     directory afterward; and when step 8 makes a follow-up, its answer is appended after
     a `--- follow-up, thread <id> ---` line of its own. Covers R63 and R71. Rerun when
     stage 6, the bridge's output lines, or the catalog changes. Run 2026-10-06 for
-    0.9.1; see the records.
+    0.9.1, and 2026-10-07 for cca 0.10.0 and ccx 0.6.0 on Windows; see the records.
 23. **cca items under the new names.** The list was drawn 2026-10-05 from
     `docs/history/claude-codex-audit/acceptance.md`: only case M3-c (a session started
     outside any git repository, where the bridge refuses and the run swaps) names the
@@ -2081,3 +2081,27 @@ second shell with `git update-ref`.
   since the fixture has no remote, and recommended no. Runs B and C made their run
   directory at `<scratch>/cca/<run-id>/`, as stage 1 says; Run A made it one level
   higher, at `.test-output/cca/<run-id>/`. Neither was investigated further.
+
+### 2026-10-07: cca 0.10.0 and ccx 0.6.0, item 22, before the merge, Windows
+
+Windows 11 Pro, Git Bash, Claude Code 2.1.292, codex-cli 0.160.1, Node 26.4.0. The branch
+head was 0977f6a. A scratch `CLAUDE_CONFIG_DIR` added the branch's working tree as a
+local catalog and installed `ccx` 0.6.0 and `cca` 0.10.0 from it; Codex used the real
+login. The `patterns` fixture ran with a manifest copy holding
+`"scratch": "./app/.test-output/cca"`, in an interactive session.
+
+- **Item 22 passed, except the follow-up, which did not occur.** `/cca:audit <manifest>
+  --effort low` called `ccx:ask` with `--timeout 1200` and recorded `ccx_version`
+  `0.6.0`, `called` true, status `ok`, no retry, and no follow-up, since every input was
+  acknowledged. The session log shows one Bash call, `cp -- "$SRC"
+  "$RD/codex/response.md" && rm -f -- "$SRC" && echo copied`, which printed `copied`,
+  with `$SRC` the path of the `output:` line, and no Write or Edit of
+  `codex/response.md`. The copied file was byte for byte the text ccx printed without
+  its `output:` line (6517 bytes, `cmp` equal). After `claude plugin uninstall
+  ccx@reimagine-code`, `/cca:resume <run-id> --from 6` swapped to `cca:adversary` with
+  the reason "ccx not installed or version unreadable", moved the first answer to
+  `superseded/1/codex/`, and the run ended `reported`.
+- Observed: the run directory was `.test-output/cca/<run-id>/`, one level short of
+  `<scratch>/cca/<run-id>/`, as in item 24's Run A (issue #41). With a local catalog the
+  installed `ccx` ran its script from the branch's working tree, not from the plugin
+  cache.
