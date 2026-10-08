@@ -38,7 +38,7 @@ project; Codex used a scratch `CODEX_HOME`.
    `recode:Concise Plain`. Observed on a run of 2026-10-03.
 5. **M0.4 SessionStart hooks get the data directory and can notify the user.** An
    exec-form hook with `${CLAUDE_PLUGIN_DATA}` in `args` received
-   `/Users/joe/.claude/plugins/data/c-spike-mkt`, the same value as its
+   `<home>/.claude/plugins/data/c-spike-mkt`, the same value as its
    `CLAUDE_PLUGIN_DATA` environment variable. Its `systemMessage` showed on screen at
    startup as `SessionStart:startup says: <message>`. Observed on a run of 2026-10-03.
 6. **M0.5 Codex reads only the `.agents` catalog.** With both catalogs in one repo,

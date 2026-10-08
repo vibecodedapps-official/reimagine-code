@@ -169,7 +169,9 @@ requirement below changes it. The audit plugin was not part of v0.1.0; it joined
 ## Code review skills: ccx on Codex
 
 26. **Skills.** The four `general-code-review*` skills ship with names and text unchanged
-    from codex-code-review-general 0.1.0; the change-size skill was dropped in 0.6.0.
+    from codex-code-review-general 0.1.0, except two wording generalizations made for
+    issue 44 (the reasoning-effort line and the hosting-platform line in
+    `general-code-review`); the change-size skill was dropped in 0.6.0.
     Check: review, by diff against the source.
 27. **Manifest.** `plugins/ccx-codex/plugin.json` uses the `agent-plugins.org` schema
     1.0.0, is named `ccx`, and carries the family version. Depends on spike M0.5.
@@ -355,7 +357,7 @@ Added 2026-10-05, when claude-codex-audit 0.8.1 at `eed9fba` joined the suite as
 52. **CI.** Lint and tests pass on Ubuntu, macOS, and Windows with Node 22 for every PR,
     and `claude plugin validate --strict` passes on the root and on each plugin
     directory, using a pinned Claude Code version. Check: CI.
-53. **Windows.** On the work machine (Windows 11, both CLIs from npm): bridge ask and
+53. **Windows.** On Windows 11 (both CLIs from npm): bridge ask and
     implement, the rules command against a CRLF file, and the repo-docs hook on both
     hosts from a checkout whose path contains a space. The README states Git for
     Windows as the repo-docs prerequisite, with Git's `bin` folder on `PATH` for Codex.

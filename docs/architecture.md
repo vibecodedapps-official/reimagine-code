@@ -109,8 +109,8 @@ reasons:
 
 The Codex `ccx` therefore has its own directory, `plugins/ccx-codex/`. It keeps the
 manifest form the general review plugin uses today: a root `plugin.json` with the
-`agent-plugins.org` schema 1.0.0. That plugin is installed and enabled on this machine
-now (verified, `~/.codex/config.toml`). This form loads skills only; it skips commands
+`agent-plugins.org` schema 1.0.0, which a Codex install had loaded when this was drafted
+(verified, its `config.toml`). This form loads skills only; it skips commands
 and discards hooks, which the review skills do not need. A later Codex hook, for the
 reverse bridge, would need the `.codex-plugin` form. Codex rejects schema 1.1.0, so the
 schema URL is pinned and linted.
@@ -134,8 +134,8 @@ Behavior carries over from codex-lite 0.9.0 unchanged except for names.
 - **Commands.** `ask`, `review`, `implement` as today. `do` and `setup` keep
   `disable-model-invocation: true`, so they cost nothing until typed. New: `rules`, also
   `disable-model-invocation: true`.
-- **Scripts.** `ccx.mjs` (was `codex-lite.mjs`) and `codex.mjs` keep their 740-line
-  runtime budget; lint prints the lines used on every run.
+- **Scripts.** `ccx.mjs` (was `codex-lite.mjs`) and `codex.mjs` keep their runtime
+  budget (R14); lint prints the lines used on every run.
   New code goes in three new modules with their own budgets: `rules.mjs` (house rules,
   pure file logic, spawns nothing), `suite.mjs` (the old-plugin report and the
   SessionStart notice, which spawn `claude plugin list --json` or read files), and
@@ -143,8 +143,8 @@ Behavior carries over from codex-lite 0.9.0 unchanged except for names.
 - **Data directory.** The command text, or the hook's `args`, passes
   `${CLAUDE_PLUGIN_DATA}` to the script as an argument, never through the environment.
   This is the existing pattern: the variable inside the Bash tool once held another
-  plugin's value (recorded in an untracked note in codex-lite-cc). Substitution in hook
-  `args` is checked in spike M0.4. The directory becomes
+  plugin's value (seen in codex-lite-cc; its note is not in this repository). Substitution
+  in hook `args` is checked in spike M0.4. The directory becomes
   `~/.claude/plugins/data/ccx-reimagine-code/`. It survives updates and is deleted on
   uninstall (verified, docs).
 - **Saved output.** A run that reached Codex writes what it prints, minus the `output:`
@@ -407,10 +407,8 @@ not repeat it.
 ### Local overrides
 
 Personal rules go below the end marker, under a heading the user chooses. The block never
-states a conflict order. On the author's work machine, which keeps no copy of the
-earlier source repository and whose
-files are kept by hand, its own lines go there, so the block stays identical to what
-ships.
+states a conflict order. A machine whose instruction files are kept by hand puts its own
+lines there, so the block stays identical to what ships.
 
 ## Versions, tags, and dependencies
 
