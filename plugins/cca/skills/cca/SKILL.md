@@ -473,7 +473,7 @@ Read `runs.json` with the Read tool and branch on this run's entry:
 `${CLAUDE_PLUGIN_DATA}/runs.json` is a JSON array with one entry per run:
 
 ```json
-[ { "run_id": "2026-09-30-1412-travelly-limits", "path": "/abs/path/to/run",
+[ { "run_id": "2026-09-30-1412-app-123", "path": "/abs/path/to/run",
     "primary_repo": "/abs/path/to/app", "created": "2026-09-30T14:12:00Z",
     "state": "running" } ]
 ```

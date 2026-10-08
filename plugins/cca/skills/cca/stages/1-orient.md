@@ -15,8 +15,8 @@ Before section A, run `command -v jq`. When it prints nothing, tell the user bef
 run starts, in plain words: `jq` is not installed, so the work-items file will not be
 checked against the report and a PR cannot be read through `gh`; install it with
 `winget install jqlang.jq` on Windows, `brew install jq` on macOS, or the system package
-manager on Linux. Then continue as today; `work-items.sh` is unchanged and still reports
-`work-items: jq not found`.
+manager on Linux. Then continue; `work-items.sh` reports `work-items: jq not found`
+when it runs.
 
 ## A. Normalize the inputs
 

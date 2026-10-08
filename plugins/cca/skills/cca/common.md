@@ -193,8 +193,9 @@ script.
 
 - The runner. Find how the runner turns a script into its journal key: the file name, a
   version prefix, a hash of the content, or an id inside the file. Search the audited
-  repos at the head sha for the run-once patterns' directory and for `journal`,
-  `applied`, and `migrat`, and quote the lines that read and write the journal. Compare
+  repos at the head sha for the run-once patterns' directory and for the terms the
+  runner uses for an applied script (`journal`, `applied`, `migrat`, or its own), and
+  quote the lines that read and write the journal. Compare
   the key of the old path with the key of the new one. They differ (the key is the file
   name): the script runs again where the old one ran. They are the same (a version
   prefix or an id the rename keeps): the runner does not see the rename, so judge the
