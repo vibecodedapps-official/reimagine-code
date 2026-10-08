@@ -31,7 +31,11 @@
 # Portability: bash (Linux, macOS, Git Bash), which the script re-executes itself under
 # when another sh starts it, and awk in forms mawk and gawk accept. Each command needs its
 # own process group, from job control, and dash turns job control off when it has no
-# controlling terminal, as under CI; bash does not.
+# controlling terminal, as under CI; bash does not. Under `set -m` bash can print
+# `child setpgid (N to N): ...` at a job's start, when the child's own setpgid call fails
+# after the parent's has already placed it (seen on macOS, about one start in 2000, the
+# job in its own group every time); the script drops that line, and fails the start if
+# the job is alive but leads no group of its own.
 # Every git call only reads: rev-parse, merge-base, diff-tree, ls-tree, and cat-file.
 # GIT_DIR, GIT_WORK_TREE, and GIT_INDEX_FILE from the caller are unset first.
 #
@@ -88,9 +92,9 @@
 # line cut at 400 bytes, with NUL and carriage return bytes removed.
 #
 # Exit status of `run`:
-#   2  wrong arguments or keys, the work dir exists, a git step or write failed, or a
-#      process group was still live 10 seconds after KILL (one line on stderr; no result
-#      file)
+#   2  wrong arguments or keys, the work dir exists, a git step or write failed, a job
+#      did not start in its own process group, or a process group was still live 10
+#      seconds after KILL (one line on stderr; no result file)
 #   0  the result file is written, whatever the verdicts
 # `bg` exits 0 once `.exit` is written, else 2. `wait` exits as `run` did (0, or 2 with
 # its stderr), 2 for no run started or an unreadable `.exit`, and 3 while still running.
@@ -136,6 +140,19 @@ secs() {
 	esac
 }
 
+# forkdone <pid> <file>: after a job started under `set -m` with fd 2 on <file>. Bash's child
+# prints `child setpgid (N to N): ...` when its own setpgid call fails (see Portability);
+# drop that line, pass on any other, then fail unless the job leads its own group.
+forkdone() {
+	sed '/child setpgid ([0-9]* to [0-9]*)/d' "$2" >&2
+	rm -f "$2"
+	if ! kill -0 -"$1" 2> /dev/null && kill -0 "$1" 2> /dev/null; then
+		kill -KILL "$1" 2> /dev/null
+		wait "$1" 2> /dev/null
+		die "cannot start a job in its own process group"
+	fi
+}
+
 if [ "${1:-}" = bg ]; then
 	[ $# -eq 7 ] || usage
 	shift
@@ -154,7 +171,7 @@ if [ "${1:-}" = bg ]; then
 	# of `bg` (an agent's harness ends a session's shells so), so it ends the run itself.
 	bgpid=$$
 	set -m
-	(
+	{ (
 		termed=
 		trap 'termed=1' TERM
 		bash "$0" run "$@" &
@@ -172,9 +189,10 @@ if [ "${1:-}" = bg ]; then
 			sleep 1
 		done
 		wait "$r"
-	) > "$out.err" 2>&1 < /dev/null &
+	) > "$out.err" 2>&1 < /dev/null & } 2> "$out.fork"
 	child=$!
 	set +m
+	forkdone "$child" "$out.fork"
 	(
 		n=0
 		fired=
@@ -603,7 +621,7 @@ runone() {
 	mkdir -p "$ro_tmp" "$ro_cache" || die "cannot create a directory in $work"
 	rm -f "$w/timedout"
 	set -m
-	(
+	{ (
 		cd "$1" || exit 125
 		for ro_v in $(env | sed -n 's/^\(GIT_[A-Za-z0-9_]*\)=.*/\1/p'); do
 			unset "$ro_v"
@@ -624,9 +642,10 @@ runone() {
 			exec sh -c "$setup"
 		fi
 		exec sh -c "$command \"\$1\"" sh "$4"
-	) > "$2" 2>&1 < /dev/null &
+	) > "$2" 2>&1 < /dev/null & } 2> "$w/fork"
 	ro_pg=$!
 	set +m
+	forkdone "$ro_pg" "$w/fork"
 	live=$ro_pg
 	watchdog "$ro_pg" "$ro_dl" &
 	wdog=$!
