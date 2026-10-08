@@ -991,7 +991,14 @@ request, with the issue 44 rewrites as one commit per plugin so they read apart.
    with SIGPIPE ignored, so `date` reports the broken pipe instead of dying silently.
    Reproduced in an Ubuntu container with SIGPIPE ignored (3 of 3 runs failed on the
    new script, main's passed) and fixed by timing the watchdog with bash's `SECONDS`,
-   which forks nothing (3 of 3 passed).
+   which forks nothing (3 of 3 passed). The second CI run then lost a run's work
+   directory mid-run on Ubuntu, after `wait_for: No record of process` from bash: six
+   suites in parallel in the same container reproduced it in 10 of 12 runs with the
+   helper's `sed` and `rm` children, in 0 of 12 on main, and in 0 of 18 with the helper
+   written in builtins only and the capture file removed later. So a child forked right
+   after the job's start under toggled job control loses its record in bash 5.2; why
+   bash then runs the exit trap is not traced. The helper now forks nothing before its
+   check.
 3. **The speed guard times batches and allows ten.** The old guard took the best of three
    single runs of a few milliseconds per side, so noise was a large share; in-process
    reruns reached 6.6 and 7.3 against the limit of 8, and the three CI failures came

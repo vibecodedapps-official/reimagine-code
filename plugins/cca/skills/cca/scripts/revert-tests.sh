@@ -143,10 +143,17 @@ secs() {
 # forkdone <pid> <file> [<remove>]: after a job started under `set -m` with fd 2 on <file>.
 # Bash's child prints `<name>: child setpgid (N to N): <error>` when its own setpgid call
 # fails (see Portability); drop a line of that shape, pass on any other, then fail unless
-# the job leads its own group, removing <remove> first when given.
+# the job leads its own group, removing <remove> first when given. Builtins only until
+# the check: a child forked here, right after the job's start under job control, can
+# lose its record in bash (`wait_for: No record of process`), after which the run's
+# work directory vanished mid-run on Linux. The caller removes <file> later.
 forkdone() {
-	sed '/: child setpgid ([0-9][0-9]* to [0-9][0-9]*): /d' "$2" >&2
-	rm -f "$2"
+	while IFS= read -r fd_line || [ -n "$fd_line" ]; do
+		case $fd_line in
+		*': child setpgid ('[0-9]*' to '[0-9]*'): '*) ;;
+		*) printf '%s\n' "$fd_line" >&2 ;;
+		esac
+	done < "$2"
 	if ! kill -0 -"$1" 2> /dev/null && kill -0 "$1" 2> /dev/null; then
 		kill -KILL "$1" 2> /dev/null
 		wait "$1" 2> /dev/null
@@ -219,6 +226,7 @@ if [ "${1:-}" = bg ]; then
 	if [ $? -eq 3 ]; then
 		echo "revert-tests: stopped at the deadline of $deadline seconds" >> "$out.err"
 	fi
+	rm -f "$out.fork"
 	if ! { printf '%s\n' "$st" > "$out.exit.tmp" && mv -f "$out.exit.tmp" "$out.exit"; }; then
 		rm -f "$out.exit.tmp"
 		die "cannot write $out.exit"
