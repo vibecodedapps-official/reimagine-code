@@ -15,8 +15,9 @@ yes.
 3. Does it apply only under one directory? Put it in `<dir>/AGENTS.md`, and, if the repo
    uses adapters, add the `CLAUDE.md` adapter beside it.
 4. Is it long-form: architecture, a workflow, a runbook, background, or history? Put it in
-   `docs/`, and add one pointer line from the `AGENTS.md` that would otherwise need it,
-   saying what the doc holds and when to read it.
+   `docs/`, or wherever the repo already keeps such files, and add one pointer line from
+   the `AGENTS.md` that would otherwise need it, saying what the doc holds and when to
+   read it.
 5. Is it for a human deciding whether to use or install the project, not for an agent
    doing a task? Put it in `README.md`.
 6. If none of the above fit, it does not belong in an instruction file. See the delete
@@ -43,7 +44,8 @@ Other signs:
   the narrower scope only if it truly differs there; otherwise delete the nested copy
   and rely on the root file loading always.
 - A paragraph longer than a few sentences sitting inline in `AGENTS.md` when it explains
-  why rather than states a constraint. That is `docs/` content; leave a pointer behind.
+  why rather than states a constraint. That is long-form content for wherever the repo
+  keeps docs; leave a pointer behind.
 
 ## Delete outright
 
