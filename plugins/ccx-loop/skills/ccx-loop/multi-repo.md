@@ -188,12 +188,11 @@ Per repository, the suggestions are:
   default branch name. So a shared directory such as `feature/user/` alone never
   qualifies, and this rule never suggests the default branch.
 
-For example, the primary is on `feature/user/2026.09-migration-fixes` and a third
-repository on `feature/user/2026.09-migration-etl`, each at its remote tip. The second
-repository is on an unrelated branch at its remote tip and has a remote branch
-`feature/user/2026.09-migration-heart`. Its common stem with either of the other names is
-`feature/user/2026.09-migration`, which qualifies, so the second repository's line
-suggests its `HEAD` branch and `feature/user/2026.09-migration-heart`. A repository with
+For example, the primary is on `topic/search-api` and a third repository on
+`topic/search-ui`, each at its remote tip. The second repository is on an unrelated
+branch at its remote tip and has a remote branch `topic/search-docs`. Its common stem
+with either of the other names is `topic/search`, which qualifies, so the second
+repository's line suggests its `HEAD` branch and `topic/search-docs`. A repository with
 two suggestions is not covered by `yes`, so the reply names the choice in a
 `<path>@<branch>` line.
 

@@ -12,7 +12,7 @@ never a reviewer.
 
 | Role | Default | Fallback when the default is unavailable |
 |---|---|---|
-| Orchestrator and primary reviewer | The session's current Claude model (Opus or Fable) | none, the run stops |
+| Orchestrator and primary reviewer | The session's current Claude model | none, the run stops |
 | Codex reviewer | Skill tool, `ccx:ask` or `ccx:review`, model `gpt-6-astra` | Agent tool, model `fable`; on an error from that call, model `opus` |
 | Claude reviewer (Step 5, higher-risk runs) | Skill tool, `code-review`, at the tier's level; in a worktree run, an Opus subagent for the worktree as `worktree.md` describes, and in Multi-repo mode, an Opus subagent for each additional repository, as `multi-repo.md` describes | none; if the skill is not listed when the stage starts, the run ends in `blocked` (a worktree run needs no skill) |
 | Implementer, Codex | Skill tool, `ccx:implement`, model per the tier table | Agent tool, model `sonnet` |
@@ -21,9 +21,9 @@ never a reviewer.
 Rules for roles:
 
 - Codex model ids are always the full id, `gpt-6.1-sol` or `gpt-6-astra`.
-  A bare id such as `sol` or `astra` fails on a ChatGPT account. Pass the full id
-  on every Codex call, including `--resume` follow-ups. On every reviewer call, also pass
-  `--timeout` from the Codex budget.
+  A bare alias such as `sol` or `astra` may not resolve on every account. Pass the full
+  id on every Codex call, including `--resume` follow-ups. On every reviewer call, also
+  pass `--timeout` from the Codex budget.
 - Codex is reached only through the Skill tool, with `ccx:ask` for plans and
   questions, `ccx:review` for diffs, and `ccx:implement` for implementers.
   Never run the `codex` CLI directly.
