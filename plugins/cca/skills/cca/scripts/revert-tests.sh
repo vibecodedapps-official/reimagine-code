@@ -578,11 +578,12 @@ export_list() {
 # watchdog <pgid> <deadline>: at the deadline, TERM the group, then KILL it 10 seconds
 # later.
 watchdog() {
-	wd_start=$(date +%s)
+	# bash's own clock: a `date` child here can die of a broken pipe when the job ends
+	# at once and the watchdog is killed before its first read.
+	wd_start=$SECONDS
 	while :; do
 		sleep 1
-		wd_now=$(date +%s)
-		[ $((wd_now - wd_start)) -lt "$2" ] || break
+		[ $((SECONDS - wd_start)) -lt "$2" ] || break
 	done
 	: > "$w/timedout"
 	kill -TERM -"$1" 2> /dev/null

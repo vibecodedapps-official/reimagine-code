@@ -984,7 +984,14 @@ request, with the issue 44 rewrites as one commit per plugin so they read apart.
    handshake the Codex critique proposed was not built: the group check runs before the
    job's own first step can matter for the deadline, and the isolation failure it
    guards was never observed; it is the next step if a run ever prints the exit 2 line.
-   Cases 18a and 18b cover the filter and the check; the race cannot be forced.
+   Cases 18a and 18b cover the filter and the check; the race cannot be forced. The
+   first CI run then failed Ubuntu's mawk step with `date: write error: Broken pipe`:
+   the fork check delays the watchdog's start past a fast job's end, so the kill that
+   ends the watchdog lands on its first `date` child, and the runner's step shell runs
+   with SIGPIPE ignored, so `date` reports the broken pipe instead of dying silently.
+   Reproduced in an Ubuntu container with SIGPIPE ignored (3 of 3 runs failed on the
+   new script, main's passed) and fixed by timing the watchdog with bash's `SECONDS`,
+   which forks nothing (3 of 3 passed).
 3. **The speed guard times batches and allows ten.** The old guard took the best of three
    single runs of a few milliseconds per side, so noise was a large share; in-process
    reruns reached 6.6 and 7.3 against the limit of 8, and the three CI failures came
