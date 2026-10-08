@@ -140,15 +140,17 @@ secs() {
 	esac
 }
 
-# forkdone <pid> <file>: after a job started under `set -m` with fd 2 on <file>. Bash's child
-# prints `child setpgid (N to N): ...` when its own setpgid call fails (see Portability);
-# drop that line, pass on any other, then fail unless the job leads its own group.
+# forkdone <pid> <file> [<remove>]: after a job started under `set -m` with fd 2 on <file>.
+# Bash's child prints `<name>: child setpgid (N to N): <error>` when its own setpgid call
+# fails (see Portability); drop a line of that shape, pass on any other, then fail unless
+# the job leads its own group, removing <remove> first when given.
 forkdone() {
-	sed '/child setpgid ([0-9]* to [0-9]*)/d' "$2" >&2
+	sed '/: child setpgid ([0-9][0-9]* to [0-9][0-9]*): /d' "$2" >&2
 	rm -f "$2"
 	if ! kill -0 -"$1" 2> /dev/null && kill -0 "$1" 2> /dev/null; then
 		kill -KILL "$1" 2> /dev/null
 		wait "$1" 2> /dev/null
+		[ -z "${3:-}" ] || rm -f "$3"
 		die "cannot start a job in its own process group"
 	fi
 }
@@ -192,7 +194,8 @@ if [ "${1:-}" = bg ]; then
 	) > "$out.err" 2>&1 < /dev/null & } 2> "$out.fork"
 	child=$!
 	set +m
-	forkdone "$child" "$out.fork"
+	# Without `.err`, `wait` reports no run started rather than still running.
+	forkdone "$child" "$out.fork" "$out.err"
 	(
 		n=0
 		fired=
