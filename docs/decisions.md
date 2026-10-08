@@ -1008,8 +1008,9 @@ request, with the issue 44 rewrites as one commit per plugin so they read apart.
    shipped prose file and the design docs, starting from this file and the requirements
    to trace which rules came from one machine or one run. 85 entries: 24 rewrites
    proposed, of which 19 landed; 14 behavior changes deferred by the auditors and 4
-   more after review; 45 kept with a reason, and one rewrite downgraded to keep. Every rewrite passed a semantic gate: it keeps each obligation, permission,
-   stop condition, default, and limit; a rewrite that turns a must into a may or moves
+   more after review; 45 kept with a reason, and one rewrite downgraded to keep. Every
+   rewrite passed a semantic gate: it keeps each obligation, permission, stop
+   condition, default, and limit; a rewrite that turns a must into a may or moves
    a number is a behavior change and is deferred. Kept with a reason, the specifics a
    reader may flag: the Bash tool's 10-minute foreground cap and the 540-second and
    72-minute figures derived from it; the lock timings, verified on three shells and
