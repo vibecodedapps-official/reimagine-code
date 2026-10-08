@@ -21,7 +21,7 @@ You are a thin forwarder for the cca orchestrator. Do the steps below in order. 
 
    Reject the request with one short line that names the offending token, such as `cca: unknown flag --bogus`, `cca: --from must be 1 to 8, got 9`, `cca: --live cannot be used with --from 1 to 5`, `cca: --live file not found: <path>`, or `cca: run <run-id> not found in runs.json`, if any rule in step 1 or step 2 fails. When you reject, run no other command, write no file, and do not load the skill.
 
-3. Build this block, with every flag at its effective value, as the args for step 4. Show the user a short summary in plain words instead of the block: the command and only the settings they gave or that change the run, never a flag at its default or a field that does not apply, such as `run-id: none` or `per-item: false`. Under the summary, add one plain sentence: an editor's automatic fetch, such as VS Code's `git.autofetch`, moves remote refs and can stop the audit, so pause it for the run.
+3. Build this block, with every flag at its effective value, as the args for step 4. Show the user a short summary in plain words instead of the block: the command and only the settings they gave or that change the run, never a flag at its default or a field that does not apply, such as `run-id: none` or `per-item: false`. Under the summary, add one plain sentence: a background fetch, such as an editor's or a Git client's automatic fetch (VS Code's `git.autofetch`, for one), moves remote refs and can stop the audit, so pause it for the run.
 
 ```
 command: resume

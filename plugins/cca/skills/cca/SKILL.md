@@ -326,15 +326,21 @@ and before writing that stage's final entry:
    output, ask the user whether a background fetch explains the moved refs. The
    line format is `remote-ref <-|+> <sha> <type><TAB><ref>`: a moved ref has a `-` line
    with the old commit and a `+` line with the new one, a new ref only a `+` line, a
-   deleted ref only a `-` line. Name each ref with its old and new commit, or "new" or
-   "deleted", and say that an editor's automatic fetch, such as VS Code's
-   `git.autofetch`, can move them. On yes, append to `stages.json` `approvals` one entry
-   per ref, in the form of the stage 1 fetch entries: kind `background-fetch`, target
-   `<repo name>:<ref>`, the decision, the time, and the old and new commits; then continue.
-   A later check that sees the same ref at the same old and new commits passes on that
-   entry; a further move of the ref asks again. On no, or no answer, end the run
-   `blocked` at once, with the block message below. Any `blocked` line still ends the
-   run at once, as above.
+   deleted ref only a `-` line. Before sending the question, check that it:
+   - names each ref with its old and new commit, or "new" or "deleted";
+   - says that a background fetch, such as an editor's or a Git client's automatic fetch
+     (VS Code's `git.autofetch`, for one), can move refs, even when the repository has no
+     remote configured, since the user may know of a fetch its configuration does not
+     show;
+   - recommends no answer and marks no option as preferred, since only the user knows
+     what ran on the machine.
+
+   On yes, append to `stages.json` `approvals` one entry per ref, in the form of the
+   stage 1 fetch entries: kind `background-fetch`, target `<repo name>:<ref>`, the
+   decision, the time, and the old and new commits; then continue. A later check that
+   sees the same ref at the same old and new commits passes on that entry; a further
+   move of the ref asks again. On no, or no answer, end the run `blocked` at once, with
+   the block message below. Any `blocked` line still ends the run at once, as above.
 4. For each `ignored` line (exit 3), added, deleted, or changed:
    - If the path is inside `<s>/cca/` of any audited repository, where `<s>` is
      any directory D2 (stage 1) would choose there, and outside this run's

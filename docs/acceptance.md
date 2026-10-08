@@ -261,8 +261,10 @@ name a plugin are rerun under the new names and recorded here.
     entry, or the plugin version changes. Run 2026-10-05 for 0.9.0, and 2026-10-06 for
     0.9.1 on macOS and Windows; see the records.
 22. **cca second opinion through ccx.** Setup: as item 21, with `ccx` installed from
-    this catalog, Codex logged in, and the `patterns` fixture. Command: `/cca:audit
-    <manifest> --effort low`; then uninstall `ccx` and run `/cca:resume <run-id> --from 6`.
+    this catalog, Codex logged in, and the `patterns` fixture, run with a manifest copy
+    whose `scratch` is `./app/.test-output/cca`, a path that ends in `cca`. Command:
+    `/cca:audit <manifest> --effort low`; then uninstall `ccx` and run `/cca:resume
+    <run-id> --from 6`.
     Expected: in the first run, stage 6 records the `ccx` version, calls `ccx:ask` with
     a timeout of at most 540 seconds when the session is headless or cannot tell
     whether a user can answer, and its ledger entry has `codex.called` true, a
@@ -273,9 +275,15 @@ name a plugin are rerun under the new names and recorded here.
     no Write or Edit of that file; `codex/response.md` starts with the text ccx printed
     for the call, without its `output:` line; the `<src>` file is gone from ccx's data
     directory afterward; and when step 8 makes a follow-up, its answer is appended after
-    a `--- follow-up, thread <id> ---` line of its own. Covers R63 and R71. Rerun when
-    stage 6, the bridge's output lines, or the catalog changes. Run 2026-10-06 for
-    0.9.1, and 2026-10-07 for cca 0.10.0 and ccx 0.6.0 on Windows; see the records.
+    a `--- follow-up, thread <id> ---` line of its own. From cca 0.10.1, also: stage 1
+    writes out the run directory and `<scratch>/cca` as whole paths before its `mkdir`;
+    the run directory is `.test-output/cca/cca/<run-id>/`, with the doubled `cca`, and
+    the `runs.json` entry's `path` is that directory; and the resume reuses that
+    recorded directory, creating no other directory under the scratch path and leaving
+    one `runs.json` entry for the id. Covers R63 and R71. Rerun when stage 6, the
+    bridge's output lines, the run directory step of stage 1, or the catalog changes.
+    Run 2026-10-06 for 0.9.1, and 2026-10-07 for cca 0.10.0 and ccx 0.6.0 on Windows;
+    see the records.
 23. **cca items under the new names.** The list was drawn 2026-10-05 from
     `docs/history/claude-codex-audit/acceptance.md`: only case M3-c (a session started
     outside any git repository, where the bridge refuses and the run swaps) names the
@@ -283,17 +291,24 @@ name a plugin are rerun under the new names and recorded here.
     reruns under that file's conditions. Expected: M3-c's own result. Rerun when stage 6
     changes. Run 2026-10-07 for cca 0.10.0 and ccx 0.6.0 on Windows; see the records.
 24. **cca background-fetch question.** Setup: as item 21, interactive, in a session
-    whose directory is the fixture's `app` repository, after
-    `git update-ref refs/remotes/origin/main HEAD` there. Command: `/cca:audit <manifest>
-    --no-codex`; while stage 4 runs, move that ref from a second shell with
+    whose directory is the fixture's `app` repository, which has no remote configured
+    (`git remote` prints nothing), after `git update-ref refs/remotes/origin/main HEAD`
+    there, with a manifest copy whose `scratch` is `./app/.test-output`, a path that
+    does not end in `cca`. Command: `/cca:audit <manifest> --no-codex`; while stage 4
+    runs, move that ref from a second shell with
     `git update-ref refs/remotes/origin/main HEAD~1`. Expected:
-    the next boundary check names the ref with its old and new commits and asks whether
-    a background fetch explains it. On yes, `stages.json` `approvals` gains one
-    `background-fetch` entry with target `app:refs/remotes/origin/main` and both
-    commits, the run goes on, and the next check passes without asking. Moving the ref
-    again asks again. On no, the run ends `blocked`. Moving the ref together with an
-    edit to a tracked file ends the run `blocked` without asking. Covers Part 19 item 1
-    in `docs/decisions.md`. Rerun when the boundary check in the cca skill changes. Run
+    the run directory is `.test-output/cca/<run-id>/`, one `cca` level below the scratch
+    path. The next boundary check asks whether a background fetch explains the moved
+    ref, and the question, before the user answers, names the ref with its old and new
+    commits, says that a background fetch, such as an editor's or a Git client's
+    automatic fetch, can move refs even though the repository has no remote, and
+    recommends no answer and marks no option as preferred. On yes, `stages.json`
+    `approvals` gains one `background-fetch` entry with target
+    `app:refs/remotes/origin/main` and both commits, the run goes on, and the next check
+    passes without asking. Moving the ref again asks again. On no, the run ends
+    `blocked`. Moving the ref together with an edit to a tracked file ends the run
+    `blocked` without asking. Covers Part 19 item 1 in `docs/decisions.md`. Rerun when
+    the boundary check or the run directory step in the cca skill changes. Run
     2026-10-07 for 0.10.0 on Windows; see the records.
 
 ## Record of runs

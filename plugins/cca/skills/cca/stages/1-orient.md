@@ -317,8 +317,15 @@ missing), and only rewrite the stage 1 entry as `running` with its inputs.
    `${CLAUDE_PLUGIN_DATA}/runs.json` already has that id or `<scratch>/cca/<run-id>/`
    exists, add `-2`, then `-3`, and so on. This check is a first pass, made with no
    lock: D4 and D6 settle the id.
-4. Create `<scratch>/cca/` with `mkdir -p` when missing, then `<scratch>/cca/<run-id>/`
-   with `mkdir` and no `-p`. This is the run directory. When that `mkdir` fails
+4. The run directory is `<scratch>/cca/<run-id>/`, one `cca` level below `<scratch>`
+   even when `<scratch>` itself ends in `cca`: `"scratch": "./app/.test-output/cca"`
+   gives `.test-output/cca/cca/<run-id>/`, the doubled `cca` intended. Before the
+   `mkdir`, write out the resolved run directory and the resolved `<scratch>/cca`, each
+   as a whole path, and check that the parent of the first is the second, compared as
+   whole paths: a parent merely named `cca` would pass `.test-output/cca/<run-id>/`.
+   Then create `<scratch>/cca/` with `mkdir -p` when missing, then the run directory
+   with `mkdir` and no `-p`. Use that same path as the `path` of the `runs.json` entry
+   (D6) and as the directory `stages.json` is written in (D7). When that `mkdir` fails
    because the directory exists, another run made it first: take the next suffix per
    D3 and create again. Append the invocation block to `invocations.md` in it
    (SKILL.md, Invocation block).
