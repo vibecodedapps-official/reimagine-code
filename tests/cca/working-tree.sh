@@ -7,9 +7,10 @@
 # of its app repo, or on a repo built inline with a pinned identity and commit date, so
 # every sha in an expected line is a literal and is the same on every machine. Git runs
 # with no global or system config. Each run of the script gets an empty TMPDIR, which must
-# be empty again afterwards, so the script's temporary index is always removed. The script
-# under test runs under `sh`, or under $WT_SH when set, for example
-# `WT_SH=dash sh tests/working-tree.sh`.
+# be empty again afterwards, so the script's temporary index is always removed. An object
+# count is the `count:` of `git count-objects -v`, so a temporary file git leaves under
+# .git/objects is not one (case 21). The script under test runs under `sh`, or under
+# $WT_SH when set, for example `WT_SH=dash sh tests/working-tree.sh`.
 #
 # The literal shas: the solo app's feature head, 0c23936980b254c4abd489d3ecfd296f5e7bc0db,
 # is the parent of every build. The synthetic head and tree are the script's output for
@@ -42,6 +43,7 @@
 # 18 flagged files in the top level and a submodule, built and listed in scan order
 # 19 a quoted submodule path with a program filter (19a top level, 19b in a submodule)
 # 20 core.autocrlf=true: no line-ending warning on stderr
+# 21 the object count is git's: a stray maintenance.lock or tmp_obj file is not an object
 #
 # Prints one line per mismatch, then `working-tree test: ok` when there were none. Exit 0
 # when every case matches, otherwise 1.
@@ -116,9 +118,18 @@ lines() {
 	printf 'head %s\nparent %s\ntree %s\nuntracked notes/deactivate-draft.txt\n' "$1" "$parent" "$2"
 }
 
-# loose <repo>: the number of loose objects.
+# loose <repo>: the number of loose objects, as git counts them. A temporary file git
+# leaves under .git/objects (a detached `git maintenance` run holds maintenance.lock after
+# a commit returns) is not one. A failed count prints "count-failed", which equals no
+# count, and fails the run.
 loose() {
-	find "$1/.git/objects" -type f ! -path '*/pack/*' ! -path '*/info/*' | wc -l | tr -d ' '
+	if ! out=$(git -C "$1" count-objects -v 2> /dev/null); then
+		echo "working-tree test: git count-objects failed in $1" >&2
+		: > "$root/count-failed"
+		echo count-failed
+		return
+	fi
+	printf '%s\n' "$out" | sed -n 's/^count: //p'
 }
 
 # refuse <case> <repo> <stderr>: the script refuses with one line, and writes no object.
@@ -806,6 +817,24 @@ printf 'one\ntwo\n' > "$A/notes/lf.txt"
 run build "$A"
 expect "case 20" 0 "head 439a2d83c3ce4f770ac61cd88234e4176e51027f\nparent 0c23936980b254c4abd489d3ecfd296f5e7bc0db\ntree b2943d241184d80d26a88e5e3534be7989c52dc0\nuntracked notes/deactivate-draft.txt\nuntracked notes/lf.txt\n" ''
 
+# 21. the object count is git's: a stray .git/objects/maintenance.lock or a tmp_obj file
+# in a fan-out directory does not change it (negative control), and a new object adds one
+# (positive control).
+case_id="case 21"
+fresh
+n0=$(loose "$A")
+: > "$A/.git/objects/maintenance.lock"
+mkdir -p "$A/.git/objects/zz"
+: > "$A/.git/objects/zz/tmp_obj_zz"
+[ "$(loose "$A")" = "$n0" ] || mismatch "case 21: stray files changed the object count"
+rm -f "$A/.git/objects/maintenance.lock" "$A/.git/objects/zz/tmp_obj_zz"
+rmdir "$A/.git/objects/zz"
+printf 'case 21\n' | git -C "$A" hash-object -w --stdin > /dev/null
+[ "$(loose "$A")" = "$(expr "$n0" + 1 2> /dev/null)" ] || mismatch "case 21: a new object did not add one"
+
+if [ -e "$root/count-failed" ]; then
+	bad=$((bad + 1))
+fi
 if [ "$bad" -gt 0 ]; then
 	exit 1
 fi
