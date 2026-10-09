@@ -1,6 +1,6 @@
 // Runs the audit plugin's POSIX sh suites, so npm test covers them on every CI system. One test per script, so a
 // failure names it. The suites need sh, git, awk, and jq on PATH; a missing sh fails here rather than skipping.
-// The suites run concurrently, longest first, each in its own temp directory.
+// The suites run concurrently, the slowest registered first, each with its own temp data.
 import { describe, test } from 'node:test';
 import assert from 'node:assert/strict';
 import { spawn } from 'node:child_process';
