@@ -489,7 +489,7 @@ Read `runs.json` with the Read tool and branch on this run's entry:
 
 ```json
 {
-  "plugin_version": "0.10.2",
+  "plugin_version": "0.11.0",
   "approvals": [ { "kind": "fetch", "target": "<repo name>:<remote>",
                    "decision": "approved", "time": "2026-09-30T14:15:00Z",
                    "commands": ["git -C <repo> fetch --no-tags --refmap= ..."] } ],
