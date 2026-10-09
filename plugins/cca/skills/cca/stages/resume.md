@@ -37,7 +37,9 @@ never loses a finished one. With `--live`, it first imports approved live check 
    inputs and flags recorded in it, as step 5 does for hashing, and runs section A
    onward with those; the invocation block's `manifest: none` and `inputs: none` are
    ignored. Only when stage 1 is `complete` and `audit-brief.md` exists, also read
-   `audit-brief.md`, `common.md`, and `audit-evidence.md`, and run steps 3 to 6.
+   `audit-brief.md`, `common.md`, and `audit-evidence.md` when it exists (a run from an
+   earlier release has none; step 5 then reruns stage 1 by `plugin_version`, which
+   writes it), and run steps 3 to 6.
 3. **Head and base sha check.** Every forge read of this step and step 5 names the host
    stage 1 used (`1-orient.md` step 2), read from the saved forge files: the host of the
    `url` in `forge/<bundle>/pr.json` for the PR reads (`gh pr view` and the review
