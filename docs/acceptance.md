@@ -188,8 +188,8 @@ name a plugin are rerun under the new names and recorded here.
     plugin's new version, and no bare `v` tag. Covers R49. Rerun at each release. Run
     2026-10-03 for 0.1.0, 2026-10-04 for 0.1.1, 0.1.2, 0.1.3, 0.2.0, and 0.3.0,
     2026-10-05 for 0.3.1 and cca 0.9.0, and 2026-10-06 for 0.3.2, cca 0.9.1, and
-    repo-docs 0.1.5, for 0.4.0, and for 0.5.0, and 2026-10-07 for 0.6.0 and cca 0.10.0;
-    see the records.
+    repo-docs 0.1.5, for 0.4.0, and for 0.5.0, 2026-10-07 for 0.6.0 and cca 0.10.0, and
+    2026-10-09 for 0.6.1, cca 0.10.1, and repo-docs 0.1.6; see the records.
 18. **Install from GitHub.** Setup: on macOS and on Windows 11 with both CLIs from npm,
     new scratch profiles on each host. Command: the four lines of R3, then `claude plugin
     install ccx-loop@reimagine-code` and `codex plugin add
@@ -2355,3 +2355,20 @@ fixtures discarded, and the scratch `runs.json` emptied before the recorded runs
 - Left on the machine: the scratch profiles at `~/.cache/recode-acceptance/claude-pr45`
   and `codex-pr45`, without the login, the session logs there as `pr45-*.jsonl`, and
   the fixtures under `%TEMP%`.
+
+### 2026-10-09: release ccx 0.6.1, ccx-loop 0.6.1, cca 0.10.1, and repo-docs 0.1.6
+
+macOS 27.0, Claude Code 2.1.293, codex-cli 0.161.0, Node 26.4.0. The release commit was
+a9af646, the merge of PR 45, which bundled issues 40, 41, and 44; issues 40 and 41 closed
+with it and 44 stays open for its deferred behavior changes. PR 45's last CI run,
+37888044599 at bd3b561, passed on ubuntu-latest, macos-latest, and windows-latest with no
+rerun, and the `main` run for the merge, 37889382185, passed on all three with no rerun.
+The branch's earlier CI failures, each fixed before the merge, are in docs/decisions.md
+Part 20.
+
+- **Item 17 passed for this release.** The dry runs named `ccx--v0.6.1`,
+  `ccx-loop--v0.6.1`, `cca--v0.10.1`, and `repo-docs--v0.1.6` at HEAD. `claude plugin tag
+  --push` created and pushed the four at a9af646 in that order; `git ls-remote` showed
+  each peeling to a9af646, and no bare `v` tag. `npm run lint` on `main` printed
+  `lint: ok` with the tags present.
+- Not run: items 11 and 18, the installs from GitHub, and item 16, for this release.
