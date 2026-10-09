@@ -998,17 +998,30 @@ request, with the issue 44 rewrites as one commit per plugin so they read apart.
    written in builtins only and the capture file removed later. So a child forked right
    after the job's start under toggled job control loses its record in bash 5.2; why
    bash then runs the exit trap is not traced. The helper now forks nothing before its
-   check.
+   check. An adversarial review on 2026-10-08 found one condition, deferred: on macOS,
+   `kill -0 -<pgid>` fails for a group whose only member is a zombie, while
+   `kill -0 <pid>` still succeeds until bash reaps it, so a job that exits before the
+   check would be rejected as misgrouped (exit 2, `cannot start a job in its own process
+   group`). An isolated empty job `{ ( : ) & }` tripped it in 23 of 300 starts on macOS
+   bash 3.2.57 and in 0 of 300 on Linux bash 5.2.21, where a zombie stays in its group.
+   Through the real script, 150 runs (300 job starts) under 14 CPU hogs and 18 suite
+   runs, 6 in parallel, on macOS showed 0, because the job does `cd`, a command
+   substitution, and exports before it can exit. Windows is untested. A fix needs a
+   child-side handshake or a fork-free recheck; a rejection seen in practice reopens it.
+   The same review found that a failed open of the fork capture file left `bg` with no
+   terminal state (`$!` unset under `set -u`); the capture file is now created before
+   the start, before `.err`, so a failure leaves `wait` reporting no run started.
 3. **The speed guard times batches and allows ten.** The old guard took the best of three
    single runs of a few milliseconds per side, so noise was a large share; in-process
    reruns reached 6.6 and 7.3 against the limit of 8, and the three CI failures came
    with no related change. Sustained contention or a GC pause landing on all three
    large runs is the likely shape; unverified. Each side is now its best of five
-   batches after warm-up, the small count calibrated to at least 50 ms, sizes
-   alternated, numbers printed on failure. The limit of 10 sits between the measured
-   real ratios (3.9 to 4.6, 5.3 with every core busy) and the quadratic mutations of each
-   guarded path (12.4 to 19.3), which `git log -S` and a per-path mutation identified.
-   Linux and Windows figures come from the PR's CI runs; a failure there reopens 10.
+   batches after warm-up, the small count doubled toward 50 ms and capped at 256
+   iterations, sizes alternated, numbers printed on failure. The limit of 10 sits between
+   the measured real ratios (3.9 to 4.6, 5.3 with every core busy) and the quadratic
+   mutations of each guarded path (12.4 to 19.3), which `git log -S` and a per-path
+   mutation identified. Linux and Windows figures come from the PR's CI runs; a failure
+   there reopens 10.
 4. **Two cca drifts are met with tighter text, not a script.** The fetch question is a
    pre-send checklist, with the auto-fetch sentence kept when the repository has no
    remote and no recommended answer; the run directory step states the doubled `cca`
@@ -1025,29 +1038,34 @@ request, with the issue 44 rewrites as one commit per plugin so they read apart.
    more after review; 45 kept with a reason, and one rewrite downgraded to keep. Every
    rewrite passed a semantic gate: it keeps each obligation, permission, stop
    condition, default, and limit; a rewrite that turns a must into a may or moves
-   a number is a behavior change and is deferred. Kept with a reason, the specifics a
-   reader may flag: the Bash tool's 10-minute foreground cap and the 540-second and
-   72-minute figures derived from it; the lock timings, verified on three shells and
-   two filesystems (Part 15 item 4); the design budgets (450,000 bytes, 60 ids, 3,000
-   words, the tier thresholds, 1 GB, 300 s), which are bounded-cost defaults with
+   a number is a behavior change and is deferred. Two landed rewrites are agreed
+   exceptions, both in `general-code-review`: `xhigh` became "the highest reasoning
+   effort available", a different choice where an effort above `xhigh` exists, and
+   "GitHub" became "the hosting platform", a wider prohibition on posting comments. They
+   were accepted because a fixed effort name may not exist on every model and the
+   prohibition should hold on any forge; R26 records them. Kept with a reason, the
+   specifics a reader may flag: the Bash tool's 10-minute foreground cap and the
+   540-second and 72-minute figures derived from it; the lock timings, verified on three
+   shells and two filesystems (Part 15 item 4); the design budgets (450,000 bytes, 60 ids,
+   3,000 words, the tier thresholds, 1 GB, 300 s), which are bounded-cost defaults with
    overrides; the tool and plugin version floors, each named with its feature; the
-   Windows-only no-retry rule for a failed implementer, an OS fact; the line-ending
-   rule, derived from git's own attributes; the skip-worktree mode, an ordinary git
-   state; the run budgets and the round and file caps, design limits with overrides;
-   the credential shapes, generic; the install hints and platform caveats, each with
-   its platform named; the `rmdir` workaround, hedged in its sentence; and the house
-   rules, output style, and chat block, which are the author's stated preferences
-   shipped as an opt-in style. Deferred as behavior changes, for separate changes:
-   the vendor link forms in the output style and chat block; "PowerShell 7" in the
-   installed Windows rule; the sandbox probe's 120-second limit; the token thresholds
-   and the integration-test obligation in the upstream review skills (R26); the check
-   discovery list, the branch naming rule, and the 403 wording in the loop; the
-   `bin/` and `obj/` grouping (Part 19 item 5), the tests-account check, the handoff
-   schema's ticket-system fields, the Codex model id written ten times, the model-name
-   ladder, and the 540-second cap in cca; the "one user" premise behind Parts 14 and
-   16; and the "0.4.0 or earlier" compatibility clauses, whose vaguer rewrite was
-   rejected. The five rewrites rejected after review: the `.scratch/` example in the ccx
-   README (already hedged) and the four above that moved an obligation or a number.
+   Windows-only no-retry rule for a failed implementer, an OS fact; the line-ending rule,
+   derived from git's own attributes; the skip-worktree mode, an ordinary git state; the
+   run budgets and the round and file caps, design limits with overrides; the credential
+   shapes, generic; the install hints and platform caveats, each with its platform named;
+   the `rmdir` workaround, hedged in its sentence; and the house rules, output style, and
+   chat block, which are the author's stated preferences shipped as an opt-in style.
+   Deferred as behavior changes, for separate changes: the vendor link forms in the output
+   style and chat block; "PowerShell 7" in the installed Windows rule; the sandbox probe's
+   120-second limit; the token thresholds and the integration-test obligation in the
+   upstream review skills (R26); the check discovery list, the branch naming rule, and the
+   403 wording in the loop; the `bin/` and `obj/` grouping (Part 19 item 5), the
+   tests-account check, the handoff schema's ticket-system fields, the Codex model id
+   written ten times, the model-name ladder, and the 540-second cap in cca; the "one user"
+   premise behind Parts 14 and 16; and the "0.4.0 or earlier" compatibility clauses, whose
+   vaguer rewrite was rejected. The five rewrites rejected after review: the `.scratch/`
+   example in the ccx README (already hedged) and the four above that moved an obligation
+   or a number.
 6. **One PR, with "Refs #44".** Issue 44 asks for separate PRs per plugin or theme, and
    the Codex critique recommended that split; the request for this work was one PR for
    the three issues, so the rewrites ride here as one commit per plugin. The issue
