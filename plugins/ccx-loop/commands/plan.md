@@ -36,6 +36,8 @@ You are a thin forwarder for the ccx-loop orchestrator, in plan-only mode. Do th
 
 3. State the parsed invocation to the user as this block, with every flag at its effective value. List each input on its own line, as `issue <#n or URL>`, `file <path>`, or `text "<description>"`.
 
+   When the ad-hoc description is numbers only, print this one line before the block, and go on: "hint: the description is only numbers; the run id below, and the branch a run would create, are derived from it. Ticket text goes in a file input, which the credential scan covers, and `--branch <name>` sets the branch (README, non-GitHub hosts)." A description is numbers only when it is not empty, holds at least one number, and every token, after splitting on spaces, is a number or a joining word. A number is digits with an optional `#` prefix and an optional trailing `,` or `;`. A joining word is `and`, `or`, `plus`, `with`, `then`, `also`, `to`, `&`, `+`, `,`, `;`, or `/`, case-insensitive. A token such as `12345,67890` is not a number, so that description is not numbers only.
+
 ```
 mode: plan-only
 inputs:
@@ -53,5 +55,7 @@ flags:
   run-budget: <minutes> | default
   repos: <path>[@<branch>][, ...] | none
 ```
+
+   After the block, print these two lines as preflight output. They are not part of the block and are not passed to the skill. `run id: <yyyy-mm-dd of today>-<inputs>`, where inputs is the issue numbers joined with `-`, else the slug of the description, else the slug of the file name (a slug is lowercase letters, digits, and hyphens, at most 40 characters), followed by "(-2, -3, ... is appended when `.ccx/<run id>/` exists)". `branch: <name>`: the `--branch` value; else, with `--continue`, that branch marked "(continued)"; else `none (plan-only creates no branch)`. The skill's Artifacts holds the run id rule and Step 3.7 item 2 the branch rule; this step restates them and changes nothing.
 
 4. Invoke the Skill tool with skill `ccx-loop:ccx-loop` and that same block as the args. Then follow the skill from Step 0. Do not interpret the request, plan, or act on it yourself, and write no file: the skill records the invocation in its own first step.

@@ -122,6 +122,20 @@ request, and any pull request URL, is rejected before setup. To continue a pull 
 branch, pass `--continue <branch>`. A token that names an existing file is a file input.
 The remaining text, joined, is one ad-hoc description.
 
+On a non-GitHub host, bring the ticket text in as a file input: export the work item to
+a file with the forge's CLI, then pass the file. For Azure DevOps:
+
+```sh
+az boards work-item show --id 12345 > tickets/ab-12345.json
+/ccx-loop:run tickets/ab-12345.json --branch feat/ab-12345-<slug>
+```
+
+The file goes through the credential scan below, which text written straight into
+`inputs.md` would skip. A description made only of numbers, such as `12345 and 67890`,
+works as text but gives a run id and a `work/<slug>` branch derived from those numbers;
+`--branch` sets the branch and avoids the derived name. The command prints the derived
+run id and branch before the run starts, and a hint when the description is only numbers.
+
 Inputs are persisted under `.ccx/` and sent to Codex. Before the run starts, the inputs
 are scanned for credentials: a key such as `password`, `secret`, `token`, or `api_key`
 with a value, an AWS access key id, a PEM header, or a block under a credentials heading.

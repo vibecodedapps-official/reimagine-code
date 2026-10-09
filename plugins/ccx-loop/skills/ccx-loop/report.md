@@ -103,7 +103,7 @@ Per input, one entry:
 ## Checks
 
 - Checks run: <command, source, result>
-- Checks not run and why: <command, reason, or "none">
+- Checks not run and why: <command, its directory when not the root, and the reason; or "none">
 - Checks deferred to CI: <command, matched job name, or "none">
 - Checks failing at baseline: <command, baseline run as evidence, whether it still fails, or
   "none">
@@ -155,8 +155,8 @@ non-blocking and anything out of scope. No issues were opened.
 - Name every reviewer or implementer swap, including a swap caused by `--no-codex`, by
   Codex being unavailable at Step 0.6, or by two failed Codex implementer calls.
 - List a rejected finding with the reason it was rejected, so a reader can check it.
-- A check that could not run locally is named as not run, with the reason. Nothing is
-  skipped quietly.
+- A check that could not run locally is named as not run, with the reason and the exact
+  command, so the user can run it; the command is required. Nothing is skipped quietly.
 - A failure that matches the recorded baseline failure for the same check is reported with
   the baseline run as evidence. It is not the run's to fix.
 - For `plan-only`, the sections for changes, checks, and blocked state say "not run".
