@@ -1153,7 +1153,8 @@ stop condition, default, and limit kept, no must turned into a may, no number mo
    cannot list `.ccx/`) and the branch: the `--branch` value, the `--continue` branch,
    `work/<slug>` with no issue, or, with issues, the rule of Step 3.7 item 2 and not a
    name, because the command fetches no label or title and `fix/` turns on any issue's
-   label. When every token of a non-empty description is a number (digits, optional `#`,
+   label; in plan-only mode the line says `none` and what a run would use, since Step 3.6
+   creates no branch. When every token of a non-empty description is a number (digits, optional `#`,
    optional trailing `,` or `;`) or one of the joining words `and`, `or`, `plus`,
    `with`, `then`, `also`, `to`, `&`, `+`, `,`, `;`, `/`, and at least one is a number,
    one hint line names the file-input path and `--branch`; the run goes on. The lines sit
@@ -1191,13 +1192,16 @@ stop condition, default, and limit kept, no must turned into a may, no number mo
    claims, every scope claim with its `include` or `defer` recommendation (a
    recommendation is not the user's acceptance), and the other decisions the change needs
    and has not made. The `--live` line prints only when a check still has `status` `not
-   run: not approved`, the entry is in `runs.json`, and no stage before 6 needs a rerun by
-   resume's preliminary rule (every stage 1 to 5 entry `complete` or `not_applicable`
-   with its outputs present), because resume refuses `--live` otherwise; a result already
-   imported and under review gets plain resume instead. The missing-entry exception still
-   prints the JSON entry. Codex's critique caught two first drafts: a `partial` test that
-   excluded runs with inapplicable stages 2 and 3, and a `your decision` list that named
-   every section 8 entry, settled ones included.
+   run: not approved` and no stage before 6 needs a rerun by resume's preliminary rule
+   (every stage 1 to 5 entry `complete` or `not_applicable` with its outputs present),
+   because resume refuses `--live` otherwise; a result already imported and under review
+   gets plain resume instead. The run's entry in `runs.json` is not a condition of any
+   line, so the report's block and the closing hold the same list; when the entry is
+   absent at the close, the missing-entry exception still prints the JSON entry and says
+   the act and `--live` lines need it added first. Codex's critique caught three first
+   drafts: a `partial` test that excluded runs with inapplicable stages 2 and 3, a `your
+   decision` list that named every section 8 entry, settled ones included, and a closing
+   whose `--live` line depended on the registry while the report's did not.
 4. **Act says what it leaves behind, and resume's refusal shows the shas.** Act writes
    `act/log.md` and leaves the audit state as it was, which one user read as nothing
    recorded; and when a bundle's branch resolves to the local branch act commits on,
@@ -1207,11 +1211,14 @@ stop condition, default, and limit kept, no must turned into a may, no number mo
    outstanding; results needed, with resume's eligibility conditions stated (recorded
    head and base still resolve, no stage before 6 to rerun) and, when this invocation
    committed, that the head moved and resume without `--live` re-audits; results
-   imported and awaiting review, which plain resume reconciles; or not checked, when act
+   imported and awaiting review, which plain resume reconciles while no stage before 6
+   needs a rerun and retires after a head or base change; or not checked, when act
    stopped before reading the report. Act resolves no ref, which is why it states the
    condition and names resume as the check; prior invocations are covered by the
    condition. Step 1.3's confirmation warns before the first commit when live checks are
-   open and the bundle's branch is the local one. The `--live` refusal in resume prints,
+   open and the brief's Read paths map the bundle's branch to no remote ref, so its
+   recorded head is the local branch act commits on; with a mapping, the push moves it.
+   The `--live` refusal in resume prints,
    per changed bundle, the recorded and current head and base shas with the moved one
    marked; the refusal and the no-import outcome are unchanged.
 5. **Instruction files decide where a documented fact goes.** An auditor recommended

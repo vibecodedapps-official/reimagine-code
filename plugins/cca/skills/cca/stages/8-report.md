@@ -327,9 +327,9 @@ Outputs: `report.md`, `claims-verdicts.md`, and `work-items.jsonl`. The format o
       it; and the other decisions the change needs and has not made. Entries the change
       already made (`evidenced`, `default taken`, and made decisions) stay in the report
       and are not listed.
-    - `/cca:resume <run-id> --live <file>`, only when all of these hold: at least one
+    - `/cca:resume <run-id> --live <file>`, only when both of these hold: at least one
       Live checks block has `status` `not run: not approved` (a check still needing a
-      result); this run's entry is in `runs.json`; and the preliminary rerun stage of
+      result); and the preliminary rerun stage of
       `resume.md` step 4.2, computed as resume would now, is none or 6 or later, which
       at this point means every stage 1 to 5 entry has status `complete` or
       `not_applicable` and every output it lists exists (its inputs are as recorded).

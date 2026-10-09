@@ -64,10 +64,10 @@ After the verdict line, a plain line `next:` heads the lines that
 Write each as one line that starts with its label, and no heading. No line of the block
 starts with `#### C`, `- claim `, or `#### live `, since `work-items.sh`, `memory.sh`,
 and `live.sh` parse those, and the block adds no `###` or `####` heading. The block is
-part of the body that the revision line hashes. The sections below keep their numbers.
-The block is written at step 6 from the report's own content and the stage entries,
-taking the run's entry that stage 1 created in `runs.json` as present; the registry is
-checked only at the close.
+part of the body that the revision line hashes. It is written at step 6 from the report's
+own content and the stage entries; the run's entry in `runs.json` is not a condition of
+any line, and when the entry is absent at the close, the closing says the `/cca:act` and
+`--live` lines need it added first.
 
 ### 2. Findings by ticket
 
