@@ -1010,7 +1010,10 @@ request, with the issue 44 rewrites as one commit per plugin so they read apart.
    child-side handshake or a fork-free recheck; a rejection seen in practice reopens it.
    The same review found that a failed open of the fork capture file left `bg` with no
    terminal state (`$!` unset under `set -u`); the capture file is now created before
-   the start, before `.err`, so a failure leaves `wait` reporting no run started.
+   the start, before `.err`, so a failure leaves `wait` reporting no run started. The
+   guard uses `true`, not `:`: Git Bash runs the script as bash 5.2 in POSIX mode, where
+   a redirection error on a special builtin exits the shell with status 1 before `die`
+   runs, which the Windows CI run of case 18c showed and `bash --posix` reproduced.
 3. **The speed guard times batches and allows ten.** The old guard took the best of three
    single runs of a few milliseconds per side, so noise was a large share; in-process
    reruns reached 6.6 and 7.3 against the limit of 8, and the three CI failures came
