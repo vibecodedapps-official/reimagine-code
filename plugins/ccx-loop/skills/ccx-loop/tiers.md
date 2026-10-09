@@ -73,11 +73,11 @@ Rules for roles:
 
 ## Effort tiers
 
-| Step | Low | Medium | High | xhigh |
-|---|---|---|---|---|
-| 3 Plan review and converge | Codex `gpt-6-astra` | Codex `gpt-6-astra` | Codex `gpt-6-astra` | Codex `gpt-6-astra` |
-| 4 Implement | Codex `gpt-6.1-sol` per slice, orchestrator reviews | Codex `gpt-6.1-sol` per slice, orchestrator reviews | Codex `gpt-6-astra`, or Sonnet by criteria, per slice | Codex `gpt-6-astra`, or Sonnet by criteria, per slice |
-| 5 Final review | Codex `gpt-6-astra`, or Claude `code-review low` | Codex `gpt-6-astra`, or Claude `code-review medium` | Codex `gpt-6-astra`, or Claude `code-review high` | Codex `gpt-6-astra`, or Claude `code-review xhigh` |
+| Step | Medium | High | xhigh |
+|---|---|---|---|
+| 3 Plan review and converge | Codex `gpt-6-astra` | Codex `gpt-6-astra` | Codex `gpt-6-astra` |
+| 4 Implement | Codex `gpt-6.1-sol` per slice, orchestrator reviews | Codex `gpt-6-astra`, or Sonnet by criteria, per slice | Codex `gpt-6-astra`, or Sonnet by criteria, per slice |
+| 5 Final review | Codex `gpt-6-astra`, or Claude `code-review medium` | Codex `gpt-6-astra`, or Claude `code-review high` | Codex `gpt-6-astra`, or Claude `code-review xhigh` |
 
 Steps 1, 2, 6, and 7 run the same at every tier. The rows keep their step numbers,
 because the step files refer to the table by step.
@@ -136,12 +136,12 @@ Two edges:
 
 ## Estimate rule
 
-Apply after Step 1. Low, medium, and high are sized from the behavior the change has, not
+Apply after Step 1. Medium and high are sized from the behavior the change has, not
 from how many issues there are. xhigh is sized from how many areas that share no
 file the change spans, on top of that.
 
-- Low: one file or one function, a clear fix, and none of the risk floor triggers.
-- Medium: several files in one area, or one issue with tests, or any doc restructure.
+- Medium: one file or one function with a clear fix, several files in one area, one issue
+  with tests, or any doc restructure, with none of the risk floor triggers.
 - High: a cross-cutting change inside one deliverable, or any risk floor trigger.
 - xhigh: one change whose scope spans several areas of the code that share no file. This
   sets review depth. Slice count is set by the plan at every tier. A risk floor trigger
@@ -151,8 +151,9 @@ Bundling issues does not by itself raise the tier; estimate the bundle as one ch
 issues that each touch one file in one area are still medium. A bundle is xhigh only when
 the change it describes, taken as one change, spans several areas with no shared file.
 
-`--effort low|medium|high|xhigh` skips the estimate and forces that tier, subject to
-the risk floor below. `--effort max` is rejected with a pointer to `xhigh`.
+`--effort medium|high|xhigh` skips the estimate and forces that tier, subject to
+the risk floor below. `--effort low` is rejected with a pointer to `medium`, and
+`--effort max` is rejected with a pointer to `xhigh`.
 
 Record the estimate, the reason, any floor applied, and any re-evaluation in the run log
 and in the final report.
@@ -160,10 +161,10 @@ and in the final report.
 ## Implementer choice
 
 At every tier the default implementer is Codex at the tier's model, one call per slice:
-`gpt-6.1-sol` at low and medium, `gpt-6-astra` at high and xhigh. Choose the implementer
+`gpt-6.1-sol` at medium, `gpt-6-astra` at high and xhigh. Choose the implementer
 per slice in Step 2 and again after a requested plan change at Step 3.5. At high and xhigh,
 choose `sonnet` for a slice when any of these
-hold; otherwise keep Codex. At low and medium tier it is always Codex. Opus never
+hold; otherwise keep Codex. At medium tier it is always Codex. Opus never
 implements. `sonnet` is also the fallback for a Codex slice (see Rules for roles).
 
 - the slice carries a risk floor trigger: its change adds, alters, or removes an item in
@@ -208,7 +209,7 @@ a comment change in an auth module, or a rename that changes no signature. This 
 incidental-edit exception. When it applies, the final report says why the floor did not.
 
 The floor is `high`. `--effort` cannot lower a task below it. If the user passes
-`--effort low` or `--effort medium` for a task the floor covers, refuse the request, state
+`--effort medium` for a task the floor covers, refuse the request, state
 the reason (which trigger applies), and continue the run at high tier. Do not stop the
 run. `--effort xhigh` is above the floor and is honored.
 

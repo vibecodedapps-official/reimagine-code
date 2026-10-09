@@ -70,7 +70,7 @@ inputs:
 - file <path>
 - text "<ad-hoc description>"
 flags:
-  effort: auto | low | medium | high | xhigh
+  effort: auto | medium | high | xhigh
   plan-only: true | false
   confirm-plan: true | false
   no-codex: true | false
@@ -196,8 +196,8 @@ the latter passed as `--timeout` in seconds, capped at 3600 and at the remaining
 budget (Repo config). The Codex budget bounds reviewer calls only.
 
 Time, per run, from Step 0 to the terminal state, including CI waits and your own work. The
-default is by tier, in minutes: low and medium 120, high 240, xhigh 360. Low and
-medium runs include Step 5, with one reviewer role, inside their 120 minutes. The budget
+default is by tier, in minutes: medium 120, high 240, xhigh 360. Medium
+runs include Step 5, with one reviewer role, inside their 120 minutes. The budget
 is, in order: `--run-budget <minutes>`, else `.ccx.json` `timeouts.run`, else the tier
 default. An explicit value from the flag or `.ccx.json` applies from Step 0 to the terminal
 state and is never replaced by a tier default. With no explicit value, 240 applies

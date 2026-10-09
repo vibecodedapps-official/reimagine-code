@@ -292,12 +292,12 @@ for (const f of ["run", "plan"].map((n) => `plugins/ccx-loop/commands/${n}.md`))
   if (text !== null && !text.includes("`${user_config.codex}`")) fail(`${f}: must read the codex option as \`\${user_config.codex}\``);
 }
 
-// 16b. Each loop command lists the effort values low, medium, high, xhigh and no others in its description, its argument hint, and
-// its flag check.
+// 16b. Each loop command lists the effort values medium, high, xhigh and no others in its description, its argument hint, and its
+// flag check, and so do the invocation blocks of both commands and of the loop core.
 for (const f of ["run", "plan"].map((n) => `plugins/ccx-loop/commands/${n}.md`)) {
   const text = read(f);
   if (text === null) continue;
-  const want = "low,medium,high,xhigh";
+  const want = "medium,high,xhigh";
   const lists = [
     ["description", text.match(/^description: .*?--effort ([a-z|]+)/m)],
     ["argument-hint", text.match(/^argument-hint: .*?--effort ([a-z|]+)/m)],
@@ -306,8 +306,15 @@ for (const f of ["run", "plan"].map((n) => `plugins/ccx-loop/commands/${n}.md`))
   ];
   for (const [where, m] of lists) {
     const got = m ? m[1].replace(/[`\s]/g, "").replace(/\|/g, ",") : null;
-    if (got !== want) fail(`${f}: the ${where} must list the effort values exactly low, medium, high, xhigh; found ${JSON.stringify(got)}`);
+    if (got !== want) fail(`${f}: the ${where} must list the effort values exactly medium, high, xhigh; found ${JSON.stringify(got)}`);
   }
+}
+for (const f of ["plugins/ccx-loop/commands/run.md", "plugins/ccx-loop/commands/plan.md", "plugins/ccx-loop/skills/ccx-loop/SKILL.md"]) {
+  const text = read(f);
+  if (text === null) continue;
+  const m = text.match(/^ {2}effort: auto \| ([a-z |]+)$/m);
+  const got = m ? m[1].replace(/\s/g, "").replace(/\|/g, ",") : null;
+  if (got !== "medium,high,xhigh") fail(`${f}: the invocation block must list the effort values exactly auto | medium | high | xhigh; found ${JSON.stringify(got)}`);
 }
 
 // 17. The Codex catalog lists exactly the Codex plugins above, each available and authenticated on install (R2), and agrees with

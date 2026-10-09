@@ -67,7 +67,7 @@ Every run ends in exactly one terminal state, writes the report, and prints it.
 
 ## Effort tier
 
-- Tier: <low | medium | high | xhigh>
+- Tier: <medium | high | xhigh>
 - Why: <the estimate rule outcome in one or two sentences>
 - Risk floor: <applied, with the trigger | not applied, with why (incidental edit or no
   trigger)>

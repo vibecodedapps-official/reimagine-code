@@ -94,10 +94,10 @@ claude --plugin-dir <path-to-clone>/plugins/ccx --plugin-dir <path-to-clone>/plu
 ## Commands
 
 ```
-/ccx-loop:run <inputs...> [--effort low|medium|high|xhigh] [--plan-only] [--confirm-plan]
+/ccx-loop:run <inputs...> [--effort medium|high|xhigh] [--plan-only] [--confirm-plan]
          [--no-codex] [--no-publish] [--branch <name>] [--continue <branch>]
          [--run-budget <minutes>] [--repo <path>[@<branch>]]...
-/ccx-loop:plan <inputs...> [--effort low|medium|high|xhigh] [--no-codex] [--branch <name>]
+/ccx-loop:plan <inputs...> [--effort medium|high|xhigh] [--no-codex] [--branch <name>]
           [--continue <branch>] [--run-budget <minutes>] [--repo <path>[@<branch>]]...
 ```
 
@@ -149,9 +149,9 @@ common shapes, not a guarantee.
 
 ### Flags
 
-- `--effort low|medium|high|xhigh`: skip the estimate and force a tier. It cannot
-  lower a task below the risk floor. `--effort max` is rejected, and the message points
-  to `xhigh`.
+- `--effort medium|high|xhigh`: skip the estimate and force a tier. It cannot
+  lower a task below the risk floor. `--effort low` is rejected, and the message points
+  to `medium`; `--effort max` is rejected, and the message points to `xhigh`.
 - `--plan-only`: stop after the plan is final, at every tier, and print it. Nothing
   after the plan runs and the working tree is not changed.
 - `--confirm-plan` (`/ccx-loop:run` only, rejected with `--plan-only`): pause once the plan is
@@ -286,7 +286,7 @@ run in `blocked` before anything is written.
 | `timeouts` | see below | Time budgets in minutes. |
 
 Default timeouts, in minutes: `subagent` 20, `codex` 10, `check` 15, `ci` 45. The
-`run` default is by tier: 120 at low and medium, 240 at high, 360 at xhigh. The
+`run` default is by tier: 120 at medium, 240 at high, 360 at xhigh. The
 run budget is `--run-budget`, else `timeouts.run`, else the tier default. An explicit
 value from the flag or the file applies from Step 0 to the terminal state and is never
 replaced by a tier default. With no explicit value, 240 applies until Step 1.6 sets the
@@ -345,11 +345,11 @@ model output, not approval.
 
 ## Effort tiers
 
-| Step | Low | Medium | High | xhigh |
-|---|---|---|---|---|
-| Plan review | Codex `gpt-6-astra` | Codex `gpt-6-astra` | Codex `gpt-6-astra` | Codex `gpt-6-astra` |
-| Implement | Codex `gpt-6.1-sol` per slice, orchestrator reviews | Codex `gpt-6.1-sol` per slice, orchestrator reviews | Codex `gpt-6-astra`, or Sonnet by criteria, per slice | Codex `gpt-6-astra`, or Sonnet by criteria, per slice |
-| Final review | Codex `gpt-6-astra`, or Claude `code-review low` | Codex `gpt-6-astra`, or Claude `code-review medium` | Codex `gpt-6-astra`, or Claude `code-review high` | Codex `gpt-6-astra`, or Claude `code-review xhigh` |
+| Step | Medium | High | xhigh |
+|---|---|---|---|
+| Plan review | Codex `gpt-6-astra` | Codex `gpt-6-astra` | Codex `gpt-6-astra` |
+| Implement | Codex `gpt-6.1-sol` per slice, orchestrator reviews | Codex `gpt-6-astra`, or Sonnet by criteria, per slice | Codex `gpt-6-astra`, or Sonnet by criteria, per slice |
+| Final review | Codex `gpt-6-astra`, or Claude `code-review medium` | Codex `gpt-6-astra`, or Claude `code-review high` | Codex `gpt-6-astra`, or Claude `code-review xhigh` |
 
 Review of the inputs, checks, and publish run at every tier. The tier is sized from
 behavioral risk, and xhigh from how many areas that share no file the change
