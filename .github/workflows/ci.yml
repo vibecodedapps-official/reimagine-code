@@ -35,7 +35,10 @@ jobs:
           (Get-Command sh).Source
           sh -c 'set -e; d=$(mktemp -d -u); cygpath -m "$d"'
           node -e 'console.log(require("os").tmpdir())'
-          $paths = @($env:GITHUB_WORKSPACE, $env:RUNNER_TEMP, $env:TEMP)
+          (Get-MpComputerStatus).RealTimeProtectionEnabled
+          # Long names: TEMP comes in 8.3 form (RUNNER~1), which an exclusion may not match.
+          $paths = @($env:GITHUB_WORKSPACE, $env:RUNNER_TEMP, $env:TEMP) | ForEach-Object { (Get-Item $_).FullName }
+          $paths
           if (-not (Get-Command Add-MpPreference -ErrorAction SilentlyContinue)) {
             Write-Warning 'defender exclusion: unavailable (no Add-MpPreference)'
             exit 0
