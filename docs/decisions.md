@@ -1291,3 +1291,195 @@ stop condition, default, and limit kept, no must turned into a may, no number mo
    `--live` line depended on the registry entry while the report's did not, act's step
    1.3 warning had lost its local-ref condition, and act's reconcile promise was
    unconditional.
+
+## Part 23: ccx-loop 0.7.0 and cca 0.11.0, the token survey, cheaper roles, the split skill, and three tiers, 2026-10-09
+
+Issue #54, planned with three Codex gpt-6-astra critique rounds and built in one pull
+request. The survey of item 1 was run and recorded here before any other change was
+committed, so each change can show its saving against it. Every rewrite passed the
+semantic gate of Part 20 item 5.
+
+1. **The survey, before the changes.** Run on 2026-10-09 on Windows 11, Claude Code
+   2.1.296, codex-cli 0.162.1, from a scratch profile whose plugins were installed from a
+   frozen clone of `main` at 64ceec0, headless (`claude -p --output-format stream-json
+   --verbose --permission-mode auto --model opus`), one run per shape, Codex from the
+   author's own login. The account's seven-day window stood at 100 percent with overage
+   in use, so every run below was billed as overage; that is why each shape ran once.
+   Measurement: each `assistant` event of the stream carries `usage`, and the
+   subagents' events carry `parent_tool_use_id`, so the orchestrator's context per turn
+   is `input + cache_read + cache_creation` of its own events, exact; a subagent's
+   context is the same sum over its events, exact; output is exact per model from the
+   result event's `modelUsage` and is not separable per agent when several agents share
+   a model (the per-event `output_tokens` is a streaming snapshot and undercounts); the
+   Agent tool's task notification gives a per-agent total whose scope is undocumented,
+   recorded as "task total". Codex figures come from the rollout files under
+   `~/.codex/sessions/`, whose `usage` lines are per API call and whose
+   `total_token_usage` lines are cumulative; a `ccx:review` call writes its usage in a
+   child rollout whose `session_id` is the thread, not in the thread's own file.
+
+   | Shape | Turns | Orchestrator context: first, at skill load, median, last, sum | Output, exact per model | Subagents and Codex calls | Cost |
+   |---|---|---|---|---|---|
+   | S1 loop run, `--effort low --no-publish`, Codex on, three-file fixture, ends `prepared` | 21 | 29,276; 67,596 (turn 3); 82,810; 98,244; 1,660,629 | opus 13,252 | Codex: plan review `gpt-6-astra` 34,848 in, 161 out, 2 calls; implement `gpt-6.1-sol` 74,158 in, 639 out, 4 calls; diff review `gpt-6-astra` 44,964 in, 315 out, 4 calls; 155,085 total | $1.04 Claude |
+   | S2 loop plan-only, `--no-codex --effort low`, ends `plan-only` | 16 | 29,307; 67,591 (turn 3); 75,117; 94,238; 1,175,278 | opus 12,068; fable 1,482 | plan reviewer, fable fallback: 3 turns, 74,906 context, task total not recorded | $1.44 |
+   | S3 cca audit of the `full` fixture, `--effort low`, Codex on, ends `reported`, 19 items | 89 | 27,787; 45,124 (turn 4, `SKILL.md`), 86,034 (turn 5, stage 1); 172,460; 289,759; 15,147,952 | opus 193,089 (orchestrator and seven agents); sonnet 7,343 | digester opus x3: 1,486,942 / 151,344; 1,058,601 / 144,364; 1,135,191 / 147,249 (context sum / task total); mapper opus 306,332 / 49,335; auditor opus 755,031 / 80,663 and top-up 504,578 / 97,939; adversary opus 804,057 / 104,894; merger sonnet 106,291 / 53,462; Codex second opinion `gpt-6.1-sol` 334,656 in, 3,955 out, 8 calls | $13.20 (opus $12.99) |
+
+   Opus input in S3 was 21,198,324 tokens (20,188,859 cache reads, 1,009,465 cache
+   writes, 360 uncached), of which the orchestrator's own turns were 15,147,952 and the
+   seven Opus agents 6,050,372. The loop fixtures and change were acceptance items 7
+   and 8's; S1 ended with `npm test` passing on the uncommitted change and S2 with the
+   plan written. S3's report held the `full` fixture's expected outcomes (the `MUST`
+   rule as C8 citing the pinned sha, the drift as C1 from the export, the skipped test
+   as C2, the export break as C6) and left no repository changed; its two expected
+   `contested` outcomes came out `agreed`, which is a review outcome, not a token one.
+2. **What the survey says.** The orchestrators are the top consumers, and their
+   instruction text is the part that every turn pays for again. In the loop, the skill
+   load adds about 36,000 tokens of context at turn 3 (turn 2 to turn 3 in both S1 and
+   S2), and that context is re-read on each of the 13 to 18 turns that follow, so the
+   instructions are roughly 0.5 to 0.65 million of the 1.2 to 1.7 million tokens a run
+   reads; the rest is the run's own artifacts and tool output. In cca, the
+   orchestrator's 89 turns are 71 percent of all Opus input: `SKILL.md` adds about
+   17,000 tokens at turn 4 and stage 1's file about 41,000 at turn 5, and every stage
+   file read later stays in the context, so the context reaches 290,000 tokens by stage
+   8 and the orchestrator alone reads 15.1 million tokens. The three digesters are the
+   second consumer, 3.7 million tokens or 17 percent of Opus input, for work that is
+   reading and extraction; the auditors and adversary together are 2.1 million, 10
+   percent, and are judgment; the mapper is 1.4 percent and the Sonnet merger is
+   under 1 percent of cost. Codex is billed apart from the Claude subscription, and its
+   figures (155,085 tokens for the loop run, 338,611 for the audit's second opinion)
+   are small next to the Claude side in any case. So the order of the changes below
+   follows the survey: cut the orchestrators' instruction text first (items 3 and 7),
+   move the digesters off Opus (item 6), and leave the judging roles where they are.
+3. **The loop's skill is a core and four step files, read when the step starts.**
+   `SKILL.md` held 16,699 words that every turn re-read. It is now a 5,173-word core
+   (invocation block, tools, approval scope, budgets, terminal states, supporting files,
+   the shared mechanics, and Final report handling) and `steps/0-preflight.md` (Codex
+   availability and Step 0, read at Step 0), `steps/1-plan.md` (the Reviewer contract,
+   Steps 1 to 3, and 3.6, read at Step 1), `steps/4-build.md` (the Codex implementer
+   call snapshots of carve-out 6, the Claude review contract, the Implementer prompt,
+   and Steps 3.5 and 3.7 to 6, read when Step 3 ends with a final plan in a run that is
+   not plan-only), and `steps/7-publish.md` (Step 7, read at Step 7). The grain is the
+   phase, as `tiers.md`, `worktree.md`, and `multi-repo.md` already are: Step 3.5.1 runs
+   Step 3.7.1, Step 3.7.3 applies Step 6's discovery, Step 4.5 resolves Step 5's role,
+   and Step 5 cites Step 6, so a finer cut would split procedures that cite each other
+   in one round. The move commit added no text: a script cut the file by line ranges
+   that partition the original and rebuilt the original from the new files byte for
+   byte. The string commit added the titles, read-at lines, the pointer in carve-out 6,
+   and one rule: a step that cites a section whose file is not yet read reads that
+   file then, which authorizes nothing early. The one known early read is Step 3.5.3's
+   pull request check as Step 7.2 does, in a `confirm-plan` run that continues a branch
+   on GitHub. Lint check 16c holds the core under a word cap and checks that every
+   file Supporting files names exists and every step file is named.
+   Measured alone, on the plan-only shape of S2 at the split commit, with everything else
+   as in the survey: 17 turns; the context was 42,205 at the skill load (turn 4, against
+   67,591), 55,284 at the median (against 75,117), 80,508 at the last turn (against
+   94,238), and 964,627 in sum (against 1,175,278, 18 percent less); Opus output was
+   10,726 and the Opus cost $0.76 against $1.02, 25 percent less; the fallback reviewer
+   took 2 turns and 45,931 context against 3 and 74,906. The files the run read were
+   `steps/0-preflight.md`, `steps/1-plan.md`, `tiers.md`, and `report.md`, and no step
+   file after the plan. The rest of the gap to the issue's target is the run's own
+   artifacts and tool output, which the split does not touch.
+4. **The loop has three tiers.** `low` is gone: `--effort low` is rejected with a
+   pointer to `medium`, as `max` was in Part 12 item 1, so a script that passes it
+   learns of the change; the estimate rule's low bucket (one file or one function, a
+   clear fix, no trigger) is now the first line of medium; the budgets are 120, 240,
+   and 360 minutes. Lint 16b now wants exactly `medium`, `high`, `xhigh` in both
+   commands and inspects the three invocation blocks' `effort:` line, which it did not
+   before. The reason is the issue's: neither `low` nor `max` was ever used, and three
+   tiers are enough for the top layer.
+5. **The tier is a ceiling; the slice picks the model.** The ladder is medium, high,
+   and xhigh; the tier sets the budget and the strongest model a step may use, and
+   under it the work picks the model: a step that judges (the plan review, the final
+   review, verifying findings) runs on the tier's reviewer; a step that builds runs on
+   the tier's implementer, or on Codex `gpt-6-luna` when the small-slice rule holds;
+   a step that only reads and reports would run on `haiku`, and today there is none,
+   because the orchestrator reads its own diffs. The small-slice rule sends a slice
+   to `gpt-6-luna` when its change is one function or one behavior in at most two
+   files, none of the Sonnet criteria holds (a risk floor trigger, more than eight
+   files, a new module, type, interface, or rule section another file cites), and it
+   adds no dependency. Precedence: the risk floor sets the tier; at high and xhigh the
+   Sonnet criteria pick `sonnet` for a slice, as before, and medium never uses Sonnet
+   by criteria; else the small-slice rule, unless the override turns it off; else the
+   tier's implementer. A tier rise at Step 3.5.4 chooses each slice's implementer
+   again, as Step 3.5 already said; a rise at Step 4.5 re-resolves the reviewer models
+   only, and a slice keeps its effective model through review fixes and CI repair; a
+   swap stays a swap; a plan review already made is not repeated, and the report says
+   which model reviewed the plan. Medium's cells are plan review `gpt-6.1-sol`,
+   implementer `gpt-6.1-sol` or `gpt-6-luna`, Codex final review `gpt-6.1-sol`, and
+   Claude `code-review medium` for a higher-risk run; high and xhigh keep
+   `gpt-6-astra` for both reviews and add `gpt-6-luna` for a small slice. The
+   sentence "`gpt-6.1-sol` is an implementer model only and is never a reviewer"
+   became "`gpt-6.1-sol` reviews at medium only; `gpt-6-luna` never reviews", which
+   reverses Part 12 item 2 for medium. The issue names the lower tiers' second opinion
+   as a candidate to confirm against the survey; the survey measures the Codex side
+   small next to the Claude side (S1's three Codex threads were 155,085 tokens against
+   1.66 million Claude tokens), so the change is recorded as the issue's proposed
+   default with that evidence, and the Codex critique's preference for `gpt-6-astra`
+   at medium is answered by the override: `.ccx.json` `models`, keys `plan-review`,
+   `implementer`, `final-review` (a full Codex id), `small-slice` (a full Codex id or
+   `off`), and `fallback-reviewer` (an Agent tool model name, replacing `fable` as the
+   first fallback while `opus` stays the second), applied at every tier in place of
+   the cell, a bad value reported and ignored as an unknown field is, and never
+   changing the tier, the risk floor, the Sonnet criteria, or the Claude `code-review`
+   role; the report names each override in force. A consequence, recorded: a run that
+   rises from medium after its plan review keeps the `gpt-6.1-sol` review it had. Not
+   routed, by design: the orchestrator's slice review at Step 4.3 runs on the
+   session's model, and a cheaper subagent would add a reader whose findings the
+   orchestrator must still verify against the diff, so it saves no context.
+   `gpt-6-luna` resolves on this account: a probe on 2026-10-09 ran on it, and its
+   rollout records the model; the Claude fallback reviewer and the `sonnet`
+   implementer fallback are unchanged.
+6. **cca's digester reads on `haiku`, its mapper on `sonnet`, and its second opinion
+   at low tier is `gpt-6-luna`.** The digester copies cited rules out of a corpus and
+   the mapper answers a question list against a code base; neither judges. The survey
+   put the three Opus digesters at 3.7 million tokens, 17 percent of the audit's Opus
+   input, so they move to `haiku`; the mapper, 1.4 percent, moves to `sonnet` since it
+   reads a whole code base and its map steers the auditors; the merger stays `sonnet`
+   (under 1 percent of cost, and its merge must keep ids and dispositions exact, which
+   `haiku` has not been shown to do); the auditor and adversary stay `opus`, as the
+   issue says for the roles where judgment decides. The second opinion defaults by
+   tier, `gpt-6-luna` at low and `gpt-6.1-sol` at medium and high. The command cannot
+   know the tier, so it writes `codex-model: default` when `--codex-model` is absent,
+   and stage 6 step 2 resolves `default` by the run's tier to the full id and records
+   that id in `stages.json` as `codex_model`, so a resumed run sees the id; an explicit
+   `--codex-model` passes through unchanged. No stage before 6 reads the value as a
+   model id. The failure ladder (relaunch on the same model, then `fable`, then the
+   scope fails), `--models`, and the manifest `models` key are unchanged, so every
+   default stays overridable per run.
+7. **The audit-only evidence rules leave `common.md`.** Every agent read `common.md`
+   in full, but 2,919 of its 6,762 words (Outward trace, Reverted test runs, Rerun of
+   a renamed run-once script) serve only the auditor and the adversary, so the
+   digester, mapper, and merger paid for them on every launch. Those sections moved
+   verbatim to `audit-evidence.md`, which stage 1 copies into the run directory next
+   to `common.md`; the launch rule gives its path to the auditor and the adversary in
+   every mode and not to the others; stages 4 to 7 hash it as an input where they hash
+   `common.md`; the Codex request lists it as an input, copied with the sentinel and
+   acknowledged like `common.md`, because ask 4 requires the Outward trace procedure;
+   the second-opinion fallback and the late adversary get its path; resume reads it
+   and supersedes it with `common.md`. `common.md` keeps each heading with a pointer.
+   Stages 2 and 3 do not hash it, since their agents never read it; a run from an
+   earlier version reruns stage 1 on resume by the version gate and gets the file. The
+   agent files then lost only words that restate a `common.md` rule they already cite:
+   the tree-search and output-file boundaries, the closing lines, the label and
+   missing-rationale bullets, the outward-trace and renamed-script restatements, two
+   traps, the top-up id restatement; every role-specific restriction stayed (the
+   Grep-and-Glob-only-in-an-export rule, the digester's `failed at byte` line, the
+   merger's `opened:` heading). `common.md` went from 6,762 to 4,126 words, the agent
+   files from 7,311 to 6,502. The side-by-side table that drove this is a scratch
+   artifact, not kept.
+8. **Deferred.** Five places where two copies of a rule differ were found while
+   deduplicating and left as they are, each copy keeping its wording, because choosing
+   one changes audit behavior and the issue excludes that: reproduction by quote
+   (`common.md`'s Claims list limits a quote to "a fact of the code at the pinned
+   sha"; the auditor's step 7 and the adversary's step 9 say "by a run or a quote"
+   with no limit); the "not in export" keys (stage 4's hygiene row says a finding, the
+   auditor's hygiene checklist says a gap, `report.md` lists them under Forge
+   coverage); the digester's pipes (`git show | tail -c | head -c | awk`, which
+   `common.md` hard rule 2 allows only for `cat` of an exported file, and the `git -C`
+   forms the auditor, adversary, and mapper are given that `common.md` never grants);
+   the fetch exception (`common.md` hard rule 2 names an approved fetch, the Read-only
+   check in `SKILL.md` also a `background-fetch` entry); and the output-file removal
+   (`common.md` hard rule 1 omits "only after the copy exits 0", which `SKILL.md` hard
+   rule 2 and stage 6 step 9 state). Also deferred: a `haiku` merger, pending evidence
+   that it keeps ids and dispositions exact; and a cheaper reader for the loop's slice
+   review, which needs a design that removes the orchestrator's own read first. Each is
+   open for its own issue.
