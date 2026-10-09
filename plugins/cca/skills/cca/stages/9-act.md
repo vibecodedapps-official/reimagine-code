@@ -7,7 +7,7 @@ ticket or PR text, or drafted comment names a model, agent, or tool.
 
 Act takes the run id and the item ids the user approved. It never widens the list. It
 never uses the exports under `trees/`; changes go to the user's checkout on the bundle's
-branch.
+branch. Act leaves the audit state as it is and never writes `runs.json`.
 
 Inputs: the run's entry in `${CLAUDE_PLUGIN_DATA}/runs.json`, `report.md`,
 `converged.md`, `manifest.json`, `audit-brief.md`, `stages.json` (the audited bundle
@@ -34,7 +34,15 @@ commit sha is logged there (step 7).
       added.
    3. Show each approved item: id, title, severity, gate, disposition, tickets, repo,
       files, and recommended change, with the report revision. Say when an item is
-      `provisional`, `contested`, or `dismissed`. Ask the user to confirm.
+      `provisional`, `contested`, or `dismissed`. When live checks are open (a Live checks
+      block with `status` `not run: not approved` or `under review`), the bundle is not a
+      GitHub PR, and the brief's Read paths record no `-> <remote>/...` mapping for the
+      bundle's `branch`, so its recorded head was read from the local branch act commits
+      on (step 2), add: a commit here moves that head, so `--live` will be refused after
+      it; import first if the results are wanted. For a GitHub PR bundle, whose recorded
+      head is the PR's `headRefOid`, or with a mapping line, say instead that the commit
+      does not move the recorded head; a push that updates the PR's head or the mapped
+      ref does. Ask the user to confirm.
    4. Log the approval: run id, revision, item ids, `--per-item`, time. The approval is
       bound to that run, that revision, and those items. Before each commit in step 5,
       recompute the revision; if it differs from the approved one, stop.
@@ -70,6 +78,14 @@ commit sha is logged there (step 7).
    scripts) and the checks that cover the approved items. Record each command, where it
    ran, its exit status, and its failures in `act/log.md` as the baseline, including
    failures already present.
+
+   Before the first edit, also read the repository's instruction files that apply to
+   each file the group touches (`AGENTS.md`, `CLAUDE.md`, and the files they index, at
+   the root and in each directory on the file's path, nested files included) and the
+   user's own (`CLAUDE.md` in `$CLAUDE_CONFIG_DIR`, else `~/.claude`, and the files it
+   indexes). When the approved item's recommended change places a documented fact (a
+   rationale, a history note, a decision, a how-to, a ticket number) where those files
+   exclude it, stop and show the home they name before editing.
 
 5. **Group and commit.**
    1. Group approved items by ticket and repo, from each item's work-item impact. An
@@ -128,4 +144,29 @@ commit sha is logged there (step 7).
    `- <time> <repo> commit <sha> on <branch>: items <ids>; ticket <id or none>`. A later
    `/cca:act` on the same run reads these entries to tell act's own commits from drift.
 
-When act stops for any reason, print what was committed, what was not, and why.
+8. **Close.** On every end, a stop included, print what was committed, what was not, and
+   why. Then print:
+   - that the audit's entry in `runs.json` is unchanged by act, which writes under
+     `<run dir>/act/` and appends to `invocations.md`, and never writes `runs.json`;
+   - the absolute path of `act/log.md`;
+   - one live line, from the report's Live checks blocks (`live.md`) as they stand:
+     - `live checks: none outstanding`, when no block has `status` `not run: not
+       approved` or `under review`;
+     - `live results needed: <ids>; /cca:resume <run-id> --live <file> imports them while
+       resume's eligibility checks pass: each bundle's recorded head and base still
+       resolve to the recorded shas, and no stage before 6 needs a rerun; resume
+       rechecks all of that and refuses otherwise`, for the blocks with `status` `not
+       run: not approved`. When act committed in this invocation, add: `This act
+       committed <sha> on <branch>, the bundle's branch, so a bundle whose recorded head
+       was read from that local branch no longer matches (a GitHub PR's head, or one read
+       through a remote mapping in the brief's Read paths, moves when a push updates that
+       ref); resume without --live to re-audit it`. Act resolves no ref, which is why the
+       line states the condition and names resume as the check; it does not enumerate the
+       commits of earlier invocations, which the condition covers;
+     - `live results imported, awaiting review: <ids>; /cca:resume <run-id> reconciles
+       them, no --live needed, while no stage before 6 needs a rerun; after a head or
+       base change resume asks to restart from stage 1, and approving that restart retires
+       them`, for the blocks with `status` `under review`. When both states are open,
+       print both clauses;
+     - `live checks: not checked (<report or entry> could not be read)`, when act
+       stopped before it read them.

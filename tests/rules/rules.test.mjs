@@ -319,7 +319,7 @@ test('R35, R46: the writing option adds the shipped Writing section to the Codex
   assert.equal(codexBody, `${SHIPPED['core.md']}\n${SHIPPED['writing-codex.md']}${END}\n`);
   assert.equal(bytes(s.claude).split('\n').slice(1).join('\n'), `${SHIPPED['core.md']}${END}\n`);
   assert.match(bytes(s.codex).split('\n')[0],
-    /^<!-- ccx:house-rules begin version=0\.6\.1 options=core,writing join=none digest=[0-9a-f]{16} -->$/);
+    /^<!-- ccx:house-rules begin version=0\.6\.2 options=core,writing join=none digest=[0-9a-f]{16} -->$/);
 }));
 
 test('R37: plan writes nothing for current, edited and malformed targets', sandbox((s) => {
@@ -367,7 +367,7 @@ test('R41: an existing file is backed up with the time in its name, and no tempo
     [`ccx: wrote ${s.claude}; the earlier content is in ${s.claude}.ccx-backup-20261003120000`]);
   assert.deepEqual(readdirSync(s.claudeDir).sort(), ['CLAUDE.md', 'CLAUDE.md.ccx-backup-20261003120000']);
   assert.equal(bytes(`${s.claude}.ccx-backup-20261003120000`), 'mine\n');
-  assert.ok(bytes(s.claude).startsWith('mine\n\n<!-- ccx:house-rules begin version=0.6.1 options=core join=blank digest='));
+  assert.ok(bytes(s.claude).startsWith('mine\n\n<!-- ccx:house-rules begin version=0.6.2 options=core join=blank digest='));
   assert.deepEqual(s.state().created, {});
   assert.deepEqual(readdirSync(s.data).sort(), ['rules-plan.json', 'rules-state.json']);
 }));
@@ -631,6 +631,9 @@ test('units: fenced code, HTML comments and indented code are not units', () => 
   assert.deepEqual(kinds('```\n- x\n```\n- y\n'), ['item:y']);
   assert.deepEqual(kinds('~~~sh\n- x\n```\n~~~\n- y\n'), ['item:y']);
   assert.deepEqual(kinds('<!-- a\n- x\n-->\n- y\n\n<!-- one -->\n- z\n'), ['item:y', 'item:z']);
+  assert.deepEqual(kinds('<!-- a\n- x\n--!>\n- y\n'), ['item:y']);
+  assert.deepEqual(kinds('<!-- a ` b -->\n- y\n'), ['item:y']);
+  assert.deepEqual(kinds('`<!--` x\n\n- y\n'), ['para:`<!--` x', 'item:y']);
   assert.deepEqual(kinds('    - code\n\n- y\n'), ['item:y']);
   assert.deepEqual(kinds('- y\n\n    - nested code\n'), ['item:y - nested code']);
 });
@@ -832,7 +835,7 @@ test('R66: the overlap note and the recommendation for a hand copy, and adopt th
   assert.deepEqual(s.run('apply', ['codex'], { now: AT }), [`ccx: wrote ${s.codex}; the earlier content is in ${s.codex}.ccx-backup-20261003120000`]);
   assert.equal(bytes(`${s.codex}.ccx-backup-20261003120000`), copy);
   const after = bytes(s.codex);
-  assert.equal(after.startsWith('# Mine\n\n<!-- ccx:house-rules begin version=0.6.1 options=core join=none digest='), true);
+  assert.equal(after.startsWith('# Mine\n\n<!-- ccx:house-rules begin version=0.6.2 options=core join=none digest='), true);
   assert.equal(after.split('Make the smallest correct change').length, 2);
   assert.equal(s.run('plan', ['--options', 'core']).includes('state: current'), true);
   s.run('remove');
@@ -1040,6 +1043,8 @@ test('R44: comment marks inside a code span that wraps across lines are text, an
   // A real comment, opened outside any span and never closed, hides the rest of its segment.
   assert.deepEqual(found('a ` <!--\n\n@later.md\n'), []);
   assert.deepEqual(found('`<!--` @x\n\n<!-- @y -->\n@z\n'), ['@x', '@z']);
+  assert.deepEqual(found('<!--\n@x\n--!>\n@y\n'), ['@y']);
+  assert.deepEqual(found('<!-- @x --!> @y\n'), ['@y']);
 });
 
 test('R67: indented text is never a rule, since it may belong to a container', () => {

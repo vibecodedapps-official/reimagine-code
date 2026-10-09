@@ -259,7 +259,9 @@ fallback produced a complete output for every scope.
   reason; keep every finished stage file.
 
 At the end, update the run's `state` in `runs.json`, then print the report path (when
-there is one), the verdict, and the terminal state.
+there is one), the verdict, and the terminal state. The closing also recommends items
+and prints the `/cca:act` line and, when eligible, the
+`/cca:resume <run-id> --live <file>` line, per `stages/8-report.md` step 14.
 
 ### Queue
 
@@ -484,7 +486,7 @@ Read `runs.json` with the Read tool and branch on this run's entry:
 
 ```json
 {
-  "plugin_version": "0.10.1",
+  "plugin_version": "0.10.2",
   "approvals": [ { "kind": "fetch", "target": "<repo name>:<remote>",
                    "decision": "approved", "time": "2026-09-30T14:15:00Z",
                    "commands": ["git -C <repo> fetch --no-tags --refmap= ..."] } ],

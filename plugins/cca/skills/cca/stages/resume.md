@@ -87,7 +87,10 @@ never loses a finished one. With `--live`, it first imports approved live check 
      steps 4 to 6 and go to step 7. On no,
      stop and change nothing. With `--live`, stop without asking, with one line, and
      change nothing: `--live answers the findings of a finished run; the head or base
-     changed, resume without --live first`.
+     changed, resume without --live first`. After that line, print one line per bundle
+     whose head or base changed: `<bundle>: head recorded <sha> now <sha>; base recorded
+     <sha> now <sha>`, with `(moved)` after the one that changed (`not present locally`
+     for a sha that does not resolve).
    - A changed base sha is handled like a changed head: stop and ask whether to
      restart from stage 1, showing the recorded and current shas. The brief's list of
      base commits since the merge base and its set of files changed on both sides
@@ -106,7 +109,8 @@ never loses a finished one. With `--live`, it first imports approved live check 
    1. **Eligibility.** With `--live`, step 2 stopped a run whose `stages.json`, stage 1
       entry, or `audit-brief.md` is missing, and step 3 stops a run whose saved forge
       files give no host or another host, or whose head or base changed, each without
-      asking.
+      asking; for a changed head or base it prints each bundle's recorded and current
+      shas, as step 3 says.
    2. **Preliminary rerun stage.** Compute the first rerun stage by the rules of steps 5
       and 6, as if no live file existed (the live inputs of stages 6 to 8 are left out of
       the comparison), without removing any file, printing, or stopping. It may be none.
@@ -181,7 +185,7 @@ never loses a finished one. With `--live`, it first imports approved live check 
      invalidates stage 1 (the bundles' head and base shas were already compared in
      step 3, which stops on any change);
    - upstream stage outputs, by `git hash-object --no-filters <file>`;
-   - `plugin_version`, which for this release is `0.10.1`.
+   - `plugin_version`, which for this release is `0.10.2`.
    - the live inputs of stages 6 to 8: `live/findings.md`, `live/claims.md`, and each
      `live/carried/<id>.md` that `live/findings.md` names, by `git hash-object
      --no-filters <file>` (`live.md`).

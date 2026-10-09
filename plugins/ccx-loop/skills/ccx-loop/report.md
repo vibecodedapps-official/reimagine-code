@@ -19,7 +19,7 @@ Every run ends in exactly one terminal state, writes the report, and prints it.
 - A failure before Step 0.5, when the run directory does not exist yet, prints the report
   and writes nothing. The tree may be dirty and the artifacts directory may not be ignored
   yet. The printed report names the preflight item that failed and the fix. Run id and
-  branch may be "not allocated".
+  branch may be "not allocated", each still naming the value Step 0's echo derived.
 - From Step 0.5 on, with `"commit": false` (the default), write the report to
   `.ccx/<run-id>/report.md`.
 - With `"commit": true`, Step 7.1 copies the plan and a provisional report with state
@@ -34,12 +34,15 @@ Every run ends in exactly one terminal state, writes the report, and prints it.
 ```
 # ccx run report
 
-- Run id: <yyyy-mm-dd-inputs, or "not allocated">
+- Run id: <yyyy-mm-dd-inputs, or "not allocated (would have been <id>)">
+- Hint: <the numbers-only hint of Step 0's echo, when the description is only numbers
+  and joining words; else leave the line out>
 - Terminal state: <done | plan-only | prepared | blocked | stopped>
 - Host: <github | other (hostname)>
 - Run budget: <minutes> (<flag | .ccx.json | tier default | session instruction at hh:mm>)
 - Base commit: <sha, or "not resolved">
-- Branch: <name, or "none created">; with several repositories, each repository's branch
+- Branch: <name, or "none created (a run would use <name>)" with the name Step 0's echo
+  derived, or the `fix/` or `feat/` rule when no label or title was fetched>; with several repositories, each repository's branch
   and whether it is new or continued, and each repository switched in Step 0.2 with its
   previous HEAD
 - Continued: <no | the existing branch continued, and the PR this run commented on, or
@@ -103,7 +106,7 @@ Per input, one entry:
 ## Checks
 
 - Checks run: <command, source, result>
-- Checks not run and why: <command, reason, or "none">
+- Checks not run and why: <command, its directory when not the root, and the reason; or "none">
 - Checks deferred to CI: <command, matched job name, or "none">
 - Checks failing at baseline: <command, baseline run as evidence, whether it still fails, or
   "none">
@@ -155,8 +158,8 @@ non-blocking and anything out of scope. No issues were opened.
 - Name every reviewer or implementer swap, including a swap caused by `--no-codex`, by
   Codex being unavailable at Step 0.6, or by two failed Codex implementer calls.
 - List a rejected finding with the reason it was rejected, so a reader can check it.
-- A check that could not run locally is named as not run, with the reason. Nothing is
-  skipped quietly.
+- A check that could not run locally is named as not run, with the reason and the exact
+  command, so the user can run it; the command is required. Nothing is skipped quietly.
 - A failure that matches the recorded baseline failure for the same check is reported with
   the baseline run as evidence. It is not the run's to fix.
 - For `plan-only`, the sections for changes, checks, and blocked state say "not run".

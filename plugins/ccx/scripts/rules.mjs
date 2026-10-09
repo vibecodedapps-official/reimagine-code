@@ -198,12 +198,12 @@ const closer = (runs, k) => {
 // Masked text, in comments and code spans, is NUL: a character that is neither a boundary nor part of an import path.
 const MASK = '\0';
 function strip(t, open, span, later) {
-  const marks = [...ticks(t), ...[...t.matchAll(/<!--|-->/g)].map((m) => ({ at: m.index, s: m[0] }))].sort((x, y) => x.at - y.at);
+  const marks = [...ticks(t), ...[...t.matchAll(/<!--|--!?>/g)].map((m) => ({ at: m.index, s: m[0] }))].sort((x, y) => x.at - y.at);
   let out = '', at = 0;
   for (let k = 0; k < marks.length; k++) {
     const m = marks[k];
     if (span) { if (m.tick && m.len === span) span = 0; }
-    else if (open) { if (m.s === '-->') { out += MASK.repeat(m.at + 3 - at); at = m.at + 3; open = false; } }
+    else if (open) { if (m.s === '-->' || m.s === '--!>') { out += MASK.repeat(m.at + m.s.length - at); at = m.at + m.s.length; open = false; } }
     else if (m.s === '<!--') { out += t.slice(at, m.at); at = m.at; open = true; }
     else if (m.tick && opens(m)) {
       const c = closer(marks, k);
@@ -305,7 +305,7 @@ export function units(text, skip) {
   for (const u of list) {
     u.odd ||= /^[ \t]/.test(lines[u.a].t) || !ends(lines[u.b + 1]?.t);
     const raw = words(lines.slice(u.a, u.b + 1).map((l) => l.t).join(' '));
-    u.odd ||= raw.replace(u.kind === 'item' ? /^([-*+]|\d{1,9}[.)])( |$)/ : /^$/, '') !== u.norm;
+    u.odd ||= (u.kind === 'item' ? raw.replace(/^([-*+]|\d{1,9}[.)])( |$)/, '') : raw) !== u.norm;
   }
   return { lines, list };
 }

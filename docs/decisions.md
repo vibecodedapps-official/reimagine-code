@@ -1134,3 +1134,160 @@ is the `npm test` step's elapsed time from the job API.
 9. **Review.** Two Codex gpt-6-astra rounds on the plan (the async contract, separate
    experiments, the Defender step's guard and diagnostics, the 420 s rule), then a final
    review of the diff: no blocking finding, and the header wording that became 37b5b3f.
+
+## Part 22: ccx 0.6.2 and cca 0.10.2, act and live follow-up, the loop's inputs and not-run checks, and the CodeQL alerts, 2026-10-09
+
+Issues #46 and #47, planned with three Codex gpt-6-astra critique rounds and built in
+one pull request, with the four open CodeQL alerts on `main`. Each issue sorts its items
+into wording, a clarification of what the text already requires, and behavior, a new
+obligation; the behavior items are the decisions below, written before the text changed.
+Every rewrite passed the semantic gate of Part 20 item 5: each obligation, permission,
+stop condition, default, and limit kept, no must turned into a may, no number moved.
+
+1. **The loop's commands preview the derived run id and branch, and hint when a
+   description is only numbers.** A description made of ticket numbers and joining words
+   (`12345 and 67890`) became the run id and the `work/<slug>` branch of one run on a
+   non-GitHub host, and the branch needed a rename before publishing. `run.md` and
+   `plan.md` step 3 now print, after the invocation block and outside it, the run id
+   the skill's Artifacts rule derives (with the suffix rule stated, since the command
+   cannot list `.ccx/`) and the branch: the `--branch` value, the `--continue` branch,
+   `work/<slug>` with no issue, or, with issues, the rule of Step 3.7 item 2 and not a
+   name, because the command fetches no label or title and `fix/` turns on any issue's
+   label; in plan-only mode the line says `none` and what a run would use, since Step 3.6
+   creates no branch. When every token of a non-empty description is a number (digits, optional `#`,
+   optional trailing `,` or `;`) or one of the joining words `and`, `or`, `plus`,
+   `with`, `then`, `also`, `to`, `&`, `+`, `,`, `;`, `/`, and at least one is a number,
+   one hint line names the file-input path and `--branch`; the run goes on. The lines sit
+   outside the block so the Skill args, Step 0.5's record, and acceptance item 7 are
+   unchanged. `12345,67890` is one token and gets no hint; the hint is for the plain
+   case reported. No incident is recorded beyond the one run. The acceptance runs
+   (item 25, Windows and macOS, 2026-10-09) showed the command's reply text absent in
+   every headless session and in an interactive one, with the values right in the
+   model's reasoning and in the skill's report: the model goes from the preflight tool
+   calls straight to the Skill call, and three wordings of the requirement, the last
+   stating the reply's shape, changed nothing; an echo at the start of the skill's Step
+   0 was skipped the same way. So the report header is the carrier that holds in every
+   run: `Run id` keeps its `would have been` form, a `Hint:` line appears when the
+   description is only numbers, and `Branch` names what a run would use; the reply text
+   stays required in the command and the skill, and item 25 checks the report and
+   accepts the reply text when it appears.
+2. **A not-run check carries its command, and a denial is a refusal of permission.**
+   Carve-out 3 ends a run in `blocked` on any denial in Steps 0 to 6, and Step 6.2 named
+   checks that "cannot run locally" without defining locally; one run was denied a remote
+   database and ended `prepared`, a drift not reproduced here and not judged. The text
+   now says what a denial is: a tool call the permission mode or the user refused, or an
+   answer that is not a clear yes to a question asking permission for an action; the
+   questions of Steps 0.1a, 0.2, 1.2, and 3.5 keep their named outcomes, since they are
+   decisions, not permissions. A check whose resource the session does not have, with no
+   permission refused, is not a denial: it is reported as not run with the reason and the
+   exact command, with its directory when not the checkout root, so the user can run it.
+   The report's "Checks not run" line requires the command. An optional-check exception
+   to carve-out 3 stays deferred, as the issue says: the carve-out is unconditional on
+   purpose.
+3. **The audit's closing recommends items and prints the next commands, and the report
+   carries the same list.** The audit ended with a verdict, a path, and a state, and the
+   user worked out the next command and its ids. Stage 8 step 14 now prints `act first`
+   with the ids and one reason each, the exact `/cca:act <run-id> <ids>` line, `your
+   decision` for what needs the user, and, only when eligible, the `/cca:resume <run-id>
+   --live <file>` line with what the file holds; the report's section 1 carries the same
+   list under a plain `next:` line, with no heading and no line that `work-items.sh`,
+   `memory.sh`, or `live.sh` parses, so the counting rules and validators are untouched.
+   An item is recommended when it is counted, `agreed`, at `medium` or above (the floor
+   stage 8 step 5 uses for `merge after fixes`), and fixable inside the bundle's repos;
+   a `low` or `note` item is not dismissed by being left out, and the closing says so.
+   Only `C<n>` ids appear in the act line: decision and scope entries carry no id and
+   work-item operations are not act arguments. `your decision` lists contested and
+   provisional items, items whose fix is outside the bundle, and from section 8 only what
+   is open and needs the user's authority: `needs <owner>` and `stale deferral` decision
+   claims, every scope claim with its `include` or `defer` recommendation (a
+   recommendation is not the user's acceptance), and the other decisions the change needs
+   and has not made. The `--live` line prints only when a check still has `status` `not
+   run: not approved` and no stage before 6 needs a rerun by resume's preliminary rule
+   (every stage 1 to 5 entry `complete` or `not_applicable` with its outputs present),
+   because resume refuses `--live` otherwise; a result already imported and under review
+   gets plain resume instead. The run's entry in `runs.json` is not a condition of any
+   line, so the report's block and the closing hold the same list; when the entry is
+   absent at the close, the missing-entry exception still prints the JSON entry and says
+   the act and `--live` lines need it added first. Codex's critique caught three first
+   drafts: a `partial` test that excluded runs with inapplicable stages 2 and 3, a `your
+   decision` list that named every section 8 entry, settled ones included, and a closing
+   whose `--live` line depended on the registry while the report's did not.
+4. **Act says what it leaves behind, and resume's refusal shows the shas.** Act writes
+   `act/log.md` and leaves the audit state as it was, which one user read as nothing
+   recorded; and when a bundle's branch resolves to the local branch act commits on,
+   act's own commit moves the head, so a later `--live` import is refused by the guard in
+   `resume.md` step 3. By reading, not reproduced. Act now closes, on every end, with the
+   `runs.json` state unchanged, the log's path, and one of four live lines: none
+   outstanding; results needed, with resume's eligibility conditions stated (recorded
+   head and base still resolve, no stage before 6 to rerun) and, when this invocation
+   committed, that the head moved and resume without `--live` re-audits; results
+   imported and awaiting review, which plain resume reconciles while no stage before 6
+   needs a rerun, and which an approved restart after a head or base change retires; or
+   not checked, when act stopped before reading the report. Act resolves no ref, which
+   is why it states the condition and names resume as the check; prior invocations are
+   covered by the condition. Step 1.3's confirmation warns before the first commit when
+   live checks are open, the bundle is not a GitHub PR, and the brief's Read paths map
+   the bundle's branch to no remote ref, so its recorded head is the local branch act
+   commits on; for a PR, whose recorded head is its `headRefOid`, or with a mapping, the
+   commit does not move it and a push that updates that ref does.
+   The `--live` refusal in resume prints,
+   per changed bundle, the recorded and current head and base shas with the moved one
+   marked; the refusal and the no-import outcome are unchanged.
+5. **Instruction files decide where a documented fact goes.** An auditor recommended
+   recording a rationale in a file header, and act did so, in a repository whose
+   instructions keep history in commit messages. `common.md` now requires the author of a
+   recommended change that adds or moves a documented fact to read the instruction files
+   that apply to the file, the repository's `AGENTS.md`, `CLAUDE.md`, and what they
+   index, at the root and along the file's path with nested files applying to their
+   subtree, as the exported tree holds them, plus the placement rules the audit brief
+   records from the user's own instruction files; when they give the fact a home, the
+   recommendation names it. Stage 1 reads the user's files in `$CLAUDE_CONFIG_DIR` (else
+   `~/.claude`) and writes a "Placement rules" section in `audit-brief.md`, a snapshot at
+   audit time like the exported trees: the brief is a stage 1 output, hashed as an input
+   by the later stages, and resume does not re-read the user's files, so a later edit to
+   them changes nothing in a resumed run; `/cca:resume <run-id> --from 1` reads them
+   again. Recording the files as stage 1 inputs by hash was rejected because any edit to a
+   personal instruction file would rerun the whole audit, and hashing only the extracted
+   rules would make resume depend on a judgment that is not byte-stable. Act re-reads the
+   live files, the user's included, before its first edit, and stops to show the home
+   they name when an approved change places a fact where they exclude it. Auditors read
+   only the brief and the exported trees and run nothing there.
+6. **The house-rules scanner closes a comment at `--!>` too, and no alert is
+   dismissed.** CodeQL alert 2 (`js/bad-tag-filter`) on `rules.mjs`: the HTML spec ends
+   a comment at `--!>` as well as `-->`; CommonMark ends it at `-->` only. The files the
+   scanner reads are instruction files that models read as text, and the masking is a
+   heuristic for which marks count as rules or import paths, so the scanner now accepts
+   both closers and agrees with the spec CodeQL checks. The consequence is accepted and
+   recorded: in a file holding `--!>` inside a comment, the rules and imports after it
+   are now visible to the scan, which can change an adoption result; the plugin's own
+   markers are unchanged. The close branch tests the mark's text explicitly, because the
+   backtick marks the same scan sorts carry no text property and a length or suffix test
+   on them throws, which Codex reproduced in memory on the first draft. Alert 1
+   (`js/identity-replacement`, the `/^$/` replace on non-item units) is a refactor with
+   the same result; alert 3 (`js/incomplete-sanitization`, the changelog heading regex
+   in `tools/lint.mjs`) gets an escape helper, also applied to the manifest-name regex
+   two rules above, which was the same defect unflagged; alert 4
+   (`js/bad-code-sanitization`, the fake Codex fixture) reads the path from the inherited
+   environment inside the child script, with a positive control added since the existing
+   test proved only the file's absence after a kill. Nothing is dismissed through the
+   API; the alerts close when CodeQL scans the merge. CodeQL's closure is not verified
+   from here.
+7. **Deferred, as the issues say.** From #47: an optional-check exception to the denial
+   rule (carve-out 3 is unconditional on purpose) and a route to apply a small correction
+   found at the Step 5 cap (a bounded post-cap review is a design decision first). From
+   #46: cross-run memory of what the user acted on (`C<n>` ids renumber between runs; an
+   identity design comes first), a forge length cap on drafted descriptions (adapter
+   knowledge the plugin lacks), and a mandatory per-run concision item (it conflicts with
+   evidence-led reporting when no defect exists). Each is open for its own issue.
+8. **Review.** Three Codex gpt-6-astra rounds on the plan: round 1 raised twelve findings
+   (the tick-mark TypeError, the description scan, the `fix/` rule and step number, the
+   denial definition, `--live` eligibility, act's ref promises, settled decisions, user
+   instructions at recommendation time, CI's lint-before-tests order, the release-test
+   destinations, acceptance coverage with a positive control, and authorization) and two
+   corrections; round 2 five more on the same themes; round 3 converged with the snapshot
+   resolution of item 5 accepted. The final review of the diff against `main` found no
+   actionable regression; a conformance pass on the same thread found four text
+   mismatches, each fixed: the plan-only branch preview named a branch, the closing's
+   `--live` line depended on the registry entry while the report's did not, act's step
+   1.3 warning had lost its local-ref condition, and act's reconcile promise was
+   unconditional.

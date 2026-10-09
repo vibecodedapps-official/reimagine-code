@@ -46,6 +46,13 @@ forge or its export writes them. The adapter maps them to its API, including fie
 differ by work item type. `set_fields` sets several fields in one operation, by the same
 names. An operation takes no key that is not listed for it or among the common keys.
 
+`text` on `set_description`, `set_pr_description`, `set_acceptance_criteria`,
+`add_comment`, and `update_comment` is the complete content the forge should hold after
+the operation, drafted by stage 8 from the report, with the permitted `{mention:<key>}`
+placeholders and no forge markup. An instruction to compose it later ("replace this item
+with the recorded decision, add these follow-ups") does not meet this contract; act
+renders nothing.
+
 ## Mentions
 
 `mentions` is optional on each operation with `text`. It is an array of

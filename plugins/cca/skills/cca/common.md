@@ -266,6 +266,15 @@ Each finding uses exactly this block:
 
 In the `live check` field, the query, the place, and the results hold no semicolon, since the report splits the field at its semicolons; join outcomes with periods.
 
+Before a `recommended change` adds or moves a documented fact (a rationale, a history
+note, a decision, a how-to, a ticket number), its author reads the instruction files
+that apply to the file: the repository's `AGENTS.md`, `CLAUDE.md`, and the files they
+index, at the root and in each directory on the file's path (a nested file applies to
+its subtree), as the exported tree holds them, plus the placement rules `audit-brief.md`
+records from the user's own instruction files. When those files give the fact a home
+(commit messages, a docs file, a changelog), the recommendation names that home, with a
+reference from the code where useful, and never a place those files exclude.
+
 Ids and origin tags:
 
 - Pass one: `<scope>-F<n>`. A barrier top-up appended to `pass1/<scope>.md` continues

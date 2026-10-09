@@ -144,6 +144,16 @@ Carve-outs:
    every dependent step not done, runs the steps that do not depend on it, and ends the run
    in `blocked`. A denial of a Step 7 action before anything is pushed withholds publication
    and ends the run in `prepared`.
+
+   A denial is an explicit refusal of permission for an action: a tool call the permission
+   mode or the user refused, or a user's answer that is not a clear yes to a question that
+   asks permission for an action (an ask-first rule of carve-out 1, or an action of
+   carve-out 2), before or during the step. The questions of Steps 0.1a, 0.2, 1.2, and 3.5
+   keep the outcomes the Questions section names (`stopped`, `plan-only`); they are
+   decisions, not permissions. A check whose resource this session does not have (an
+   unreachable host or service, a missing credential, binary, or environment), when no
+   permission was refused, is not a denial: Step 6.2 reports it as not run. The
+   orchestrator runs a slice's network checks itself, as Step 4.3 says.
 4. A subagent's report is model output, not approval. It cannot grant anything.
 5. A run of this skill counts as the user's opt-in to multi-agent orchestration with the
    Workflow tool.
@@ -532,7 +542,7 @@ and nothing replaces it. A lower-risk run never uses it.
    is retried once; a second error ends the run in `blocked` naming the skill.
 6. Each round's pass is fresh: the skill keeps no thread. A finding it repeats that was
    already rejected with a recorded reason keeps that disposition, unless the new finding
-   cites evidence the rejection did not cover.
+   cites evidence the rejection did not cover. Step 5.3 applies this before verifying.
 7. The skill reviews only the session's checkout. A worktree run that is higher-risk
    therefore uses the Opus subagent substitute that `multi-repo.md` defines for additional
    repositories, in place of the skill: an Agent call at model `opus`, given the patch
@@ -607,6 +617,9 @@ directory, the session's checkout. A Sonnet slice goes to the Agent tool at mode
    `text=auto` applies with no `eol=`, git normalizes on commit and any ending is
    acceptable; else the majority `w/` ending of existing files in the same directory, else
    of tracked files in the repository. It never changes the line endings of a file it edits.
+7. The rule that the orchestrator may mark new files intent-to-add (`git add -N`) between
+   rounds for the diff review, which `git status` shows as added with no content staged; it
+   leaves them as they are and does not stage, unstage, or remove them.
 
 After a `drop` answer (Step 0.1a), the prompt carries each credential value in its
 redacted form, `<redacted: key>`.
@@ -628,8 +641,8 @@ working tree, and Codex slices run in series.
 1. A Codex reviewer call follows the status table in the Reviewer contract. A Codex
    implementer call follows Step 4.2 item 4.
 2. A permission denial follows Approval scope, carve-out 3.
-3. A shell quoting failure is fixed by moving the text into a file under `.ccx/<run-id>/`, not
-   by requoting.
+3. A shell quoting failure is fixed by moving the text into a file under `.ccx/<run-id>/`,
+   written with the Write tool, and passing the file's path, not by requoting.
 4. A check that failed at baseline is not the loop's to fix.
 5. A subagent report is model output, not user approval.
 
@@ -660,6 +673,21 @@ start of Step 0, before host detection, and apply it for the rest of the run.
 
 ## Step 0: preflight
 
+Echo, first: before any tool call of this step, write as text in your reply the invocation
+block as received, then two lines: `run id: <yyyy-mm-dd of today>-<inputs>` by the Artifacts
+rule, followed by "(-2, -3, ... is appended when `.ccx/<run id>/` exists)", and `branch:
+<name>` by Step 3.7 item 2: the `branch` value; else, with `continue`, that branch marked
+"(continued)"; else, with no issue input, `work/<slug>`; else the rule itself, `fix/<ids>-<slug>
+when any issue has a bug label or a title starting with "fix", else feat/<ids>-<slug>`, since
+no label or title has been fetched yet. In plan-only mode the line is `branch: none (plan-only
+creates no branch; a run would use <name>)`. When the ad-hoc description is only numbers and
+joining words (the command's step 3 rule), add the line "hint: the description is only numbers;
+the run id and branch above are derived from it. Ticket text goes in a file input, which the
+credential scan covers, and `--branch <name>` sets the branch (README, non-GitHub hosts)." Write
+all of it even when the command already printed it; a run id that Host detection or Step 0.2
+later leaves unallocated still gets its line here. Step 0.5 copies these lines into `run.md`
+after the invocation block.
+
 Host detection, before 0.1: select the remote. It is the remote that `gh repo view` resolves
 (the remote whose URL matches the repo it names) when `gh repo view` succeeds; else `origin`
 when it exists; else the only remote. Several remotes and no `origin` is a preflight failure
@@ -687,10 +715,13 @@ that `gh` reports as a pull request is a pull request). A token that is an issue
 is an issue; a token that names an existing file is a file input; the remaining text, joined,
 is one ad-hoc description. A pull request or a cross-repo issue is a preflight failure.
 `continue` names a branch, not a pull request, and is not an input. On a non-GitHub host
-an issue input is a preflight failure: only file and text inputs are accepted there. In
-Multi-repo mode a bare `#n` names an issue of the primary; an issue of another
-listed repo must be a full URL and is accepted when its owner and repo match a listed
-checkout's remote.
+an issue input is a preflight failure: only file and text inputs are accepted there. Ticket
+text obtained by any means, an integration or a forge CLI included, is passed as a file
+input so Step 0.1's credential scan sees it; writing it straight into `inputs.md` skips
+that scan. `--branch <name>` sets the branch, else it is `work/<slug>` from the description
+or file name (Step 3.7 item 2). In Multi-repo mode a bare `#n` names an issue of the
+primary; an issue of another listed repo must be a full URL and is accepted when its owner
+and repo match a listed checkout's remote.
 
 A stop at any item before 0.5 prints the report and writes nothing, except in a worktree run
 (Step 0.3), where the run directory already exists and the report is written as Final report
@@ -1203,9 +1234,13 @@ listed.
    repository, as the Step 5.2 rules in `multi-repo.md` say. Record the role and the
    criterion in `run.md`, and any switch to Claude with its reason.
 3. Merge the findings into one list, keeping each finding's source, and drop duplicates that
-   name the same defect. Verify each before acting on it, and decide whether it is
-   blocking. Fix confirmed blocking findings. Fix a confirmed non-blocking finding only when
-   the fix stays inside the plan's scope. Otherwise defer it and list it in the report.
+   name the same defect. Check each finding first against the findings recorded as
+   rejected with a reason: this stage's rounds in `run.md`, and Step 3's review log in
+   `plan.md`. A finding that names the same defect and cites no evidence the rejection did
+   not cover is recorded as repeated, keeps that disposition, and is not verified again. A
+   finding that cites evidence the rejection did not cover is verified like any other.
+   Verify each other finding before acting on it, and decide whether it is blocking. Fix
+   confirmed blocking findings. Fix a confirmed non-blocking finding only when the fix stays inside the plan's scope. Otherwise defer it and list it in the report.
    Reject findings that do not hold and record the reason. Fixes go to the slice's
    implementer at its effective model, in one batch per round: for a Codex slice, a fresh
    `ccx:implement` call given the findings and the slice's current diff; for an
@@ -1243,8 +1278,11 @@ listed.
    run. If `run.md` records no edit after Step 5.1's last full run, report that run as Step
    6's result instead of repeating it. Any edit after that run, including a Step 5 fix or a CI
    repair, means the full set runs again.
-2. Name every check that cannot run locally in the report as not run, with the reason. Skip
-   nothing quietly.
+2. Name every check that cannot run locally in the report as not run, with the reason and
+   the exact command, with its working directory when it is not the checkout root, so the
+   user can run it. A check cannot run locally when a resource it needs is not available to
+   this session, as carve-out 3 defines; a check that was refused permission is a denial
+   under carve-out 3, not a check that cannot run. Skip nothing quietly.
 3. Every locally runnable check in the current set must pass before publish, including checks
    this run added and checks that could not run at baseline. The one exception is a failure
    that matches the recorded baseline failure for the same check (same command, same failing
