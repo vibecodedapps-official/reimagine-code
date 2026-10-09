@@ -1160,7 +1160,17 @@ stop condition, default, and limit kept, no must turned into a may, no number mo
    one hint line names the file-input path and `--branch`; the run goes on. The lines sit
    outside the block so the Skill args, Step 0.5's record, and acceptance item 7 are
    unchanged. `12345,67890` is one token and gets no hint; the hint is for the plain
-   case reported. No incident is recorded beyond the one run.
+   case reported. No incident is recorded beyond the one run. The acceptance runs
+   (item 25, Windows and macOS, 2026-10-09) showed the command's reply text absent in
+   every headless session and in an interactive one, with the values right in the
+   model's reasoning and in the skill's report: the model goes from the preflight tool
+   calls straight to the Skill call, and three wordings of the requirement, the last
+   stating the reply's shape, changed nothing; an echo at the start of the skill's Step
+   0 was skipped the same way. So the report header is the carrier that holds in every
+   run: `Run id` keeps its `would have been` form, a `Hint:` line appears when the
+   description is only numbers, and `Branch` names what a run would use; the reply text
+   stays required in the command and the skill, and item 25 checks the report and
+   accepts the reply text when it appears.
 2. **A not-run check carries its command, and a denial is a refusal of permission.**
    Carve-out 3 ends a run in `blocked` on any denial in Steps 0 to 6, and Step 6.2 named
    checks that "cannot run locally" without defining locally; one run was denied a remote

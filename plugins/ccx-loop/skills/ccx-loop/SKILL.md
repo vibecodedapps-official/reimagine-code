@@ -673,6 +673,21 @@ start of Step 0, before host detection, and apply it for the rest of the run.
 
 ## Step 0: preflight
 
+Echo, first: before any tool call of this step, write as text in your reply the invocation
+block as received, then two lines: `run id: <yyyy-mm-dd of today>-<inputs>` by the Artifacts
+rule, followed by "(-2, -3, ... is appended when `.ccx/<run id>/` exists)", and `branch:
+<name>` by Step 3.7 item 2: the `branch` value; else, with `continue`, that branch marked
+"(continued)"; else, with no issue input, `work/<slug>`; else the rule itself, `fix/<ids>-<slug>
+when any issue has a bug label or a title starting with "fix", else feat/<ids>-<slug>`, since
+no label or title has been fetched yet. In plan-only mode the line is `branch: none (plan-only
+creates no branch; a run would use <name>)`. When the ad-hoc description is only numbers and
+joining words (the command's step 3 rule), add the line "hint: the description is only numbers;
+the run id and branch above are derived from it. Ticket text goes in a file input, which the
+credential scan covers, and `--branch <name>` sets the branch (README, non-GitHub hosts)." Write
+all of it even when the command already printed it; a run id that Host detection or Step 0.2
+later leaves unallocated still gets its line here. Step 0.5 copies these lines into `run.md`
+after the invocation block.
+
 Host detection, before 0.1: select the remote. It is the remote that `gh repo view` resolves
 (the remote whose URL matches the repo it names) when `gh repo view` succeeds; else `origin`
 when it exists; else the only remote. Several remotes and no `origin` is a preflight failure

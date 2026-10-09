@@ -22,7 +22,9 @@ repos' own changelogs are kept under `docs/history/`.
 - The `run` and `plan` commands print the derived run id and branch after the invocation
   block, and a hint when the description is only numbers and joining words, so the user
   can pass ticket text as a file and set `--branch` before the run starts (issue #47).
-  The block itself is unchanged.
+  The block itself is unchanged. The report's header carries the same three things in
+  every run, since a headless session can skip the reply text: the run id in its
+  `would have been` form, a `Hint:` line, and the branch a run would use.
 - The input guard says that on a non-GitHub host ticket text obtained by any means is a
   file input, so the credential scan sees it, and names `--branch`; the README gets an
   export example (issue #47).

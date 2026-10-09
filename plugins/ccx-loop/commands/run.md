@@ -4,7 +4,7 @@ argument-hint: '<#n | issue URL | file path | "description">... [--effort low|me
 allowed-tools: Bash(git status:*), Bash(git rev-parse:*), Bash(git remote:*), Bash(gh repo view:*), Bash(gh issue view:*), Bash(gh pr view:*), Bash(git ls-remote *), Bash(git check-ref-format *), Bash(git -C * remote -v), Bash(git -C * rev-parse *), Read, Skill
 ---
 
-You are a thin forwarder for the ccx-loop orchestrator. Do the steps below in order.
+You are a thin forwarder for the ccx-loop orchestrator. Do the steps below in order. Your reply has two parts, in this order: the text of step 3, then the Skill call of step 4. The tool calls of step 2 may come first; a reply that goes from them straight to the Skill call has skipped step 3, and the user then sees nothing of the invocation until the skill reports.
 
 1. Parse the arguments shown between the markers below. They are what the user typed after the command. Split them into inputs and flags with these rules.
 
@@ -35,7 +35,7 @@ You are a thin forwarder for the ccx-loop orchestrator. Do the steps below in or
 
    Run no other command, write no file, and do not load the skill when you reject.
 
-3. State the parsed invocation to the user as this block, with every flag at its effective value. List each input on its own line, as `issue <#n or URL>`, `file <path>`, or `text "<description>"`. Write `mode: plan-only` when `--plan-only` is given, else `mode: run`. This step's text (the hint when it applies, the block, and the two lines after it) is required output in every session, headless included: write it in your reply before the Skill call of step 4, never only inside the call's arguments.
+3. Write, as text in your reply, the parsed invocation as this block, with every flag at its effective value. List each input on its own line, as `issue <#n or URL>`, `file <path>`, or `text "<description>"`. Write `mode: plan-only` when `--plan-only` is given, else `mode: run`. This step's text (the hint when it applies, the block, and the two lines after it) is required output in every session, headless included. It is a text block of your reply, written before the Skill call of step 4; the call's arguments repeat the block and do not replace this text, and a sentence that paraphrases the values is not this text.
 
    When the ad-hoc description is numbers only, print this one line before the block, and go on: "hint: the description is only numbers; the run id and branch below are derived from it. Ticket text goes in a file input, which the credential scan covers, and `--branch <name>` sets the branch (README, non-GitHub hosts)." A description is numbers only when it is not empty, holds at least one number, and every token, after splitting on spaces, is a number or a joining word. A number is digits with an optional `#` prefix and an optional trailing `,` or `;`. A joining word is `and`, `or`, `plus`, `with`, `then`, `also`, `to`, `&`, `+`, `,`, `;`, or `/`, case-insensitive. A token such as `12345,67890` is not a number, so that description is not numbers only.
 
@@ -59,4 +59,4 @@ flags:
 
    After the block, print these two lines as preflight output. They are not part of the block and are not passed to the skill. `run id: <yyyy-mm-dd of today>-<inputs>`, where inputs is the issue numbers joined with `-`, else the slug of the description, else the slug of the file name (a slug is lowercase letters, digits, and hyphens, at most 40 characters), followed by "(-2, -3, ... is appended when `.ccx/<run id>/` exists)". `branch: <name>`, where `<name>` is: the `--branch` value; else, with `--continue`, that branch marked "(continued)"; else, with no issue input, `work/<slug>`; else, with issue inputs, `fix/<ids>-<slug> when any issue has a bug label or a title starting with "fix", else feat/<ids>-<slug>; settled in Step 3.7 item 2` (this command fetches no labels or titles, so it states the rule, not a name). With `--plan-only` the line is `branch: none (plan-only creates no branch; a run would use <name>)`. The run id rule is the skill's Artifacts section and the branch rule is its Step 3.7 item 2.
 
-4. Invoke the Skill tool with skill `ccx-loop:ccx-loop` and that same block as the args. Then follow the skill from Step 0. Do not interpret the request, plan, or act on it yourself, and write no file: the skill records the invocation in its own first step.
+4. Only after step 3's text is in your reply, invoke the Skill tool with skill `ccx-loop:ccx-loop` and that same block as the args. Then follow the skill from Step 0. Do not interpret the request, plan, or act on it yourself, and write no file: the skill records the invocation in its own first step.
