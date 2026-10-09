@@ -294,9 +294,11 @@ These are in this skill's base directory.
 
 The step files hold the steps and the mechanics that only those steps use. Read each at
 its read-at point and not before, so a run carries only the text of the steps it has
-reached. When a step cites a step or section whose file is not yet read, read that file
-then: reading a file early authorizes nothing in it, and the order of the steps is
-unchanged. The one such early read this skill knows of is Step 3.5.3's reading of a
+reached. When a step must carry out a procedure of a step or section whose file is not
+yet read, read that file then; a sentence that only says where a later step's rule
+lives, such as the Reviewer contract's pointers to the Implementer prompt and Step 4.2,
+is not a read. Reading a file early authorizes nothing in it, and the order of the steps
+is unchanged. The one such early read this skill knows of is Step 3.5.3's reading of a
 continued branch's pull requests as Step 7.2 does.
 
 - `steps/0-preflight.md`: the Codex availability and fallback rules, and Step 0. Read

@@ -20,7 +20,8 @@ Given an issue, a file of notes, or a short description, the loop:
 4. Creates a branch, runs the repo's checks once as a baseline, and has an implementer
    build each slice of the plan. Codex is the default at every tier, at a model that
    rises with the tier. At high and xhigh the plan picks Sonnet for a slice that
-   carries a risk trigger, owns more than eight files, or adds a new module or interface.
+   carries a risk trigger, owns more than eight files, or adds a new module, type,
+   interface, or rule section that another file cites.
    Sonnet is also the fallback. Codex slices run one at a time; Sonnet slices
    may run in parallel. Claude reviews each slice.
 5. Has one reviewer role review the whole diff. A higher-risk run gets Claude, with the
@@ -380,7 +381,8 @@ The implementer is Codex at the tier's model, one default per tier. A slice goes
 `gpt-6-luna` at every tier when its change is one function or one behavior in at most two
 files, it meets none of the Sonnet criteria below, and it adds no dependency. At high and
 xhigh, Sonnet replaces the tier's model for a slice that carries a risk trigger, owns
-more than eight files, or adds a new module or interface. Sonnet is also the fallback when `--no-codex`
+more than eight files, or adds a new module, type, interface, or rule section that
+another file cites. Sonnet is also the fallback when `--no-codex`
 is set, when Codex is unavailable at Step 0.6, and when a Codex implementer call returns
 `failed` or no status line twice in a row. A Sonnet slice whose call errors stops the
 run. Codex has no network, so the orchestrator installs any
