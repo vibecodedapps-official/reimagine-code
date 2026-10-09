@@ -241,6 +241,14 @@ Behavior carries over from ccl 0.10.0 except as listed.
 - **Audit coupling.** Unchanged. The loop writes `handoff.md` and `cca-manifest.json` and
   suggests `/cca:audit`, all optional, and works without the audit plugin. These names
   stay until the audit plugin joins the suite.
+- **Step files.** From 0.7.0 the skill is a core plus `steps/0-preflight.md`,
+  `steps/1-plan.md`, `steps/4-build.md`, and `steps/7-publish.md`. Each is read when its
+  step starts, so a plan-only run never loads the build or publish steps. Lint 16c holds
+  the core under its word cap and requires every step file in Supporting files.
+- **Tiers and routing.** Three tiers, `medium`, `high`, and `xhigh`, set the ceiling and
+  the budget. The model for each slice comes from the work: the small-slice rule sends a
+  slice to `gpt-6-luna`, and a `.ccx.json` `models` key overrides one role's model at
+  every tier and nothing else.
 
 ### cca (Claude)
 
@@ -266,6 +274,12 @@ five agents, and one orchestrator skill with its stage files and eight POSIX sh 
   directory for raw command output; the folder is outside every collected input.
 - **Loop coupling.** The names the loop writes, `handoff.md`, `cca-manifest.json`, and
   `/cca:audit`, are shared interfaces in one repository and stay frozen.
+- **Evidence rules.** The audit-only rules are in `audit-evidence.md`, copied by stage 1
+  next to `common.md` and read by the auditor, the adversary, and the Codex request (and
+  the second-opinion fallback). It is hashed as an input of stages 4 to 7.
+- **Defaults by role.** Digester `haiku`, mapper `sonnet`, merger `sonnet`, auditor and
+  adversary `opus`. The second opinion is `gpt-6-luna` at low and `gpt-6.1-sol` at
+  medium and high, resolved by stage 6 from `codex-model: default`.
 
 ### ccx (Codex)
 

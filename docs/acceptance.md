@@ -69,7 +69,7 @@ name a plugin are rerun under the new names and recorded here.
    the records.
 7. **Loop plan runs on a local remote.** Setup: scratch git repositories, each with
    `math.mjs`, `test.mjs`, a `package.json` whose `test` script passes, and a local bare
-   `origin`. Command: `/ccx-loop:plan "<a one-function change>" --effort low`, in
+   `origin`. Command: `/ccx-loop:plan "<a one-function change>" --effort medium`, in
    headless sessions: with `--no-codex`; with `codex` absent from `PATH`; with the
    `codex` option set to false, never set, and set to true. Expected: each run calls
    `ccx-loop:ccx-loop` with the invocation block and ends `plan-only` with the plan and
@@ -82,7 +82,7 @@ name a plugin are rerun under the new names and recorded here.
    R23. Rerun when a loop command, the option, or Step 0 changes. Run 2026-10-03, and
    2026-10-04 for 0.2.0 and 0.3.0; see the records.
 8. **Loop runs to the end on a local remote.** Setup: as item 7.
-   Command: `/ccx-loop:run "<the same change>" --no-codex --effort low`, in separate
+   Command: `/ccx-loop:run "<the same change>" --no-codex --effort medium`, in separate
    repositories: with `--no-publish` and a committed `.ccx.json` of
    `{"commit": true}`; with `--no-publish` alone; after `git update-index
    --skip-worktree` on an edited file; with `--confirm-plan`, answering no; with
@@ -100,7 +100,7 @@ name a plugin are rerun under the new names and recorded here.
    2026-10-05 for 0.3.1; see the records.
 9. **Loop runs that publish.** Setup: a throwaway GitHub repository with issue #1, a
    one-line bug, and a passing `npm test`; a second one on the same host for the
-   multi-repo run; Codex logged in. Command: `/ccx-loop:run #1 --effort low`; then
+   multi-repo run; Codex logged in. Command: `/ccx-loop:run #1 --effort medium`; then
    ccl items 4, 75, and 114 under the new names, and a `--continue` run on a branch with
    an open PR. Expected: Codex implements and Claude publishes a PR that closes #1;
    with `"commit": true` the snapshot lands in `specs/ccx/<run-id>/`; each item's own
@@ -232,7 +232,8 @@ name a plugin are rerun under the new names and recorded here.
     - where one can be staged, a run that turns higher-risk after the plan.
 
     Expected:
-    - every plan review is `gpt-6-astra`;
+    - every plan review is on the tier's Codex reviewer (`gpt-6.1-sol` at medium,
+      `gpt-6-astra` at high and xhigh);
     - the plan names each slice's implementer, and the Step 5 role with the criterion
       that held, or "none";
     - the trigger, nine-file, and imported-module runs are higher-risk and get Claude;
@@ -320,9 +321,9 @@ name a plugin are rerun under the new names and recorded here.
       67890`, and `/ccx-loop:plan 12345 and 67890 --branch work/ab-12345`, each stopped
       after step 3 of the command;
     - on the GitHub repository, `/ccx-loop:plan #1 #2`, stopped after step 3, and a
-      `--no-codex --effort low` run of `#1 #2` stopped after Step 3.7 creates the branch;
+      `--no-codex --effort medium` run of `#1 #2` stopped after Step 3.7 creates the branch;
     - on the local remote, `/ccx-loop:run "<a one-function change>" --no-codex --effort
-      low --no-publish` three times, with `.ccx.json` `checks` listing in turn a command
+      medium --no-publish` three times, with `.ccx.json` `checks` listing in turn a command
       against an unreachable host, the same command against a reachable one, and a
       command the permission mode denies;
     - a run whose Sonnet implementer is continued into a second round;
@@ -401,6 +402,32 @@ name a plugin are rerun under the new names and recorded here.
     deferred scope claim were not produced. Run on macOS on 2026-10-09 (the record
     below): every case passed, the two not produced on Windows included, and the PR
     bundle's act text; the `under review` and mapped-ref clauses of act did not arise.
+27. **Three tiers, routed models, step files, and cca's cheaper roles.** Setup: the
+    scratch profile of item 7 with `ccx-loop` and `cca` installed from this repository's
+    catalog; the three-file loop fixture with a local bare `origin`; the `full` cca
+    fixture from `sh tests/cca/fixture/build.sh full`. Command, headless:
+    - `/ccx-loop:plan "<a one-function change>" --effort low`;
+    - `/ccx-loop:plan "<the same change>" --no-codex --effort medium`;
+    - `/ccx-loop:run "<the same change>" --effort medium --no-publish`, with Codex;
+    - the same run with a committed `.ccx.json` of `{"models": {"plan-review":
+      "gpt-6-astra", "small-slice": "off", "final-review": "nope"}}`;
+    - `/cca:audit <full manifest> --effort low`.
+
+    Expected: the `--effort low` run prints the one-line rejection naming `--effort
+    medium` and makes no Skill call. The `--no-codex` plan run ends `plan-only` at tier
+    medium with budget 120 from the tier default, and the report's `Plan review:` line
+    names the fallback; the log's Read calls name `steps/0-preflight.md`,
+    `steps/1-plan.md`, `tiers.md`, and `report.md`, and neither `steps/4-build.md` nor
+    `steps/7-publish.md`. The Codex run ends `prepared`, with the plan review and the diff
+    review on `gpt-6.1-sol`, the implementer `gpt-6.1-sol` or `gpt-6-luna` with "codex" or
+    "luna" recorded per slice, and `Model overrides in force: none`. The override run puts
+    the plan review on `gpt-6-astra`, has no `luna` slice, and the report names
+    `final-review` as reported and ignored. The audit ends `reported`; `stages.json`
+    records the requested models `haiku` for each digester, `sonnet` for the mapper,
+    `opus` for the auditors and the adversary, `sonnet` for the merger, and `codex_model`
+    `gpt-6-luna`; `audit-evidence.md` is in the run directory and in the stage 4 to 7
+    input hashes. Covers R72 to R76. Rerun when a tier, a model default, a step file's
+    read-at point, or `audit-evidence.md`'s readers change. Not yet run.
 
 ## Record of runs
 
