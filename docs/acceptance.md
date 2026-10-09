@@ -2810,3 +2810,39 @@ runs. Three Sonnet runners did the work in parallel, the cca cases in one sequen
   `/tmp/acc-46-47/` (the clone, the profile backup, the used profile as `claude-after`
   with its eight cca runs, the loop and GitHub clones with their uncommitted or unpushed
   changes, and the logs), and six cca fixtures under the system temp directory.
+
+### 2026-10-09: ccx-loop 0.6.2, item 25's step 3 cases, before the merge, Windows, after the fix
+
+Windows 11 Pro 10.0.26200, Git Bash, Claude Code 2.1.292, Node 26.4.0, Git
+2.56.0.windows.2. The branch head was f6990fa for every run, read from the working tree
+through the scratch profile of the Windows section above. Four headless runs, `claude -p
+--output-format stream-json --permission-mode auto --model opus`, each sent one message
+and ended on the result event; Codex ran once, the critique of the GitHub plan.
+
+- **Item 25, the three Azure cases: the report header carried the lines; the reply text
+  stayed absent.** On the repository whose only remote is the unreachable `dev.azure.com`
+  URL: `/ccx-loop:run 12345 and 67890`, `/ccx-loop:plan 12345 and 67890`, and the plan
+  with `--branch work/ab-12345`. Each ended `blocked` at Step 0.2 (`git ls-remote` exit
+  128, the repository not found) and printed the report with `Run id: not allocated
+  (would have been 2026-10-09-12345-and-67890)`, a `Hint:` line, and `Branch: none
+  created (a run would use work/12345-and-67890)`, the same with `work/ab-12345` for the
+  `--branch` run. Passed for the header. In the first two runs the `Hint:` line was the
+  rule's text in full; in the `--branch` run it ended at "sets the branch." without
+  "(README, non-GitHub hosts)", and that run set the branch name in backticks and shaped
+  the rest of the report as prose sections rather than the template's. Before the Skill
+  call, the `run` reply held tool calls only; the two `plan` replies held one progress
+  sentence each ("gh failed; need git remote -v." and "gh failed, so select the remote."),
+  not the hint, the block, or the `run id:` and `branch:` lines, so where text appeared it
+  was not step 3's text. After the Skill call, every run's first event was a tool call:
+  the Step 0 echo did not appear as text either. The block passed as the Skill's args was
+  unchanged from 0.6.1, with `branch: work/ab-12345` where given.
+- **Item 25, the GitHub plan with a `bug`-labeled issue: `fix/` named.** On a fresh clone
+  of the throwaway repository, `/ccx-loop:plan #43 #44` (#44 labeled `bug`): the run
+  fetched both issues, reproduced both defects, had Codex review the plan (no blocking
+  objection), and ended `plan-only` with `Run id: 2026-10-09-43-44` and `Branch: none
+  created (a run would use fix/43-44-iseven-is-wrong-for-even-numbers-ccx-loo)`, the
+  name set in backticks in the report. The clone kept `main` only, with a clean tree;
+  nothing was pushed or posted. Passed. The reply before the Skill call was the call
+  itself, and the skill's first event after it was a tool call.
+- Left on the machine: the clone `~/.cache/recode-acceptance/acc-46-47/gh-app2` with its
+  `.ccx/2026-10-09-43-44/`, and the logs `item25f-*.jsonl` and `item25-f.out` beside it.
