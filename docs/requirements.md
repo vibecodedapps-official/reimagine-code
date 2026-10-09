@@ -333,6 +333,7 @@ Added 2026-10-05, when claude-codex-audit 0.8.1 at `eed9fba` joined the suite as
     acceptance (item 22) for the copy, a follow-up, and the deletion; review of stage 6
     for a failed copy and an `ok` call with no `output:` line, which neither plugin can
     be made to produce on demand.
+
 ## Token use, 2026-10-09
 
 Added 2026-10-09 with issue #54, which surveyed the loop's and the audit's token use and

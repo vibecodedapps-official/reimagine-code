@@ -25,7 +25,7 @@ released by a `<plugin>--v<version>` tag.
 
 ## Spokes
 
-- docs/requirements.md: the numbered requirements, v0.1.0's and the audit plugin's, and how each is checked. Read before changing behavior or adding a check.
+- docs/requirements.md: the numbered requirements, v0.1.0's, the audit plugin's, and the token-use ones, and how each is checked. Read before changing behavior or adding a check.
 - docs/architecture.md: the layout, components, house rules, versions, and migration. Read before changing structure, a manifest, or a catalog.
 - docs/implementation-plan-v0.1.0.md: the milestones and their checks. Read before starting or finishing a milestone.
 - docs/decisions.md: decisions with their evidence. Read before reversing a design choice.
