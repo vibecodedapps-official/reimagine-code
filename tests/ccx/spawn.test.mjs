@@ -475,6 +475,19 @@ test('a timed-out run stops a command Codex runs in its own process group, so it
   assert.equal(existsSync(late), false);
 }));
 
+test('the detached command of the fake writes its late file when nothing stops it', spawning, withScratch(async (s) => {
+  const late = join(s.root, 'late.txt');
+  const fake = spawn(process.execPath, [FAKE], { stdio: 'ignore',
+    env: { ...process.env, FAKE_CODEX: 'hang-detached-command', FAKE_CODEX_PIDS: join(s.root, 'pids'), FAKE_CODEX_LATE: late } });
+  try {
+    for (let i = 0; i < 100 && !(existsSync(late) && readFileSync(late, 'utf8') === 'late'); i++) await new Promise((done) => setTimeout(done, 100));
+    assert.equal(readFileSync(late, 'utf8'), 'late');
+  } finally {
+    fake.kill('SIGKILL');
+    try { process.kill(-pids(s)[0], 'SIGKILL'); } catch {}
+  }
+}));
+
 test('a background process left by a successful run is stopped before the result is printed', spawning, withScratch(async (s) => {
   const r = run(s, 'ask', { request: 'q', env: { FAKE_CODEX: 'leaves-stubborn-child' } });
   assert.equal(r.status, 0, r.stdout);

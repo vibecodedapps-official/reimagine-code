@@ -78,7 +78,7 @@ if (argv[0] === '--version') {
 } else if (mode === 'hang-detached-command') {
   // As codex-cli 0.159.2 does: the shell command runs in its own process group, and Codex stops it on SIGINT but not on
   // SIGTERM, which kills Codex at once. The command writes $FAKE_CODEX_LATE after 2.5 s unless it is stopped.
-  const late = spawn(process.execPath, ['-e', `setTimeout(() => require('fs').writeFileSync(${JSON.stringify(process.env.FAKE_CODEX_LATE)}, 'late'), 2500)`],
+  const late = spawn(process.execPath, ['-e', "setTimeout(() => require('fs').writeFileSync(process.env.FAKE_CODEX_LATE, 'late'), 2500)"],
     { detached: true, stdio: 'ignore' });
   pid(late.pid);
   process.on('SIGINT', () => { try { process.kill(-late.pid, 'SIGKILL'); } catch {} process.exit(1); });
