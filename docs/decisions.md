@@ -1273,4 +1273,9 @@ stop condition, default, and limit kept, no must turned into a may, no number mo
    instructions at recommendation time, CI's lint-before-tests order, the release-test
    destinations, acceptance coverage with a positive control, and authorization) and two
    corrections; round 2 five more on the same themes; round 3 converged with the snapshot
-   resolution of item 5 accepted. The final review of the diff is recorded when it runs.
+   resolution of item 5 accepted. The final review of the diff against `main` found no
+   actionable regression; a conformance pass on the same thread found four text
+   mismatches, each fixed: the plan-only branch preview named a branch, the closing's
+   `--live` line depended on the registry entry while the report's did not, act's step
+   1.3 warning had lost its local-ref condition, and act's reconcile promise was
+   unconditional.
