@@ -244,7 +244,8 @@ Runs only when `confirm-plan` is true and the run is not plan-only. Otherwise go
 1. Give each implementer the implementer prompt from Mechanics. No two agents edit the same
    file at the same time.
 2. Run one implementer per slice, at every tier, at the slice's effective model: the
-   tier's Codex model by default, or `sonnet` by the plan's choice at high and xhigh.
+   tier's Codex model by default, `gpt-6-luna` for a slice the small-slice rule picks, or
+   `sonnet` by the plan's choice at high and xhigh.
    `sonnet` is also the fallback, used under item 4 and when
    `--no-codex` is set or Step 0.6 found Codex unavailable. In those two cases, log the
    swap with its reason for each slice. Log each slice's model in `run.md` when its
@@ -320,7 +321,7 @@ Runs only when `confirm-plan` is true and the run is not plan-only. Otherwise go
    is set, the budget becomes the new tier's default from that point; record it in
    `run.md`. Then judge the higher-risk rule on the actual diff, integration fixes
    included, and resolve the Step 5 role from the tier table in `tiers.md`: Claude
-   `code-review` at the tier's level when the run is higher-risk, else Codex `gpt-6-astra`.
+   `code-review` at the tier's level when the run is higher-risk, else the tier's Codex reviewer.
    A run already judged higher-risk stays so. Log the role and the criterion that held, or
    that none did. Step 5 then runs with that role before Step 6. The plan review of Step 3
    is not repeated after implementation. The report says so. If the floor does not apply
@@ -328,8 +329,9 @@ Runs only when `confirm-plan` is true and the run is not plan-only. Otherwise go
 
 ## Step 5: final review
 
-Every tier runs Step 5 with one reviewer role, the one Step 4.5 resolved: Codex
-`gpt-6-astra`, or, for a higher-risk run, the Claude reviewer, the `code-review` skill at
+Every tier runs Step 5 with one reviewer role, the one Step 4.5 resolved: the
+tier's Codex reviewer (`gpt-6.1-sol` at medium, `gpt-6-astra` at high and xhigh), or, for
+a higher-risk run, the Claude reviewer, the `code-review` skill at
 the tier's level (in a worktree run, the Opus substitute of the Claude review contract,
 item 7). For a higher-risk run, confirm the skill is listed as the Claude review contract
 says before 5.1 runs; a worktree run needs no such check, and a lower-risk run needs none
@@ -345,7 +347,7 @@ listed.
    makes in `run.md`.
 2. Judge the higher-risk rule again on the diff as it stands, before every round; a
    positive result sticks and the run never moves back to Codex. Send the complete diff to
-   the run's one reviewer role: Codex `gpt-6-astra` with `ccx:review` as the Reviewer
+   the run's one reviewer role: the tier's Codex reviewer with `ccx:review` as the Reviewer
    contract describes, or the Claude reviewer with `code-review` at the tier's level as
    the Claude review contract describes. Make no edit during the pass. The round is
    complete when the role has returned. In Multi-repo mode the role covers every changed

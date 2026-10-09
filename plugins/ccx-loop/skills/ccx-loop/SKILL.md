@@ -50,7 +50,8 @@ with Codex or Claude subagents, review the work, check, and publish a pull reque
 one unit of work. You review and decide. Codex gives a second opinion on the plan at every
 tier, and on the diff unless the run is higher-risk, when the built-in `code-review` skill
 reviews the diff instead, as the Higher-risk rule in `tiers.md` says. Codex implements
-each slice at the tier's model; at high and xhigh, Sonnet implements a slice instead when
+each slice at the tier's model, or at `gpt-6-luna` when the small-slice rule in `tiers.md`
+holds; at high and xhigh, Sonnet implements a slice instead when
 the Implementer choice criteria apply, and is also the fallback. Follow the steps in
 order. Each step's text is in the step file that Supporting files names, read when that
 step starts and not before. Each step keeps the number of its source rule, so any rule
@@ -377,7 +378,7 @@ snapshot; the ask-first rules found; the Codex availability result; each permiss
 that occurred; the discovered checks with source, whether they run locally, and baseline
 result; every edit made after Step 5.1's last full check run (path, step, reason); per
 round, the findings received, verified, rejected with reason, and fixed; every reviewer
-swap with its reason; the implementer per slice, as the Codex model or the Sonnet criterion,
+swap with its reason; the implementer per slice, as the Codex model, `luna`, or the Sonnet criterion,
 and every implementer swap with its reason; the `--timeout` passed to each Codex
 implementer call and any cap; every Codex thread id with its stage, `implement` threads
 included; every Claude review pass with its stage, round, level, the diff it covered, and
@@ -405,9 +406,19 @@ clone.
 {
   "commit": false,
   "checks": ["npm test", "npm run lint"],
-  "timeouts": { "subagent": 20, "codex": 10, "check": 15, "ci": 45 }
+  "timeouts": { "subagent": 20, "codex": 10, "check": 15, "ci": 45 },
+  "models": { "plan-review": "gpt-6-astra", "small-slice": "off" }
 }
 ```
+
+`models` overrides the model of one role at every tier, in place of the tier table's cell
+in `tiers.md`. `plan-review`, `implementer`, and `final-review` take a full Codex model
+id. `small-slice` takes a full Codex model id, or `off`, which disables the small-slice
+rule. `fallback-reviewer` takes an Agent tool model name (`opus`, `sonnet`, `haiku`, or
+`fable`) and replaces `fable` as the first fallback reviewer; `opus` stays the second. A
+key with any other value is reported in the report and ignored, as an unknown field is.
+An override changes models only: never the tier, the risk floor, the Sonnet criteria, or
+the Claude `code-review` role. The report names each override in force.
 
 Timeouts are minutes. A missing field takes the default. An unknown field is reported in
 the report and ignored. Pass a Codex timeout to ccx in seconds (minutes times 60).

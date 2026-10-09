@@ -19,7 +19,7 @@ call use, and Step 0. The core `SKILL.md` stays in force throughout.
    table in `tiers.md` for the default and the fallback of each stage.
 3. A fallback reviewer is a Claude subagent started with the Agent tool at the model `tiers.md`
    names for the Codex model it replaces (`fable`, then `opus` on an
-   Agent error, for `gpt-6-astra`, at any tier), given the same request text, the same files,
+   Agent error, for the tier's Codex reviewer, at any tier), given the same request text, the same files,
    and the same required reply shape, and told to read and report only, never edit. For a
    diff stage it reads `git diff <base-commit>` itself, after new files are marked with
    `git add -N`. In a worktree run the fallback reviewer is given the worktree path and reads

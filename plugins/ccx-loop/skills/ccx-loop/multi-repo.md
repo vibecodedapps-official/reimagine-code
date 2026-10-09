@@ -83,7 +83,7 @@ names, for each repository, and leaves the rest of that step as written.
 - Step 5.2: review only repositories that have a diff from their base commit (`git -C <path>
   diff <base> --stat`, after `git -C <path> add -N` of new files). A repository with an
   empty diff is skipped and named in `run.md`.
-  - The run's reviewer role, Codex `gpt-6-astra` or Claude, covers every repository with a
+  - The run's reviewer role, the tier's Codex reviewer or Claude, covers every repository with a
     diff, and the Higher-risk rule of `tiers.md` is judged before each round. Write
     `.ccx/<run-id>/diff-<slug>.patch` from `git -C <path> diff <base>` for every
     additional repository with a diff, whichever role is chosen, because the fallback

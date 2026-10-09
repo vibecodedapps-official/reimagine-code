@@ -139,8 +139,9 @@ tier has one or more slices that share no file. You set the count from the chang
 when two parts of the work touch disjoint files and one agent would otherwise carry more
 than one area or more than one subagent timeout of work; do not split work that shares a
 file. State in the order of work which slices are independent and which must run in order.
-At every tier, record the implementer per slice, "codex" or, at high and xhigh, the Sonnet
-criterion, from the Implementer choice section of `tiers.md`. Judge the higher-risk rule
+At every tier, record the implementer per slice, "codex", "luna" (the small-slice rule),
+or, at high and xhigh, the Sonnet criterion, from the Implementer choice section and the
+routing rule of `tiers.md`. Judge the higher-risk rule
 of `tiers.md` on the plan, and record the Step 5 role it picks with the criterion that
 held, or that none did. With `--branch` and plan-only, record the name in the plan and
 create nothing. A plan that turns out to need edits in a writable checkout that is neither
@@ -149,8 +150,9 @@ rerun command.
 
 ## Step 3: plan review and converge
 
-Every tier. The reviewer for the stage comes from the tier table in `tiers.md`: Codex
-`gpt-6-astra`, at every tier.
+Every tier. The reviewer for the stage comes from the tier table in `tiers.md`: the tier's
+Codex reviewer, `gpt-6.1-sol` at medium and `gpt-6-astra` at high and xhigh, unless the
+`models` override in Repo config names another. Record the model that reviewed the plan.
 
 1. Send the plan file path and the `inputs.md` path to the reviewer, using `ccx:ask`
    with the request shape in the Reviewer contract. Say in the request what blocking means

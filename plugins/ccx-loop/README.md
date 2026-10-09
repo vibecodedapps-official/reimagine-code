@@ -284,6 +284,7 @@ run in `blocked` before anything is written.
 | `commit` | `false` | Either way the run works in `.ccx/<run-id>/`, which is git-ignored. When `true`, the plan and a provisional report are also copied to `specs/ccx/<run-id>/` and committed on the work branch at publish. |
 | `checks` | discovered | List of commands to run as the repo's checks. The listed commands run first. Checks discovered from package scripts, `Makefile`, `pyproject`, and CI workflow jobs are added, and duplicates are dropped. |
 | `timeouts` | see below | Time budgets in minutes. |
+| `models` | the tier's models | Overrides the model of a role at every tier. `plan-review`, `implementer`, and `final-review` take a full Codex model id. `small-slice` takes a full Codex model id, or `off` to disable the small-slice rule. `fallback-reviewer` takes `opus`, `sonnet`, `haiku`, or `fable` and replaces `fable` as the first fallback reviewer; `opus` stays the second. Any other value is reported and ignored. An override changes models only, never the tier, the risk floor, the Sonnet criteria, or the Claude `code-review` role, and the report names each one in force. |
 
 Default timeouts, in minutes: `subagent` 20, `codex` 10, `check` 15, `ci` 45. The
 `run` default is by tier: 120 at medium, 240 at high, 360 at xhigh. The
@@ -347,9 +348,9 @@ model output, not approval.
 
 | Step | Medium | High | xhigh |
 |---|---|---|---|
-| Plan review | Codex `gpt-6-astra` | Codex `gpt-6-astra` | Codex `gpt-6-astra` |
-| Implement | Codex `gpt-6.1-sol` per slice, orchestrator reviews | Codex `gpt-6-astra`, or Sonnet by criteria, per slice | Codex `gpt-6-astra`, or Sonnet by criteria, per slice |
-| Final review | Codex `gpt-6-astra`, or Claude `code-review medium` | Codex `gpt-6-astra`, or Claude `code-review high` | Codex `gpt-6-astra`, or Claude `code-review xhigh` |
+| Plan review | Codex `gpt-6.1-sol` | Codex `gpt-6-astra` | Codex `gpt-6-astra` |
+| Implement | Codex `gpt-6.1-sol`, or `gpt-6-luna` by the small-slice rule, per slice, orchestrator reviews | Codex `gpt-6-astra`, Sonnet by criteria, or `gpt-6-luna` by the small-slice rule, per slice | Codex `gpt-6-astra`, Sonnet by criteria, or `gpt-6-luna` by the small-slice rule, per slice |
+| Final review | Codex `gpt-6.1-sol`, or Claude `code-review medium` | Codex `gpt-6-astra`, or Claude `code-review high` | Codex `gpt-6-astra`, or Claude `code-review xhigh` |
 
 Review of the inputs, checks, and publish run at every tier. The tier is sized from
 behavioral risk, and xhigh from how many areas that share no file the change
@@ -364,19 +365,22 @@ The final review has one reviewer role per run. A run is higher-risk when the ch
 carries a risk trigger, touches more than eight distinct files across all slices, or
 adds a new module, type, interface, or rule section that another file cites. A
 higher-risk run gets Claude, the `/code-review` skill at the tier's level, or its Opus
-stand-in in a worktree run and for each additional repository. Any other run gets Codex
-`gpt-6-astra`. The rule is judged on the plan, again on the diff after implementation,
+stand-in in a worktree run and for each additional repository. Any other run gets the
+tier's Codex reviewer, `gpt-6.1-sol` at medium and `gpt-6-astra` at high and xhigh. The
+rule is judged on the plan, again on the diff after implementation,
 and before each later round and each CI repair review. Once a run is higher-risk it stays
 so and keeps Claude for its remaining rounds; a lower-risk run that turns higher-risk
 in the final review or a CI repair and finds `/code-review` missing ends in `blocked`.
 The rule picks the reviewer only: it never raises the tier. Rounds are capped at 3,
 shared by both roles. When Codex is unavailable, or under `--no-codex`, a Claude subagent
 replaces the Codex reviewer for a lower-risk run; the `code-review` pass is never
-swapped. `gpt-6.1-sol` is never a reviewer.
+swapped. `gpt-6.1-sol` reviews at medium only; `gpt-6-luna` never reviews.
 
-The implementer is Codex at the tier's model, one default per tier. At high and
-xhigh, Sonnet replaces it for a slice that carries a risk trigger, owns more than eight
-files, or adds a new module or interface. Sonnet is also the fallback when `--no-codex`
+The implementer is Codex at the tier's model, one default per tier. A slice goes to
+`gpt-6-luna` at every tier when its change is one function or one behavior in at most two
+files, it meets none of the Sonnet criteria below, and it adds no dependency. At high and
+xhigh, Sonnet replaces the tier's model for a slice that carries a risk trigger, owns
+more than eight files, or adds a new module or interface. Sonnet is also the fallback when `--no-codex`
 is set, when Codex is unavailable at Step 0.6, and when a Codex implementer call returns
 `failed` or no status line twice in a row. A Sonnet slice whose call errors stops the
 run. Codex has no network, so the orchestrator installs any
