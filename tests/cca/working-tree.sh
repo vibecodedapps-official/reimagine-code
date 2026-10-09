@@ -818,17 +818,17 @@ run build "$A"
 expect "case 20" 0 "head 439a2d83c3ce4f770ac61cd88234e4176e51027f\nparent 0c23936980b254c4abd489d3ecfd296f5e7bc0db\ntree b2943d241184d80d26a88e5e3534be7989c52dc0\nuntracked notes/deactivate-draft.txt\nuntracked notes/lf.txt\n" ''
 
 # 21. the object count is git's: a stray .git/objects/maintenance.lock or a tmp_obj file
-# in a fan-out directory does not change it (negative control), and a new object adds one
-# (positive control).
+# in a real fan-out directory (ab; git warns about it on stderr) does not change it
+# (negative control), and a new object adds one (positive control).
 case_id="case 21"
 fresh
 n0=$(loose "$A")
 : > "$A/.git/objects/maintenance.lock"
-mkdir -p "$A/.git/objects/zz"
-: > "$A/.git/objects/zz/tmp_obj_zz"
+mkdir -p "$A/.git/objects/ab"
+: > "$A/.git/objects/ab/tmp_obj_ab"
 [ "$(loose "$A")" = "$n0" ] || mismatch "case 21: stray files changed the object count"
-rm -f "$A/.git/objects/maintenance.lock" "$A/.git/objects/zz/tmp_obj_zz"
-rmdir "$A/.git/objects/zz"
+rm -f "$A/.git/objects/maintenance.lock" "$A/.git/objects/ab/tmp_obj_ab"
+rmdir "$A/.git/objects/ab" 2> /dev/null || :
 printf 'case 21\n' | git -C "$A" hash-object -w --stdin > /dev/null
 [ "$(loose "$A")" = "$(expr "$n0" + 1 2> /dev/null)" ] || mismatch "case 21: a new object did not add one"
 
