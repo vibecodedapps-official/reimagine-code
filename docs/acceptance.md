@@ -189,7 +189,8 @@ name a plugin are rerun under the new names and recorded here.
     2026-10-03 for 0.1.0, 2026-10-04 for 0.1.1, 0.1.2, 0.1.3, 0.2.0, and 0.3.0,
     2026-10-05 for 0.3.1 and cca 0.9.0, and 2026-10-06 for 0.3.2, cca 0.9.1, and
     repo-docs 0.1.5, for 0.4.0, and for 0.5.0, 2026-10-07 for 0.6.0 and cca 0.10.0, and
-    2026-10-09 for 0.6.1, cca 0.10.1, and repo-docs 0.1.6; see the records.
+    2026-10-09 for 0.6.1, cca 0.10.1, and repo-docs 0.1.6, and 2026-10-09 for 0.6.2 and
+    cca 0.10.2; see the records.
 18. **Install from GitHub.** Setup: on macOS and on Windows 11 with both CLIs from npm,
     new scratch profiles on each host. Command: the four lines of R3, then `claude plugin
     install ccx-loop@reimagine-code` and `codex plugin add
@@ -2846,3 +2847,19 @@ and ended on the result event; Codex ran once, the critique of the GitHub plan.
   itself, and the skill's first event after it was a tool call.
 - Left on the machine: the clone `~/.cache/recode-acceptance/acc-46-47/gh-app2` with its
   `.ccx/2026-10-09-43-44/`, and the logs `item25f-*.jsonl` and `item25-f.out` beside it.
+
+### 2026-10-09: release ccx 0.6.2, ccx-loop 0.6.2, and cca 0.10.2
+
+Windows 11 Pro 10.0.26200, Git Bash, Claude Code 2.1.292, codex-cli 0.160.1, Node 26.4.0.
+The release commit was 7b5fe58, the merge of PR 52, which bundled issues 46 and 47 and the
+four CodeQL alerts; both issues closed with it, and CodeQL marks alerts 1 to 4 fixed.
+PR 52's last CI run, 37974074867 at c95785a, passed on ubuntu-latest, macos-latest, and
+windows-latest with no rerun, and the `main` run for the merge, 37975649437, passed on all
+three with no rerun. repo-docs stays at 0.1.6 and was not tagged.
+
+- **Item 17 passed for this release.** The dry runs named `ccx--v0.6.2`,
+  `ccx-loop--v0.6.2`, and `cca--v0.10.2` at HEAD. `claude plugin tag --push` created and
+  pushed the three at 7b5fe58 in that order; `git ls-remote` showed each peeling to
+  7b5fe58, and no bare `v` tag. `npm run lint` on `main` printed `lint: ok` with the tags
+  present.
+- Not run: items 11 and 18, the installs from GitHub, and item 16, for this release.
