@@ -25,6 +25,27 @@ jobs:
         with:
           node-version: 22
       - run: npm run lint
+      - name: Exclude the workspace and temp from Defender
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          # The sh suites fork thousands of processes over small files; real-time scanning on
+          # every write may be part of the Windows job's cost (issue 48). The paths printed
+          # first say where the suites' temp files sit, for comparison with the exclusions.
+          (Get-Command sh).Source
+          sh -c 'set -e; d=$(mktemp -d -u); cygpath -m "$d"'
+          node -e 'console.log(require("os").tmpdir())'
+          $paths = @($env:GITHUB_WORKSPACE, $env:RUNNER_TEMP, $env:TEMP)
+          if (-not (Get-Command Add-MpPreference -ErrorAction SilentlyContinue)) {
+            Write-Warning 'defender exclusion: unavailable (no Add-MpPreference)'
+            exit 0
+          }
+          Add-MpPreference -ExclusionPath $paths
+          $set = (Get-MpPreference).ExclusionPath
+          foreach ($p in $paths) {
+            if ($set -notcontains $p) { throw "defender exclusion: $p not set" }
+          }
+          Write-Output 'defender exclusion: applied'
       - run: npm test
       - name: cca awk suites with mawk
         # Ubuntu's default awk is gawk; the audit plugin's scripts must also run on mawk.
