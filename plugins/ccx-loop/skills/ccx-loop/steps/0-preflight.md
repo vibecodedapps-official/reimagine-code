@@ -1,4 +1,10 @@
-### Codex availability and fallback
+# Step 0: preflight
+
+Read this file at the start of Step 0, after `multi-repo.md` when `repos` is not `none`.
+It holds the Codex availability and fallback rules, which Step 0.6 and every later Codex
+call use, and Step 0. The core `SKILL.md` stays in force throughout.
+
+## Codex availability and fallback
 
 1. Codex is available when `codex --version` succeeds, `--no-codex` is not set, and the
    plugin option `codex` does not turn it off. That option reads `${user_config.codex}`:
@@ -286,4 +292,3 @@ it. Step 0 creates nothing except artifacts.
 Branch creation and the baseline check happen in Step 3.7.2 and 3.7.3. Planning changes no
 file content and discards none. The one tree change before Step 3.7.2 is a consented `git
 switch` or fast-forward of a clean checkout (Step 0.2), recorded in `run.md`.
-

@@ -1,50 +1,62 @@
-   The same holds for a Codex implementer call that returns `failed` or no status line,
-   because it may have written part of its slice. So before every Codex implementer or
-   fix call, including a retry or CI repair, in the checkout the call runs in, record
-   `git status --porcelain --untracked-files=all` without `--ignored`, the current
-   `git diff` of tracked and intent-to-add paths, and `git hash-object` of each
-   untracked, non-ignored file outside `.ccx/`, with its repo-relative path. Save them as
-   `.ccx/<run-id>/pre-<n>.status`, `pre-<n>.patch`, and `pre-<n>.hashes` under the
-   session's original checkout. Number calls from 1 across all checkouts, retries and
-   CI repairs included; record each call's checkout in `run.md`. Keep every set.
-   After a call that returns
-   `failed` or no status line, before its retry or the Sonnet fallback after a second
-   failure:
-   - The previous call must have returned its output, in the foreground or as a background
-     completion notification, since ccx ends the Codex process when its turn ends
-     or the Bash call times out. A call whose output never arrives is a budget expiry: end
-     the run in `blocked`, and start no other writer on that checkout. A Bash tool result
-     that is a timeout error or is cut off, with no `status:` line from ccx, is
-     output that never arrived, not a "no status line" result: it takes this path, on
-     every platform.
-   - Output that says Codex may still be running (ccx prints "codex may still be
-     running as pid" when the process outlived its hard end, and on Windows warns that
-     child processes may still be running after a timeout) is treated the same way: end
-     in `blocked` naming it, and start no other writer.
-   - A `failed` result on Windows has no such warning even though a command Codex started
-     may outlive it, and nothing available to you proves its process tree is gone; a
-     result with no status line was cut off before the runner could warn at all. On
-     Windows a Codex implementer call that returns `failed` or no status line is
-     therefore not retried and gets no Sonnet fallback: end the run in `blocked` naming
-     the possible surviving process. On POSIX the runner stops the process group, so the
-     returned output is the evidence.
-   - Compare `git status --porcelain --untracked-files=all` and the current diff with
-     that call's snapshot and patch, and compare the hashes of untracked files with
-     its saved hashes. An untracked file outside the slice whose hash changed ends
-     the run in `blocked` naming it, even when its status line is unchanged.
-     Never touch an ignored (`!!`) path or anything
-     under `.ccx/`. Cleanup applies only outside the slice to a status line new or
-     different from the snapshot. For a path clean before the call, restore a tracked
-     file with `git checkout -- <path>` or delete an untracked, non-ignored file. If a
-     path was already dirty or intent-to-add before the call and now differs from its
-     saved state or patch, end in `blocked` naming it; never run `git checkout --` on
-     it. Check the saved patch even when its status line is unchanged. Leave unchanged
-     earlier work alone. Log each cleanup action or block in `run.md`. Then give the
-     next call the current diff with the same slice prompt.
+# Steps 3.5 to 6: build
 
-   The threshold stays two failures in a row. Step 4.2 item 4 applies this rule.
+Read this file when Step 3 ends with a final plan in a run that is not plan-only: at the
+start of Step 3.5 with `confirm-plan`, else at the start of Step 3.7. It holds the Codex
+implementer call snapshots that Approval scope carve-out 6 names, the Claude review
+contract, the Implementer prompt, and Steps 3.5, 3.7, 4, 5, and 6. Step 3.5.3 reads a
+continued branch's pull requests as Step 7.2 does; read `steps/7-publish.md` for that
+item when it applies, which authorizes nothing in Step 7.
 
-### Claude review contract
+## Codex implementer call snapshots
+
+A Codex implementer call that returns `failed` or no status line is handled like a
+dropped call (Approval scope, carve-out 6), because it may have written part of its
+slice. So before every Codex implementer or fix call, including a retry or CI repair,
+in the checkout the call runs in, record `git status --porcelain
+--untracked-files=all` without `--ignored`, the current `git diff` of tracked and
+intent-to-add paths, and `git hash-object` of each
+untracked, non-ignored file outside `.ccx/`, with its repo-relative path. Save them as
+`.ccx/<run-id>/pre-<n>.status`, `pre-<n>.patch`, and `pre-<n>.hashes` under the
+session's original checkout. Number calls from 1 across all checkouts, retries and
+CI repairs included; record each call's checkout in `run.md`. Keep every set.
+After a call that returns
+`failed` or no status line, before its retry or the Sonnet fallback after a second
+failure:
+- The previous call must have returned its output, in the foreground or as a background
+  completion notification, since ccx ends the Codex process when its turn ends
+  or the Bash call times out. A call whose output never arrives is a budget expiry: end
+  the run in `blocked`, and start no other writer on that checkout. A Bash tool result
+  that is a timeout error or is cut off, with no `status:` line from ccx, is
+  output that never arrived, not a "no status line" result: it takes this path, on
+  every platform.
+- Output that says Codex may still be running (ccx prints "codex may still be
+  running as pid" when the process outlived its hard end, and on Windows warns that
+  child processes may still be running after a timeout) is treated the same way: end
+  in `blocked` naming it, and start no other writer.
+- A `failed` result on Windows has no such warning even though a command Codex started
+  may outlive it, and nothing available to you proves its process tree is gone; a
+  result with no status line was cut off before the runner could warn at all. On
+  Windows a Codex implementer call that returns `failed` or no status line is
+  therefore not retried and gets no Sonnet fallback: end the run in `blocked` naming
+  the possible surviving process. On POSIX the runner stops the process group, so the
+  returned output is the evidence.
+- Compare `git status --porcelain --untracked-files=all` and the current diff with
+  that call's snapshot and patch, and compare the hashes of untracked files with
+  its saved hashes. An untracked file outside the slice whose hash changed ends
+  the run in `blocked` naming it, even when its status line is unchanged.
+  Never touch an ignored (`!!`) path or anything
+  under `.ccx/`. Cleanup applies only outside the slice to a status line new or
+  different from the snapshot. For a path clean before the call, restore a tracked
+  file with `git checkout -- <path>` or delete an untracked, non-ignored file. If a
+  path was already dirty or intent-to-add before the call and now differs from its
+  saved state or patch, end in `blocked` naming it; never run `git checkout --` on
+  it. Check the saved patch even when its status line is unchanged. Leave unchanged
+  earlier work alone. Log each cleanup action or block in `run.md`. Then give the
+  next call the current diff with the same slice prompt.
+
+The threshold stays two failures in a row. Step 4.2 item 4 applies this rule.
+
+## Claude review contract
 
 The Claude reviewer is the built-in `code-review` skill. It is the one reviewer role of a
 higher-risk run in Step 5, as the Higher-risk rule in `tiers.md` says, not a fallback,
@@ -94,7 +106,7 @@ and nothing replaces it. A lower-risk run never uses it.
    role is the Opus subagent `multi-repo.md` describes. A run that turns higher-risk after
    Codex rounds starts these fresh: there is no earlier subagent to continue.
 
-### Implementer prompt
+## Implementer prompt
 
 Each implementer runs at the slice's effective model. A Codex slice goes through the Skill
 tool to `ccx:implement`, with the prompt below as the request text and the args
@@ -401,4 +413,3 @@ listed.
    cap is already used up, end in `blocked`, naming the round cap).
    Then run the full set again. Step 6 runs at most 3 times. A failure still open after the
    third ends the run in `blocked`.
-

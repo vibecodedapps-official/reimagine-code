@@ -1,8 +1,8 @@
 # CI watch
 
-Read this file at Step 7.3 of `SKILL.md`. It holds Step 7.3 items 1 to 4: what CI to
-read, which workflows apply, what passes, and how to poll. Item 5, CI repair, stays in
-`SKILL.md`.
+Read this file at Step 7.3 of `steps/7-publish.md`. It holds Step 7.3 items 1 to 4: what
+CI to read, which workflows apply, what passes, and how to poll. Item 5, CI repair, stays
+in `steps/7-publish.md`.
 
    1. Read these with `gh`, all readable with read access. If any read fails, CI cannot be
       verified: end in `blocked`, naming the failed read. Never treat a failed read as "nothing

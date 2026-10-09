@@ -38,14 +38,14 @@ Rules for roles:
   implementer's fallback is `sonnet` alone.
 - The Claude reviewer is the built-in `code-review` skill, called through the Skill tool
   with the level the tier table names as the first argument, then the range
-  `<base-commit>...HEAD` as the target, as the Claude review contract in `SKILL.md` says,
+  `<base-commit>...HEAD` as the target, as the Claude review contract in `steps/4-build.md` says,
   never `--comment` and never `--fix`. It is the final review's one reviewer role for a
   higher-risk run, chosen by the higher-risk rule below. It is not a fallback for the
   Codex reviewer, and nothing falls back to it or replaces it. A lower-risk run never uses
   it. `--no-codex` does not touch it: a higher-risk run under `--no-codex` gets Claude as
   its role anyway, so `--no-codex` changes nothing for its final review. Its availability
   is checked only when a higher-risk Step 5 starts, so plan-only runs and lower-risk runs
-  do not need it. The Reviewer contract in `SKILL.md` gives the call shape and the budget.
+  do not need it. The Reviewer contract in `steps/1-plan.md` gives the call shape and the budget.
   In a worktree run, and in Multi-repo mode for each additional repository, the Claude
   role is an Opus subagent, a defined substitute for a checkout the skill cannot target,
   and not a swap.
@@ -58,12 +58,12 @@ Rules for roles:
   in a row. The fallback model is the one the roles table gives: `fable`, then `opus`, for a
   reviewer, and `sonnet` for an implementer. A Codex implementer call that returns
   `failed` or no status line is retried or swapped only under the preconditions of Step
-  4.2.4 in `SKILL.md`, which include the state of the process and the tree. A `refused`
+  4.2.4 in `steps/4-build.md`, which include the state of the process and the tree. A `refused`
   status is not retried and is not swapped: it ends the run in `blocked` with the
   message, for a reviewer and for an implementer, except an implementer refusal whose
   message contains "implement was not run:", the host's write sandbox, which swaps
   the slice to `sonnet` and marks Codex implementation unavailable for the run (Step
-  4.2.4 in `SKILL.md`). A `timeout` status is a budget expiry
+  4.2.4 in `steps/4-build.md`). A `timeout` status is a budget expiry
   and ends the run in `blocked` with the budget named: the Codex budget for a reviewer,
   the implementer `--timeout` for an implementer.
 - Write every swap to the run log with the stage, the reason, and the fallback model. Every
@@ -80,7 +80,7 @@ Rules for roles:
 | 5 Final review | Codex `gpt-6-astra`, or Claude `code-review low` | Codex `gpt-6-astra`, or Claude `code-review medium` | Codex `gpt-6-astra`, or Claude `code-review high` | Codex `gpt-6-astra`, or Claude `code-review xhigh` |
 
 Steps 1, 2, 6, and 7 run the same at every tier. The rows keep their step numbers,
-because `SKILL.md` refers to the table by step.
+because the step files refer to the table by step.
 
 The final review has one reviewer role per run, chosen by the higher-risk rule below. A
 higher-risk run gets Claude: the `code-review` skill at the tier's level, or its defined
@@ -176,7 +176,7 @@ Record the choice in the plan next to the slice, as "codex" or the criterion tha
 applied. Log it in the run log when the slice's implementer starts, and list it in the
 final report per slice with the reason. The plan reviewer may object to a choice; the
 objection is handled like any other. Codex having no network does not change the choice:
-see Step 3.7 and Step 4.3 in `SKILL.md`.
+see Step 3.7 and Step 4.3 in `steps/4-build.md`.
 
 The slice's effective model is the chosen model (the tier's Codex model, or `sonnet`), or
 `sonnet` after an implementer swap (see Rules for roles). Every later call for that

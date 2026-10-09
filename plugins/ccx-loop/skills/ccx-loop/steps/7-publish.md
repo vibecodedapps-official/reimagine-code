@@ -1,3 +1,8 @@
+# Step 7: publish
+
+Read this file at the start of Step 7. It holds Step 7; Step 7.3 items 1 to 4 are in
+`ci-watch.md`, read at Step 7.3.
+
 ## Step 7: publish
 
 Publish runs only when no blocking defect is open and Step 6 passes. Otherwise end in
@@ -83,4 +88,3 @@ anything is pushed, stop Step 7 and end in `prepared`.
    link.
 5. List deferred and out-of-scope items in the report, each with a short description and the
    reason it was deferred. Do not open issues.
-

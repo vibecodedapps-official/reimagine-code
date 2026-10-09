@@ -51,9 +51,10 @@ one unit of work. You review and decide. Codex gives a second opinion on the pla
 tier, and on the diff unless the run is higher-risk, when the built-in `code-review` skill
 reviews the diff instead, as the Higher-risk rule in `tiers.md` says. Codex implements
 each slice at the tier's model; at high and xhigh, Sonnet implements a slice instead when
-the Implementer choice criteria apply, and is also the fallback. Follow the steps below
-in order. Each step keeps the number of its source rule, so any rule can be checked
-against its step.
+the Implementer choice criteria apply, and is also the fallback. Follow the steps in
+order. Each step's text is in the step file that Supporting files names, read when that
+step starts and not before. Each step keeps the number of its source rule, so any rule
+can be checked against its step.
 
 The `allowed-tools` list above pre-approves only read-only `git` and `gh` commands and `date`.
 Every write, push, PR, comment, and Codex call stays subject to the session's permission mode.
@@ -165,6 +166,11 @@ Carve-outs:
    check the target; retry once only when the check shows it did not take effect, and record
    a write that took effect as done. Once a parallel call has been dropped in this session,
    issue the remaining Step 0 commands one at a time.
+
+   A Codex implementer call that returns `failed` or no status line is handled the same
+   way, because it may have written part of its slice: the snapshot before every such
+   call and the checks before any retry or fallback are the Codex implementer call
+   snapshots section of `steps/4-build.md`, which Step 4.2 item 4 applies.
 
 State these effective permissions at the end of Step 0.1, before any other Step 0 item runs.
 
@@ -285,6 +291,23 @@ withholding, and the report gives the commands to publish it.
 
 These are in this skill's base directory.
 
+The step files hold the steps and the mechanics that only those steps use. Read each at
+its read-at point and not before, so a run carries only the text of the steps it has
+reached. When a step cites a step or section whose file is not yet read, read that file
+then: reading a file early authorizes nothing in it, and the order of the steps is
+unchanged. The one such early read this skill knows of is Step 3.5.3's reading of a
+continued branch's pull requests as Step 7.2 does.
+
+- `steps/0-preflight.md`: the Codex availability and fallback rules, and Step 0. Read
+  at the start of Step 0, after `multi-repo.md` when that applies.
+- `steps/1-plan.md`: the Reviewer contract, Steps 1, 2, and 3, and Step 3.6, the
+  plan-only stop. Read at the start of Step 1. A plan-only run reads no step file after
+  it.
+- `steps/4-build.md`: the Codex implementer call snapshots, the Claude review contract,
+  the Implementer prompt, and Steps 3.5, 3.7, 4, 5, and 6. Read when Step 3 ends with a
+  final plan in a run that is not plan-only: at the start of Step 3.5 with
+  `confirm-plan`, else at the start of Step 3.7.
+- `steps/7-publish.md`: Step 7. Read at the start of Step 7.
 - `tiers.md`: the tier table, the estimate rule, the implementer choice, the risk floor,
   re-evaluation, and the roles table with each stage's reviewer and implementer, its
   fallback, and the exact model names to use. Read it once Step 1.1 to 1.5 are done, before
@@ -344,8 +367,9 @@ Every artifact path passed as an argument to a shell command, for example `--bod
 is the absolute path of the file in the run directory under the session's original
 checkout, because a worktree run and Multi-repo mode run commands from another directory.
 Request text for a Codex reviewer is not a command argument: it keeps naming files
-relative to the session's checkout, as the Reviewer contract says. The request text of a
-Codex implementer follows the Implementer prompt.
+relative to the session's checkout, as the Reviewer contract in `steps/1-plan.md` says.
+The request text of a Codex implementer follows the Implementer prompt in
+`steps/4-build.md`.
 
 `run.md` is the durable record the report is compiled from, because your context may be
 summarized by then. It holds: the run start time; the base commit and the planning
@@ -402,8 +426,9 @@ verifying the finding, not by taking the reviewer's label.
 
 ### Failure rules
 
-1. A Codex reviewer call follows the status table in the Reviewer contract. A Codex
-   implementer call follows Step 4.2 item 4.
+1. A Codex reviewer call follows the status table in the Reviewer contract
+   (`steps/1-plan.md`). A Codex implementer call follows Step 4.2 item 4
+   (`steps/4-build.md`).
 2. A permission denial follows Approval scope, carve-out 3.
 3. A shell quoting failure is fixed by moving the text into a file under `.ccx/<run-id>/`,
    written with the Write tool, and passing the file's path, not by requoting.

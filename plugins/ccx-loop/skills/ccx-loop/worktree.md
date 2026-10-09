@@ -54,7 +54,7 @@ rest of the run.
    - Because the Claude `code-review` skill also reviews only the session's checkout, the
      Claude role of every Step 5 round of a higher-risk run is the Opus subagent substitute
      that `multi-repo.md` defines for additional repositories, as Claude review contract
-     item 7 in `SKILL.md` says. It reads `<artifacts>/diff.patch`, produced from
+     item 7 in `steps/4-build.md` says. It reads `<artifacts>/diff.patch`, produced from
      `<checkout>`, and is continued with SendMessage in later rounds. There is no tier
      limit on a worktree run. A lower-risk worktree run has the Codex role, through
      `ccx:ask` and `diff.patch` as above.

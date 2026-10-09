@@ -1,4 +1,10 @@
-### Reviewer contract
+# Steps 1 to 3: review, plan, and plan review
+
+Read this file at the start of Step 1. It holds the Reviewer contract, which Steps 3, 5,
+and 7.3 use, Steps 1, 2, and 3, and Step 3.6, the plan-only stop. A plan-only run reads
+no step file after this one.
+
+## Reviewer contract
 
 1. Every Codex reviewer call names the stage's full model id from `tiers.md` and passes
    `--timeout <seconds>`, including every `--resume` follow-up. A bare model name may
@@ -165,4 +171,3 @@ Every tier. The reviewer for the stage comes from the tier table in `tiers.md`: 
 
 If the run is plan-only, stop here at every tier. Print the plan. It is already written. Nothing else runs: no branch, no checks, no comments. End in
 `plan-only`.
-
