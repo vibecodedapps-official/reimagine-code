@@ -35,7 +35,7 @@ You are a thin forwarder for the ccx-loop orchestrator. Do the steps below in or
 
    Run no other command, write no file, and do not load the skill when you reject.
 
-3. State the parsed invocation to the user as this block, with every flag at its effective value. List each input on its own line, as `issue <#n or URL>`, `file <path>`, or `text "<description>"`. Write `mode: plan-only` when `--plan-only` is given, else `mode: run`.
+3. State the parsed invocation to the user as this block, with every flag at its effective value. List each input on its own line, as `issue <#n or URL>`, `file <path>`, or `text "<description>"`. Write `mode: plan-only` when `--plan-only` is given, else `mode: run`. This step's text (the hint when it applies, the block, and the two lines after it) is required output in every session, headless included: write it in your reply before the Skill call of step 4, never only inside the call's arguments.
 
    When the ad-hoc description is numbers only, print this one line before the block, and go on: "hint: the description is only numbers; the run id and branch below are derived from it. Ticket text goes in a file input, which the credential scan covers, and `--branch <name>` sets the branch (README, non-GitHub hosts)." A description is numbers only when it is not empty, holds at least one number, and every token, after splitting on spaces, is a number or a joining word. A number is digits with an optional `#` prefix and an optional trailing `,` or `;`. A joining word is `and`, `or`, `plus`, `with`, `then`, `also`, `to`, `&`, `+`, `,`, `;`, or `/`, case-insensitive. A token such as `12345,67890` is not a number, so that description is not numbers only.
 
