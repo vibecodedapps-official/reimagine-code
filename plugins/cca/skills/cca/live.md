@@ -3,10 +3,13 @@
 A live check is a query or command that only a live system or another environment can
 answer. The audit never runs one itself (`common.md`, hard rule 5). It lists each in the
 report, the user runs the approved ones, and `/cca:resume <run-id> --live <file>` feeds
-the results back. This file is the single home of the report's Live checks blocks, the
-`--live` file format, its validator, the imports and the files derived from them, and the
-rules that turn a result into a finding's label or a claim's verdict. The validator and
-the bookkeeping are `${CLAUDE_PLUGIN_ROOT}/skills/cca/scripts/live.sh`, which follows
+the results back. The closing of stage 8 (`stages/8-report.md`, step 14) is where the
+user is told that command, and resume refuses the import once a bundle's recorded head
+or base no longer matches. This file is the single home of the report's Live checks
+blocks, the `--live` file format, its validator, the imports and the files derived from
+them, and the rules that turn a result into a finding's label or a claim's verdict. The
+validator and the bookkeeping are
+`${CLAUDE_PLUGIN_ROOT}/skills/cca/scripts/live.sh`, which follows
 this file; the resume procedure that calls it is in
 `${CLAUDE_PLUGIN_ROOT}/skills/cca/stages/resume.md`, step 4.
 

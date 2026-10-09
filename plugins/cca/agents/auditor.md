@@ -51,6 +51,9 @@ custom list.
      only a live system could settle the finding; the finding then stays
      `unverified assumption`. Else write `none`.
    - Weigh each alternative and name the one you recommend, with the reason.
+   - When a recommended change adds or moves a documented fact, place it where the
+     repository's instruction files and the brief's placement rules say, as `common.md`
+     (Finding schema) requires.
    - Name the ticket or acceptance criterion the finding affects in `work-item impact`,
      or `none`.
    - A missing rationale in a ticket or PR is not by itself a defect.

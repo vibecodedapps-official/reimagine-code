@@ -111,7 +111,7 @@ Outputs: `report.md`, `claims-verdicts.md`, and `work-items.jsonl`. The format o
    and the number of `contested` items.
 
 6. **Fill the template `${CLAUDE_PLUGIN_ROOT}/skills/cca/report.md`**, in its twelve sections:
-   1. Verdict, from steps 4 and 5.
+   1. Verdict, from steps 4 and 5, then the `next:` block of step 14.
    2. Findings by ticket, severity first: each item with its evidence, gate,
       disposition, item id (`C<n>`), and absorbed ledger ids. Each item sits under a
       heading `#### C<n>: <title>`, so the work-items validator can find it. A
@@ -302,8 +302,47 @@ Outputs: `report.md`, `claims-verdicts.md`, and `work-items.jsonl`. The format o
     `/cca:resume <run-id>` finishes the missing work, and print it, when this run's entry
     is in `runs.json`. For any terminal state when the entry is absent, print
     the JSON entry and resolved registry path for manual addition per SKILL.md,
-    State files instead of a bare resume command. Nothing runs after this;
-    `/cca:act` is a separate command.
+    State files instead of a bare resume command, and say that the report's `/cca:act`
+    and `--live` lines need the entry added first. Then print these lines, the same ones
+    the report's `next:` block holds (`report.md`, section 1), computed from the report
+    just written:
+    - `act first: <ids, each with one short reason, or none>`. An item is listed when it
+      is counted (not `provisional`), its disposition is `agreed`, its severity is
+      `blocker`, `high`, or `medium` (the floor step 5 uses for `merge after fixes`),
+      and its recommended change is inside the bundle's repos; order by severity, then
+      id. A `low` or `note` item stays in the report and may be given to act; being left
+      out of this line dismisses nothing, and the closing says so in a clause.
+    - `/cca:act <run-id> <ids>`: the listed ids only, in that order; omit the line when
+      none are listed. Only ids act accepts appear: report items `C<n>`. A decision or
+      scope entry carries no `C<n>` and never appears, and a work-item operation
+      (`W<n>`) is not an act argument. With no registry entry, still print this line,
+      since act takes the run id, and say that act stops at its step 1.1 until the
+      entry is added.
+    - `your decision: <list, or none>`: items `contested` or `provisional`, each with
+      what it lacks; items whose recommended change is outside the bundle's repos; and,
+      from each of the three parts of section 8, the entries that are open and need the
+      user's authority, each with the decision needed: decision claims of class
+      `needs <owner>` or `stale deferral`; every scope claim, with its `include` or
+      `defer` recommendation, since a recommendation is not the user's acceptance of
+      it; and the other decisions the change needs and has not made. Entries the change
+      already made (`evidenced`, `default taken`, and made decisions) stay in the report
+      and are not listed.
+    - `/cca:resume <run-id> --live <file>`, only when all of these hold: at least one
+      Live checks block has `status` `not run: not approved` (a check still needing a
+      result); this run's entry is in `runs.json`; and the preliminary rerun stage of
+      `resume.md` step 4.2, computed as resume would now, is none or 6 or later, which
+      at this point means every stage 1 to 5 entry has status `complete` or
+      `not_applicable` and every output it lists exists (its inputs are as recorded).
+      A `partial` run that fails that test gets the plain `/cca:resume <run-id>` line
+      only, since `--live` would be refused. With the line, say: the file holds one
+      `## <id>` section per check you ran, with the result lines, as `live.md`, "The
+      `--live` file", says; resume rechecks eligibility and refuses the import once a
+      bundle's recorded head or base no longer matches, so import before committing or
+      pushing on the audited branch. A result already imported and `under review` needs
+      no `--live`: plain `/cca:resume <run-id>` reconciles it (`resume.md` step 4.4),
+      and the closing says so when that is the only open state.
+
+    Nothing runs after this; `/cca:act` is a separate command.
 
 ## `claims-verdicts.md`
 

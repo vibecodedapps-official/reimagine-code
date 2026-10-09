@@ -862,8 +862,14 @@ claim has a scope that stage 4 schedules; reassign any that does not by rule 3.
    with its hash and that it passed `handoff.sh check`, its claim counts by kind, the
    bundle and ticket mapping notes of section B, and the commit notes of step 8; "none"
    when no claims file is a handoff); Claims (a statement that every claim is assigned to
-   a scope that stage 4 schedules, with the count per kind and per target); Corrections
-   (filled in stage 5).
+   a scope that stage 4 schedules, with the count per kind and per target); Placement
+   rules (read the user's instruction files in `$CLAUDE_CONFIG_DIR`, else `~/.claude`:
+   `CLAUDE.md` and the files it indexes; for each rule that says where a documented fact
+   goes, quote it with its file and the time read, or write `none`; the section says it
+   is a snapshot of those files at audit time, as the exported trees are snapshots of the
+   repositories: the brief is a stage 1 output and resume does not read the user's files
+   again, so a later edit to them changes nothing in a resumed run, and
+   `/cca:resume <run-id> --from 1` reads them again); Corrections (filled in stage 5).
 4. **`common.md`**: read the template `${CLAUDE_PLUGIN_ROOT}/skills/cca/common.md` with
    the Read tool and write the copy to `common.md` in the run directory with the Write
    tool (not `cp`), filling its header: run id, run directory, tier, and the question

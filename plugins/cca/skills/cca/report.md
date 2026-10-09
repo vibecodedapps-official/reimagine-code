@@ -58,6 +58,17 @@ and 5, which are their single home; apply them there and write only their result
 The verdict line reads:
 `verdict: <verdict> | counted: <n> blocker, <n> high, <n> medium, <n> low, <n> note | provisional: <n> | contested: <n> | dismissed: <n>`
 
+After the verdict line, a plain line `next:` heads the lines that
+`stages/8-report.md` step 14 prints, which are its single home: `act first:`, the
+`/cca:act` line, `your decision:`, and the `--live` resume line when step 14 prints it.
+Write each as one line that starts with its label, and no heading. No line of the block
+starts with `#### C`, `- claim `, or `#### live `, since `work-items.sh`, `memory.sh`,
+and `live.sh` parse those, and the block adds no `###` or `####` heading. The block is
+part of the body that the revision line hashes. The sections below keep their numbers.
+The block is written at step 6 from the report's own content and the stage entries,
+taking the run's entry that stage 1 created in `runs.json` as present; the registry is
+checked only at the close.
+
 ### 2. Findings by ticket
 
 Per ticket (then `unticketed`, then `cross-cutting`), items severity first. Each item

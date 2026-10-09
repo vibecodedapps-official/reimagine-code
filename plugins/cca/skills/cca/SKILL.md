@@ -259,7 +259,9 @@ fallback produced a complete output for every scope.
   reason; keep every finished stage file.
 
 At the end, update the run's `state` in `runs.json`, then print the report path (when
-there is one), the verdict, and the terminal state.
+there is one), the verdict, and the terminal state. The closing also recommends items
+and prints the `/cca:act` line and, when eligible, the
+`/cca:resume <run-id> --live <file>` line, per `stages/8-report.md` step 14.
 
 ### Queue
 

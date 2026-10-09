@@ -108,7 +108,12 @@ the Verified OK list and of the outward trace the tier lets you attack.
    from its `live/carried/<id>.md`, since the ledger may no longer hold it. Challenge no
    id that is not in the file. You never run a live check yourself (boundary 4). Write
    one `### verdict on <id>: <word>` block per id, with `- severity: <old> -> <new>` (or
-   `unchanged`), `- label:`, a nonempty `- evidence:`, and `- reason:` lines.
+   `unchanged`), `- label:`, a nonempty `- evidence:`, and `- reason:` lines. Write the
+   severity and label lines as in these examples: `- severity: high -> medium` or
+   `- severity: unchanged`, and `- label: unverified assumption -> convention` or
+   `- label: unchanged`. The value is the whole rest of the line, and `ledger.sh`
+   rejects anything after it, so a parenthetical costs a relaunch; any explanation goes
+   in `- reason:`. The grammar is in `common.md`, "Pass-two verdicts".
 3. Write `## Claims challenged` after the verdicts, as step 9 of pass two says: a line
    for every claim `live/claims.md` derives `true, reproduced`, upheld or overturned with
    your evidence. A live env claim is reproduced only by a result from the environment it
