@@ -696,7 +696,7 @@ that was killed, remains. Then, for each bundle with `test_command`, in manifest
 The commands run with the user's environment and credentials, as an agent's test run
 in a directly read tree does, with `TMPDIR`, `TMP`, `TEMP`, and `XDG_CACHE_HOME` in the
 work directory. Their output tails are recorded unredacted. Agents read
-`revert/<bundle>.md` as `common.md`'s "Reverted test runs" says. Resume runs this step
+`revert/<bundle>.md` as "Reverted test runs" in `audit-evidence.md` says. Resume runs this step
 only when stage 1 reruns.
 
 ### 7. Claims
@@ -873,11 +873,12 @@ claim has a scope that stage 4 schedules; reassign any that does not by rule 3.
 4. **`common.md`**: read the template `${CLAUDE_PLUGIN_ROOT}/skills/cca/common.md` with
    the Read tool and write the copy to `common.md` in the run directory with the Write
    tool (not `cp`), filling its header: run id, run directory, tier, and the question
-   list.
+   list. Copy the template `${CLAUDE_PLUGIN_ROOT}/skills/cca/audit-evidence.md` the same
+   way to `audit-evidence.md` in the run directory, with no header to fill.
 5. Run the read-only check (SKILL.md, Read-only check), which writes
    `baseline/1-check.md`.
 6. Write the stage 1 entry: status `complete`, outputs `manifest.json`,
-   `audit-brief.md`, `common.md`, `claims.md`, `groups.md`, every `diffs/` file, every
+   `audit-brief.md`, `common.md`, `audit-evidence.md`, `claims.md`, `groups.md`, every `diffs/` file, every
    `forge/` file, every `trees/<name>/` export with its `trees/<name>.lstree` and
    `trees/<name>.export.sh`, each `revert/<bundle>.keys` and `revert/<bundle>.md`, and
    `baseline/1-check.md`. Its inputs are those D7

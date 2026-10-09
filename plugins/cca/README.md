@@ -516,9 +516,10 @@ duplicate-id line, and you run the command again; a later update or a resume rep
 a registry failure instead and leaves the lock for the next audit or resume to remove.
 
 The run directory holds all state: the normalized `manifest.json`, `stages.json` (the
-only record of which stages are complete), `audit-brief.md`, `claims.md`, `groups.md`,
-the diffs, the per-stage outputs, the ledger files, `converged.md`, `report.md`,
-`claims-verdicts.md`, `work-items.jsonl`, `act/log.md`, `usage.md`, and
+only record of which stages are complete), `audit-brief.md`, `common.md` (the rules
+every agent reads), `audit-evidence.md` (the evidence rules only the auditor and the
+adversary read), `claims.md`, `groups.md`, the diffs, the per-stage outputs, the ledger
+files, `converged.md`, `report.md`, `claims-verdicts.md`, `work-items.jsonl`, `act/log.md`, `usage.md`, and
 `invocations.md` (each invocation's block, appended verbatim, which a run re-reads after a
 context compaction; a run from 0.4.0 or earlier has none). A crashed or
 interrupted run loses no finished stage, and `/cca:resume` never reuses a stale one.

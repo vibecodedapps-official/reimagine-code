@@ -37,7 +37,7 @@ never loses a finished one. With `--live`, it first imports approved live check 
    inputs and flags recorded in it, as step 5 does for hashing, and runs section A
    onward with those; the invocation block's `manifest: none` and `inputs: none` are
    ignored. Only when stage 1 is `complete` and `audit-brief.md` exists, also read
-   `audit-brief.md` and `common.md`, and run steps 3 to 6.
+   `audit-brief.md`, `common.md`, and `audit-evidence.md`, and run steps 3 to 6.
 3. **Head and base sha check.** Every forge read of this step and step 5 names the host
    stage 1 used (`1-orient.md` step 2), read from the saved forge files: the host of the
    `url` in `forge/<bundle>/pr.json` for the PR reads (`gh pr view` and the review
@@ -247,8 +247,8 @@ never loses a finished one. With `--live`, it first imports approved live check 
    the stage 1 outputs that exist (those `1-orient.md` step 10.6 lists) the same way.
    When `stages.json` is missing, no entry lists outputs, so walk the run directory
    instead: move every one of these paths that exists to `superseded/<k>/<path>`:
-   `audit-brief.md`, `common.md`, `claims.md`, `groups.md`, `diffs/`, `forge/`,
-   `trees/`, `revert/`, `guidelines/`, `domain/`, `scope/`, `pass1/`, `pass2/`, `ledger/`,
+   `audit-brief.md`, `common.md`, `audit-evidence.md`, `claims.md`, `groups.md`, `diffs/`,
+   `forge/`, `trees/`, `revert/`, `guidelines/`, `domain/`, `scope/`, `pass1/`, `pass2/`, `ledger/`,
    `codex/`, `late/`, `converged/`, `converged.md`, `gate.md`, `report.md`,
    `claims-verdicts.md`, `work-items.jsonl`, `usage.md`, `tmp/`, and `baseline/`.
    `manifest.json`, `stages.json`, and `superseded/` are never moved.

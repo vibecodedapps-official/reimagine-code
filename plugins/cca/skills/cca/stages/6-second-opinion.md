@@ -10,8 +10,8 @@ Stage 6 starts when stage 5 is `complete` or `failed` (every scope has finished 
 two and every map-correction top-up has finished).
 
 Inputs: `ledger/5.md` and the other run-directory inputs `${CLAUDE_PLUGIN_ROOT}/skills/cca/codex-request.md`
-lists (`audit-brief.md`, `common.md`, `claims.md`, the diffs and stats, the `pass2/`
-files), and the live inputs: `live/findings.md`, each `live/carried/<id>.md` it names,
+lists (`audit-brief.md`, `common.md`, `audit-evidence.md`, `claims.md`, the diffs and
+stats, the `pass2/` files), and the live inputs: `live/findings.md`, each `live/carried/<id>.md` it names,
 and its result copies (`${CLAUDE_PLUGIN_ROOT}/skills/cca/live.md`, "Derivation"). The
 result copies are not hashed, as `live.md` says. Each other live input is recorded in
 the stage entry with its hash, or `absent` when it does not exist; absent to present, or
@@ -233,8 +233,8 @@ for each batch `<k>` it answers, numbered from 2 (step 9).
        headers and `missing` checks id-colon lines, not bodies.
 
      With no thread id, send it as a fresh call in the same form, and the file then also
-     names `common.md`, `audit-brief.md`, and `ledger/5.md` by their absolute paths under
-     `codex/inputs/`, not the whole request again. Handle its status as in step 7,
+     names `common.md`, `audit-evidence.md`, `audit-brief.md`, and `ledger/5.md` by their
+     absolute paths under `codex/inputs/`, not the whole request again. Handle its status as in step 7,
      except that a swap is replaced by stage 6 failing, since the first answer already
      exists.
    - Still unacknowledged after the follow-up: stage 6 fails. Keep the answer, list the
@@ -337,9 +337,9 @@ for each batch `<k>` it answers, numbered from 2 (step 9).
     in the stage entry, with scope `second-opinion-<k>` for batch `<k>` (scope
     `second-opinion` when it fills the role with one batch). The prompt holds the scratch
     folder `tmp/agents/second-opinion[-<k>]/` and the paths
-    of `audit-brief.md`, `common.md`, and that batch's request (`codex/request.md` or
-    `codex/request-<k>.md`, which the fallback reads by path), with the
-    instruction to answer the request as it asks, within its caps, and write the answer
+    of `audit-brief.md`, `common.md`, `audit-evidence.md`, and that batch's request
+    (`codex/request.md` or `codex/request-<k>.md`, which the fallback reads by path), with
+    the instruction to answer the request as it asks, within its caps, and write the answer
     to `codex/response.md` (batch `<k>` from 2: `codex/response-<k>.md`) ending with
     `status: complete`. Record a swap (role second opinion, from Codex `<model>` to
     `cca:adversary` on `fable`, reason; for the batches Codex did not carry, the partial swap

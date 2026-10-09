@@ -3,10 +3,10 @@
 The orchestrator's procedure for stage 7. The preamble in `${CLAUDE_PLUGIN_ROOT}/skills/cca/SKILL.md` and the
 run's `common.md` apply throughout.
 
-Inputs: `ledger/5.md`, `ledger/6.md`, `audit-brief.md`, `common.md`, and the live inputs
-`live/findings.md`, `live/claims.md`, and each `live/carried/<id>.md` that
-`live/findings.md` names (`${CLAUDE_PLUGIN_ROOT}/skills/cca/live.md`), each recorded in
-the stage entry with its hash, or `absent` when it does not exist. They exist only on a
+Inputs: `ledger/5.md`, `ledger/6.md`, `audit-brief.md`, `common.md`, `audit-evidence.md`,
+and the live inputs `live/findings.md`, `live/claims.md`, and each `live/carried/<id>.md`
+that `live/findings.md` names (`${CLAUDE_PLUGIN_ROOT}/skills/cca/live.md`), each recorded
+in the stage entry with its hash, or `absent` when it does not exist. They exist only on a
 run resumed with live results; a claim-only result leaves `live/findings.md` absent.
 
 Outputs: `late/adversary.md` (medium and high, and low when `live/findings.md` or `live/claims.md` exists),
@@ -27,9 +27,9 @@ by size has `<group>-<k>` parts), and `converged.md`.
    or the manifest, else the agent's default. At every tier the prompt names
    `live/findings.md`, `live/claims.md`, and each carried file `live/findings.md`
    names, whichever exist. The prompt holds the paths of
-   `audit-brief.md`, `common.md`, `ledger/5.md`, and `ledger/6.md`, the output path
-   `late/adversary.md`, the scratch folder `tmp/agents/late/`, and the path of the list of ids to challenge, which the script
-   builds, so no id is typed into the prompt: `mkdir -p <run dir>/tmp`, then `sh
+   `audit-brief.md`, `common.md`, `audit-evidence.md`, `ledger/5.md`, and `ledger/6.md`,
+   the output path `late/adversary.md`, the scratch folder `tmp/agents/late/`, and the
+   path of the list of ids to challenge, which the script builds, so no id is typed into the prompt: `mkdir -p <run dir>/tmp`, then `sh
    ${CLAUDE_PLUGIN_ROOT}/skills/cca/scripts/ledger.sh late-ids <run dir> --tier <tier>
    --stage6 <complete|failed> > <run dir>/tmp/late-ids.txt` (`--stage6` is stage 6's
    state, as `gate` takes it; a nonzero exit fails stage 7). It holds:

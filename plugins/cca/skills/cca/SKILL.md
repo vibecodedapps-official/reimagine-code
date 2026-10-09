@@ -118,8 +118,9 @@ run can resume.
 ### Hard rules
 
 The eight hard rules are in `${CLAUDE_PLUGIN_ROOT}/skills/cca/common.md`, which stage 1 copies into the run
-directory. Read them now and hold to them for the whole run. In the orchestrator they
-mean, in addition:
+directory (with `audit-evidence.md`, the rules only the auditor and the adversary use).
+Read them now and hold to them for the whole run. In the orchestrator they mean, in
+addition:
 
 1. You are the only component that talks to the user, calls Codex, runs `git fetch`,
    exports pinned trees, and writes `stages.json`, `runs.json`, the ledger files,
@@ -201,7 +202,9 @@ is recorded and the run ends `partial`.
    not learn the effective model, so the report says "requested", never "used".
 3. Keep the prompt short: the absolute paths of `audit-brief.md`, `common.md`, the
    scope file or scope list, and the output file, plus the scope's questions and any
-   stage-specific item the stage file names. An agent with Bash (digester, mapper,
+   stage-specific item the stage file names. The prompt of an auditor or an adversary,
+   in every mode, also gives the absolute path of `audit-evidence.md`; the digester,
+   mapper, and merger prompts do not. An agent with Bash (digester, mapper,
    auditor, adversary) also gets its scratch folder, `<run dir>/tmp/agents/<stage>-<scope>[-<n>]/`,
    unique per launch (`<n>` for a top-up or a batch), which you create before the launch
    and name in the prompt next to the output file. It is for the agent's own command
@@ -494,7 +497,8 @@ Read `runs.json` with the Read tool and branch on this run's entry:
     "4": {
       "status": "complete",
       "inputs": { "audit-brief.md": "<hash>", "groups.md": "<hash>",
-                  "claims.md": "<hash>", "common.md": "<hash>" },
+                  "claims.md": "<hash>", "common.md": "<hash>",
+                  "audit-evidence.md": "<hash>" },
       "outputs": ["pass1/g1.md", "pass1/tests.md"],
       "agents": [ { "type": "cca:auditor", "model": "opus", "scope": "g1",
                     "started": "...", "ended": "...", "tokens": 81234,
