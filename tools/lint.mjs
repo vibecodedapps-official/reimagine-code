@@ -10,6 +10,7 @@ const root = fileURLToPath(new URL("..", import.meta.url));
 const failures = [];
 const fail = (msg) => failures.push(msg);
 const rel = (p) => relative(root, p).split(sep).join("/");
+const escapeRe = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 const read = (p) => {
   try { return readFileSync(join(root, p), "utf8"); } catch (e) { fail(`${p}: cannot read (${e.code})`); return null; }
 };
@@ -356,7 +357,7 @@ if (git("rev-parse", "--is-inside-work-tree").stdout?.trim() === "true") {
     for (const pl of PLUGINS) {
       const m = manifests.get(pl.dir) ?? codexManifests.get(pl.dir);
       if (!m?.name || typeof m.version !== "string") continue;
-      const last = tags.map((t) => t.match(new RegExp(`^${m.name}--v(\\d+\\.\\d+\\.\\d+)$`))?.[1]).filter(Boolean).sort(below).at(-1);
+      const last = tags.map((t) => t.match(new RegExp(`^${escapeRe(m.name)}--v(\\d+\\.\\d+\\.\\d+)$`))?.[1]).filter(Boolean).sort(below).at(-1);
       if (!last) continue;
       const diff = git("diff", "--quiet", `refs/tags/${m.name}--v${last}`, "--", pl.dir);
       if (diff.status !== 0 && diff.status !== 1) fail(`${pl.dir}: cannot compare with ${m.name}--v${last}: ${diff.stderr.trim()}`);
@@ -367,7 +368,7 @@ if (git("rev-parse", "--is-inside-work-tree").stdout?.trim() === "true") {
 
 // 19. The changelog has a dated heading for the suite version, "## <version> - <YYYY-MM-DD>" (R50).
 const changelog = read("CHANGELOG.md");
-if (changelog !== null && pkg && !new RegExp(`^## ${String(pkg.version).replace(/\./g, "\\.")} - \\d{4}-\\d{2}-\\d{2}$`, "m").test(changelog)) {
+if (changelog !== null && pkg && !new RegExp(`^## ${escapeRe(String(pkg.version))} - \\d{4}-\\d{2}-\\d{2}$`, "m").test(changelog)) {
   fail(`CHANGELOG.md: no heading "## ${pkg.version} - <YYYY-MM-DD>" for the suite version`);
 }
 
