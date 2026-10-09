@@ -31,6 +31,9 @@ repos' own changelogs are kept under `docs/history/`.
   parent's has placed it, and fails the start with exit 2 if a job is alive outside its
   own process group, since the deadline's group kill would otherwise miss it (issue #40).
   Before, the stray line reached stderr, and the test suite's case 13 failed on it.
+- `revert-tests.sh` `bg` and each test start now create the fork capture file first and
+  fail with exit 2 when they cannot, instead of aborting on an unset `$!` and leaving
+  `wait` to report a run still going.
 - The background-fetch question is a checklist: each ref with its commits, the sentence
   that a background fetch, such as an editor's or a Git client's automatic fetch, can move
   refs, kept even when the repository has no remote configured, and no recommended answer

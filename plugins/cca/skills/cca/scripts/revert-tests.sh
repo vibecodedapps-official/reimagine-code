@@ -172,6 +172,7 @@ if [ "${1:-}" = bg ]; then
 	secs REVERT_TESTS_DEADLINE "$deadline"
 	rm -f "$out.exit" "$out.exit.tmp"
 	[ ! -e "$out.exit" ] || die "cannot remove $out.exit"
+	: 2> /dev/null > "$out.fork" || die "cannot write $out.fork"
 	: > "$out.err" || die "cannot write $out.err"
 	child=
 	trap 'if [ -n "$child" ]; then kill -TERM -"$child" 2> /dev/null; fi; exit 2' HUP INT TERM
@@ -632,6 +633,7 @@ runone() {
 	ro_cache=$work/cache/$ro_name
 	mkdir -p "$ro_tmp" "$ro_cache" || die "cannot create a directory in $work"
 	rm -f "$w/timedout"
+	: 2> /dev/null > "$w/fork" || die "cannot write $w/fork"
 	set -m
 	{ (
 		cd "$1" || exit 125
