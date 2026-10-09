@@ -35,6 +35,10 @@
 #    deadline (15c), wait's window (15d), no run (15e), TERM to bg (15f), wrong arguments
 #    (15g), the deadline during a blocked git step (15h), KILL to bg (15i)
 # 16 a partial clone is refused without fetching   17 a tab path is not used
+# 18 forkdone, from the script's own text: bash's `child setpgid` line is dropped and any
+#    other fork-time line kept (18a); a job started outside its own group fails the start
+#    with exit 2 (18b); bg with a directory at `<result>.fork` fails with exit 2 and leaves no
+#    .err or .exit (18c)
 #
 # Prints one line per mismatch, then `revert-tests test: ok` when there were none. Exit 0
 # when every case matches, otherwise 1.
@@ -786,6 +790,39 @@ if m=$(TMPDIR=$root sh "$here/fixture/build.sh" ground-truth); then
 else
 	mismatch "$case_id: the ground-truth fixture did not build"
 fi
+
+# 18. forkdone, taken from the script's own text. The race cannot be forced, so the file
+# holds the line bash prints; the group check runs on a real job.
+sed -n '/^die() {/,/^}/p; /^forkdone() {/,/^}/p' "$rt" > "$tmp/fd.sh"
+# fd <set -m or true>: start a sleeping job under that command, then run forkdone on
+# $tmp/fork.err.
+fd() {
+	bash -c '. "$1"; $3; { sleep 30 & } 2> /dev/null; p=$!; set +m; forkdone "$p" "$2"
+		kill -KILL "$p" 2> /dev/null' x "$tmp/fd.sh" "$tmp/fork.err" "$1" > "$tmp/out" 2> "$tmp/err"
+	rc=$?
+}
+case_id="case 18a"
+printf '%s\n%s\n' 'revert-tests.sh: child setpgid (57075 to 57075): Operation not permitted' \
+	'revert-tests.sh: fork: retry: Resource temporarily unavailable' > "$tmp/fork.err"
+fd 'set -m'
+[ "$rc" = 0 ] || mismatch "$case_id: exit $rc, expected 0"
+[ "$(cat "$tmp/err")" = 'revert-tests.sh: fork: retry: Resource temporarily unavailable' ] ||
+	mismatch "$case_id: stderr [$(tr '\n' '|' < "$tmp/err")]"
+case_id="case 18b"
+: > "$tmp/fork.err"
+fd true
+[ "$rc" = 2 ] || mismatch "$case_id: exit $rc, expected 2"
+[ "$(cat "$tmp/err")" = 'revert-tests: cannot start a job in its own process group' ] ||
+	mismatch "$case_id: stderr [$(tr '\n' '|' < "$tmp/err")]"
+case_id="case 18c"
+rm -rf "$tmp/res" "$tmp/res.exit" "$tmp/res.err" "$tmp/res.fork"
+mkdir "$tmp/res.fork"
+printf 'command\tsh\nrun\ttests/test_a.sh\n' > "$tmp/keys"
+"$sh_bin" "$rt" bg "$R" main feature "$tmp/keys" "$root/rw" "$tmp/res" > "$tmp/out" 2> "$tmp/err"
+rc=$?
+fails "revert-tests: cannot write $tmp/res.fork"
+nosides
+rmdir "$tmp/res.fork"
 
 if [ "$bad" -gt 0 ]; then
 	exit 1

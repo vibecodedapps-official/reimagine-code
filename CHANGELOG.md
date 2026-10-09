@@ -3,6 +3,55 @@
 One changelog for the suite. Each release has a subsection per component. The source
 repos' own changelogs are kept under `docs/history/`.
 
+## 0.6.1 - 2026-10-08
+
+### ccx
+
+- Version 0.6.1, to stay in step with `ccx-loop`. No change.
+
+### ccx (Codex)
+
+- `general-code-review` asks for the highest reasoning effort available, where it named
+  one setting, and says "the hosting platform" where it said GitHub. From the issue #44
+  audit of wording tuned to one setup.
+
+### ccx-loop
+
+- Four passages generalized from the issue #44 audit: the multi-repo example no longer
+  uses one live run's branch names; the full-model-id rule says a bare alias may not
+  resolve on every account, not that it fails on one account type; the roles table no
+  longer names two models as the only orchestrators; and the plan template says "API
+  changes" where it said RPCs. No rule changed.
+
+### cca
+
+- cca 0.10.1.
+- `revert-tests.sh` drops bash's `child setpgid (N to N)` line at a job's start, which
+  bash can print under `set -m` when the child's own setpgid call fails after the
+  parent's has placed it, and fails the start with exit 2 if a job is alive outside its
+  own process group, since the deadline's group kill would otherwise miss it (issue #40).
+  Before, the stray line reached stderr, and the test suite's case 13 failed on it.
+- `revert-tests.sh` `bg` and each test start now create the fork capture file first and
+  fail with exit 2 when they cannot, instead of aborting on an unset `$!` and leaving
+  `wait` to report a run still going.
+- The background-fetch question is a checklist: each ref with its commits, the sentence
+  that a background fetch, such as an editor's or a Git client's automatic fetch, can move
+  refs, kept even when the repository has no remote configured, and no recommended answer
+  (issue #41). Before, a run left the sentence out and recommended stopping.
+- Stage 1 states the run directory as `<scratch>/cca/<run-id>/` with the doubled-`cca`
+  example and checks the resolved parent against the resolved `<scratch>/cca` as whole
+  paths before the `mkdir` (issue #41). Before, two runs put the directory one level short
+  when the scratch path itself ended in `cca`.
+- Four passages generalized from the issue #44 audit: the jq note, the journal search
+  terms, the exported-file example, and the `runs.json` example. No rule changed.
+
+### repo-docs
+
+- repo-docs 0.1.6. `placement.md` says long-form content goes in `docs/` or wherever the
+  repo already keeps such files, as the rest of the skill does, and `spokes.md` no longer
+  quotes Claude Code's current UI strings for the session verification. From the issue
+  #44 audit.
+
 ## 0.6.0 - 2026-10-06
 
 ### ccx

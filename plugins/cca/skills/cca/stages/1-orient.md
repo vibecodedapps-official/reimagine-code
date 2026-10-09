@@ -15,8 +15,8 @@ Before section A, run `command -v jq`. When it prints nothing, tell the user bef
 run starts, in plain words: `jq` is not installed, so the work-items file will not be
 checked against the report and a PR cannot be read through `gh`; install it with
 `winget install jqlang.jq` on Windows, `brew install jq` on macOS, or the system package
-manager on Linux. Then continue as today; `work-items.sh` is unchanged and still reports
-`work-items: jq not found`.
+manager on Linux. Then continue; `work-items.sh` reports `work-items: jq not found`
+when it runs.
 
 ## A. Normalize the inputs
 
@@ -317,8 +317,15 @@ missing), and only rewrite the stage 1 entry as `running` with its inputs.
    `${CLAUDE_PLUGIN_DATA}/runs.json` already has that id or `<scratch>/cca/<run-id>/`
    exists, add `-2`, then `-3`, and so on. This check is a first pass, made with no
    lock: D4 and D6 settle the id.
-4. Create `<scratch>/cca/` with `mkdir -p` when missing, then `<scratch>/cca/<run-id>/`
-   with `mkdir` and no `-p`. This is the run directory. When that `mkdir` fails
+4. The run directory is `<scratch>/cca/<run-id>/`, one `cca` level below `<scratch>`
+   even when `<scratch>` itself ends in `cca`: `"scratch": "./app/.test-output/cca"`
+   gives `.test-output/cca/cca/<run-id>/`, the doubled `cca` intended. Before the
+   `mkdir`, write out the resolved run directory and the resolved `<scratch>/cca`, each
+   as a whole path, and check that the parent of the first is the second, compared as
+   whole paths: a parent merely named `cca` would pass `.test-output/cca/<run-id>/`.
+   Then create `<scratch>/cca/` with `mkdir -p` when missing, then the run directory
+   with `mkdir` and no `-p`. Use that same path as the `path` of the `runs.json` entry
+   (D6) and as the directory `stages.json` is written in (D7). When that `mkdir` fails
    because the directory exists, another run made it first: take the next suffix per
    D3 and create again. Append the invocation block to `invocations.md` in it
    (SKILL.md, Invocation block).
@@ -334,7 +341,7 @@ missing), and only rewrite the stage 1 entry as `running` with its inputs.
    minute, so run the command again. That stop is not a registry failure. On refusal
    or failure, continue per that section's three cases; if the entry is absent, use
    its immediate warning, brief limitation, and manual-entry fallback.
-7. Write `stages.json` with `plugin_version` `0.10.0`, empty `approvals`, and a stage 1
+7. Write `stages.json` with `plugin_version` `0.10.1`, empty `approvals`, and a stage 1
    entry with status `running` and inputs: the hashes of `manifest.json`, each claims
    file, the questions file, and every `file:` ticket or PR export, and
    `plugin_version`. Step 10 adds the shas, `forge_hashes`, and `forge_gaps` to the

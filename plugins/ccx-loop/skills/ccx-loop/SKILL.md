@@ -433,9 +433,9 @@ above 60 minutes is passed as 3600, and the cap and the value passed are recorde
 ### Reviewer contract
 
 1. Every Codex reviewer call names the stage's full model id from `tiers.md` and passes
-   `--timeout <seconds>`, including every `--resume` follow-up. A bare model name fails.
-   This contract covers reviewer calls; a Codex implementer call follows the Implementer
-   prompt and Step 4.2.
+   `--timeout <seconds>`, including every `--resume` follow-up. A bare model name may
+   fail. This contract covers reviewer calls; a Codex implementer call follows the
+   Implementer prompt and Step 4.2.
 2. Plan review, and every question, uses the Skill tool with `ccx:ask`. Args: flags
    first, then the request text.
    `--model <id> --timeout <s> <request>` for a first round;
@@ -961,21 +961,21 @@ switch` or fast-forward of a clean checkout (Step 0.2), recorded in `run.md`.
 ## Step 2: plan
 
 Write the plan to `.ccx/<run-id>/plan.md`. Per input the plan covers: scope, acceptance
-criteria, and buildable-here status. Across inputs: shared changes, migrations or RPCs,
-tests, checks to run, order of work, and how the work splits into slices that do not share
-files. For each slice give the files it owns, the change, the acceptance criteria it
-serves, the tests to add or change, and the checks it must pass. A plan at any tier has
-one or more slices that share no file. You set the count from the change: split when two
-parts of the work touch disjoint files and one agent would otherwise carry more than one
-area or more than one subagent timeout of work; do not split work that shares a file.
-State in the order of work which slices are independent and which must run in order. At
-every tier, record the implementer per slice, "codex" or, at high and xhigh, the
-Sonnet criterion, from the Implementer choice section of `tiers.md`. Judge the
-higher-risk rule of `tiers.md` on the plan, and record the Step 5 role it picks with the
-criterion that held, or that none did. With `--branch` and
-plan-only, record the name in the plan and create nothing. A plan that turns out to need
-edits in a writable checkout that is neither the primary nor listed in `repos` ends in
-`blocked` as Step 1.2 describes, with the same rerun command.
+criteria, and buildable-here status. Across inputs: shared changes, migrations or API
+changes, tests, checks to run, order of work, and how the work splits into slices that do
+not share files. For each slice give the files it owns, the change, the acceptance
+criteria it serves, the tests to add or change, and the checks it must pass. A plan at any
+tier has one or more slices that share no file. You set the count from the change: split
+when two parts of the work touch disjoint files and one agent would otherwise carry more
+than one area or more than one subagent timeout of work; do not split work that shares a
+file. State in the order of work which slices are independent and which must run in order.
+At every tier, record the implementer per slice, "codex" or, at high and xhigh, the Sonnet
+criterion, from the Implementer choice section of `tiers.md`. Judge the higher-risk rule
+of `tiers.md` on the plan, and record the Step 5 role it picks with the criterion that
+held, or that none did. With `--branch` and plan-only, record the name in the plan and
+create nothing. A plan that turns out to need edits in a writable checkout that is neither
+the primary nor listed in `repos` ends in `blocked` as Step 1.2 describes, with the same
+rerun command.
 
 ## Step 3: plan review and converge
 

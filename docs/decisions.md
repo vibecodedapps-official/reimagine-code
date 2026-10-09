@@ -38,7 +38,7 @@ project; Codex used a scratch `CODEX_HOME`.
    `recode:Concise Plain`. Observed on a run of 2026-10-03.
 5. **M0.4 SessionStart hooks get the data directory and can notify the user.** An
    exec-form hook with `${CLAUDE_PLUGIN_DATA}` in `args` received
-   `/Users/joe/.claude/plugins/data/c-spike-mkt`, the same value as its
+   `<home>/.claude/plugins/data/c-spike-mkt`, the same value as its
    `CLAUDE_PLUGIN_DATA` environment variable. Its `systemMessage` showed on screen at
    startup as `SessionStart:startup says: <message>`. Observed on a run of 2026-10-03.
 6. **M0.5 Codex reads only the `.agents` catalog.** With both catalogs in one repo,
@@ -949,3 +949,127 @@ in one pull request.
    `plugin_version` lines; and ccx's `status:` line, still last. The args block the commands
    pass to the skill keeps every flag; only what the user is shown changed. Plain wording
    goes around the stop lines, never in place of them.
+
+## Part 20: cca 0.10.1 and ccx 0.6.1, the CI flakes, two drifts, and the generality audit, 2026-10-08
+
+Issues #40, #41, and #44, planned with two Codex critique rounds and built in one pull
+request, with the issue 44 rewrites as one commit per plugin so they read apart.
+
+1. **The object count is git's.** `tests/cca/working-tree.sh` counted every regular
+   file under `.git/objects` outside `pack/` and `info/`. A probe with `GIT_TRACE2_EVENT`
+   on git 2.54 showed every `git commit` spawning `git maintenance run --auto --detach`,
+   which holds `.git/objects/maintenance.lock` for about a millisecond after the commit
+   has returned; a watcher saw the lock 75 times across 60 two-commit repos. Both CI
+   failures were the first count after `add_sub`, which ends in a commit, and both
+   later counts disagreed with that one count, which fits a lock counted once. The
+   flake itself did not reproduce in 1,200 tries, idle and under load, so the cause is
+   probable, not verified. The count is now `git count-objects -v`, chosen over a
+   `find` of the fan-out directories because git writes `tmp_obj_*` files there too,
+   and a failed count fails the run rather than reading as zero. Case 21 keeps both
+   controls. Setting `maintenance.auto=false` in the test's git wrapper would remove the
+   process; not done, since the count fix is sufficient and the wrapper is not the only
+   git call in the suite.
+2. **Bash's `child setpgid` line is dropped, and a job's group is checked.** The line
+   is bash's own, printed by the forked child under `set -m` when its own `setpgid` call
+   fails. A loop of job starts on this Mac (bash 3.2.57) printed it about once in 2,000
+   starts, 8 times in 20,000 with a live job, and every time the job's group id was its
+   pid, so the parent's call had placed it; why the child's call fails is unverified.
+   `set -m` stays: there is no portable replacement (no `setsid` on macOS, no perl
+   guarantee). Each job now starts inside a brace group whose fd 2 is a per-job file, so
+   only the fork-time lines land there and the job's own redirections are untouched;
+   `forkdone` drops that one line by its text without the localized strerror part,
+   forwards anything else, and fails the start with exit 2 when `kill -0 -<pid>` fails
+   while `kill -0 <pid>` succeeds, since the deadline's group kill would miss such a job.
+   `ps -o pgid=` was rejected because MSYS2's `ps` has no `-o`. The two-way readiness
+   handshake the Codex critique proposed was not built: the group check runs before the
+   job's own first step can matter for the deadline, and the isolation failure it
+   guards was never observed; it is the next step if a run ever prints the exit 2 line.
+   Cases 18a and 18b cover the filter and the check; the race cannot be forced. The
+   first CI run then failed Ubuntu's mawk step with `date: write error: Broken pipe`:
+   the fork check delays the watchdog's start past a fast job's end, so the kill that
+   ends the watchdog lands on its first `date` child, and the runner's step shell runs
+   with SIGPIPE ignored, so `date` reports the broken pipe instead of dying silently.
+   Reproduced in an Ubuntu container with SIGPIPE ignored (3 of 3 runs failed on the
+   new script, main's passed) and fixed by timing the watchdog with bash's `SECONDS`,
+   which forks nothing (3 of 3 passed). The second CI run then lost a run's work
+   directory mid-run on Ubuntu, after `wait_for: No record of process` from bash: six
+   suites in parallel in the same container reproduced it in 10 of 12 runs with the
+   helper's `sed` and `rm` children, in 0 of 12 on main, and in 0 of 18 with the helper
+   written in builtins only and the capture file removed later. So a child forked right
+   after the job's start under toggled job control loses its record in bash 5.2; why
+   bash then runs the exit trap is not traced. The helper now forks nothing before its
+   check. An adversarial review on 2026-10-08 found one condition, deferred: on macOS,
+   `kill -0 -<pgid>` fails for a group whose only member is a zombie, while
+   `kill -0 <pid>` still succeeds until bash reaps it, so a job that exits before the
+   check would be rejected as misgrouped (exit 2, `cannot start a job in its own process
+   group`). An isolated empty job `{ ( : ) & }` tripped it in 23 of 300 starts on macOS
+   bash 3.2.57 and in 0 of 300 on Linux bash 5.2.21, where a zombie stays in its group.
+   Through the real script, 150 runs (300 job starts) under 14 CPU hogs and 18 suite
+   runs, 6 in parallel, on macOS showed 0, because the job does `cd`, a command
+   substitution, and exports before it can exit. Windows is untested. A fix needs a
+   child-side handshake or a fork-free recheck; a rejection seen in practice reopens it.
+   The same review found that a failed open of the fork capture file left `bg` with no
+   terminal state (`$!` unset under `set -u`); the capture file is now created before
+   the start, before `.err`, so a failure leaves `wait` reporting no run started. The
+   guard uses `true`, not `:`: Git Bash runs the script as bash 5.2 in POSIX mode, where
+   a redirection error on a special builtin exits the shell with status 1 before `die`
+   runs, which the Windows CI run of case 18c showed and `bash --posix` reproduced.
+3. **The speed guard times batches and allows ten.** The old guard took the best of three
+   single runs of a few milliseconds per side, so noise was a large share; in-process
+   reruns reached 6.6 and 7.3 against the limit of 8, and the three CI failures came
+   with no related change. Sustained contention or a GC pause landing on all three
+   large runs is the likely shape; unverified. Each side is now its best of five
+   batches after warm-up, the small count doubled toward 50 ms and capped at 256
+   iterations, sizes alternated, numbers printed on failure. The limit of 10 sits between
+   the measured real ratios (3.9 to 4.6, 5.3 with every core busy) and the quadratic
+   mutations of each guarded path (12.4 to 19.3), which `git log -S` and a per-path
+   mutation identified. Linux and Windows figures come from the PR's CI runs; a failure
+   there reopens 10.
+4. **Two cca drifts are met with tighter text, not a script.** The fetch question is a
+   pre-send checklist, with the auto-fetch sentence kept when the repository has no
+   remote and no recommended answer; the run directory step states the doubled `cca`
+   example and compares the resolved parent with the resolved `<scratch>/cca` as whole
+   paths, since a check that the parent is merely named `cca` accepts the defective path
+   from the issue. A script that refuses a run directory outside `<scratch>/cca/` is
+   deferred until an acceptance run shows the tightened step is not enough. Both are
+   hand checks, in acceptance items 22 and 24, with one scratch path that ends in `cca`
+   and one that does not.
+5. **The generality audit, and what it kept.** Four read-only auditors read every
+   shipped prose file and the design docs, starting from this file and the requirements
+   to trace which rules came from one machine or one run. 85 entries: 24 rewrites
+   proposed, of which 19 landed; 14 behavior changes deferred by the auditors and 4
+   more after review; 45 kept with a reason, and one rewrite downgraded to keep. Every
+   rewrite passed a semantic gate: it keeps each obligation, permission, stop
+   condition, default, and limit; a rewrite that turns a must into a may or moves
+   a number is a behavior change and is deferred. Two landed rewrites are agreed
+   exceptions, both in `general-code-review`: `xhigh` became "the highest reasoning
+   effort available", a different choice where an effort above `xhigh` exists, and
+   "GitHub" became "the hosting platform", a wider prohibition on posting comments. They
+   were accepted because a fixed effort name may not exist on every model and the
+   prohibition should hold on any forge; R26 records them. Kept with a reason, the
+   specifics a reader may flag: the Bash tool's 10-minute foreground cap and the
+   540-second and 72-minute figures derived from it; the lock timings, verified on three
+   shells and two filesystems (Part 15 item 4); the design budgets (450,000 bytes, 60 ids,
+   3,000 words, the tier thresholds, 1 GB, 300 s), which are bounded-cost defaults with
+   overrides; the tool and plugin version floors, each named with its feature; the
+   Windows-only no-retry rule for a failed implementer, an OS fact; the line-ending rule,
+   derived from git's own attributes; the skip-worktree mode, an ordinary git state; the
+   run budgets and the round and file caps, design limits with overrides; the credential
+   shapes, generic; the install hints and platform caveats, each with its platform named;
+   the `rmdir` workaround, hedged in its sentence; and the house rules, output style, and
+   chat block, which are the author's stated preferences shipped as an opt-in style.
+   Deferred as behavior changes, for separate changes: the vendor link forms in the output
+   style and chat block; "PowerShell 7" in the installed Windows rule; the sandbox probe's
+   120-second limit; the token thresholds and the integration-test obligation in the
+   upstream review skills (R26); the check discovery list, the branch naming rule, and the
+   403 wording in the loop; the `bin/` and `obj/` grouping (Part 19 item 5), the
+   tests-account check, the handoff schema's ticket-system fields, the Codex model id
+   written ten times, the model-name ladder, and the 540-second cap in cca; the "one user"
+   premise behind Parts 14 and 16; and the "0.4.0 or earlier" compatibility clauses, whose
+   vaguer rewrite was rejected. The five rewrites rejected after review: the `.scratch/`
+   example in the ccx README (already hedged) and the four above that moved an obligation
+   or a number.
+6. **One PR, with "Refs #44".** Issue 44 asks for separate PRs per plugin or theme, and
+   the Codex critique recommended that split; the request for this work was one PR for
+   the three issues, so the rewrites ride here as one commit per plugin. The issue
+   stays open until the deferred list is decided.

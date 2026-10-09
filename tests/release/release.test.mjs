@@ -52,7 +52,7 @@ test('release sets the suite version and the range everywhere, then lint asks fo
   assert.ok(r.out.includes('CHANGELOG.md: no heading "## 0.7.0 - <YYYY-MM-DD>" for the suite version'), r.out);
   assert.deepEqual(versions(d), {
     suite: '0.7.0', ccx: '0.7.0', loop: '0.7.0', range: '>=0.7.0 <1.0.0', codex: '0.7.0',
-    docsClaude: '0.1.5', docsCodex: '0.1.5', cca: '0.10.0', catalog: '0.7.0', entries: { ccx: '0.7.0', 'ccx-loop': '0.7.0', cca: '0.10.0', 'repo-docs': '0.1.5' },
+    docsClaude: '0.1.6', docsCodex: '0.1.6', cca: '0.10.1', catalog: '0.7.0', entries: { ccx: '0.7.0', 'ccx-loop': '0.7.0', cca: '0.10.1', 'repo-docs': '0.1.6' },
   });
   assert.ok(lines(d, 'plugins/ccx-loop/.claude-plugin/plugin.json').includes('    { "name": "ccx", "version": ">=0.7.0 <1.0.0" }'));
   heading(d, '## 0.7.0 - 2026-10-04');
@@ -62,46 +62,46 @@ test('release sets the suite version and the range everywhere, then lint asks fo
 }));
 
 test('release sets repo-docs in its two manifests and its catalog entry only', () => inCopy((d) => {
-  const r = release(d, 'repo-docs', '0.1.6');
+  const r = release(d, 'repo-docs', '0.1.7');
   assert.equal(r.status, 0, r.out);
   assert.deepEqual(versions(d), {
-    suite: '0.6.0', ccx: '0.6.0', loop: '0.6.0', range: '>=0.2.0 <1.0.0', codex: '0.6.0',
-    docsClaude: '0.1.6', docsCodex: '0.1.6', cca: '0.10.0', catalog: '0.6.0', entries: { ccx: '0.6.0', 'ccx-loop': '0.6.0', cca: '0.10.0', 'repo-docs': '0.1.6' },
+    suite: '0.6.1', ccx: '0.6.1', loop: '0.6.1', range: '>=0.2.0 <1.0.0', codex: '0.6.1',
+    docsClaude: '0.1.7', docsCodex: '0.1.7', cca: '0.10.1', catalog: '0.6.1', entries: { ccx: '0.6.1', 'ccx-loop': '0.6.1', cca: '0.10.1', 'repo-docs': '0.1.7' },
   });
   assert.ok(lines(d, 'plugins/repo-docs/.codex-plugin/plugin.json').includes('  "author": { "name": "vibecodedapps.net" },'));
 }));
 
 test('release sets cca in its manifest and its catalog entry only', () => inCopy((d) => {
-  const r = release(d, 'cca', '0.10.1');
+  const r = release(d, 'cca', '0.10.2');
   assert.equal(r.status, 0, r.out);
   assert.deepEqual(versions(d), {
-    suite: '0.6.0', ccx: '0.6.0', loop: '0.6.0', range: '>=0.2.0 <1.0.0', codex: '0.6.0',
-    docsClaude: '0.1.5', docsCodex: '0.1.5', cca: '0.10.1', catalog: '0.6.0', entries: { ccx: '0.6.0', 'ccx-loop': '0.6.0', cca: '0.10.1', 'repo-docs': '0.1.5' },
+    suite: '0.6.1', ccx: '0.6.1', loop: '0.6.1', range: '>=0.2.0 <1.0.0', codex: '0.6.1',
+    docsClaude: '0.1.6', docsCodex: '0.1.6', cca: '0.10.2', catalog: '0.6.1', entries: { ccx: '0.6.1', 'ccx-loop': '0.6.1', cca: '0.10.2', 'repo-docs': '0.1.6' },
   });
   assert.ok(lines(d, 'plugins/cca/.claude-plugin/plugin.json').includes('  "license": "Apache-2.0",'));
-  assert.ok(lines(d, 'plugins/cca/skills/cca/SKILL.md').includes('  "plugin_version": "0.10.1",'));
-  assert.ok(lines(d, 'plugins/cca/skills/cca/stages/1-orient.md').some((l) => l.includes('`plugin_version` `0.10.1`, empty `approvals`')));
-  assert.ok(lines(d, 'plugins/cca/skills/cca/stages/resume.md').includes('   - `plugin_version`, which for this release is `0.10.1`.'));
+  assert.ok(lines(d, 'plugins/cca/skills/cca/SKILL.md').includes('  "plugin_version": "0.10.2",'));
+  assert.ok(lines(d, 'plugins/cca/skills/cca/stages/1-orient.md').some((l) => l.includes('`plugin_version` `0.10.2`, empty `approvals`')));
+  assert.ok(lines(d, 'plugins/cca/skills/cca/stages/resume.md').includes('   - `plugin_version`, which for this release is `0.10.2`.'));
   assert.ok(r.out.includes('plugins/cca/skills/cca/SKILL.md, plugins/cca/skills/cca/stages/1-orient.md, plugins/cca/skills/cca/stages/resume.md'), r.out);
 }));
 
 test('release rejects a malformed request', () => inCopy((d) => {
-  for (const args of [['ccx', '0.2'], ['repo-docs', '0.1.3', '--floor', '0.1.0'], ['cca', '0.9.1', '--floor', '0.1.0'], ['ccx-loop', '0.6.0'], ['ccx', '0.6.0', '--floor']]) {
+  for (const args of [['ccx', '0.2'], ['repo-docs', '0.1.3', '--floor', '0.1.0'], ['cca', '0.9.1', '--floor', '0.1.0'], ['ccx-loop', '0.6.1'], ['ccx', '0.6.1', '--floor']]) {
     const r = release(d, ...args);
     assert.equal(r.status, 2, `${args.join(' ')}: ${r.out}`);
     assert.ok(r.out.startsWith('usage: node tools/release.mjs ccx <version> [--floor <version>]'), r.out);
   }
-  assert.equal(versions(d).suite, '0.6.0');
+  assert.equal(versions(d).suite, '0.6.1');
 }));
 
 test('release writes no file when one cannot be edited cleanly', () => inCopy((d) => {
   const p = join(d, 'plugins/ccx-codex/plugin.json');
-  writeFileSync(p, readFileSync(p, 'utf8').replace('\n  "version": "0.6.0",', '\n\t"version": "0.6.0",'));
+  writeFileSync(p, readFileSync(p, 'utf8').replace('\n  "version": "0.6.1",', '\n\t"version": "0.6.1",'));
   const r = release(d, 'ccx', '0.7.0');
   assert.equal(r.status, 1, r.out);
   assert.ok(r.out.includes('release: plugins/ccx-codex/plugin.json: cannot set the version without changing anything else; no file was written'), r.out);
-  assert.equal(versions(d).suite, '0.6.0');
-  assert.equal(versions(d).ccx, '0.6.0');
+  assert.equal(versions(d).suite, '0.6.1');
+  assert.equal(versions(d).ccx, '0.6.1');
 }));
 
 test('release raises a plugin changed since its tag, so lint passes again', () => inCopy((d) => {
@@ -110,20 +110,20 @@ test('release raises a plugin changed since its tag, so lint passes again', () =
   git('init', '-q', '-b', 'main');
   git('add', '-A');
   git('commit', '-q', '-m', 'release');
-  git('tag', 'ccx--v0.6.0');
-  git('tag', 'ccx-loop--v0.6.0');
+  git('tag', 'ccx--v0.6.1');
+  git('tag', 'ccx-loop--v0.6.1');
   appendFileSync(join(d, 'plugins/ccx-loop/README.md'), 'More.\n');
-  heading(d, '## 0.6.1 - 2026-10-04');
-  const r = release(d, 'ccx', '0.6.1');
+  heading(d, '## 0.6.2 - 2026-10-04');
+  const r = release(d, 'ccx', '0.6.2');
   assert.equal(r.status, 0, r.out);
-  assert.deepEqual([versions(d).loop, versions(d).range], ['0.6.1', '>=0.2.0 <1.0.0']);
+  assert.deepEqual([versions(d).loop, versions(d).range], ['0.6.2', '>=0.2.0 <1.0.0']);
 }));
 
 test('release keeps CRLF line endings, as in a Windows checkout', () => inCopy((d) => {
   const files = ['.claude-plugin/marketplace.json', 'plugins/repo-docs/.claude-plugin/plugin.json', 'plugins/repo-docs/.codex-plugin/plugin.json'];
   for (const f of files) writeFileSync(join(d, f), readFileSync(join(d, f), 'utf8').replace(/\r?\n/g, '\r\n'));
-  const r = release(d, 'repo-docs', '0.1.6');
+  const r = release(d, 'repo-docs', '0.1.7');
   assert.equal(r.status, 0, r.out);
-  assert.deepEqual([versions(d).docsClaude, versions(d).docsCodex, versions(d).entries['repo-docs']], ['0.1.6', '0.1.6', '0.1.6']);
+  assert.deepEqual([versions(d).docsClaude, versions(d).docsCodex, versions(d).entries['repo-docs']], ['0.1.7', '0.1.7', '0.1.7']);
   for (const f of files) assert.ok(!/[^\r]\n/.test(readFileSync(join(d, f), 'utf8')), `${f} has a bare LF`);
 }));

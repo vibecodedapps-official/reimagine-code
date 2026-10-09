@@ -284,8 +284,9 @@ A missing required key stops the run before stage 1 with `export <path>: missing
 A missing optional key is listed in the audit brief as "not in export", and the
 work-item hygiene review reports it.
 
-For Azure DevOps, export each work item and pull request by hand or with `az`, then
-name the files in a manifest. cca does not run the export.
+For example, for Azure DevOps, export each work item and pull request by hand or with
+`az`, then name the files in a manifest. cca does not run the export. Any forge cca
+does not query works the same way.
 
 ```json
 {

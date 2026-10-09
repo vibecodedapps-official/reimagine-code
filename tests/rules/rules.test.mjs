@@ -319,7 +319,7 @@ test('R35, R46: the writing option adds the shipped Writing section to the Codex
   assert.equal(codexBody, `${SHIPPED['core.md']}\n${SHIPPED['writing-codex.md']}${END}\n`);
   assert.equal(bytes(s.claude).split('\n').slice(1).join('\n'), `${SHIPPED['core.md']}${END}\n`);
   assert.match(bytes(s.codex).split('\n')[0],
-    /^<!-- ccx:house-rules begin version=0\.6\.0 options=core,writing join=none digest=[0-9a-f]{16} -->$/);
+    /^<!-- ccx:house-rules begin version=0\.6\.1 options=core,writing join=none digest=[0-9a-f]{16} -->$/);
 }));
 
 test('R37: plan writes nothing for current, edited and malformed targets', sandbox((s) => {
@@ -367,7 +367,7 @@ test('R41: an existing file is backed up with the time in its name, and no tempo
     [`ccx: wrote ${s.claude}; the earlier content is in ${s.claude}.ccx-backup-20261003120000`]);
   assert.deepEqual(readdirSync(s.claudeDir).sort(), ['CLAUDE.md', 'CLAUDE.md.ccx-backup-20261003120000']);
   assert.equal(bytes(`${s.claude}.ccx-backup-20261003120000`), 'mine\n');
-  assert.ok(bytes(s.claude).startsWith('mine\n\n<!-- ccx:house-rules begin version=0.6.0 options=core join=blank digest='));
+  assert.ok(bytes(s.claude).startsWith('mine\n\n<!-- ccx:house-rules begin version=0.6.1 options=core join=blank digest='));
   assert.deepEqual(s.state().created, {});
   assert.deepEqual(readdirSync(s.data).sort(), ['rules-plan.json', 'rules-state.json']);
 }));
@@ -832,7 +832,7 @@ test('R66: the overlap note and the recommendation for a hand copy, and adopt th
   assert.deepEqual(s.run('apply', ['codex'], { now: AT }), [`ccx: wrote ${s.codex}; the earlier content is in ${s.codex}.ccx-backup-20261003120000`]);
   assert.equal(bytes(`${s.codex}.ccx-backup-20261003120000`), copy);
   const after = bytes(s.codex);
-  assert.equal(after.startsWith('# Mine\n\n<!-- ccx:house-rules begin version=0.6.0 options=core join=none digest='), true);
+  assert.equal(after.startsWith('# Mine\n\n<!-- ccx:house-rules begin version=0.6.1 options=core join=none digest='), true);
   assert.equal(after.split('Make the smallest correct change').length, 2);
   assert.equal(s.run('plan', ['--options', 'core']).includes('state: current'), true);
   s.run('remove');
@@ -1238,19 +1238,38 @@ test('R44: a backslash escapes only an opening backtick; a closing run pairs and
   assert.deepEqual(found('- `a\\`\n  `b` @z\n'), ['@z']);
 });
 
-test('units and imports grow about linearly: four times the input takes under eight times as long', () => {
-  // Linear growth gives a ratio near 4; the quadratic code this guards against gave about 16.
-  const best = (fn) => Math.min(...[0, 1, 2].map(() => { const t0 = performance.now(); fn(); return performance.now() - t0; }));
-  const grows = (make, run, n) => {
+test('units and imports grow about linearly: four times the input takes under ten times as long', () => {
+  // Linear growth gives a ratio near 4 and quadratic code near 16. Measured on a 10-core Mac: the real code gave 3.9 to 4.6
+  // in 20 runs and up to 5.3 in 10 runs with every core busy; a mutation that is quadratic in each input gave 16.2 (units, a
+  // per-line rescan of the rest of the paragraph), 19.3 and 16.2 (imports, a rescan per backtick run and per import) and
+  // 12.4 (a weak one, an index search per line), so 10 sits between.
+  // Each side is its best batch, taken after warm-up, so a slow patch must hit every batch to count.
+  const timed = (run, text, count) => {
+    const t0 = performance.now();
+    for (let i = 0; i < count; i++) run(text);
+    return performance.now() - t0;
+  };
+  const grows = (name, make, run, n) => {
     const [small, large] = [make(n), make(4 * n)];
     run(small);
-    return best(() => run(large)) / best(() => run(small));
+    run(large);
+    let count = 1;
+    while (count < 256 && timed(run, small, count) < 50) count *= 2;
+    const more = Math.max(1, Math.floor(count / 4));
+    const [a, b] = [[], []];
+    for (let k = 0; k < 5; k++) {
+      a.push(timed(run, small, count) / count);
+      b.push(timed(run, large, more) / more);
+    }
+    const ratio = Math.min(...b) / Math.min(...a);
+    const ms = (list) => list.map((x) => x.toFixed(2)).join(', ');
+    return [ratio < 10, `${name}: ratio ${ratio.toFixed(2)}; ms per run, small [${ms(a)}], large [${ms(b)}]`];
   };
   const stray = (n) => `${Array.from({ length: n }, (_, i) => `line ${i} with a stray \` tick`).join('\n')}\n`;
-  assert.ok(grows(stray, (t) => units(t), 8000) < 8);
-  assert.ok(grows(stray, (t) => imports(t), 8000) < 8);
-  assert.ok(grows((n) => 'a\n'.repeat(n), (t) => imports(t), 32768) < 8);
-  assert.ok(grows((n) => '@a.md\n'.repeat(n), (t) => imports(t), 32768) < 8);
+  assert.ok(...grows('units, stray ticks', stray, (t) => units(t), 8000));
+  assert.ok(...grows('imports, stray ticks', stray, (t) => imports(t), 8000));
+  assert.ok(...grows('imports, plain lines', (n) => 'a\n'.repeat(n), (t) => imports(t), 32768));
+  assert.ok(...grows('imports, import lines', (n) => '@a.md\n'.repeat(n), (t) => imports(t), 32768));
 });
 
 test('R44: an escaped backtick consumes one of its run; the rest of the run can still open a span', () => {

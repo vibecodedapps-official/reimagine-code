@@ -85,8 +85,8 @@ Platform behavior named here is recorded, with its source, in `references/platfo
 Audit reads only; maintain writes, under the safeguards above. Whether Claude Code loads
 the hub also depends on files and settings outside the repo (an ancestor `CLAUDE.md`, a
 `CLAUDE.local.md`, the user-level **Project instructions** setting), so audit ends with a
-session verification: a fresh session at the repo root shows `AGENTS.md loaded` or, with
-adapters, `/context` lists `CLAUDE.md` under Memory files.
+session verification: a fresh session at the repo root lists `AGENTS.md` among the
+instruction files it loaded or, with adapters, lists the `CLAUDE.md` files.
 
 An **error** is a finding that cannot be wrong: two or more `## Spokes` lines, a
 malformed pointer, a missing pointer path, or a tracked adapter set neither empty nor

@@ -10,11 +10,11 @@ Use subagents to review the change, one subagent per skill, using exactly these 
 - general-code-review-context
 - general-code-review-testing
 
-Pass the full skill path to each subagent. Use xhigh reasoning.
+Pass the full skill path to each subagent. Use the highest reasoning effort available.
 
 You must return every single issue from every subagent. You can return an unlimited number of findings.
 Use raw Markdown to report findings.
 Number findings for ease of reference.
 Each finding must include a specific file path and line number.
 
-Do not leave GitHub comments or change labels unless explicitly asked.
+Do not post comments to the hosting platform or change labels unless explicitly asked.
