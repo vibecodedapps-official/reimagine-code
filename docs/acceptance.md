@@ -2631,3 +2631,10 @@ hand; those runs were discarded and rerun after the file was restored.
   (`tmp.zUDHqYdZnx`, `tmp.eTsj66RTX4`, `tmp.CvUHNTYG4D`, `tmp.YgFPWXIYS2`), the
   placement and loop fixtures and logs under `~/.cache/recode-acceptance/acc-46-47/`,
   and the scratch profile.
+- **Item 26, text changed after the runs.** A confirmation pass on the diff, after the
+  runs above, changed act's step 1.3 and step 8 (the warning and the committed clause now
+  name a GitHub PR bundle, whose recorded head is the PR's `headRefOid`, as one a local
+  commit does not move; the mapped case moves when a push updates that ref; the `under
+  review` line says resume asks to restart and approval retires the imports). The runs
+  above used a local-branch bundle with no mapping, whose text did not change; the PR
+  and mapped cases are pending with the macOS run.

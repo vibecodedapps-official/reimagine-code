@@ -35,12 +35,14 @@ commit sha is logged there (step 7).
    3. Show each approved item: id, title, severity, gate, disposition, tickets, repo,
       files, and recommended change, with the report revision. Say when an item is
       `provisional`, `contested`, or `dismissed`. When live checks are open (a Live checks
-      block with `status` `not run: not approved` or `under review`) and the brief's Read
-      paths record no `-> <remote>/...` mapping for the bundle's `branch`, so its recorded
-      head was read from the local branch act commits on (step 2), add: a commit here
-      moves that head, so `--live` will be refused after it; import first if the results
-      are wanted. With a mapping line, say instead that the push, not the commit, moves
-      the recorded head. Ask the user to confirm.
+      block with `status` `not run: not approved` or `under review`), the bundle is not a
+      GitHub PR, and the brief's Read paths record no `-> <remote>/...` mapping for the
+      bundle's `branch`, so its recorded head was read from the local branch act commits
+      on (step 2), add: a commit here moves that head, so `--live` will be refused after
+      it; import first if the results are wanted. For a GitHub PR bundle, whose recorded
+      head is the PR's `headRefOid`, or with a mapping line, say instead that the commit
+      does not move the recorded head; a push that updates the PR's head or the mapped
+      ref does. Ask the user to confirm.
    4. Log the approval: run id, revision, item ids, `--per-item`, time. The approval is
       bound to that run, that revision, and those items. Before each commit in step 5,
       recompute the revision; if it differs from the approved one, stop.
@@ -156,14 +158,15 @@ commit sha is logged there (step 7).
        rechecks all of that and refuses otherwise`, for the blocks with `status` `not
        run: not approved`. When act committed in this invocation, add: `This act
        committed <sha> on <branch>, the bundle's branch, so a bundle whose recorded head
-       was read from that local branch no longer matches (one read through a remote
-       mapping in the brief's Read paths moves on push); resume without --live to
-       re-audit it`. Act resolves no ref, which is why the line states the condition and
-       names resume as the check; it does not enumerate the commits of earlier
-       invocations, which the condition covers;
+       was read from that local branch no longer matches (a GitHub PR's head, or one read
+       through a remote mapping in the brief's Read paths, moves when a push updates that
+       ref); resume without --live to re-audit it`. Act resolves no ref, which is why the
+       line states the condition and names resume as the check; it does not enumerate the
+       commits of earlier invocations, which the condition covers;
      - `live results imported, awaiting review: <ids>; /cca:resume <run-id> reconciles
        them, no --live needed, while no stage before 6 needs a rerun; after a head or
-       base change resume restarts from stage 1 and retires them`, for the blocks with
-       `status` `under review`. When both states are open, print both clauses;
+       base change resume asks to restart from stage 1, and approving that restart retires
+       them`, for the blocks with `status` `under review`. When both states are open,
+       print both clauses;
      - `live checks: not checked (<report or entry> could not be read)`, when act
        stopped before it read them.

@@ -1212,12 +1212,14 @@ stop condition, default, and limit kept, no must turned into a may, no number mo
    head and base still resolve, no stage before 6 to rerun) and, when this invocation
    committed, that the head moved and resume without `--live` re-audits; results
    imported and awaiting review, which plain resume reconciles while no stage before 6
-   needs a rerun and retires after a head or base change; or not checked, when act
-   stopped before reading the report. Act resolves no ref, which is why it states the
-   condition and names resume as the check; prior invocations are covered by the
-   condition. Step 1.3's confirmation warns before the first commit when live checks are
-   open and the brief's Read paths map the bundle's branch to no remote ref, so its
-   recorded head is the local branch act commits on; with a mapping, the push moves it.
+   needs a rerun, and which an approved restart after a head or base change retires; or
+   not checked, when act stopped before reading the report. Act resolves no ref, which
+   is why it states the condition and names resume as the check; prior invocations are
+   covered by the condition. Step 1.3's confirmation warns before the first commit when
+   live checks are open, the bundle is not a GitHub PR, and the brief's Read paths map
+   the bundle's branch to no remote ref, so its recorded head is the local branch act
+   commits on; for a PR, whose recorded head is its `headRefOid`, or with a mapping, the
+   commit does not move it and a push that updates that ref does.
    The `--live` refusal in resume prints,
    per changed bundle, the recorded and current head and base shas with the moved one
    marked; the refusal and the no-import outcome are unchanged.
