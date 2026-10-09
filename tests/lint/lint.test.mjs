@@ -259,6 +259,23 @@ test('lint rejects an invocation block that lists the low effort value', () => f
   },
   'plugins/ccx-loop/skills/ccx-loop/SKILL.md: the invocation block must list the effort values exactly auto | medium | high | xhigh; found "low,medium,high,xhigh"'));
 
+test('lint rejects a loop core over its word cap', () => fails(
+  (d) => appendFileSync(join(d, 'plugins/ccx-loop/skills/ccx-loop/SKILL.md'), `\n${'word '.repeat(600)}\n`),
+  'plugins/ccx-loop/skills/ccx-loop/SKILL.md: ', ' words, cap is 5800'));
+
+test('lint rejects a Supporting files entry that names a missing file', () => fails(
+  (d) => {
+    const p = join(d, 'plugins/ccx-loop/skills/ccx-loop/SKILL.md');
+    const s = readFileSync(p, 'utf8');
+    assert.ok(s.includes('- `ci-watch.md`: Step 7.3 items'), 'SKILL.md lacks the ci-watch entry');
+    writeFileSync(p, s.replace('- `ci-watch.md`: Step 7.3 items', '- `ci-watch-gone.md`: Step 7.3 items'));
+  },
+  'plugins/ccx-loop/skills/ccx-loop/SKILL.md: Supporting files names ci-watch-gone.md, which does not exist'));
+
+test('lint rejects a step file that Supporting files does not name', () => fails(
+  (d) => writeFileSync(join(d, 'plugins/ccx-loop/skills/ccx-loop/steps/9-extra.md'), '# Extra\n'),
+  'plugins/ccx-loop/skills/ccx-loop/steps/9-extra.md: not named in the Supporting files section of SKILL.md'));
+
 test('lint rejects a codex catalog with another name', () => fails(
   (d) => editJson(d, '.agents/plugins/marketplace.json', (j) => { j.name = 'codex-code-review'; }),
   '.agents/plugins/marketplace.json: name must be reimagine-code, not codex-code-review'));
