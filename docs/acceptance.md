@@ -328,12 +328,14 @@ name a plugin are rerun under the new names and recorded here.
     - a run where a reviewer repeats a finding rejected in an earlier round without new
       evidence, and one where the repeat cites evidence the rejection did not cover.
 
-    Expected: the three Azure commands print the hint line before the block and, after
-    the block, `run id: <today>-12345-and-67890` with the suffix rule, and `branch:`
-    `work/12345-and-67890`, `none (plan-only creates no branch; a run would use
-    work/12345-and-67890)`, and `none (plan-only creates no branch; a run would use
-    work/ab-12345)` in turn; the invocation block is unchanged from 0.6.1. The GitHub plan prints the
-    `fix/` or `feat/` rule, not a name, and the run creates `fix/1-2-<slug>`. The
+    Expected: for the three Azure commands, the report's header carries `Run id: not
+    allocated (would have been <today>-12345-and-67890)`, the `Hint:` line, and
+    `Branch: none created (a run would use work/12345-and-67890)`, the same with
+    `work/ab-12345` for the `--branch` run; when the session also prints text before the
+    Skill call or before the skill's first tool call, that text is the hint, the block,
+    and the `run id:` and `branch:` lines of step 3, with the suffix rule, and nothing
+    else; the invocation block is unchanged from 0.6.1. The GitHub plan's report names the
+    branch a run would use, and the run creates `fix/1-2-<slug>`. The
     unreachable check is reported as not run with its exact command and the reason; the
     reachable one runs; the denied one ends the run `blocked`. The continued
     implementer's prompt carries the intent-to-add sentence. The repeated finding with
@@ -342,8 +344,12 @@ name a plugin are rerun under the new names and recorded here.
     47. Rerun when a loop command's step 3, carve-out 3, Step 5.3, Step 6.2, or the
     implementer prompt changes. Run on Windows on 2026-10-09 (the record below): the
     checks and the branch rule passed, the command's step 3 text did not appear headless,
-    and the `fix/` branch, the continued prompt, and the new-evidence repeat are pending
-    with the macOS run.
+    and the `fix/` branch, the continued prompt, and the new-evidence repeat were left
+    pending. Run on macOS on 2026-10-09 (the record below): the checks, both branch
+    forms, and the no-new-evidence repeat passed; the step 3 text was absent in every
+    headless session and in an interactive one, which moved the lines into the report
+    header, rerun and passed the same day; the continued prompt and the new-evidence
+    repeat did not arise.
 26. **Audit closing, act closing, live import, and placement.** Setup: as item 21, with
     the `solo` fixture and `--no-codex`; a copy of the fixture whose `app/AGENTS.md`
     says that history and rationale go in commit messages, not file headers, and whose
@@ -369,7 +375,7 @@ name a plugin are rerun under the new names and recorded here.
     Expected: the `--budget 0` run prints the plain resume line and the `next:` list with
     `act first: none`; the low run's closing prints `act first` with ids and reasons, the
     `/cca:act <run-id> <ids>` line with `C<n>` ids only, `your decision`, and no `--live`
-    line, and the report's section 1 holds the same lines after the verdict line under
+    line when it leaves no live check open, and the report's section 1 holds the same lines after the verdict line under
     `next:`, with no line starting `#### C`, `- claim `, or `#### live `. With an open
     live check the closing prints the `--live` line with the sentence about the file;
     act's step 1.3 confirmation carries the live warning; act's closing says `runs.json`
@@ -391,7 +397,9 @@ name a plugin are rerun under the new names and recorded here.
     resume's `--live` guard, or the placement rule changes. Run on Windows on 2026-10-09
     (the record below): the closings, the act and `--live` cases, the placement cases, and
     the missing entry passed; the inapplicable-stages run with a live check open and the
-    deferred scope claim were not produced; the macOS run is pending.
+    deferred scope claim were not produced. Run on macOS on 2026-10-09 (the record
+    below): every case passed, the two not produced on Windows included, and the PR
+    bundle's act text; the `under review` and mapped-ref clauses of act did not arise.
 
 ## Record of runs
 
@@ -2638,3 +2646,167 @@ hand; those runs were discarded and rerun after the file was restored.
   review` line says resume asks to restart and approval retires the imports). The runs
   above used a local-branch bundle with no mapping, whose text did not change; the PR
   and mapped cases are pending with the macOS run.
+
+### 2026-10-09: ccx-loop 0.6.2 and cca 0.10.2, items 25 and 26, before the merge, macOS
+
+macOS 27.0, Claude Code 2.1.293, codex-cli 0.162.0, Node 26.4.0, git 2.54.0 (Apple
+Git-157). The branch head was cbb68b9 for every run. A clone of the branch at
+`/tmp/acc-46-47/clone` replaced the M4 profile's `reimagine-code` catalog, and `ccx`
+0.6.2, `ccx-loop` 0.6.2, and `cca` 0.10.2 were installed from it, each read from the
+clone; the loop's `codex` option was unset. The profile was backed up first and restored
+from the backup afterwards; the real `~/.claude` and `~/.codex` files had the same sha256
+and times after the runs as before. Every run was headless, `claude -p --output-format
+stream-json --verbose --permission-mode auto --model opus`, with a question answered by
+`--resume`, except item 25's one interactive probe in a pty. Codex ran once, the critique
+of the GitHub plan, from a login copy deleted afterwards; every other run was `--no-codex`.
+`npm run lint`, `npm test` (495 tests, 483 passed, 12 skipped, exit 0), and `claude plugin
+validate --strict` on the root and each plugin passed on the branch head before the
+runs. Three Sonnet runners did the work in parallel, the cca cases in one sequence.
+
+- **Item 25, the three Azure preflight cases: the step 3 text failed, headless and
+  interactive.** Three headless runs on a repository whose only remote is an unreachable
+  `dev.azure.com` URL: `/ccx-loop:run 12345 and 67890`, `/ccx-loop:plan 12345 and 67890`,
+  and the plan with `--branch work/ab-12345`. In each, the assistant events before the
+  Skill call held only tool calls (`gh repo view`, `git remote -v`, Reads of the tokens)
+  and no text block: no hint, no block, no `run id:` or `branch:` line, as on Windows.
+  The block passed as the Skill's args matched the 0.6.1 shape, with `branch:
+  work/ab-12345` where given. Each run ended `blocked` at Step 0.2 (`git ls-remote` failed
+  with "Authentication failed" here, where Windows saw the URL not found), with the
+  report's `Run id: not allocated (would have been 2026-10-09-12345-and-67890)` and the
+  closing telling the user to export the work items to a file. The interactive probe,
+  `/ccx-loop:plan 12345 and 67890` typed into a pty after the trust question, showed the
+  same tool calls and then one paraphrased sentence before the Skill call: "I've derived
+  the run config: a plan-only mode with the text input "12345 and 67890", run id
+  2026-10-09-12345-and-67890, and no branch created since plan-only runs don't branch (a
+  real run would use work/12345-and-67890)." The values were right; the hint line, the
+  block, and the `run id:` and `branch:` lines in step 3's form were not printed. So
+  the clause is judged: the command's step 3 output does not appear in either session
+  type at cbb68b9. The suffix rule was not observable on these runs, which stopped before
+  a run id was allocated; the GitHub run below showed it.
+- **Item 25, the GitHub cases: both branch forms passed, the rule line again absent.**
+  On fresh clones of the private throwaway repository, with issue 44 given the `bug`
+  label for this run (no issue had one on Windows). `/ccx-loop:plan #43 #42`: no text
+  before the Skill call, so no `fix/` or `feat/` rule line; Codex critiqued the plan with
+  no blocking objection; the run ended `plan-only` and its report said a run would use
+  `feat/43-42-iseven-is-wrong-for-even-numbers-ccx-loop-0-3-2`. `/ccx-loop:run #43 #42
+  --no-codex --effort low --no-publish`: run id `2026-10-09-43-42-2` (the suffix rule,
+  since the plan's `.ccx/2026-10-09-43-42/` existed), Step 3.7 created
+  `feat/43-42-iseven-is-wrong-for-even-numbers-ccx-loo`, `prepared`, the change
+  uncommitted. `/ccx-loop:run #43 #44 --no-codex --effort low --no-publish` in a second
+  clone: Step 3.7 created `fix/43-44-iseven-is-wrong-for-even-numbers-ccx-loo`, the
+  `fix/` form from the second issue's label alone, `prepared`, the change uncommitted.
+  In every GitHub run `git log origin/main..` was empty and the remote's head count and
+  the repository's pull request count were the same before and after.
+- **Item 25, the three check cases: passed.** Three repositories with a local bare
+  `origin`, each `/ccx-loop:run "<one-function change>" --no-codex --effort low
+  --no-publish`. Unreachable (`psql -h db.internal.invalid ...`): `prepared`; the
+  report's `Checks not run and why:` quoted the command exactly, named `.ccx.json`, and
+  said `psql` is not installed and the host does not resolve. Reachable (a `node -e`
+  fetch of `https://api.github.com/`): `prepared`; the orchestrator ran it at baseline and
+  after the change, both passing, listed under `Checks run:`. Denied (`node check-db.mjs`,
+  a committed script, with `Bash(node check-db.mjs)` denied in the repository's
+  `.claude/settings.local.json`): `blocked`; the orchestrator issued the command once,
+  was refused, did not retry, and the report named the deny rule and the command under
+  `Checks not run and why:`. `npm test` was not refused; the orchestrator ran the script's
+  body `node test.mjs` instead of the literal `npm test`, noted, not judged. Nothing
+  reached any bare origin.
+- **Item 25, the repeated finding: the no-new-evidence path passed; the rest not
+  produced.** On the half-function run, the Step 5 reviewer repeated the plan reviewer's
+  rejected `half(0)` and `half(1)` finding and added a coercion point; `run.md` recorded
+  the edge-case part as a repeat with the disposition kept and the coercion part as
+  verified and rejected for scope; the report's rejected list holds one entry per round,
+  the second naming the repeat. A repeat citing new evidence for a rejected finding did
+  not arise. A stats-module run meant to need a second implementer round converged in
+  one, so no continued prompt was produced; the first prompt already carried the
+  intent-to-add sentence. Both stay pending.
+- **Item 26, the audits and closings: passed.** `--budget 0` on the solo fixture ended
+  `partial` with the plain `/cca:resume <run-id>` line, `act first: none`, and `your
+  decision: none`, no `/cca:act` or `--live` line; section 1 held the `next:` block after
+  the verdict line with no `#### C`, `- claim `, or `#### live ` line, and `work-items.sh
+  check` printed `work-items: ok`. `--effort low` ended `reported` (1 blocker, 1 high, 1
+  medium, 2 low, 1 note, 2 provisional) with `act first: C1 (...), C2 (...), C3 (...)`,
+  `/cca:act 2026-10-09-1005-app-feature C1 C2 C3`, and `your decision`, the same block in
+  section 1, `work-items: ok`. This run left one live check open (`combined-F6`, the
+  ticket's acceptance criteria), so its closing also printed the `--live` line with the
+  sentence about the file and the import-before-commit warning, as stage 8 step 14 says
+  for an open check; the item's "no `--live` line" clause describes the Windows solo run,
+  which had none, and holds only then. The chat closings printed the lines in prose
+  without the literal `next:` header; the report's section 1 has it.
+- **Item 26, act and `--live`: passed.** On the placement run (two live checks `not run:
+  not approved`), `/cca:act <run-id> C3` with `yes` twice: step 1.3 said "Two live checks
+  from the audit are still open (C5 and C9). This branch has no pull request or remote,
+  so a commit here moves the commit the audit recorded. After that, importing live
+  results will be refused." Commit `9ec10fb` followed; the closing said the run's entry
+  is unchanged, gave the log's absolute path, and said results are still needed for C5
+  and C9, that the import works only while the recorded head and base still match, and
+  that this commit moved `feature` past the audited commit so the import will be refused
+  and a plain resume re-audits; the step 8 content in paraphrase. `runs.json` was
+  byte-identical; `act/log.md` holds the approve, check-repo, drift, baseline, stage,
+  check, and commit entries. `--live` with a valid file was refused with `app: head
+  recorded 45c1967... now 9ec10fb... (moved); base recorded 2b5e8f3... now 2b5e8f3...`.
+  On the solo low run, `git update-ref` moving `main` alone gave `base recorded
+  2b5e8f3... now bd5d5e1... (moved)` with the head unmarked and `stages.json` unchanged;
+  with `main` restored the same file imported, stages 6 to 8 reran, the run ended
+  `reported` with the earlier report under `superseded/1/` and no `--live` line. Both
+  checks ran on that one run rather than two fresh ones.
+- **Item 26, placement and the rule edit: passed.** Stage 1 snapshots the user's
+  instruction files in `CLAUDE_CONFIG_DIR`, not the repository's, so the first placement
+  run put the rules in the fixture's `app/AGENTS.md`: the brief's Placement rules held
+  the snapshot sentence with `none` and a "Repository rules" line quoting both, and C3
+  recommended removing the header lines and putting the history in the commit message
+  and the rationale in `docs/decisions.md`; act's commit did exactly that, nothing in a
+  header, `notes/` left untracked. Then, with "Rationale goes in docs/decisions.md, never
+  in code comments." added to the scratch profile's `CLAUDE.md`, a fresh placement run
+  snapshotted it as `CLAUDE.md:5`; the line changed to "Rationale goes in the commit
+  message, and nowhere else.", a plain `/cca:resume <run-id>` reran nothing with
+  `audit-brief.md` byte-identical and a closing that said the report is out of date
+  against the edited rule, and `--from 1` (no restart question headless) reran the audit
+  and wrote the new line into Placement rules, with C3 now naming the commit message. The
+  profile's `CLAUDE.md` was restored and `cmp` matched.
+- **Item 26, the missing entry: passed.** A watcher removed the entry when stage 8 wrote
+  `claims-verdicts.md`. The closing printed the JSON entry with the registry's absolute
+  path and said resume and act cannot find the run until it is added back, then the
+  `act first`, `/cca:act`, `your decision`, and `--live` lines; looser than stage 8's
+  "act stops at its first step" wording, the same substance.
+- **Item 26, the two cases Windows did not produce: produced, passed.** `--budget 9` on
+  a solo fixture ended `partial` with stages 2 and 3 `not_applicable`, 4 to 6 complete, 7
+  `failed` (budget expired), 8 complete, three live checks open; the closing and the
+  report's `next:` printed the `--live` line with the sentence about the file. A
+  `--claims` file asking for a CSV export feature's inclusion and recording an audit-log
+  deferral: the report's section 8 gave the scope claim `defer`, and `your decision`
+  listed the deferred claim, the stale deferral, and one other decision (inactive users
+  in list and count); a second other decision in section 8 (whether the tracked CSV is
+  the migrated store) was not on the line, since its item C3 sat under `act first`.
+- **Item 26, the PR bundle: act's new text passed; two clauses did not arise.** A
+  manifest naming the throwaway repository's open PR 47 (head `9c9a2ef`) audited at
+  `--effort low --no-codex`, after a `yes` to stage 1's fetch question, ended `reported`,
+  `ready to merge` with notes only, one live check open, `act first: none`. `/cca:act
+  <run-id> C3` on the provisional note, with the PR branch checked out locally: step 1.3
+  said "One open live check (C1, ...) is still unrun. This is a GitHub PR, so a local
+  commit doesn't change the head the audit recorded. Only a push that updates the PR
+  would."; the local commit `6ef698b` was made and not pushed, the PR's `headRefOid`
+  unchanged; the closing said the run's entry is unchanged, gave the log's path, and said
+  the import works while the PR's recorded head and base still match and that the commit
+  does not change the recorded head until pushed. A `--live` import after the commit
+  succeeded, confirming it. The `under review` wording and the mapped-ref clause did
+  not arise: no imported result was awaiting review at an act, and the bundle's Read
+  paths had no mapping line.
+- **Item 25, the step 3 text after the fix: the report carries the lines.** The runs
+  above showed the reply text absent in every session type, so the commands' step 3 and
+  a new echo at the start of the skill's Step 0 were restated as reply text, and the
+  report's header gained the run id in its `would have been` form, a `Hint:` line, and
+  the branch a run would use. With the working tree installed in the same profile, the
+  Azure plan with no `--branch` printed no reply text either way, before or after the
+  skill's echo was added; then `/ccx-loop:run 12345 and 67890` and `/ccx-loop:plan 12345
+  and 67890 --branch work/ab-12345` both ended `blocked` with report headers reading
+  `Run id: not allocated (would have been 2026-10-09-12345-and-67890)`, the `Hint:` line
+  in full, and `Branch: none created (a run would use work/12345-and-67890)` and `(a
+  run would use work/ab-12345)` in turn. The reply text before the Skill call stayed
+  absent in all four runs, as the revised Expected allows.
+- Observed, not judged: in the denied-check run the implementer and both reviews still
+  ran with Step 6 marked not complete, as carve-out 3 allows; several `result` events
+  per cca session, the closing being the last; a second resume reported the refused
+  attempt a minute earlier from `invocations.md` as abandoned. Left on the machine:
+  `/tmp/acc-46-47/` (the clone, the profile backup, the used profile as `claude-after`
+  with its eight cca runs, the loop and GitHub clones with their uncommitted or unpushed
+  changes, and the logs), and six cca fixtures under the system temp directory.
