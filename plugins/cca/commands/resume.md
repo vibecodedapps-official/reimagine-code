@@ -30,7 +30,7 @@ inputs: none
 flags:
   effort: auto
   no-codex: false
-  codex-model: gpt-6.1-sol
+  codex-model: default
   codex-timeout: default
   models: none
   questions: default

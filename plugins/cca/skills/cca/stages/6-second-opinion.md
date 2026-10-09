@@ -32,7 +32,10 @@ for each batch `<k>` it answers, numbered from 2 (step 9).
    hashes.
 
 2. **Settle the call parameters** and keep them for the stage entry:
-   - model: `--codex-model`, else `gpt-6.1-sol`. Always the full id.
+   - model: the `--codex-model` id when one was given. When `codex-model` is `default`,
+     resolve it by the run's tier: low `gpt-6-luna`, medium and high `gpt-6.1-sol`.
+     Always the full id. The resolved id is what `codex_model` records, so a resumed
+     run sees the id and not `default`.
    - timeout in seconds: `--codex-timeout` when given (the command already rejected
      values outside 1 to 3,600), else by tier: low `1200`, medium `2400`, high `3600`.
      In a headless session, or when unsure whether a user can answer (the judgment

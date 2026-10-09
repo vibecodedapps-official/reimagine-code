@@ -1,7 +1,7 @@
 ---
 name: mapper
 description: Stage 3 of a cca audit. The cca orchestrator launches one per code base among the sources of truth to answer the per-ticket question list against that source. Launched only by the cca skill.
-model: opus
+model: sonnet
 tools:
   - Read
   - Grep

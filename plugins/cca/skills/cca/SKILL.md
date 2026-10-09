@@ -78,7 +78,7 @@ inputs:
 flags:
   effort: auto | low | medium | high
   no-codex: true | false
-  codex-model: gpt-6.1-sol | <id>
+  codex-model: default | <id>
   codex-timeout: default | <seconds>
   models: none | role=model,...
   questions: default | <file>
@@ -164,11 +164,11 @@ Approvals recorded in `stages.json` are not asked again.
 | Role | Default | Fallback when the default fails |
 |---|---|---|
 | Orchestrator | you, in the main session | none, the run ends `blocked` |
-| Digester (stage 2) | `cca:digester`, opus | retry once, then the same agent on fable, else the scope fails |
-| Domain mapper (stage 3) | `cca:mapper`, opus | as for the digester |
+| Digester (stage 2) | `cca:digester`, haiku | retry once, then the same agent on fable, else the scope fails |
+| Domain mapper (stage 3) | `cca:mapper`, sonnet | as for the digester |
 | Auditor (stage 4, top-ups) | `cca:auditor`, opus | as for the digester |
 | Adversary (stages 5 and 7) | `cca:adversary`, opus, fresh context | as for the digester |
-| Second opinion (stage 6) | Codex, `--codex-model` (default `gpt-6.1-sol`), through `ccx:ask` | `cca:adversary` on fable, else opus, launched once per batch, each given its Codex request; also for the batches of ids that neither the Codex request nor its follow-up carried (a partial swap) |
+| Second opinion (stage 6) | Codex, `--codex-model` (default by tier: `gpt-6-luna` at low, `gpt-6.1-sol` at medium and high), through `ccx:ask` | `cca:adversary` on fable, else opus, launched once per batch, each given its Codex request; also for the batches of ids that neither the Codex request nor its follow-up carried (a partial swap) |
 | Merger (stage 7) | `cca:merger`, sonnet | you merge |
 
 An agent **fails** when it returns an error, or when its output file lacks

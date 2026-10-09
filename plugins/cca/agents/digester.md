@@ -1,7 +1,7 @@
 ---
 name: digester
 description: Stage 2 of a cca audit. The cca orchestrator launches one per chunk of a document corpus among the sources of truth to write a cited rule list. Launched only by the cca skill.
-model: opus
+model: haiku
 tools:
   - Read
   - Grep

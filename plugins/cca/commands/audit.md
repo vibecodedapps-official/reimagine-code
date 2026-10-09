@@ -16,7 +16,7 @@ You are a thin forwarder for the cca orchestrator. Do the steps below in order. 
    - `--no-codex` takes no value. Every other flag takes exactly one value, the next token, which must not start with `--`. Reject a missing value.
    - Only `--claims` may be repeated. Reject any other flag given twice.
    - `--effort`: one of `low`, `medium`, `high`. Without it, effort is `auto`.
-   - `--codex-model`: a full Codex model id, made only of letters, digits, `.`, `_`, and `-`. Without it, codex-model is `gpt-6.1-sol`.
+   - `--codex-model`: a full Codex model id, made only of letters, digits, `.`, `_`, and `-`. Without it, codex-model is `default`, which stage 6 resolves by tier.
    - `--codex-timeout`: a whole number of seconds from 1 to 3600. Without it, codex-timeout is `default` (the tier sets it).
    - `--models`: a comma-separated list of `role=model` pairs with no spaces. A role is one of `digester`, `mapper`, `auditor`, `adversary`, `merger`, each at most once. A model is one of `opus`, `sonnet`, `haiku`, `fable`. Without it, models is `none`.
    - `--questions`: a path to an existing file. Without it, questions is `default`.
@@ -45,7 +45,7 @@ inputs:
 flags:
   effort: auto | low | medium | high
   no-codex: true | false
-  codex-model: gpt-6.1-sol | <id>
+  codex-model: default | <id>
   codex-timeout: default | <seconds>
   models: none | role=model,...
   questions: default | <file>
