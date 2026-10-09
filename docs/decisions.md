@@ -1073,3 +1073,64 @@ request, with the issue 44 rewrites as one commit per plugin so they read apart.
    the Codex critique recommended that split; the request for this work was one PR for
    the three issues, so the rewrites ride here as one commit per plugin. The issue
    stays open until the deferred list is decided.
+
+## Part 21: the Windows CI job, the sh suites run concurrently, 2026-10-09
+
+Issue 48, planned with two Codex critique rounds and built as two separate experiments
+on branch `ci/windows-sh-suites`, so each one's numbers read apart. Every figure below
+comes from CI's TAP output, pairing each `ok` line with its `duration_ms`; the step time
+is the `npm test` step's elapsed time from the job API.
+
+1. **The baseline.** Run 37888044599 (main at bd3b561): the `npm test` step took 906 s
+   on Windows, 110 s on Ubuntu, 210 s on macOS. Windows leaf durations: readonly.sh
+   242 s (12 s on Ubuntu), revert-tests.sh 191 s (75 s), working-tree.sh 128 s (6 s),
+   live.sh 65 s, ledger.sh 61 s, the ground-truth fixture 55 s and 48 s, handoff.sh and
+   work-items.sh 18 s each. The 494 leaf subtests sum to 1153 s on Windows, 237 s on
+   Ubuntu, 370 s on macOS. Windows passed 383 and skipped 111 (the ccx spawn tests skip
+   there); Ubuntu and macOS passed 482 and skipped 12. The Windows runner has 4 cores.
+2. **The cause.** `sh.test.mjs` ran its 17 tests one after another with `spawnSync`.
+   The fork-heavy suites are 15 to 23 times slower on Windows (MSYS2 process creation),
+   while revert-tests.sh is only 2.5 times slower because its cost is fixed contract
+   waits. So the file's time was the sum of its suites, with most of the sum in three.
+3. **Change 1: run the suites concurrently** (`test(cca): run the sh suites
+   concurrently`). One `describe` with concurrency `availableParallelism() - 1`, each
+   suite through an async spawn that settles on `close` with both streams drained and
+   stdin ignored, the slowest suites registered first. Nothing under `plugins/`
+   changed, and the file name stays because five documents name it. Locally, `npm test`
+   on a 10-core Mac went from 145 s to 77 s over three runs, and 68 s on Linux Node 22
+   in Docker, all passing.
+4. **Experiment 1 on CI.** Run 37892760276: Windows step 412 s (job 7 min 10 s against
+   15 min 28 s), Ubuntu 74 s, macOS 137 s. Windows leaves: readonly.sh 342 s,
+   revert-tests.sh 276 s, working-tree.sh 178 s; leaf sum 1498 s. The pass and skip
+   counts matched the baseline on every runner.
+5. **Experiment 2, a Defender exclusion step, dropped.** Runs 37893465314 and
+   37894288406. The step set exclusions for the workspace, `RUNNER_TEMP`, and `TEMP`
+   and verified them. Git Bash's `mktemp` and Node's `tmpdir` both resolve under
+   `C:\Users\runneradmin\AppData\Local\Temp`, and `TEMP` arrives in 8.3 form
+   (`RUNNER~1`), so the second run excluded the long-name paths too.
+   `(Get-MpComputerStatus).RealTimeProtectionEnabled` printed False: real-time
+   protection is already off on `windows-latest`, so an exclusion cannot change the
+   cost. The Windows step took 473 s with the step (short-name paths) and 299 s (long
+   names), against 412 s without: the runner's own variance, not the step. `ci.yml` is
+   back to what main has.
+6. **The final configuration.** Commit 37b5b3f, the concurrent suites with the header
+   wording from the review. Consecutive runs of the same commit: run 37895131595, 462 s
+   on Windows (readonly.sh 394 s, revert-tests.sh 271 s, working-tree.sh 208 s), Ubuntu
+   77 s, macOS 124 s; run 2: 436 s (readonly.sh 374 s), Ubuntu 76 s, macOS 175 s; run 3:
+   439 s (readonly.sh 389 s), Ubuntu 76 s, macOS 142 s. The plan's rule was the step
+   under 420 s in three consecutive runs, and it was not met: over the six Windows runs
+   with the concurrent suites the step took 412, 473, 299, 462, 436, and 439 s, under
+   420 s in two. The job as a whole went from about 15.5 minutes to 7.5.
+7. **What the numbers say.** The Windows step is bounded by readonly.sh under
+   contention. The leaf sum on Windows rose from 1153 s to about 1500 to 1700 s under
+   concurrency while the step fell from 906 s to 299 to 473 s. That is the shape of a
+   shared bottleneck in process creation: more concurrency cannot help, and any further
+   gain would come from the suites forking less.
+8. **Fallbacks considered and not taken.** Inner concurrency 2: the heavy suites alone
+   bound the step at about 413 s. Outer `--test-concurrency=1`: adds the other files'
+   time. Shorter contract windows: helps every runner equally, and the remaining waits
+   are the contract. A `paths` filter on the Windows job: trades coverage, and the last
+   two revert-tests.sh fixes needed the Windows run.
+9. **Review.** Two Codex gpt-6-astra rounds on the plan (the async contract, separate
+   experiments, the Defender step's guard and diagnostics, the 420 s rule), then a final
+   review of the diff: no blocking finding, and the header wording that became 37b5b3f.
