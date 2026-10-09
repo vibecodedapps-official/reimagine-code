@@ -7,7 +7,11 @@ repos' own changelogs are kept under `docs/history/`.
 
 ### ccx
 
-- Version 0.6.2.
+- The house rules scanner closes an HTML comment at `--!>` as well as `-->`, as the HTML
+  spec does, so a rule or import written after such a closer is seen (CodeQL alert 2).
+  Before, text after `--!>` stayed masked until the next `-->`.
+- The unit check that compares a paragraph's raw text with its normalized form no longer
+  runs a no-op replacement on non-item units (CodeQL alert 1). Same result.
 
 ### ccx (Codex)
 
@@ -15,11 +19,39 @@ repos' own changelogs are kept under `docs/history/`.
 
 ### ccx-loop
 
-- Version 0.6.2.
+- The `run` and `plan` commands print the derived run id and branch after the invocation
+  block, and a hint when the description is only numbers and joining words, so the user
+  can pass ticket text as a file and set `--branch` before the run starts (issue #47).
+  The block itself is unchanged.
+- The input guard says that on a non-GitHub host ticket text obtained by any means is a
+  file input, so the credential scan sees it, and names `--branch`; the README gets an
+  export example (issue #47).
+- Step 5.3 checks each finding against the rejected list before verifying it: a repeat
+  with no new evidence is recorded as repeated, not re-verified (issue #47).
+- Carve-out 3 says what a denial is, and Step 6.2 reports a check whose resource the
+  session does not have as not run with its exact command; the report's not-run line
+  requires the command (issue #47).
+- The implementer prompt says intent-to-add files between rounds are the orchestrator's
+  and are left alone, and failure rule 3 names the Write tool (issue #47).
 
 ### cca
 
 - cca 0.10.2.
+- The audit's closing recommends the items to act on first with a reason each, prints the
+  exact `/cca:act <run-id> <ids>` line, lists what needs the user's own decision, and
+  prints the `/cca:resume <run-id> --live <file>` line only when resume would accept it;
+  the report's section 1 carries the same list under a plain `next:` line (issue #46).
+- `work-items.md` says a `text` field is the complete content the forge should hold, not
+  an instruction to compose it later (issue #46).
+- The late adversary's definition shows the `severity` and `label` verdict lines filled
+  in and says anything after the value is rejected (issue #46).
+- Act closes with the audit state unchanged in `runs.json`, the log's path, and whether
+  live results are still needed, imported and awaiting review, or none; it warns before
+  the first commit when live checks are open; resume's `--live` refusal prints each
+  bundle's recorded and current shas (issue #46).
+- A recommended change that adds or moves a documented fact follows the repository's
+  instruction files and the user's placement rules, which stage 1 records in the brief as
+  a snapshot; act reads them again before its first edit (issue #46).
 
 ## 0.6.1 - 2026-10-08
 
