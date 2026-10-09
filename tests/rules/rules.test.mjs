@@ -631,6 +631,9 @@ test('units: fenced code, HTML comments and indented code are not units', () => 
   assert.deepEqual(kinds('```\n- x\n```\n- y\n'), ['item:y']);
   assert.deepEqual(kinds('~~~sh\n- x\n```\n~~~\n- y\n'), ['item:y']);
   assert.deepEqual(kinds('<!-- a\n- x\n-->\n- y\n\n<!-- one -->\n- z\n'), ['item:y', 'item:z']);
+  assert.deepEqual(kinds('<!-- a\n- x\n--!>\n- y\n'), ['item:y']);
+  assert.deepEqual(kinds('<!-- a ` b -->\n- y\n'), ['item:y']);
+  assert.deepEqual(kinds('`<!--` x\n\n- y\n'), ['para:`<!--` x', 'item:y']);
   assert.deepEqual(kinds('    - code\n\n- y\n'), ['item:y']);
   assert.deepEqual(kinds('- y\n\n    - nested code\n'), ['item:y - nested code']);
 });
@@ -1040,6 +1043,8 @@ test('R44: comment marks inside a code span that wraps across lines are text, an
   // A real comment, opened outside any span and never closed, hides the rest of its segment.
   assert.deepEqual(found('a ` <!--\n\n@later.md\n'), []);
   assert.deepEqual(found('`<!--` @x\n\n<!-- @y -->\n@z\n'), ['@x', '@z']);
+  assert.deepEqual(found('<!--\n@x\n--!>\n@y\n'), ['@y']);
+  assert.deepEqual(found('<!-- @x --!> @y\n'), ['@y']);
 });
 
 test('R67: indented text is never a rule, since it may belong to a container', () => {
