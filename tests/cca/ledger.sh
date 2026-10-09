@@ -1633,6 +1633,12 @@ mkdir -p "$tmp/lc8/live/carried"
 printf '## L1\n' > "$tmp/lc8/live/findings.md"
 printf '### L1: Carried\n' > "$tmp/lc8/live/carried/L1.md"
 run "late-check, late finding reuses a carried id" 1 "ledger: late/adversary.md: no verdict for L1, which late-ids lists${nl}ledger: late/adversary.md: addition L1 reuses a carried id" late-check "$tmp/lc8" --tier medium --stage6 complete
+cp -R "$B" "$tmp/lc9"
+sed '4s/.*/- severity: unchanged (no new evidence)/' "$B/late/adversary.md" > "$tmp/lc9/late/adversary.md"
+run "late-check, severity value with a trailing parenthetical" 1 "ledger: late/adversary.md:3: verdict on app-P1: - severity: must be '<old> -> <new>' with allowed values, or unchanged" late-check "$tmp/lc9" --tier medium --stage6 complete
+cp -R "$B" "$tmp/lc10"
+sed -e '4s/.*/- severity: high -> medium/' -e '5s/.*/- label: unverified assumption -> convention/' "$B/late/adversary.md" > "$tmp/lc10/late/adversary.md"
+run "late-check, severity and label arrows" 0 "" late-check "$tmp/lc10" --tier medium --stage6 complete
 want="ledger: late/adversary.md:3: verdict on app-P1, which late-ids does not list
 ledger: late/adversary.md:9: verdict on app-T1, which late-ids does not list
 ledger: late/adversary.md:15: verdict on X1, which late-ids does not list"
