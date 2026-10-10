@@ -388,16 +388,19 @@ listed.
 
 ## Step 6: checks
 
-1. Discover checks from, in order: the `checks` list in `.ccx.json` if present; then package
-   scripts named `test`, `lint`, `typecheck`, or `build`; `Makefile` targets with those names;
-   `pyproject` tool sections that imply `pytest`, `ruff`, or `mypy`; and CI workflow jobs whose
-   steps run one of the above. Merge the sources in that order and drop duplicate commands. A
-   CI job that runs anything else is listed as CI-only. Record for each check the command, its
-   source, whether it can run locally, and its baseline result. Run every check that can run
-   locally, each with its check budget. Step 6 runs the full set after the last edit of the
-   run. If `run.md` records no edit after Step 5.1's last full run, report that run as Step
-   6's result instead of repeating it. Any edit after that run, including a Step 5 fix or a CI
-   repair, means the full set runs again.
+1. Discover checks from, in order: the `checks` list in `.ccx.json` if present; then the
+   standard test, lint, typecheck, and build entries of each build tool manifest in the repo,
+   such as package scripts named `test`, `lint`, `typecheck`, or `build`; `Makefile` targets
+   with those names; `pyproject` tool sections that imply `pytest`, `ruff`, or `mypy`;
+   `cargo test` and `cargo clippy` for a `Cargo.toml`; `go test ./...` and `go vet ./...` for
+   a `go.mod`; and `gradlew check` (`gradlew.bat check` on Windows) for a Gradle wrapper; and
+   CI workflow jobs whose steps run one of the above. Merge the sources in that order and
+   drop duplicate commands. A CI job that runs anything else is listed as CI-only. Record for
+   each check the command, its source, whether it can run locally, and its baseline result.
+   Run every check that can run locally, each with its check budget. Step 6 runs the full set
+   after the last edit of the run. If `run.md` records no edit after Step 5.1's last full
+   run, report that run as Step 6's result instead of repeating it. Any edit after that run,
+   including a Step 5 fix or a CI repair, means the full set runs again.
 2. Name every check that cannot run locally in the report as not run, with the reason and
    the exact command, with its working directory when it is not the checkout root, so the
    user can run it. A check cannot run locally when a resource it needs is not available to
@@ -415,3 +418,8 @@ listed.
    cap is already used up, end in `blocked`, naming the round cap).
    Then run the full set again. Step 6 runs at most 3 times. A failure still open after the
    third ends the run in `blocked`.
+
+Next, on the `github` host, a run that passes Step 6 reads `steps/7-publish.md` and starts
+Step 7, `--no-publish` included, since Step 7's opening decides `prepared`. On `other`,
+the run ends in `prepared` after Step 6. Every terminal state goes to Final report
+handling, which reads `report.md` first.

@@ -150,10 +150,10 @@ never loses a finished one. With `--live`, it first imports approved live check 
      again with the recorded prompt inputs and flags and normalized, then compared with
      `manifest.json`), each claims file, the questions file, the content hash of
      every `file:` ticket or PR export, and `plugin_version`;
-   - the stage 1 `forge_hashes`: recompute each path in the map (`1-orient.md` step 2:
-     `pr.hash.json`, `pr-threads.json`, `<ticket>.json`, `<ticket>.parent.json`) and
-     compare it with the recorded hash. For `pr.hash.json`, project the one file step
-     3 already fetched with the identical `jq` command of step 2, reading
+   - the stage 1 `forge_hashes`: recompute each path in the map (`1-orient.md` steps 2
+     and 3: `pr.hash.json`, `pr-threads.json`, `<ticket>.json`, `<ticket>.parent.json`,
+     `collisions.tsv`) and compare it with the recorded hash. For `pr.hash.json`,
+     project the one file step 3 already fetched with the identical `jq` command of step 2, reading
      `forge/<bundle>/pr.json.new`, and hash the result, with no second query:
      `jq '<filter>' forge/<bundle>/pr.json.new | git hash-object --no-filters --stdin`.
      The projection leaves out `headRefOid` and `baseRefOid`, which step 3 compares on
@@ -169,14 +169,25 @@ never loses a finished one. With `--live`, it first imports approved live check 
      failure stops resume with one line, since the brief's evidence cannot be confirmed
      current; it is never treated as a difference. A difference invalidates stage 1.
      So does a stage 1 entry of a run with any `github:` PR or ticket that has no
-     `forge_hashes` map (a run recorded before the map existed). Keep each
+     `forge_hashes` map (a run recorded before the map existed). For
+     `forge/<bundle>/collisions.tsv`, rerun the open pull request check of `1-orient.md`
+     step 3 into a temporary directory, not over the run's files: the new paths from
+     that step's run-once `git diff` at the recorded shas (step 3 has already confirmed
+     them) with the patterns of the saved `manifest.json`, the `gh pr list` with the
+     host, owner, and repo of the `url` and the `baseRefName` and `number` in
+     `forge/<bundle>/pr.json.new`, then the script; hash the script's output. Check the
+     exit code of each of the three, as above: a failed one stops resume, and an empty
+     path list from a failed `git diff` is never read as no new name. Keep each
      `forge/<bundle>/pr.json.new` until step 6 picks the first stage to rerun; step 6
      removes them unless that stage is 1 (then stage 1 renames them, `1-orient.md`
      section C), and any stop removes them;
    - the stage 1 `forge_gaps`: for each path in the map, run the `gh` command of
      `1-orient.md` step 2 that would have written it (the ticket read for
      `<ticket>.json`, the parent read for `<ticket>.parent.json`), with the host,
-     owner, repo, and number of the ticket URL the map gives, and its output discarded.
+     owner, repo, and number of the ticket URL the map gives, and its output discarded;
+     for a path ending in `collisions.tsv`, the `gh pr list` of `1-orient.md` step 3,
+     with the host, owner, and repo of the PR URL the map gives and the `baseRefName`
+     in `forge/<bundle>/pr.json.new`.
      Exit 0 means the evidence can now be read, which invalidates stage 1, so the rerun
      reads it. A non-zero exit leaves the gap as it was: it is neither a difference nor
      a stop, since the read can keep failing for a reason that does not change, such as
@@ -187,7 +198,7 @@ never loses a finished one. With `--live`, it first imports approved live check 
      invalidates stage 1 (the bundles' head and base shas were already compared in
      step 3, which stops on any change);
    - upstream stage outputs, by `git hash-object --no-filters <file>`;
-   - `plugin_version`, which for this release is `0.11.0`.
+   - `plugin_version`, which for this release is `0.12.0`.
    - the live inputs of stages 6 to 8: `live/findings.md`, `live/claims.md`, and each
      `live/carried/<id>.md` that `live/findings.md` names, by `git hash-object
      --no-filters <file>` (`live.md`).

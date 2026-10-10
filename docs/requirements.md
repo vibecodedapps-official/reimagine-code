@@ -347,8 +347,8 @@ cut it by role; the survey and the decisions are docs/decisions.md Part 23.
 73. **Loop skill in step files.** The core `SKILL.md` stays at or under the lint cap
     (5,800 words), and every step file is named in Supporting files with its read-at
     point. Each step file is read when its step starts, and a plan-only run reads neither
-    `steps/4-build.md` nor `steps/7-publish.md`. Check: lint (16c); acceptance (item 27,
-    the file reads in a headless log).
+    `steps/4-build.md` nor `steps/7-publish.md`. Check: lint (16c, and 16d for the
+    hand-offs of R78); acceptance (item 27, the file reads in a headless log).
 74. **Routing under the tier.** The tier sets the ceiling and the budget. The small-slice
     rule sends a slice to `gpt-6-luna`. Medium's reviewer is `gpt-6.1-sol`. `.ccx.json`
     `models` overrides a role's model at every tier and changes nothing else. The report
@@ -366,6 +366,28 @@ cut it by role; the survey and the decisions are docs/decisions.md Part 23.
     as an input of stages 4 to 7. Every rule of the old `common.md` survives in one of
     the two files. Check: review (the move commit's verbatim check); test (the cca sh
     suites still pass).
+
+## Collisions and generality, 2026-10-10
+
+Added 2026-10-10 with issues #27, #51, and #56; the decisions are docs/decisions.md
+Part 24.
+
+77. **Open pull request collisions.** For a GitHub bundle whose run-once list adds a
+    name, stage 1 reads the first 100 open PRs on its base and `collisions.sh` lists
+    other PRs' files, not deleted, in the same directory with the same file name or
+    leading version token. The brief gives them as candidates, with `cut` and
+    `cut-list` limits; the auditor files a finding only when the runner's journal keys
+    match or no runner is found. `collisions.tsv`, not the raw list, is hashed for
+    resume, and a failed read is a `forge_gaps` entry that resume retries. Check: test
+    (`tests/cca/collisions.sh`); acceptance (item 28).
+78. **Step hand-offs.** Each loop step file ends with the read of the next: Step 0 names
+    `steps/1-plan.md`, Step 3.6 names `steps/4-build.md` for a run that goes on, and
+    Step 6 names `steps/7-publish.md`, which a `github` run reads under `--no-publish`
+    too, and `report.md` through Final report handling. Check: lint (16d); acceptance
+    (item 27).
+79. **One place for cca's Codex default.** Stage 6 step 2 holds the second opinion's
+    default model by tier; the Roles row of `SKILL.md` and the README restate it, and
+    every `codex_model` example in stage 6 is one of its ids. Check: lint (21).
 
 ## Release
 

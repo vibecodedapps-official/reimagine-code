@@ -435,6 +435,25 @@ name a plugin are rerun under the new names and recorded here.
     Windows, the audit through stage 4, and on macOS, the audit to `reported`; see the
     records.
 
+28. **Open pull request collisions in the audit.** Setup: a GitHub repository the
+    author owns, with `migrations/` holding `001_init.sql` on `main`, and three open PRs on
+    `main`: A adds `migrations/002_add_status.sql`, B adds the same path, and C adds
+    `migrations/002_add_index.sql`; the repository's runner journals by file name (a
+    script that records each applied file's name). Command, headless:
+    `/cca:audit <manifest with A as a github: PR and "run_once": ["migrations/*.sql"]>
+    --effort low`. Expected: `forge/<bundle>/open-prs.json` and `collisions.tsv` are in the
+    run directory, and `collisions.tsv` is in the stage 1 `forge_hashes`; the brief lists
+    B as a `same name` candidate and C as a `same version` candidate under the new name;
+    the report has a finding on `002_add_status.sql` for B, labeled `unverified
+    assumption`, with a live check on merge order; C is cleared in the auditor's output
+    with the quoted runner lines, since the runner keys by name. A resume with no
+    change reuses stage 1; closing B and resuming reruns stage 1. The gap path (`open PRs
+    not read` and the `forge_gaps` entry) cannot be forced on demand, since a token that
+    cannot list the PRs cannot read the bundle's own PR either; it is checked by reading
+    stage 1 step 3 and resume step 5. Covers R77. Rerun when stage 1's open pull
+    request check, `collisions.sh`, or the auditor's candidate rule changes. Not run: it
+    needs a GitHub repository with open PRs, which this release did not create.
+
 ## Record of runs
 
 Each entry gives the date, the machine, the Claude Code, Codex, and Node versions, the
@@ -3024,7 +3043,9 @@ from the fixture's `app` directory. Sonnet runners pulled the evidence from the 
   without reading `steps/4-build.md` or the skill's `report.md`, which the core says to
   read at Step 3.7 and at every terminal state, and which R73 claims for every step
   file. The Codex run above read both. Not fixed; one miss in two runs with the same
-  core, so the cause is unverified.
+  core, so the cause is unverified. Rechecked: the run read both files, each through a
+  `cat` at the end of a long Bash call; see the record "ccx-loop 0.7.0, item 27's
+  override run log rechecked for issue 56, macOS".
 - **The audit at low: passed to `reported`, with one gap in stage 6's input list.**
   `/cca:audit <full manifest> --effort low`: ended `reported` with the verdict `not
   ready | counted: 1 blocker, 3 high, 4 medium, 4 low, 1 note | provisional: 0 |
@@ -3151,3 +3172,68 @@ peeling to it.
 - Not run: the Ctrl-C, symbolic-link, and trailing-space cases.
 - Left on the machine: the scratch profiles `claude-070` and `codex-070` without the
   Codex login, the test repository, and the logs under `~/.cache/recode-acceptance/i070`.
+
+### 2026-10-10: ccx-loop 0.7.1, the step hand-offs of issue 56, item 27's override run, Windows
+
+Windows 11 Pro 10.0.26200, Git Bash, Claude Code 2.1.296, codex-cli 0.162.1, Node
+26.4.0, git 2.56.0. Each run was the item 27 override run, headless (`claude -p
+--output-format stream-json --verbose --permission-mode auto --model opus`, one
+message, ended on the result event): `/ccx-loop:run "add a sub function that subtracts
+two numbers to math.mjs and test it" --effort medium --no-publish` on a fresh clone of
+the override fixture with its own local bare `origin`, so the host was `other`. The
+reads were counted from the logs, Read calls and `cat` calls both.
+
+- **Before, on 0.7.0's skill** (the item 27 clone at 42497ae, whose loop skill equals
+  `main` at fd2b1d7): three runs, all ended `prepared`, and each read
+  `steps/0-preflight.md`, `steps/1-plan.md`, `tiers.md`, `steps/4-build.md` after the
+  plan was final, and the skill's `report.md` before the report; one read them through
+  `cat` in Bash calls, two with the Read tool. With the two item 27 build runs on this
+  machine, that is 0 misses in 5; the macOS miss did not reproduce, so its cause is
+  unverified.
+- **After, on the branch's 0.7.1 skill** (a copy of the working tree as a directory
+  marketplace): three runs, all ended `prepared`, each read the same five files at the
+  same points, and none read `steps/7-publish.md`, as the Step 6 hand-off says for the
+  `other` host. Passed for the hand-offs. Not run: the `github` host under
+  `--no-publish`, where the run now reads `steps/7-publish.md`, and a continued PR's
+  body; both need a GitHub remote.
+- Cost: $1.53 to $1.81 per run, six runs.
+- Left on the machine: `~/.cache/recode-acceptance/i56/` with the two profiles, the six
+  fixture clones, and the logs `before-1.jsonl` to `before-3.jsonl` and `after-1.jsonl`
+  to `after-3.jsonl`.
+
+### 2026-10-10: ccx-loop 0.7.0, item 27's override run log rechecked for issue 56, macOS
+
+macOS 27.0.1, Claude Code 2.1.293, codex-cli 0.162.0, Node 26.4.0, git 2.54.0 (Apple
+Git-157). The log of the item 27 macOS override run, `/tmp/acc-54/A27-override.jsonl`
+(branch head 4ec2c5c, the record "ccx-loop 0.7.0 and cca 0.11.0, item 27, before the
+merge, macOS"), was read again before any new run. Every orchestrator tool call (an
+`assistant` event with no `parent_tool_use_id`) was listed with its full input, Bash
+calls included, and searched for the skill's file paths.
+
+- **The run read both files; the miss was a measurement error.** The log has 33
+  orchestrator tool calls and no subagent tool calls. Call 18 is one Bash call that
+  appends "NO BLOCKING OBJECTIONS ... Plan final." to `plan.md` and `run.md` and then
+  runs `cat .../skills/ccx-loop/steps/4-build.md`; call 20 creates the work branch, so
+  the read came after the plan was final and before Step 3.7. Call 30 is one Bash call
+  that appends Steps 5 and 6 and the terminal state to `run.md` and then runs `cat
+  .../skills/ccx-loop/report.md`; call 33 writes the run's `report.md`. Each result
+  holds the file's heading ("Steps 3.5 to 6: build", "Final report template"). The other
+  reads were `steps/0-preflight.md` (call 3), `steps/1-plan.md` (call 11), and
+  `tiers.md` (call 12); `steps/7-publish.md` was not read. So the run read the same five
+  files at the same points as the Codex run, and the macOS count is 0 misses in 2
+  build runs. Each `cat` sat at the end of a long command, past where the earlier reader
+  cut the input.
+- **No new override runs.** A clone of the branch at 015540d passed `npm run lint`,
+  `npm test` (502 tests, 490 passed, 0 failed, 12 skipped, exit 0), and `claude plugin
+  validate --strict` on the root and each plugin, and `ccx` and `ccx-loop` 0.7.1 were
+  installed from it in the M4 profile, byte-equal to the clone. The first of three
+  planned runs was stopped after its third tool call, the read of
+  `steps/0-preflight.md`, once the recheck above settled the question; it made no
+  Codex call and changed no file in its clone, and it is not judged.
+- Left on the machine: `/tmp/acc-54/` as the earlier record left it, now with the
+  numbered call list `A27-override.calls.txt`; `/tmp/acc-56/` with the branch clone,
+  the M4 profile's backup and its used copy `claude-after`, the empty scratch
+  `CODEX_HOME`, the fixture with its three origins and clones, and the stopped run's log
+  `run-1.jsonl`. The M4 profile was restored from the backup; the Codex login copy was
+  deleted; `~/.codex` had the same sha256s before and after except one `tmp/arg0` lock
+  file, and the only `~/.claude` files that changed were the session's own bookkeeping.

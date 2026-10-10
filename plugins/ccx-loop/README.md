@@ -161,7 +161,8 @@ common shapes, not a guarantee.
   ends the run in `plan-only`. The wait does not count against the run budget. The run is
   attended.
 - `--no-codex`: use the Claude fallbacks even if Codex is installed.
-- `--no-publish` (`/ccx-loop:run` only): withhold Step 7. The run ends in `prepared`. With
+- `--no-publish` (`/ccx-loop:run` only): withhold publication: no commit, push, or pull
+  request. The run ends in `prepared`. With
   `--continue`, an incomplete pull request list, or closed, merged, or several open pull
   requests on the branch are recorded in the report instead of failing preflight.
 - `--run-budget <minutes>`: the run budget for this run, a positive integer.
@@ -283,7 +284,7 @@ run in `blocked` before anything is written.
 | Field | Default | Meaning |
 |---|---|---|
 | `commit` | `false` | Either way the run works in `.ccx/<run-id>/`, which is git-ignored. When `true`, the plan and a provisional report are also copied to `specs/ccx/<run-id>/` and committed on the work branch at publish. |
-| `checks` | discovered | List of commands to run as the repo's checks. The listed commands run first. Checks discovered from package scripts, `Makefile`, `pyproject`, and CI workflow jobs are added, and duplicates are dropped. |
+| `checks` | discovered | List of commands to run as the repo's checks. The listed commands run first. Checks discovered from the standard entries of the repo's build tool manifests (package scripts, `Makefile`, `pyproject`, `Cargo.toml`, `go.mod`, a Gradle wrapper, and the like) and CI workflow jobs are added, and duplicates are dropped. |
 | `timeouts` | see below | Time budgets in minutes. |
 | `models` | the tier's models | Overrides the model of a role at every tier. `plan-review`, `implementer`, and `final-review` take a full Codex model id. `small-slice` takes a full Codex model id, or `off` to disable the small-slice rule. `fallback-reviewer` takes `opus`, `sonnet`, `haiku`, or `fable` and replaces `fable` as the first fallback reviewer; `opus` stays the second. Any other value is reported and ignored. An override changes models only, never the tier, the risk floor, the Sonnet criteria, or the Claude `code-review` role, and the report names each one in force. |
 
@@ -401,7 +402,7 @@ Every run ends in exactly one state.
 - `plan-only`: plan final and written, nothing else run. It also covers a `--confirm-plan`
   run whose plan you did not approve.
 - `prepared`: every step through Step 6 is complete with no blocking defect open, and
-  Step 7 was withheld before anything was pushed: by `--no-publish`, by a non-GitHub
+  publication was withheld before anything was pushed: by `--no-publish`, by a non-GitHub
   host, or by your answer to a Step 7 ask-first prompt that was anything other than a
   clear yes. The report names the branch, the commit state, and the commands to
   publish. With `--continue` the push command is `git push <remote> <branch>`, per

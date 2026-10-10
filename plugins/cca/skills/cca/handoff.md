@@ -33,10 +33,10 @@ generated: <ISO 8601 time>
 ## Tickets
 
 ### <ticket id>
-- type: <work item type>
+- type: <work item type, issue type, or label>
 - state: <state>
-- iteration: <iteration path, or none>
-- owner: <assigned person, or none>
+- iteration: <iteration path, sprint, or milestone, or none>
+- owner: <assignee, or none>
 - parent: <ticket id>                         (optional)
 - links:                                      (optional; or `links: none`)
   - <type>: <target>
@@ -65,10 +65,10 @@ generated: <ISO 8601 time>
 
 ### R<n>
 - ticket: <ticket id>
-- type: <work item type>
+- type: <work item type, issue type, or label>
 - state: <state>
-- iteration: <iteration path, or none>
-- owner: <assigned person, or none>
+- iteration: <iteration path, sprint, or milestone, or none>
+- owner: <assignee, or none>
 - parent: <ticket id>                         (optional)
 - links:                                      (optional; or `links: none`)
   - <type>: <target>
@@ -113,7 +113,10 @@ generated: <ISO 8601 time>
    tickets and raised tickets) at most once. Values are not empty. A list key (`commits`,
    `verified`, `options`, `links`) has an empty value followed by at least one entry
    indented exactly two spaces (`  - `), or the value `none` (`options` takes
-   `none recorded` instead of `none`).
+   `none recorded` instead of `none`). The ticket fields hold whatever the forge has:
+   `type` is its work item type, issue type, or label, else `issue`; `iteration` is its
+   iteration path, sprint, or milestone, and `owner` its assignee, each `none` when the
+   forge or the ticket has no such field.
 6. A commit entry is `  - <bundle name> <sha>: <text>`. The bundle is one of the ticket's
    `bundles`; the sha is 7 to 40 lowercase hex digits; the text is not empty. Within one
    ticket, two entries with the same bundle do not name the same commit: neither sha is a

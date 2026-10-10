@@ -243,8 +243,9 @@ Behavior carries over from ccl 0.10.0 except as listed.
   stay until the audit plugin joins the suite.
 - **Step files.** From 0.7.0 the skill is a core plus `steps/0-preflight.md`,
   `steps/1-plan.md`, `steps/4-build.md`, and `steps/7-publish.md`. Each is read when its
-  step starts, so a plan-only run never loads the build or publish steps. Lint 16c holds
-  the core under its word cap and requires every step file in Supporting files.
+  step starts, so a plan-only run never loads the build or publish steps. Each step file
+  ends with its hand-off to the next read (0.7.1). Lint 16c holds the core under its word
+  cap and requires every step file in Supporting files; 16d keeps the hand-offs.
 - **Tiers and routing.** Three tiers, `medium`, `high`, and `xhigh`, set the ceiling and
   the budget. The model for each slice comes from the work: the small-slice rule sends a
   slice to `gpt-6-luna`, and a `.ccx.json` `models` key overrides one role's model at

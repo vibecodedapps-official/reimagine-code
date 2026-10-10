@@ -37,6 +37,7 @@ allowed-tools:
   - Bash(git -C * ls-tree *)
   - Bash(git -C * cat-file *)
   - Bash(gh pr view *)
+  - Bash(gh pr list *)
   - Bash(gh issue view *)
 ---
 
@@ -54,8 +55,8 @@ state-file, and probe commands (such as the export script, `rm -rf` and `mkdir` 
 directory, the lock's `mkdir` and `rmdir`, `sleep`, `stat`, `find`,
 `sha256sum`, `shasum`, `command -v jq`, `jq`, `awk`, `mv -f`, `wc -c`, `codex --version`,
 and the `sh` runs of the scripts in `${CLAUDE_PLUGIN_ROOT}/skills/cca/scripts/`:
-`readonly.sh`, `handoff.sh`, `work-items.sh`, `working-tree.sh`, `live.sh`, and
-`ledger.sh`) follow the session's permission mode; tell the user once, before stage 1,
+`readonly.sh`, `handoff.sh`, `work-items.sh`, `working-tree.sh`, `live.sh`, `ledger.sh`,
+and `collisions.sh`) follow the session's permission mode; tell the user once, before stage 1,
 that they may prompt. `git fetch` (with its `git ls-remote --tags` check) and every act
 write are not pre-approved, and you also ask for them in words first.
 
@@ -361,9 +362,11 @@ and before writing that stage's final entry:
    read those agents' `runs:` headings. A difference is accounted for when a logged run's
    directory is inside that repo. Any pending difference no logged run accounts for
    ends the run `blocked` now. Differences still waiting on running agents stay
-   pending. Ignored-file changes under `bin/` or `obj/` of a repo with a logged run since
-   the last check are grouped under that run in one record in the check file that lists
-   every path, without asking; changes with no matching logged run are handled as above.
+   pending. Ignored-file changes inside a build output directory that the repo's own
+   ignore rules exclude as a whole, such as `bin/`, `obj/`, `target/`, `build/`, or
+   `dist/`, of a repo with a logged run since the last check are grouped under that run in
+   one record in the check file that lists every path, without asking; changes with no
+   matching logged run are handled as above.
 6. Write `baseline/<stage>-check.md`: the stage, the time, the repos checked, the
    result (`pass` or `blocked: <reason>`), the ignored-file differences accepted (each
    labeled as another cca run's or a handoff's file, or with the agent and run that accounts
@@ -489,7 +492,7 @@ Read `runs.json` with the Read tool and branch on this run's entry:
 
 ```json
 {
-  "plugin_version": "0.11.0",
+  "plugin_version": "0.12.0",
   "approvals": [ { "kind": "fetch", "target": "<repo name>:<remote>",
                    "decision": "approved", "time": "2026-09-30T14:15:00Z",
                    "commands": ["git -C <repo> fetch --no-tags --refmap= ..."] } ],
@@ -533,10 +536,12 @@ Read `runs.json` with the Read tool and branch on this run's entry:
 5. Stage-specific keys: stage 1 `inputs` also records `forge_hashes` (the hashed `gh`
    files under `forge/`: `pr.hash.json`, a `jq` projection of the unprojected
    `pr.json` that leaves out the head and base shas and viewer-dependent fields,
-   `pr-threads.json`, `<ticket>.json`, and `<ticket>.parent.json`, by run-relative
-   path, each with its hash, compared by resume; `pr.json` itself is not hashed),
-   `forge_gaps` (each such file a failed closing-issue or parent read did not write, by
-   run-relative path, with the ticket's URL, retried by resume), the
+   `pr-threads.json`, `<ticket>.json`, `<ticket>.parent.json`, and the open pull
+   request check's `collisions.tsv`, by run-relative path, each with its hash, compared
+   by resume; `pr.json` and `open-prs.json` are not hashed), `forge_gaps` (each such
+   file a failed closing-issue, parent, or open pull request read did not write, by
+   run-relative path, with the ticket's URL, or the PR's URL for `collisions.tsv`,
+   retried by resume), the
    `headRefOid` of each
    GitHub PR bundle, which is its pinned head, and its `baseRefOid`, information only
    (the base as GitHub last evaluated it, never pinned or compared: the pinned base is

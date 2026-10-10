@@ -6,8 +6,9 @@ Read this file at the start of Step 7. It holds Step 7; Step 7.3 items 1 to 4 ar
 ## Step 7: publish
 
 Publish runs only when no blocking defect is open and Step 6 passes. Otherwise end in
-`blocked`, with no further publication (see Terminal states). Step 7 runs only on the
-`github` host and when `--no-publish` is not set. Otherwise the run ends in `prepared` here.
+`blocked`, with no further publication (see Terminal states). Publication, items 1 onward,
+runs only on the `github` host and when `--no-publish` is not set. Otherwise the run ends
+in `prepared` here, after the continued-PR body below when it applies.
 When a run with `continue` ends `prepared` and its branch has one open PR, and Step 7.2
 has not written the body, read `pr-body.md` and write the continued-PR body first, so the
 report can give the `gh pr comment` command. Each repository's body is written to its own

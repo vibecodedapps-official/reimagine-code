@@ -1534,3 +1534,115 @@ semantic gate of Part 20 item 5.
    (`/cca:resume 2026-10-09-1900-app-feature` from the fixture's `app` directory in the
    after profile) to complete item 9's audit figure through stage 8 and to see
    `codex_model` `gpt-6-luna` recorded at stage 6; and the macOS run of item 27.
+
+## Part 24: ccx 0.7.1, ccx-loop 0.7.1, and cca 0.12.0, the step hand-offs, open pull request collisions, and the generality decisions, 2026-10-10
+
+Issues #27, #51, and #56, planned with three Codex `gpt-6-astra` critique rounds (four
+blocking objections in the first, two in the second, none in the third) and built in
+one pull request. Each issue 51 item is decided here before its change.
+
+1. **Issue 56: the miss was a measurement error; the hand-offs are added anyway.** On
+   Windows the two item 27 build runs and three more override runs on 0.7.0's skill all
+   read `steps/4-build.md` after the plan was final and `report.md` before the report,
+   one of them through `cat` in Bash calls (acceptance record "ccx-loop 0.7.1, the step
+   hand-offs"). The macOS override run's log, rechecked on macOS, shows it read both
+   too, each through a `cat` at the end of a long Bash call that the first reader cut
+   short (acceptance record "item 27's override run log rechecked for issue 56"). So
+   it is 0 misses in 7 build runs. Found while reading, and true on its own: the
+   only text that sent a run from Step 3.6 to `steps/4-build.md` was the core's
+   Supporting files line, far back in context, and nothing at the end of Step 6 named
+   `report.md`. Each step file now ends with its hand-off, and lint 16d keeps them; the
+   lint guards the text, it is not a behavioral check. Three override runs on the
+   branch read the same files at the same points. The recheck closes the issue.
+2. **`--no-publish` withholds publication, not Step 7.** `steps/7-publish.md` is where a
+   `--no-publish` run "ends in `prepared` here" and where a `continue` run with one open
+   PR writes the continued-PR body that the `prepared` report's `gh pr comment` command
+   names; yet the core said `--no-publish` "withholds Step 7", and both item 27 records
+   judged "not read under `--no-publish`" a pass. On the `github` host a run that passes
+   Step 6 now reads `steps/7-publish.md` under `--no-publish` too; Terminal states says
+   publication was withheld; Step 7's opening says publication, items 1 onward, runs
+   only on `github` without `--no-publish`. On `other` the run still ends `prepared`
+   after Step 6, since Step 0.2 reads no pull request there and there is no body to
+   write. Not run: the `github` and continued-PR paths, which need a GitHub remote.
+3. **Issue 27 part A: open pull request collisions.** For a `github:` PR bundle whose
+   run-once list adds a name, stage 1 step 3 reads the first 100 open PRs on its base
+   (`gh pr list ... --json number,url,headRefName,changedFiles,files`) and runs the new
+   `collisions.sh`. A candidate is another PR's file, not `DELETED`, in the same
+   directory as a new path, with the same file name or the same leading version token
+   (one leading `V` or `v` before a digit dropped, then digits with `.` or `_` digit
+   groups, so `V3__a.sql`, `v3_b.sql`, and `3-c.sql` share 3; leading zeros kept). Other
+   directories are not compared, a stated limit. gh returns at most 100 files per PR,
+   checked on 2026-10-10 with gh 2.91.0 (nodejs/node #66546: `changedFiles` 3109,
+   `files` 100), so a `cut` row names a PR whose `changedFiles` is larger, and
+   `cut-list` a list of 100. The derived `collisions.tsv`, sorted and deduplicated, is
+   hashed into `forge_hashes`, not the raw list, so an open PR that collides with
+   nothing does not invalidate stage 1 on resume; resume recomputes it from the saved
+   manifest's patterns, the run-once `git diff` at the recorded shas, the `gh` read, and
+   the script, checking each exit code. A failed read is a `forge_gaps` entry keyed by
+   `collisions.tsv` with the PR's URL, retried by resume; a refused script is a stop,
+   never a gap. A candidate is a lead: the auditor compares the runner's journal keys
+   for both names, whatever the row's kind, and clears a candidate with quoted runner
+   lines or files a finding labeled `unverified assumption` with a live check on merge
+   order. Part B, rerun safety, shipped in cca 0.8.0. The script has its own suite;
+   acceptance item 28 needs a GitHub repository with open PRs and was not run.
+4. **Issue 51, item by item.**
+   1. Check discovery: changed. A principle with examples: the standard entries of each
+      build tool manifest, with Cargo, Go, and Gradle beside npm, make, and Python;
+      `.ccx.json` precedence, the merge, dedupe, baseline, and CI-only rules unchanged.
+   2. The CI watch's 403 match: kept. It is narrow on purpose (Part 4 item 4); a wider
+      match would read a permission 403 as CI being unavailable and hide a failure.
+   3. The branch naming rule: kept. `--branch` overrides it; reading a convention from
+      existing branch names would guess, and asking would add a question to every run.
+   4. The `bin/` and `obj/` grouping: changed to any build output directory the repo's
+      own ignore rules exclude as a whole, such as `bin/`, `obj/`, `target/`, `build/`,
+      or `dist/`, still only for a repo with a logged run since the last check, still
+      one record listing every path, and still after the pending-agent reconciliation.
+      Part 19 item 5's rejection (accept any such change whenever a build tool run is
+      logged) holds.
+   5. The "0.4.0 or earlier" clauses: kept. They cost a few lines, and dropping them
+      would turn an old run's resume into a confusing failure for no gain.
+   6. The tests-account check: kept as an obligation. It is already conditional on a
+      quoted grant or a pointer and assumes no accounts-file shape.
+   7. The handoff's ticket fields: kept, with the mapping stated. `type` is the forge's
+      work item type, issue type, or label, else `issue`; `iteration` its iteration
+      path, sprint, or milestone; `owner` its assignee; each `none` where the forge or
+      ticket has no such field, which is what the loop's handoff already writes. No
+      parser change; the GitHub id form was already among the examples.
+   8. The Codex model id: remaining duplication, not drift. Part 23 item 6 already moved
+      the commands to `codex-model: default`, so the copies left are the README's two,
+      the Roles row, and stage 6 step 2 with its example, and all agree with R75. Stage
+      6 step 2 is the place of truth, and lint 21 fails when another copy or the
+      example differs.
+   9. The model-name ladder: kept. The allow-list is the Agent tool's own model enum, so
+      a new name arrives with a Claude Code release, and the plugin's release follows.
+   10. The 540-second cap: kept, not a setting. It derives from the Bash tool's
+       10-minute cap and applies only to a session that is headless or cannot tell
+       whether a user can answer; an interactive session keeps its configured timeout,
+       and `--codex-timeout` already lowers it.
+   11. The Azure DevOps and Salesforce link forms: kept as examples. Part 20 item 5
+       records the output style and chat block as the author's stated preferences,
+       shipped opt-in, and the forms are the author's own; they give the exact form
+       where invented links are common, and the rule before them covers every other
+       platform. The author can reopen this.
+   12. "PowerShell 7": changed to "PowerShell" in the installed Codex rule, since Codex
+       runs the PowerShell it finds; `/ccx:rules` offers the changed block as it does
+       any update.
+   13. The sandbox probe's 120 seconds: kept with its reason, a bounded default at four
+       times one measured Windows run.
+   14. The upstream review skills' numbers and integration-test obligation: kept,
+       unchanged from upstream, under R26.
+   15. The one-user premise: kept. Its consequence, stated: a second user has no
+       migration path from the old plugins, since Parts 14 and 16 removed them; a
+       second user reopens it.
+   16. Part 19 item 5's wording follows item 4; Part 19 stays as written, as history.
+5. **Versions.** The ccx family moves together to 0.7.1 (`package.json`, `ccx`,
+   `ccx-loop`, the Codex `ccx`, and the catalog), and cca to 0.12.0 for its new forge
+   read and script, with its three `plugin_version` literals; a run resumed from 0.11.0
+   reruns stage 1 by the version gate. The lint, release, and rules tests that hold the
+   versions as literals moved with them, as Part 23 item 10 describes.
+6. **Issue 31.** Its body was rewritten for a Codex session to pick up: a dated state
+   section with what changed since it was written (three tiers and routing under the
+   tier, medium's `gpt-6.1-sol` reviewer, `gpt-6-luna` small slices, the `.ccx.json`
+   `models` override, the step files and their hand-offs, cca's cheaper roles and
+   `audit-evidence.md`), the inverted role tables marked as proposals, the files to
+   read first, and the open questions; the original text is kept below it.

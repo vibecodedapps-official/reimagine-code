@@ -213,7 +213,10 @@ are relative to the manifest's directory.
   git's glob pathspec rules (`*` does not cross `/`, `**` does), such as
   `["migrations/*.sql", "db/scripts/**/*.sql"]`. Stage 1 lists the bundle's changed files
   that match, with whether each exists at the merge-base, for the auditors. There is no
-  default.
+  default. For a GitHub PR whose list adds a name, stage 1 also reads the first 100 open
+  PRs on the same base and lists their files in the same directory with the same file
+  name or leading version token as candidates, which the auditors check against the
+  runner's journal key.
   A bundle may add `"head": "working-tree"` (a manifest key only; its one value) to audit
   uncommitted work. The bundle's branch must be checked out, and stage 1 builds a commit
   from the working tree, with the modified files and the untracked files that are not
@@ -743,9 +746,9 @@ the bundles and tickets, with the typed handoff as its claims.
 
 ## Development
 
-The plugin is prompt files and eight small shell scripts under `skills/cca/scripts/`
+The plugin is prompt files and nine small shell scripts under `skills/cca/scripts/`
 (`readonly.sh`, `handoff.sh`, `work-items.sh`, `working-tree.sh`, `live.sh`, `memory.sh`,
-`ledger.sh`, and `revert-tests.sh`): commands, one orchestrator skill with its stage
+`ledger.sh`, `revert-tests.sh`, and `collisions.sh`): commands, one orchestrator skill with its stage
 files and templates, and five agent definitions. The scripts are:
 
 - `readonly.sh`: snapshots an audited repo and checks it later for changes.
@@ -760,6 +763,8 @@ files and templates, and five agent definitions. The scripts are:
 - `revert-tests.sh`: runs a bundle's changed test files in a copy of the head and in a
   copy of the merge-base with the test code at its head state, and writes a verdict per
   file.
+- `collisions.sh`: lists other open PRs' files whose names collide with a run-once
+  script the bundle adds.
 
 Its checks live in `tests/cca/` of the reimagine-code repository. From its root,
 `npm test` runs every one of them through `tests/cca/sh.test.mjs`, and `npm run lint`
@@ -792,6 +797,9 @@ runs the repository checks. Each can also run alone:
   odd paths, timeouts, caps, setup failures, an interrupt, and a run in the background
   through `bg` and `wait`) and on the `patterns` and
   `ground-truth` fixtures, and compares each verdict with a literal.
+- `sh tests/cca/collisions.sh`: runs `collisions.sh` on inline `gh pr list` outputs and
+  broken copies, and compares its output and exit status with literals. It needs `jq`;
+  without it, it prints a note and exits 0.
 
 CI runs them on Linux, macOS, and Windows (under Git Bash), each fixture build and
 verify once with a hostile global git config, and on Linux a second time with mawk
