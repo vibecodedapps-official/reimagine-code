@@ -128,8 +128,8 @@ name a plugin are rerun under the new names and recorded here.
     and they install at the versions their manifests give. Covers R2. Rerun when the
     Codex catalog or a Codex manifest changes. Run 2026-10-03, 2026-10-04 for 0.2.0 and
     0.3.0, 2026-10-05 for 0.3.1, and 2026-10-06 for 0.3.2 and repo-docs 0.1.5, for
-    0.4.0, and for 0.5.0, 2026-10-07 for 0.6.0 on Windows, and 2026-10-10 for 0.7.0 on
-    macOS; see the records.
+    0.4.0, and for 0.5.0, 2026-10-07 for 0.6.0 on Windows, 2026-10-10 for 0.7.0 on
+    macOS, and 2026-10-10 for 0.7.1 on Windows; see the records.
 12. **Code review on Codex.** Setup: as item 11, in a scratch git repository with
     `math.mjs`, `test.mjs`, and a `package.json` whose `test` script passes, then an
     uncommitted change that renames an export, gives `add` a third argument with a
@@ -181,8 +181,8 @@ name a plugin are rerun under the new names and recorded here.
     `ccx-loop`. Covers R8. Rerun at each release. Run 2026-10-03 for 0.1.0, and
     2026-10-04 for 0.1.1, 0.1.2, 0.1.3, 0.2.0, and 0.3.0, 2026-10-05 for 0.3.1 before
     and after the merge, 2026-10-06 for 0.3.2 and 0.4.0 before the merge, and
-    2026-10-07 for 0.6.0 on Windows, and 2026-10-10 for 0.7.0 on macOS; see the
-    records.
+    2026-10-07 for 0.6.0 on Windows, 2026-10-10 for 0.7.0 on macOS, and 2026-10-10 for
+    0.7.1 on Windows; see the records.
 17. **Tags.** Setup: the release commit on `main`. Command: `claude plugin tag --push`
     on `plugins/ccx`, then `plugins/ccx-loop`, then `plugins/repo-docs`; then
     `git ls-remote --tags origin`. Expected: each tag command checks the manifest against
@@ -192,7 +192,8 @@ name a plugin are rerun under the new names and recorded here.
     2026-10-05 for 0.3.1 and cca 0.9.0, and 2026-10-06 for 0.3.2, cca 0.9.1, and
     repo-docs 0.1.5, for 0.4.0, and for 0.5.0, 2026-10-07 for 0.6.0 and cca 0.10.0, and
     2026-10-09 for 0.6.1, cca 0.10.1, and repo-docs 0.1.6, and 2026-10-09 for 0.6.2 and
-    cca 0.10.2, and 2026-10-10 for 0.7.0 and cca 0.11.0; see the records.
+    cca 0.10.2, 2026-10-10 for 0.7.0 and cca 0.11.0, and 2026-10-10 for 0.7.1 and cca
+    0.12.0; see the records.
 18. **Install from GitHub.** Setup: on macOS and on Windows 11 with both CLIs from npm,
     new scratch profiles on each host. Command: the four lines of R3, then `claude plugin
     install ccx-loop@reimagine-code` and `codex plugin add
@@ -207,8 +208,8 @@ name a plugin are rerun under the new names and recorded here.
     0.3.0, and 2026-10-05 for 0.3.1, each on macOS and Windows, from the public
     repository, 2026-10-06 for 0.3.2, cca 0.9.1, and repo-docs 0.1.5 on macOS and
     Windows, 2026-10-06 for 0.4.0 and 0.5.0 on macOS, and 2026-10-07 for 0.6.0 and cca
-    0.10.0 on Windows, and 2026-10-10 for 0.7.0 and cca 0.11.0 on macOS and Windows;
-    see the records.
+    0.10.0 on Windows, 2026-10-10 for 0.7.0 and cca 0.11.0 on macOS and Windows, and
+    2026-10-10 for 0.7.1 and cca 0.12.0 on Windows; see the records.
 19. **Windows.** Setup: a Windows 11 machine with both CLIs from npm, the suite
     installed as in item 18, and a test repository checked out under a path that holds
     a space. Command: `/ccx:ask` and `/ccx:implement` with a one-line change;
@@ -220,8 +221,8 @@ name a plugin are rerun under the new names and recorded here.
     the rules command, or the hook changes. Run 2026-10-03, 2026-10-04 for 0.2.0,
     2026-10-05 for 0.3.1 except the symbolic links and a real Ctrl-C, and 2026-10-06 for
     0.3.2 except the symbolic links and a folder name ending in a space, and
-    2026-10-10 for 0.7.0 except the Ctrl-C, the symbolic links, and the trailing space;
-    see the records.
+    2026-10-10 for 0.7.0 except the Ctrl-C, the symbolic links, and the trailing space,
+    and 2026-10-10 for 0.7.1 except those and the Codex hook; see the records.
 20. **Reviewer routing.** Setup: scratch git repositories as in item 7, with a local bare
     `origin`; `ccx-loop` installed from this repository's catalog; Codex logged in.
     Command:
@@ -3237,3 +3238,57 @@ calls included, and searched for the skill's file paths.
   `run-1.jsonl`. The M4 profile was restored from the backup; the Codex login copy was
   deleted; `~/.codex` had the same sha256s before and after except one `tmp/arg0` lock
   file, and the only `~/.claude` files that changed were the session's own bookkeeping.
+
+### 2026-10-10: release ccx 0.7.1, ccx-loop 0.7.1, and cca 0.12.0, Windows
+
+Windows 11 Pro 10.0.26200, Git 2.56.0.windows.2, Node 26.4.0, with Claude Code 2.1.288
+and codex-cli 0.160.0 from the scratch npm prefix of the 0.7.0 Windows record, and git
+credentials off as there. The release commit was bf32784, the merge of PR 58, which
+closed issues 27 and 51. PR 58's last CI run passed on ubuntu-latest, macos-latest, and
+windows-latest, and the `main` runs for the merge, `ci` 38077600819 and CodeQL
+38077600688, passed. repo-docs stays at 0.1.6 and was not tagged. Every run used new
+scratch profiles `claude-071` and `codex-071` with copies of the author's logins,
+deleted after the runs.
+
+- **Item 17 passed for this release.** The dry runs named `ccx--v0.7.1`,
+  `ccx-loop--v0.7.1`, and `cca--v0.12.0` at HEAD, each matching its catalog entry.
+  `claude plugin tag --push` created and pushed the three at bf32784 in that order; `git
+  ls-remote` showed each peeling to bf32784, and no bare `v` tag. `npm run lint` on
+  `main` printed `lint: ok` with the tags present.
+- **Item 18 passed on Windows for this release, from the public repository.**
+  - `claude plugin marketplace add vibecodedapps-official/reimagine-code`, then `claude
+    plugin install ccx-loop@reimagine-code` first, which printed "(+ 1 dependency:
+    ccx)"; `install ccx` then said it was already installed. `ccx` and `ccx-loop` 0.7.1,
+    `cca` 0.12.0, and `repo-docs` 0.1.6 installed and enabled, each recording bf32784.
+    The install printed "1 userConfig option not yet set", as before.
+  - In a new repository under `C:\recode accept\ccx071\repo`, headless `/ccx:setup`
+    passed: `windows sandbox: elevated` from the scratch `config.toml`, the ChatGPT login,
+    `workspace-write` proven, and the allow rule naming the 0.7.1 `scripts/ccx.mjs` with
+    forward slashes. `/ccx:ask` printed "51" and `status: ok`; `git status` stayed clean.
+- **Item 11 passed for this release.** `codex plugin marketplace add` from GitHub, then
+  `codex plugin add` for `ccx` and `repo-docs`: `codex plugin list` showed exactly `ccx`
+  0.7.1 from `plugins/ccx-codex` and `repo-docs` 0.1.6, installed and enabled.
+- **Item 16 passed for this release.** `claude plugin details` reported about 1,245
+  always-on tokens for `ccx` and about 500 for `ccx-loop`, under 1,300 and 510. Observed,
+  not explained: both are higher than the macOS figures for 0.7.0 (about 956 and 318),
+  on an older Claude Code here (2.1.288 against 2.1.293); `ccx-loop` is 10 tokens under
+  its cap.
+- **Item 19 passed on Windows for 0.7.1, except the Codex hook.**
+  - `/ccx:implement` through a project skill added `export const sub = (a, b) => a -
+    b;` to `math.mjs`, reported HEAD unchanged and ` M math.mjs`, and `status: ok`.
+  - `/ccx:rules --options core,windows` on a `CLAUDE.md` of 4 CRLF lines: both targets
+    planned `ready`; after apply the file held 90 CRLF lines and no bare LF, the four
+    lines above the block kept, and a backup written. The Codex `AGENTS.md` holds the
+    0.7.1 Windows rule, "On Windows the shell is PowerShell.", and no "PowerShell 7".
+    Status read `current` for both targets, and still `current` after the file was
+    converted to LF.
+  - Hook, Claude Code: `git commit --allow-empty` through `PreToolUse:Bash` and `git -C
+    "<path>" commit --allow-empty` through `PreToolUse:PowerShell` each carry the
+    reminder in their transcripts; `echo "git commit"` got none.
+  - Observed again: the session asked about both rules targets in one message and took
+    one "yes" as applying both.
+- Not run: item 18 on macOS; the Codex hook of item 19, which needs the author to trust
+  the hook in `/hooks`; the Ctrl-C, symbolic-link, and trailing-space cases. The
+  fixture's `npm test` line printed nothing in the driver's filter and is not judged.
+- Left on the machine: the scratch profiles `claude-071` and `codex-071` without logins,
+  the test repository, and the logs under `~/.cache/recode-acceptance/i071`.
