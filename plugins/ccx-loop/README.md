@@ -283,7 +283,7 @@ run in `blocked` before anything is written.
 | Field | Default | Meaning |
 |---|---|---|
 | `commit` | `false` | Either way the run works in `.ccx/<run-id>/`, which is git-ignored. When `true`, the plan and a provisional report are also copied to `specs/ccx/<run-id>/` and committed on the work branch at publish. |
-| `checks` | discovered | List of commands to run as the repo's checks. The listed commands run first. Checks discovered from package scripts, `Makefile`, `pyproject`, and CI workflow jobs are added, and duplicates are dropped. |
+| `checks` | discovered | List of commands to run as the repo's checks. The listed commands run first. Checks discovered from the standard entries of the repo's build tool manifests (package scripts, `Makefile`, `pyproject`, `Cargo.toml`, `go.mod`, a Gradle wrapper, and the like) and CI workflow jobs are added, and duplicates are dropped. |
 | `timeouts` | see below | Time budgets in minutes. |
 | `models` | the tier's models | Overrides the model of a role at every tier. `plan-review`, `implementer`, and `final-review` take a full Codex model id. `small-slice` takes a full Codex model id, or `off` to disable the small-slice rule. `fallback-reviewer` takes `opus`, `sonnet`, `haiku`, or `fable` and replaces `fable` as the first fallback reviewer; `opus` stays the second. Any other value is reported and ignored. An override changes models only, never the tier, the risk floor, the Sonnet criteria, or the Claude `code-review` role, and the report names each one in force. |
 
