@@ -1350,9 +1350,10 @@ semantic gate of Part 20 item 5.
    follows the survey: cut the orchestrators' instruction text first (items 3 and 7),
    move the digesters off Opus (item 6), and leave the judging roles where they are.
 3. **The loop's skill is a core and four step files, read when the step starts.**
-   `SKILL.md` held 16,699 words that every turn re-read. It is now a 5,173-word core
-   (invocation block, tools, approval scope, budgets, terminal states, supporting files,
-   the shared mechanics, and Final report handling) and `steps/0-preflight.md` (Codex
+   `SKILL.md` held 16,699 words that every turn re-read. It is now a core of 5,173
+   words at the split and 5,329 at release, after items 5 and 10 (invocation block,
+   tools, approval scope, budgets, terminal states, supporting files, the shared
+   mechanics, and Final report handling) and `steps/0-preflight.md` (Codex
    availability and Step 0, read at Step 0), `steps/1-plan.md` (the Reviewer contract,
    Steps 1 to 3, and 3.6, read at Step 1), `steps/4-build.md` (the Codex implementer
    call snapshots of carve-out 6, the Claude review contract, the Implementer prompt,
@@ -1385,7 +1386,8 @@ semantic gate of Part 20 item 5.
    and 360 minutes. Lint 16b now wants exactly `medium`, `high`, `xhigh` in both
    commands and inspects the three invocation blocks' `effort:` line, which it did not
    before. The reason is the issue's: neither `low` nor `max` was ever used, and three
-   tiers are enough for the top layer.
+   tiers are enough for the top layer. Part 12 item 1 called the two-command check
+   16c; it was 16b on `main` before this change, and 16c is now item 3's core cap.
 5. **The tier is a ceiling; the slice picks the model.** The ladder is medium, high,
    and xhigh; the tier sets the budget and the strongest model a step may use, and
    under it the work picks the model: a step that judges (the plan review, the final
@@ -1483,3 +1485,52 @@ semantic gate of Part 20 item 5.
    that it keeps ids and dispositions exact; and a cheaper reader for the loop's slice
    review, which needs a design that removes the orchestrator's own read first. Each is
    open for its own issue.
+9. **After.** Run on 2026-10-09 and 2026-10-10 as item 1 was, from a profile whose
+   plugins were installed from a clone of the branch (at 9414f03 for the audit, 42497ae
+   for the loop runs, after the review fixes), the loop shapes at `--effort medium` since
+   `low` is gone, the audit at `low`; one run per shape, the same fixtures and change.
+
+   | Shape | Turns | Orchestrator context: first, at skill load, median, last, sum | Output, exact per model | Subagents and Codex calls | Cost |
+   |---|---|---|---|---|---|
+   | S1 loop run, `--effort medium --no-publish`, Codex on, ends `prepared` | 43 | 29,299; 43,458 (turn 3); 75,904; 106,929; 2,587,313 | opus 17,396 | Codex: plan review `gpt-6.1-sol` 35,273 in, 170 out, 2 calls; implement `gpt-6-luna` 108,358 in, 1,188 out, 6 calls; final review `gpt-6.1-sol` 33,672 in, 289 out, 3 calls; 178,950 total | $1.35 Claude |
+   | S2 loop plan-only, `--no-codex --effort medium`, ends `plan-only` | 27 | 29,331; 43,487 (turn 4); 58,154; 86,661; 1,348,560 | opus 13,239; fable 1,761 | plan reviewer, fable fallback: 3 turns, 75,733 context | $1.36 (opus $0.92) |
+   | S3 cca audit of the `full` fixture, `--effort low`, Codex on, stopped in stage 5 by the account's monthly spend limit | 136 orchestrator events to the stop | 27,786; 45,238 (turn 4), 80,919 (turn 5); 141,503; 195,195 at the last event before the stop; 17,183,567 | opus 146,648; haiku 47,713; sonnet 3,519 | digester haiku x3: 863,393; 890,647; 1,338,308; mapper sonnet 110,391; auditor opus 1,073,658 and top-up 442,399; adversary opus 935,742; map-correction top-up opus 528,912; Codex: none, stage 6 not reached | $8.33 (opus $7.90, haiku $0.31, sonnet $0.11) |
+
+   What it says. The loop's per-turn load fell as item 3 predicted: the skill load adds
+   about 12,000 tokens of context at turn 3 instead of 36,000, and S2's median turn is
+   58,000 against 75,000. The sums did not fall, because each run took more turns than
+   its before run (43 against 21, 27 against 16): the orchestrator split its shell work
+   into more and smaller commands, which the text does not control and one run per shape
+   cannot separate from the change, so the per-turn figure is the measure of this
+   change, and it is lower in every column but S1's last turn, which carried a longer
+   run's artifacts. Codex use rose with `gpt-6-luna` as the implementer (6 calls and
+   108,358 tokens in, against 4 and 74,158 on `gpt-6.1-sol`), still small beside the
+   Claude side. In the audit, the three digesters on `haiku` cost $0.31 together,
+   against about $2.20 at the before run's Opus rate for the same 3.7 million tokens;
+   the orchestrator, which this issue does not change, reached the stage 5 launch at
+   14.6 million tokens of context against 12.4 million before, over 122 events against
+   101 (this run also launched a map-correction top-up the before run did not need), so
+   the audit's cost at the stop, $8.33 for stages 1 to 4 and part of 5, shows the role
+   saving and no orchestrator saving. The run was not resumed; resuming it is open in
+   item 10. The Windows record of acceptance item 27 holds the rejection, the override
+   run, and the recorded models.
+10. **Review.** Three Codex `gpt-6-astra` critique rounds converged the plan, and one
+   final pass of the branch at 5d84784 found no blocking finding and four non-blocking
+   ones, each confirmed by reading the code and fixed: the early-read rule, read
+   literally, made the Reviewer contract's pointers to the Implementer prompt and Step
+   4.2 a reason to read `steps/4-build.md` in a plan-only run (a file is now read only to
+   carry out a procedure in it); the README's Sonnet criteria omitted the type and the
+   cited rule section of `tiers.md`; resume read `audit-evidence.md` in its step 2,
+   before step 5's version gate could rerun stage 1 for a 0.10.x run (read when it
+   exists); and item 3's word count was the split's, not the release's. A repo-docs
+   maintain-mode pass on the branch found no error and five findings: the hub's
+   requirements pointer named only two groups and a blank line was missing before the
+   Token use heading (both fixed), the same word count, Part 12 item 1's "16c" (noted in
+   item 4), and the import's ccl source line references in `docs/architecture.md`, left
+   as history. The first full test run after the release commit failed only in the lint,
+   release, and rules tests that hold the versions as literals; they moved as the 0.6.2
+   release moved them, with 0.7.1 as the tests' next suite version because lint's bridge
+   version gate rejects 0.8.0 in the loop manifest. Open: resume the stopped audit run
+   (`/cca:resume 2026-10-09-1900-app-feature` from the fixture's `app` directory in the
+   after profile) to complete item 9's audit figure through stage 8 and to see
+   `codex_model` `gpt-6-luna` recorded at stage 6; and the macOS run of item 27.
