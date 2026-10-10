@@ -209,7 +209,7 @@ name a plugin are rerun under the new names and recorded here.
     repository, 2026-10-06 for 0.3.2, cca 0.9.1, and repo-docs 0.1.5 on macOS and
     Windows, 2026-10-06 for 0.4.0 and 0.5.0 on macOS, and 2026-10-07 for 0.6.0 and cca
     0.10.0 on Windows, 2026-10-10 for 0.7.0 and cca 0.11.0 on macOS and Windows, and
-    2026-10-10 for 0.7.1 and cca 0.12.0 on Windows; see the records.
+    2026-10-10 for 0.7.1 and cca 0.12.0 on Windows and on macOS; see the records.
 19. **Windows.** Setup: a Windows 11 machine with both CLIs from npm, the suite
     installed as in item 18, and a test repository checked out under a path that holds
     a space. Command: `/ccx:ask` and `/ccx:implement` with a one-line change;
@@ -3292,3 +3292,44 @@ deleted after the runs.
   fixture's `npm test` line printed nothing in the driver's filter and is not judged.
 - Left on the machine: the scratch profiles `claude-071` and `codex-071` without logins,
   the test repository, and the logs under `~/.cache/recode-acceptance/i071`.
+
+### 2026-10-10: release ccx 0.7.1, ccx-loop 0.7.1, and cca 0.12.0, macOS
+
+macOS 27.0.1, Claude Code 2.1.296, codex-cli 0.162.1, Node 26.4.0, git 2.54.0 (Apple
+Git-157). `git ls-remote` read `ccx--v0.7.1`, `ccx-loop--v0.7.1`, and `cca--v0.12.0`
+each peeling to bf32784, and `main` at 3430c63, the merge of PR 60, which changes only
+`docs/acceptance.md` after bf32784. repo-docs stays at 0.1.6. Every run used a new
+scratch Claude profile and new scratch Codex homes under
+`~/.cache/recode-acceptance/i071-mac`. The Claude login on macOS is in the Keychain,
+so the profile was not given a copy: the author signed in to it with `claude auth
+login`, and it was logged out after the runs. The Codex homes held copies of the
+author's Codex login, deleted after the runs. The real `~/.claude` and `~/.codex` files
+had the same sha256s after the runs as before, except `~/.claude.json`, which the
+session running the checks writes.
+
+- **Item 18 passed on macOS for this release, from the public repository.**
+  - `claude plugin marketplace add vibecodedapps-official/reimagine-code`, then `claude
+    plugin install ccx-loop@reimagine-code` first, which printed "(+ 1 dependency:
+    ccx)"; `install ccx` then said it was already installed. `ccx` and `ccx-loop` 0.7.1,
+    `cca` 0.12.0, and `repo-docs` 0.1.6 installed and enabled. Each recorded 3430c63,
+    the head of `main`, not bf32784: the catalog installs from `main`, and nothing under
+    `plugins/` differs between the two. The install printed "1 userConfig option not yet
+    set", as before.
+  - In a new repository, headless `/ccx:setup` passed: codex-cli 0.162.1, "Logged in
+    using ChatGPT", `workspace-write` proven, and the allow rule naming the 0.7.1
+    `scripts/ccx.mjs`, printed for pasting and not written. `/ccx:ask` printed "51", the
+    thread, and `status: ok`; `git status` stayed clean.
+- **Item 11 passed for this release.** In a new Codex home, `codex plugin marketplace
+  add` from GitHub, then `codex plugin add` for `ccx` and `repo-docs`: under
+  `reimagine-code`, `codex plugin list` showed exactly `ccx` 0.7.1 from
+  `plugins/ccx-codex` and `repo-docs` 0.1.6, installed and enabled. The list also held
+  an `openai-curated-remote` marketplace with seven plugins enabled that nothing in this
+  home installed, probably from the Codex account.
+- **Item 16 passed for this release.** In the logged-in profile, `claude plugin
+  details` reported about 1,245 always-on tokens for `ccx` and about 500 for
+  `ccx-loop`, under 1,300 and 510, the same as the Windows figures. The profile was
+  logged in; without a login the estimate is lower, as the 0.7.0 macOS figures of about
+  956 and 318 show.
+- Not run: item 19, which is Windows only.
+- Left on the machine: `~/.cache/recode-acceptance/i071-mac` with the logged-out
+  profile, the two Codex homes without logins, the test repository, and the logs.
