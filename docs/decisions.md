@@ -1654,3 +1654,54 @@ one pull request. Each issue 51 item is decided here before its change.
    tracked together in #61. Part 23 item 9's audit figure through stage 8 is dropped:
    the table's rows are single-session figures, and resuming the stopped run would start
    a new session that reuses stages 1 to 4, so its sum could not complete that row.
+
+## Part 25: the revert-tests trap warning (#59) and the five differing cca rule copies (#61), 2026-10-10
+
+1. **The `run_pending_traps` warning in case 1 (#59).** Cause, shown on the macOS
+   bash 3.2.57 of the failure: a process that holds a TERM trap and forks a subshell, then
+   sends it TERM before the child has reset the inherited trap, makes bash print
+   `run_pending_traps: bad value in trap_list[15]: 0x0` and `signal handler is SIG_DFL,
+   resending 15 (SIGTERM) to myself` on the child's stderr. A probe with the script's own
+   trap and an immediate `kill` of a forked function printed the pair in about 2,200 of
+   3,000 forks, and 0 of 3,000 with no trap in the parent. The script does exactly that:
+   `runone` forks the watchdog under the trap at the script's top level and ends it with
+   `kill "$wdog"` as soon as a fast command returns, and `cleanup` does the same. The
+   failure itself did not reproduce: 30 runs of the whole suite on the same Mac, six in
+   parallel beside eight CPU hogs, all passed (later runs failed because the test file was
+   edited under them, which says nothing about the flake), and a probe of the real sequence (a job
+   that execs `sh`, then the fork, then the kill) printed 0 in 4,000 tries, so the real
+   window is far narrower than the probe's. The cause is therefore the one change that
+   removes the warning in the probe, not a run of the script failing. Fix: both sites call
+   `stopdog`, which sends KILL; the watchdog has no handler that needs TERM, and the TERM
+   and KILL it sends to the command's own group are unchanged. A stderr redirect on the
+   fork (also 0 of 3,000 in the probe) was rejected, since it would hide a failed write of
+   the `timedout` marker, which the parent reads as the only sign of a timeout. Case 19
+   runs the script's own `watchdog`, `stopdog`, and trap line, extracted by `sed` as case
+   18 does, stopping 200 watchdogs at once: with `kill` for `kill -KILL` it printed 268 to
+   282 stderr lines in each of 3 runs, with the fix 0 in each of 3. It is probabilistic
+   by nature, since the race cannot be forced. The `bg` mode's group TERM at its deadline
+   and its own watchdog are not routine fork-then-cancel sites and are unchanged; no
+   warning from them was seen. Whether Part 20 item 2's `child setpgid` race is related
+   stays unverified; the warning's text and trigger differ.
+2. **Item 1 of #61, the five copies, each resolved to the text the agents already act
+   on.** These change the shared text, not what an agent is told to do:
+   - Reproduction by quote: `common.md`'s limit stands, so the auditor's step 7 and the
+     adversary's step 9 now say a quote reproduces only a fact of the code at the pinned
+     sha. A quote cannot show that a run's result held.
+   - The "not in export" keys: a gap in what could be checked, as the auditor's checklist,
+     the README, and `report.md` (Forge coverage) say, not a finding; stage 4's hygiene row
+     changed. A missing optional key says nothing about the change.
+   - The digester's pipes and the `git -C` forms: `common.md` hard rule 2 now grants what
+     `digester.md`, `auditor.md`, `adversary.md`, and `mapper.md` already instruct: each
+     listed git command as `git -C <repo> <command>`, and the byte-range pipes on `git show`
+     as well as `cat`, with the 24,000-byte slice. All are reads.
+   - The fetch exception: hard rule 2 also names a user-confirmed `background-fetch` entry
+     in `approvals`, as the Read-only check does. It excuses a move of refs the user
+     confirmed; it lets no agent fetch.
+   - The output file's removal: hard rule 1 adds "only after the copy exits 0".
+   No test or lint pins these choices; the review was by reading.
+3. **Left open in #61.** The `haiku` merger needs merger runs over saved ledgers, and none
+   exist on this machine; a ledger needs a full audit (Part 23's row S3 cost 13.20
+   dollars for one configuration) or synthetic ledgers with expected ids, gates, and
+   dispositions fixed first. The cheaper slice-review reader needs a design that removes
+   the orchestrator's own read. Neither is started, so #61 stays open for both.
