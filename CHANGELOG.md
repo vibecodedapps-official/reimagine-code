@@ -39,6 +39,14 @@ repos' own changelogs are kept under `docs/history/`.
   repo's ignore rules exclude, not only `bin/` and `obj/` (issue #51).
 - The handoff's ticket fields say how each forge fills them (issue #51).
 - A run resumed from 0.11.0 reruns stage 1 by the version gate.
+- cca 0.12.1. `revert-tests.sh` ends its watchdog with KILL, so bash 3.2 no longer prints
+  `run_pending_traps: bad value in trap_list[15]` when the watchdog is stopped just after
+  its fork (issue #59). Five rule pairs now say one thing: a quote reproduces only a fact
+  of the code at the pinned sha; a missing optional export key is a gap in what could be
+  checked; `common.md` grants the `git -C <repo>` forms and the digester's byte-range
+  pipes on `git show`; a confirmed background fetch is named beside the approved fetch;
+  the output file is removed only after the copy exits 0 (issue #61, item 1). A run
+  resumed from 0.12.0 reruns stage 1 by the version gate.
 
 ### repo-docs
 

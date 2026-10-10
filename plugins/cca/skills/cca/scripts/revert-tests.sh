@@ -293,11 +293,17 @@ made=
 live=
 wdog=
 renamed=
+# stopdog: end the watchdog. KILL, not TERM: the watchdog is forked holding the TERM trap
+# below, and bash 3.2 prints `run_pending_traps: bad value in trap_list[15]` on stderr
+# when a TERM lands before the child has reset it.
+stopdog() {
+	kill -KILL "$wdog" 2> /dev/null
+}
 cleanup() {
 	# A signal during the cleanup must not cut it short.
 	trap '' HUP INT TERM
 	if [ -n "$wdog" ]; then
-		kill "$wdog" 2> /dev/null
+		stopdog
 	fi
 	if [ -n "$live" ]; then
 		kill -KILL -"$live" 2> /dev/null
@@ -669,7 +675,7 @@ runone() {
 		wait "$ro_pg"
 		rc=$?
 	} 2> /dev/null
-	kill "$wdog" 2> /dev/null
+	stopdog
 	wait "$wdog" 2> /dev/null
 	wdog=
 	kill -KILL -"$ro_pg" 2> /dev/null

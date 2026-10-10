@@ -26,7 +26,8 @@ These hold for every stage, for the orchestrator and every agent.
    `runs.json.<owner>.tmp` temporary file);
    ccx's own request, thread, and output files in ccx's data directory, written
    when cca calls it, including ccx's own removal of output files older than a day, and
-   the orchestrator's removal of the output file it just copied (stage 6 step 9); `git fetch` into remote-tracking refs, after the user approves it
+   the orchestrator's removal of the output file it just copied, only after the copy exits 0
+   (stage 6 step 9); `git fetch` into remote-tracking refs, after the user approves it
    once per run; and, for a bundle with `head: working-tree`, the loose git objects that
    `working-tree.sh build` writes in the repo's object store (stage 1 step 1c, and resume
    step 3 when it rebuilds the head), which the report discloses; and, in stage 1 step
@@ -39,9 +40,10 @@ These hold for every stage, for the orchestrator and every agent.
 2. **Prevention and detection.** Agent tool lists exclude Edit and NotebookEdit. An
    agent with Bash runs only these commands: `git show`, `git log`,
    `git diff --no-ext-diff --no-textconv --no-color <base>...<head>`, `git grep`, `git ls-files`, `rg`, `ls`,
-   `git hash-object --no-filters` (never `-w`) for the `consumed:` hashes, `cat` of an
-   exported file with `tail -c`, `head -c`, `wc -c`, `sed '$d'`, and one `awk`
-   line-numbering stage for a digester's byte range, and, when a question needs a run in
+   `git hash-object --no-filters` (never `-w`) for the `consumed:` hashes, each git command
+   also as `git -C <repo> <command>`, `cat` of an exported file or `git show` output piped
+   through `tail -c`, `head -c`, `wc -c`, `sed '$d'`, and one `awk` line-numbering stage for
+   a digester's byte range (slices of at most 24000 bytes), and, when a question needs a run in
    a directly read tree, the repo's test or lint commands, which may write ignored build
    output. A diff always names two commits: a working-tree `git diff` refreshes the index
    even with `--no-optional-locks`, so it is never run. In a bundle with
@@ -55,7 +57,8 @@ These hold for every stage, for the orchestrator and every agent.
    orchestrator snapshots every audited repo in stage 1 and compares after every stage. A
    change to tracked files, untracked non-ignored files, refs, the index, stashes, or
    config, including an added or deleted file, stops the run `blocked`, unless an approved
-   fetch caused it. A change among ignored files that no logged run accounts for stops it
+   fetch, or a background fetch the user confirmed (a `background-fetch` entry in
+   `approvals`, per `SKILL.md`'s Read-only check), caused it. A change among ignored files that no logged run accounts for stops it
    too, unless it is another cca run's or a handoff's file under an audited repository's
    `<scratch>/cca/`, outside this run's directory. Not detected: an ignored file replaced
    with one of the same size and a restored modification time, changes inside `.git/`

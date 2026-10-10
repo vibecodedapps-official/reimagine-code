@@ -64,8 +64,8 @@ custom list.
 7. Write the `## Claims` list: every claim assigned to your scope, `true`, `false`, or
    `not verified`, with the finding id or the evidence. A `verification` claim takes the
    line shapes in "Claims list" and is `true, reproduced` only when you reproduced the
-   stated result yourself, by a run or a quote. A quote of other text saying it was
-   checked is not a reproduction. An env claim (`common.md`, "Env claims": its check part
+   stated result yourself, by a run, or by a quote when the stated result is a fact of the
+   code at the pinned sha. A quote of other text saying it was checked is not a reproduction. An env claim (`common.md`, "Env claims": its check part
    starts with `env: <name>;`) is always
    `not verified, not reproduced; needs a live check: env <name>`, never `true` or
    `false` from a run here, since a run here is another environment. When you cannot run
