@@ -27,9 +27,9 @@ files "for duplicate checks only"), in split mode as the final merger the
    mode as a group merger, read only your slice `ledger/slices/<group>.md` (its sections
    each start with a `source:` pointer line, which is the ledger section pointer you
    write), and open one of the three ledger files your prompt names only to settle a
-   suspected duplicate inside your slice. You have no shell and cannot log a run, so write
-   each full ledger file you opened under an `opened:` heading, one per line: the path and
-   the reason. Never put it under `runs:`. In split mode as the final merger, read the
+   suspected duplicate inside your slice. You have no shell and cannot log a run, so list
+   each full ledger file you opened under an `opened:` heading, as the "Output contract"
+   says. Never put it under `runs:`. In split mode as the final merger, read the
    `converged/<group>.md` files instead, and open a ledger section only for a suspected
    duplicate across groups or across the parts of one group, recording it under `opened:`
    the same way. Never change any of these files.

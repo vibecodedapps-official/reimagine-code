@@ -7,21 +7,21 @@ re-evaluation, and the reviewer and implementer roles with their fallbacks.
 ## Roles
 
 The reviewers and implementers are keyed by role, not by tier. The tier table below says
-which model each stage uses at each tier. `gpt-6.1-sol` is an implementer model only and is
-never a reviewer.
+which model each stage uses at each tier. `gpt-6.1-sol` reviews at medium only;
+`gpt-6-luna` never reviews.
 
 | Role | Default | Fallback when the default is unavailable |
 |---|---|---|
 | Orchestrator and primary reviewer | The session's current Claude model | none, the run stops |
-| Codex reviewer | Skill tool, `ccx:ask` or `ccx:review`, model `gpt-6-astra` | Agent tool, model `fable`; on an error from that call, model `opus` |
+| Codex reviewer | Skill tool, `ccx:ask` or `ccx:review`, the tier's Codex reviewer: `gpt-6.1-sol` at medium, `gpt-6-astra` at high and xhigh | Agent tool, model `fable`; on an error from that call, model `opus` |
 | Claude reviewer (Step 5, higher-risk runs) | Skill tool, `code-review`, at the tier's level; in a worktree run, an Opus subagent for the worktree as `worktree.md` describes, and in Multi-repo mode, an Opus subagent for each additional repository, as `multi-repo.md` describes | none; if the skill is not listed when the stage starts, the run ends in `blocked` (a worktree run needs no skill) |
-| Implementer, Codex | Skill tool, `ccx:implement`, model per the tier table | Agent tool, model `sonnet` |
+| Implementer, Codex | Skill tool, `ccx:implement`, model per the tier table and the small-slice rule | Agent tool, model `sonnet` |
 | Implementer, Sonnet | Agent tool model `sonnet`, at high and xhigh tier, when the Sonnet criteria apply to the slice | none; on a tool error the run stops |
 
 Rules for roles:
 
-- Codex model ids are always the full id, `gpt-6.1-sol` or `gpt-6-astra`.
-  A bare alias such as `sol` or `astra` may not resolve on every account. Pass the full
+- Codex model ids are always the full id: `gpt-6.1-sol`, `gpt-6-astra`, or `gpt-6-luna`.
+  A bare alias such as `sol`, `astra`, or `luna` may not resolve on every account. Pass the full
   id on every Codex call, including `--resume` follow-ups. On every reviewer call, also
   pass `--timeout` from the Codex budget.
 - Codex is reached only through the Skill tool, with `ccx:ask` for plans and
@@ -33,19 +33,20 @@ Rules for roles:
   does not apply to it. There is no `--resume` for `implement`: every call starts a new
   thread.
 - For a Codex reviewer stage, at any tier, the fallback tries the `fable` model
-  on the Agent tool first. If that call returns an error, use `opus` and record the error.
+  on the Agent tool first (the `fallback-reviewer` override replaces `fable` here, see
+  Model override below). If that call returns an error, use `opus` and record the error.
   Do not detect the session's model. This is for reviewer calls only: a Codex
   implementer's fallback is `sonnet` alone.
 - The Claude reviewer is the built-in `code-review` skill, called through the Skill tool
   with the level the tier table names as the first argument, then the range
-  `<base-commit>...HEAD` as the target, as the Claude review contract in `SKILL.md` says,
+  `<base-commit>...HEAD` as the target, as the Claude review contract in `steps/4-build.md` says,
   never `--comment` and never `--fix`. It is the final review's one reviewer role for a
   higher-risk run, chosen by the higher-risk rule below. It is not a fallback for the
   Codex reviewer, and nothing falls back to it or replaces it. A lower-risk run never uses
   it. `--no-codex` does not touch it: a higher-risk run under `--no-codex` gets Claude as
   its role anyway, so `--no-codex` changes nothing for its final review. Its availability
   is checked only when a higher-risk Step 5 starts, so plan-only runs and lower-risk runs
-  do not need it. The Reviewer contract in `SKILL.md` gives the call shape and the budget.
+  do not need it. The Reviewer contract in `steps/1-plan.md` gives the call shape and the budget.
   In a worktree run, and in Multi-repo mode for each additional repository, the Claude
   role is an Opus subagent, a defined substitute for a checkout the skill cannot target,
   and not a swap.
@@ -58,12 +59,12 @@ Rules for roles:
   in a row. The fallback model is the one the roles table gives: `fable`, then `opus`, for a
   reviewer, and `sonnet` for an implementer. A Codex implementer call that returns
   `failed` or no status line is retried or swapped only under the preconditions of Step
-  4.2.4 in `SKILL.md`, which include the state of the process and the tree. A `refused`
+  4.2.4 in `steps/4-build.md`, which include the state of the process and the tree. A `refused`
   status is not retried and is not swapped: it ends the run in `blocked` with the
   message, for a reviewer and for an implementer, except an implementer refusal whose
   message contains "implement was not run:", the host's write sandbox, which swaps
   the slice to `sonnet` and marks Codex implementation unavailable for the run (Step
-  4.2.4 in `SKILL.md`). A `timeout` status is a budget expiry
+  4.2.4 in `steps/4-build.md`). A `timeout` status is a budget expiry
   and ends the run in `blocked` with the budget named: the Codex budget for a reviewer,
   the implementer `--timeout` for an implementer.
 - Write every swap to the run log with the stage, the reason, and the fallback model. Every
@@ -73,18 +74,61 @@ Rules for roles:
 
 ## Effort tiers
 
-| Step | Low | Medium | High | xhigh |
-|---|---|---|---|---|
-| 3 Plan review and converge | Codex `gpt-6-astra` | Codex `gpt-6-astra` | Codex `gpt-6-astra` | Codex `gpt-6-astra` |
-| 4 Implement | Codex `gpt-6.1-sol` per slice, orchestrator reviews | Codex `gpt-6.1-sol` per slice, orchestrator reviews | Codex `gpt-6-astra`, or Sonnet by criteria, per slice | Codex `gpt-6-astra`, or Sonnet by criteria, per slice |
-| 5 Final review | Codex `gpt-6-astra`, or Claude `code-review low` | Codex `gpt-6-astra`, or Claude `code-review medium` | Codex `gpt-6-astra`, or Claude `code-review high` | Codex `gpt-6-astra`, or Claude `code-review xhigh` |
+| Step | Medium | High | xhigh |
+|---|---|---|---|
+| 3 Plan review and converge | Codex `gpt-6.1-sol` | Codex `gpt-6-astra` | Codex `gpt-6-astra` |
+| 4 Implement | Codex `gpt-6.1-sol`, or `gpt-6-luna` by the small-slice rule, per slice, orchestrator reviews | Codex `gpt-6-astra`, Sonnet by criteria, or `gpt-6-luna` by the small-slice rule, per slice | Codex `gpt-6-astra`, Sonnet by criteria, or `gpt-6-luna` by the small-slice rule, per slice |
+| 5 Final review | Codex `gpt-6.1-sol`, or Claude `code-review medium` | Codex `gpt-6-astra`, or Claude `code-review high` | Codex `gpt-6-astra`, or Claude `code-review xhigh` |
 
 Steps 1, 2, 6, and 7 run the same at every tier. The rows keep their step numbers,
-because `SKILL.md` refers to the table by step.
+because the step files refer to the table by step.
+
+### Routing under the tier
+
+The tier sets the ceiling and the budget. Under it, each step runs on a model chosen by
+the work it does:
+
+- A step that judges (plan review, final review, verifying findings) runs on the tier's
+  strongest reviewer, the Codex reviewer of the table.
+- A step that builds runs on the tier's implementer, or on the small implementer when the
+  small-slice rule holds.
+- A step that only reads and reports is a subagent on `haiku`. The loop has none today:
+  the orchestrator does its own reading.
+- The orchestrator's own slice review at Step 4.3 is not routed. It runs on the session's
+  model, and a cheaper subagent would add a reader whose findings the orchestrator must
+  still verify against the diff.
+
+Small-slice rule: a slice goes to Codex `gpt-6-luna` when its change is one function or
+one behavior in at most two files, it meets none of the Sonnet criteria of the
+Implementer choice section (a risk floor trigger, more than eight files, a new module,
+type, interface, or rule section another file cites), and it adds no dependency. The rule
+applies at every tier.
+
+Precedence, for the model of a slice:
+
+1. The risk floor sets the tier first.
+2. At high and xhigh, the Sonnet criteria pick `sonnet` for a slice. Medium never uses
+   Sonnet by criteria.
+3. Else, at every tier, the small-slice rule picks `gpt-6-luna`, unless the `small-slice`
+   override is `off`.
+4. Else the tier's implementer: `gpt-6.1-sol` at medium, `gpt-6-astra` at high and xhigh.
+
+A tier rise at Step 3.5.4 chooses each slice's implementer again from the new tier's row,
+as Step 3.5 says. A tier rise at Step 4.5 re-resolves the reviewer models only, from the
+new tier's row; each slice keeps its effective model through review fixes and CI repair,
+and a swap already made stays a swap. A plan review already made is not repeated by a
+rise, and the report says which model reviewed the plan.
+
+Model override: the `models` key of `.ccx.json` (Repo config in `SKILL.md` gives its keys
+and values) is applied at every tier in place of the table's cell for that role. It
+changes models only: never the tier, the risk floor, the Sonnet criteria, or the Claude
+`code-review` role. The rules that `gpt-6.1-sol` reviews at medium only and that
+`gpt-6-luna` never reviews govern the defaults; an override is the user's choice, and the
+report names each override in force.
 
 The final review has one reviewer role per run, chosen by the higher-risk rule below. A
 higher-risk run gets Claude: the `code-review` skill at the tier's level, or its defined
-Opus stand-in where the skill cannot reach. Any other run gets Codex `gpt-6-astra`.
+Opus stand-in where the skill cannot reach. Any other run gets the tier's Codex reviewer.
 
 Every tier reviews the plan in Step 3 and runs Step 5. Every Step 5 round is one reviewer
 role over the diff, at every tier. Every implementer call keeps the per-call subagent
@@ -136,12 +180,12 @@ Two edges:
 
 ## Estimate rule
 
-Apply after Step 1. Low, medium, and high are sized from the behavior the change has, not
+Apply after Step 1. Medium and high are sized from the behavior the change has, not
 from how many issues there are. xhigh is sized from how many areas that share no
 file the change spans, on top of that.
 
-- Low: one file or one function, a clear fix, and none of the risk floor triggers.
-- Medium: several files in one area, or one issue with tests, or any doc restructure.
+- Medium: one file or one function with a clear fix, several files in one area, one issue
+  with tests, or any doc restructure, with none of the risk floor triggers.
 - High: a cross-cutting change inside one deliverable, or any risk floor trigger.
 - xhigh: one change whose scope spans several areas of the code that share no file. This
   sets review depth. Slice count is set by the plan at every tier. A risk floor trigger
@@ -151,8 +195,9 @@ Bundling issues does not by itself raise the tier; estimate the bundle as one ch
 issues that each touch one file in one area are still medium. A bundle is xhigh only when
 the change it describes, taken as one change, spans several areas with no shared file.
 
-`--effort low|medium|high|xhigh` skips the estimate and forces that tier, subject to
-the risk floor below. `--effort max` is rejected with a pointer to `xhigh`.
+`--effort medium|high|xhigh` skips the estimate and forces that tier, subject to
+the risk floor below. `--effort low` is rejected with a pointer to `medium`, and
+`--effort max` is rejected with a pointer to `xhigh`.
 
 Record the estimate, the reason, any floor applied, and any re-evaluation in the run log
 and in the final report.
@@ -160,10 +205,11 @@ and in the final report.
 ## Implementer choice
 
 At every tier the default implementer is Codex at the tier's model, one call per slice:
-`gpt-6.1-sol` at low and medium, `gpt-6-astra` at high and xhigh. Choose the implementer
+`gpt-6.1-sol` at medium, `gpt-6-astra` at high and xhigh, or `gpt-6-luna` for a slice the
+small-slice rule picks (Routing under the tier). Choose the implementer
 per slice in Step 2 and again after a requested plan change at Step 3.5. At high and xhigh,
 choose `sonnet` for a slice when any of these
-hold; otherwise keep Codex. At low and medium tier it is always Codex. Opus never
+hold; otherwise keep Codex. At medium tier it is always Codex. Opus never
 implements. `sonnet` is also the fallback for a Codex slice (see Rules for roles).
 
 - the slice carries a risk floor trigger: its change adds, alters, or removes an item in
@@ -172,14 +218,14 @@ implements. `sonnet` is also the fallback for a Codex slice (see Rules for roles
 - the slice adds a new module, type, interface, or rule section that another file in the
   slice, or in another slice, calls, implements, or cites
 
-Record the choice in the plan next to the slice, as "codex" or the criterion that
-applied. Log it in the run log when the slice's implementer starts, and list it in the
+Record the choice in the plan next to the slice, as "codex", "luna" (the small-slice rule
+held), or the Sonnet criterion that applied. Log it in the run log when the slice's implementer starts, and list it in the
 final report per slice with the reason. The plan reviewer may object to a choice; the
 objection is handled like any other. Codex having no network does not change the choice:
-see Step 3.7 and Step 4.3 in `SKILL.md`.
+see Step 3.7 and Step 4.3 in `steps/4-build.md`.
 
-The slice's effective model is the chosen model (the tier's Codex model, or `sonnet`), or
-`sonnet` after an implementer swap (see Rules for roles). Every later call for that
+The slice's effective model is the chosen model (the tier's Codex model, `gpt-6-luna`, or
+`sonnet`), or `sonnet` after an implementer swap (see Rules for roles). Every later call for that
 slice, in Step 4.3, Step 5.3, and CI repair, uses the effective model. For a Codex slice
 each later call is a fresh `ccx:implement` call at its effective model, never
 resumed, given the findings and the slice's current diff. For a Sonnet slice,
@@ -208,7 +254,7 @@ a comment change in an auth module, or a rename that changes no signature. This 
 incidental-edit exception. When it applies, the final report says why the floor did not.
 
 The floor is `high`. `--effort` cannot lower a task below it. If the user passes
-`--effort low` or `--effort medium` for a task the floor covers, refuse the request, state
+`--effort medium` for a task the floor covers, refuse the request, state
 the reason (which trigger applies), and continue the run at high tier. Do not stop the
 run. `--effort xhigh` is above the floor and is honored.
 
@@ -224,8 +270,8 @@ rises, and whether the run is higher-risk, which fixes the Step 5 reviewer role.
   the diff contains.
 - Judge the higher-risk rule on the actual diff, integration fixes included, as the
   Higher-risk rule section says, and resolve the Step 5 role from the tier table: Claude
-  `code-review` at the tier's level when the run is higher-risk, else Codex `gpt-6-astra`.
-  A run that was higher-risk at the plan stays so, even if the diff no longer shows it.
+  `code-review` at the tier's level when the run is higher-risk, else the tier's Codex
+  reviewer. A run that was higher-risk at the plan stays so, even if the diff no longer shows it.
 - Complete Step 5 with that role before Step 6. It stays inside the round caps in the
   budgets. Plan review at Step 3 is not repeated after Step 4, so a run that rose keeps
   the plan review it already had.

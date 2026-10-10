@@ -97,7 +97,7 @@ An unknown flag or a bad value is rejected in one line, and nothing is written.
 |---|---|---|
 | `--effort` | `low`, `medium`, or `high`; overrides the tier cca picks | picked from the bundle's size (see Effort) |
 | `--no-codex` | none; the fallback reviewer gives the second opinion | Codex, when available |
-| `--codex-model` | a full Codex model id | `gpt-6.1-sol` |
+| `--codex-model` | a full Codex model id | by tier: `gpt-6-luna` at low, `gpt-6.1-sol` at medium and high |
 | `--codex-timeout` | seconds, 1 to 3600; at most 540 when the session is headless or cannot tell whether a user can answer | by tier: low 1,200, medium 2,400, high 3,600 |
 | `--models` | `role=model,...`, roles `digester`, `mapper`, `auditor`, `adversary`, `merger`, models as the Agent tool accepts them (`opus`, `sonnet`, `haiku`, `fable`) | see Roles |
 | `--questions` | a markdown file of `id: question` lines | the four default questions |
@@ -460,11 +460,11 @@ count. An incomplete audit says `audit incomplete` and never `ready to merge`.
 | Role | Default | Fallback when the default fails |
 |---|---|---|
 | Orchestrator | the session's model, in the main session | none; the run ends `blocked` |
-| Digester (stage 2) | `cca:digester` agent, Opus | retry once, then the same agent on Fable, else the stage fails |
-| Domain mapper (stage 3) | `cca:mapper` agent, Opus | as for the digester |
+| Digester (stage 2) | `cca:digester` agent, Haiku | retry once, then the same agent on Fable, else the stage fails |
+| Domain mapper (stage 3) | `cca:mapper` agent, Sonnet | as for the digester |
 | Auditor (stage 4) | `cca:auditor` agent, Opus | as for the digester |
 | Adversary (stage 5) | `cca:adversary` agent, Opus, fresh context | as for the digester |
-| Second opinion (stage 6) | Codex `gpt-6.1-sol` through ccx | `cca:adversary` on Fable, else Opus |
+| Second opinion (stage 6) | Codex through ccx: `gpt-6-luna` at low effort, `gpt-6.1-sol` at medium and high | `cca:adversary` on Fable, else Opus |
 | Merger (stage 7) | `cca:merger` agent, Sonnet | the orchestrator |
 
 A fallback swaps who fills a role; it never removes a stage. Every swap is named in the
@@ -516,9 +516,10 @@ duplicate-id line, and you run the command again; a later update or a resume rep
 a registry failure instead and leaves the lock for the next audit or resume to remove.
 
 The run directory holds all state: the normalized `manifest.json`, `stages.json` (the
-only record of which stages are complete), `audit-brief.md`, `claims.md`, `groups.md`,
-the diffs, the per-stage outputs, the ledger files, `converged.md`, `report.md`,
-`claims-verdicts.md`, `work-items.jsonl`, `act/log.md`, `usage.md`, and
+only record of which stages are complete), `audit-brief.md`, `common.md` (the rules
+every agent reads), `audit-evidence.md` (the evidence rules only the auditor and the
+adversary read), `claims.md`, `groups.md`, the diffs, the per-stage outputs, the ledger
+files, `converged.md`, `report.md`, `claims-verdicts.md`, `work-items.jsonl`, `act/log.md`, `usage.md`, and
 `invocations.md` (each invocation's block, appended verbatim, which a run re-reads after a
 context compaction; a run from 0.4.0 or earlier has none). A crashed or
 interrupted run loses no finished stage, and `/cca:resume` never reuses a stale one.

@@ -292,12 +292,12 @@ for (const f of ["run", "plan"].map((n) => `plugins/ccx-loop/commands/${n}.md`))
   if (text !== null && !text.includes("`${user_config.codex}`")) fail(`${f}: must read the codex option as \`\${user_config.codex}\``);
 }
 
-// 16b. Each loop command lists the effort values low, medium, high, xhigh and no others in its description, its argument hint, and
-// its flag check.
+// 16b. Each loop command lists the effort values medium, high, xhigh and no others in its description, its argument hint, and its
+// flag check, and so do the invocation blocks of both commands and of the loop core.
 for (const f of ["run", "plan"].map((n) => `plugins/ccx-loop/commands/${n}.md`)) {
   const text = read(f);
   if (text === null) continue;
-  const want = "low,medium,high,xhigh";
+  const want = "medium,high,xhigh";
   const lists = [
     ["description", text.match(/^description: .*?--effort ([a-z|]+)/m)],
     ["argument-hint", text.match(/^argument-hint: .*?--effort ([a-z|]+)/m)],
@@ -306,7 +306,36 @@ for (const f of ["run", "plan"].map((n) => `plugins/ccx-loop/commands/${n}.md`))
   ];
   for (const [where, m] of lists) {
     const got = m ? m[1].replace(/[`\s]/g, "").replace(/\|/g, ",") : null;
-    if (got !== want) fail(`${f}: the ${where} must list the effort values exactly low, medium, high, xhigh; found ${JSON.stringify(got)}`);
+    if (got !== want) fail(`${f}: the ${where} must list the effort values exactly medium, high, xhigh; found ${JSON.stringify(got)}`);
+  }
+}
+for (const f of ["plugins/ccx-loop/commands/run.md", "plugins/ccx-loop/commands/plan.md", "plugins/ccx-loop/skills/ccx-loop/SKILL.md"]) {
+  const text = read(f);
+  if (text === null) continue;
+  const m = text.match(/^ {2}effort: auto \| ([a-z |]+)$/m);
+  const got = m ? m[1].replace(/\s/g, "").replace(/\|/g, ",") : null;
+  if (got !== "medium,high,xhigh") fail(`${f}: the invocation block must list the effort values exactly auto | medium | high | xhigh; found ${JSON.stringify(got)}`);
+}
+
+// 16c. The loop core stays at or under a word cap (counted as wc -w does); the cap is the post-split count rounded up to the next
+// hundred, plus 500 words of headroom. Every file its Supporting files section names exists under the skill directory, and every
+// file under steps/ is named there.
+const LOOP_CORE_CAP = 5800;
+const loopSkill = "plugins/ccx-loop/skills/ccx-loop";
+const loopCore = read(`${loopSkill}/SKILL.md`);
+let loopCoreWords = 0;
+if (loopCore !== null) {
+  loopCoreWords = loopCore.split(/\s+/).filter(Boolean).length;
+  if (loopCoreWords > LOOP_CORE_CAP) fail(`${loopSkill}/SKILL.md: ${loopCoreWords} words, cap is ${LOOP_CORE_CAP}`);
+  const section = loopCore.match(/^## Supporting files\n([\s\S]*?)(?=^## |(?![\s\S]))/m);
+  if (!section) fail(`${loopSkill}/SKILL.md: has no Supporting files section`);
+  else {
+    const named = [...new Set([...section[1].matchAll(/`((?:steps\/)?[A-Za-z0-9._-]+\.md)`/g)].map((m) => m[1]))];
+    for (const n of named) if (!existsSync(join(root, loopSkill, n))) fail(`${loopSkill}/SKILL.md: Supporting files names ${n}, which does not exist`);
+    const stepsDir = join(root, loopSkill, "steps");
+    for (const f of existsSync(stepsDir) ? readdirSync(stepsDir).filter((n) => n.endsWith(".md")) : []) {
+      if (!named.includes(`steps/${f}`)) fail(`${loopSkill}/steps/${f}: not named in the Supporting files section of SKILL.md`);
+    }
   }
 }
 
@@ -393,4 +422,4 @@ if (failures.length) {
   console.error(`lint: ${failures.length} failure(s)\n${failures.map((f) => `- ${f}`).join("\n")}`);
   process.exit(1);
 }
-console.log(`lint: ok (${modules.length} modules checked; runtime ${usage.join(", ")} lines)`);
+console.log(`lint: ok (${modules.length} modules checked; runtime ${usage.join(", ")} lines; loop core ${loopCoreWords}/${LOOP_CORE_CAP} words)`);

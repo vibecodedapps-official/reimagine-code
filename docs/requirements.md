@@ -334,6 +334,39 @@ Added 2026-10-05, when claude-codex-audit 0.8.1 at `eed9fba` joined the suite as
     for a failed copy and an `ok` call with no `output:` line, which neither plugin can
     be made to produce on demand.
 
+## Token use, 2026-10-09
+
+Added 2026-10-09 with issue #54, which surveyed the loop's and the audit's token use and
+cut it by role; the survey and the decisions are docs/decisions.md Part 23.
+
+72. **Three tiers.** The loop's effort ladder is `medium`, `high`, `xhigh`. `--effort low`
+    and `--effort max` are rejected with a pointer to `medium` and `xhigh`. The budgets
+    are 120, 240, and 360 minutes. The estimate rule's former low bucket is the first
+    line of medium. Check: lint (16b, which also inspects the invocation blocks);
+    acceptance (item 27).
+73. **Loop skill in step files.** The core `SKILL.md` stays at or under the lint cap
+    (5,800 words), and every step file is named in Supporting files with its read-at
+    point. Each step file is read when its step starts, and a plan-only run reads neither
+    `steps/4-build.md` nor `steps/7-publish.md`. Check: lint (16c); acceptance (item 27,
+    the file reads in a headless log).
+74. **Routing under the tier.** The tier sets the ceiling and the budget. The small-slice
+    rule sends a slice to `gpt-6-luna`. Medium's reviewer is `gpt-6.1-sol`. `.ccx.json`
+    `models` overrides a role's model at every tier and changes nothing else. The report
+    names the plan reviewer and the overrides in force. Check: review; acceptance (item
+    27).
+75. **cca defaults by role.** The digester is `haiku`, the mapper `sonnet`, the merger
+    `sonnet`, and the auditor and adversary `opus`. The second opinion is `gpt-6-luna` at
+    low and `gpt-6.1-sol` at medium and high, resolved by stage 6 from `codex-model:
+    default`. `--models`, the manifest `models` key, and `--codex-model` still override.
+    Check: review of the agent front matter and the Roles table; acceptance (item 27,
+    the requested models in `stages.json`).
+76. **Audit-only evidence rules.** cca's audit-only evidence rules are in
+    `audit-evidence.md`. Stage 1 copies it next to `common.md`. Only the auditor, the
+    adversary, the Codex request, and the second-opinion fallback read it. It is hashed
+    as an input of stages 4 to 7. Every rule of the old `common.md` survives in one of
+    the two files. Check: review (the move commit's verbatim check); test (the cca sh
+    suites still pass).
+
 ## Release
 
 48. **Versions.** `ccx`, `ccx-loop`, and the Codex `ccx` are 0.1.0 in every

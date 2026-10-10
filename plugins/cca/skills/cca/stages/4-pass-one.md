@@ -8,7 +8,7 @@ Claims lists, agent output contract) apply throughout. This file does not restat
 Stages 2, 3, and 4 start together. Read this file together with `2-digest.md` and
 `3-domain.md`, and enqueue this stage's jobs first.
 
-Inputs: `audit-brief.md`, `common.md`, `groups.md`, `claims.md`, the questions in the
+Inputs: `audit-brief.md`, `common.md`, `audit-evidence.md`, `groups.md`, `claims.md`, the questions in the
 brief, and whatever `guidelines/digest-*.md` and `domain/*-map.md` exist when each
 auditor reads them.
 
@@ -18,7 +18,8 @@ Outputs: `scope/<scope>.md` and `pass1/<scope>.md` for every pass-one scope.
 
 1. **Write the stage 4 entry as `running`** in `stages.json`, with its input hashes
    (`git hash-object --no-filters <file>` for `audit-brief.md`, `groups.md`,
-   `claims.md`, `common.md`, and each `revert/<bundle>.md`), before the first launch.
+   `claims.md`, `common.md`, `audit-evidence.md`, and each `revert/<bundle>.md`), before
+   the first launch.
 
 2. **List the scopes by tier.** The tier is in `audit-brief.md`.
 
@@ -51,7 +52,7 @@ Outputs: `scope/<scope>.md` and `pass1/<scope>.md` for every pass-one scope.
    - the tickets it concerns and the readable-tree path of each repo, from the brief;
    - the question ids to answer (every question, at every tier);
    - for a group scope or `combined`, the duty to write the outward trace (`## Outward
-     trace` in `common.md`); a specialist scope does not trace;
+     trace` in `audit-evidence.md`); a specialist scope does not trace;
    - for every scope that is assigned a `decision` claim, the decision ledger row of the
      table below, copied beside its other checklist rows;
    - for a specialist or `combined` role, its checklist, copied from this table:
@@ -73,6 +74,7 @@ Outputs: `scope/<scope>.md` and `pass1/<scope>.md` for every pass-one scope.
    key for `auditor`, else the agent's default. The prompt is short and holds only:
    - the path of `audit-brief.md`;
    - the path of `common.md`;
+   - the path of `audit-evidence.md`;
    - the path of `scope/<scope>.md`;
    - the output path, `pass1/<scope>.md`;
    - the scratch folder, `tmp/agents/pass1-<scope>/`;
@@ -135,11 +137,11 @@ Outputs: `scope/<scope>.md` and `pass1/<scope>.md` for every pass-one scope.
       `${CLAUDE_PLUGIN_ROOT}/skills/cca/stages/5-pass-two.md` at once; do not wait for other scopes.
    4. Misses: enqueue a top-up `cca:auditor` for the scope. Before launching it, copy
       `pass1/<scope>.md` to `pass1/<scope>.pre-topup.md`. The prompt says "mode: top-up
-      after the barrier" and holds the paths of `audit-brief.md`, `common.md`, and
-      `scope/<scope>.md`, the missed digest and map paths with their hashes, the scope's
-      questions, the output path `pass1/<scope>.md`, and the scratch folder
-      `tmp/agents/pass1-<scope>-<n>/`, `<n>` counting the scope's top-ups from 1. The agent's standing
-      instructions cover the rest: apply every rule in each missed digest and every
+      after the barrier" and holds the paths of `audit-brief.md`, `common.md`,
+      `audit-evidence.md`, and `scope/<scope>.md`, the missed digest and map paths with
+      their hashes, the scope's questions, the output path `pass1/<scope>.md`, and the
+      scratch folder `tmp/agents/pass1-<scope>-<n>/`, `<n>` counting the scope's top-ups
+      from 1. The agent's standing instructions cover the rest: apply every rule in each missed digest and every
       answer in each missed map to the scope's files, not only the `potential finding`
       lines; cite the original document or source at its sha, never the digest or map;
       keep every existing line, drop only the final `status: complete` line, and append

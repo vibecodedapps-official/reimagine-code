@@ -67,17 +67,21 @@ Every run ends in exactly one terminal state, writes the report, and prints it.
 
 ## Effort tier
 
-- Tier: <low | medium | high | xhigh>
+- Tier: <medium | high | xhigh>
 - Why: <the estimate rule outcome in one or two sentences>
 - Risk floor: <applied, with the trigger | not applied, with why (incidental edit or no
   trigger)>
 - `--effort` request: <none | value, and whether it was below the floor (refused, run
   continued at high), at the floor (honored), or above the floor (honored)>
 - Re-evaluation after Step 4: <tier unchanged | rose to high, with the diff evidence>
-- Step 5 reviewer role resolved: <Codex `gpt-6-astra`, or Claude with the `code-review`
-  level, or the Opus substitute in a worktree run; the higher-risk criterion that held
+- Plan review: <the model that reviewed the plan, or the fallback that did; not repeated
+  after a tier rise>
+- Step 5 reviewer role resolved: <the tier's Codex reviewer by model id, or Claude with the
+  `code-review` level, or the Opus substitute in a worktree run; the higher-risk criterion that held
   (risk floor trigger, more than eight files, or a cited new module), or that none held;
   any switch to Claude after the plan, with its round or CI repair>
+- Model overrides in force: <each `.ccx.json` `models` key applied, with its value; each
+  value reported and ignored; or "none">
 
 ## What changed
 
@@ -144,8 +148,8 @@ non-blocking and anything out of scope. No issues were opened.
 
 ## Log
 
-- Implementer per slice: <slice, model (the tier's Codex model or `sonnet`), "codex" or the
-  Sonnet criterion; for a Codex slice the `--timeout` passed and any 3600 cap; any swap to
+- Implementer per slice: <slice, model (the tier's Codex model, `gpt-6-luna`, or `sonnet`),
+  "codex", "luna", or the Sonnet criterion; for a Codex slice the `--timeout` passed and any 3600 cap; any swap to
   `sonnet` with its reason or error>
 - Rounds used: <Step 3, Step 4 per slice, Step 5, Step 6 runs, CI repair cycles>
 - Elapsed time against the run budget: <duration, without the plan approval wait>

@@ -10,12 +10,14 @@ Stage 6 starts when stage 5 is `complete` or `failed` (every scope has finished 
 two and every map-correction top-up has finished).
 
 Inputs: `ledger/5.md` and the other run-directory inputs `${CLAUDE_PLUGIN_ROOT}/skills/cca/codex-request.md`
-lists (`audit-brief.md`, `common.md`, `claims.md`, the diffs and stats, the `pass2/`
-files), and the live inputs: `live/findings.md`, each `live/carried/<id>.md` it names,
+lists (`audit-brief.md`, `common.md`, `audit-evidence.md`, `claims.md`, the diffs and
+stats, the `pass2/` files), and the live inputs: `live/findings.md`, each `live/carried/<id>.md` it names,
 and its result copies (`${CLAUDE_PLUGIN_ROOT}/skills/cca/live.md`, "Derivation"). The
-result copies are not hashed, as `live.md` says. Each other live input is recorded in
-the stage entry with its hash, or `absent` when it does not exist; absent to present, or
-present to absent, is a change that reruns the stage (`resume.md`, step 5). `live/findings.md`
+result copies are not hashed, as `live.md` says. Every other input, `ledger/5.md`, each
+run-directory file the request lists, and each live input, is recorded in the stage
+entry's `inputs` with its hash (the `sentinels` map is not a substitute), or `absent`
+when a live input does not exist; absent to present, or present to absent, is a change
+that reruns the stage (`resume.md`, step 5). `live/findings.md`
 exists only on a run resumed with a live finding result. A `_test.drop_ack` naming
 `live/findings.md` applies like any other input.
 
@@ -32,7 +34,10 @@ for each batch `<k>` it answers, numbered from 2 (step 9).
    hashes.
 
 2. **Settle the call parameters** and keep them for the stage entry:
-   - model: `--codex-model`, else `gpt-6.1-sol`. Always the full id.
+   - model: the `--codex-model` id when one was given. When `codex-model` is `default`,
+     resolve it by the run's tier: low `gpt-6-luna`, medium and high `gpt-6.1-sol`.
+     Always the full id. The resolved id is what `codex_model` records, so a resumed
+     run sees the id and not `default`.
    - timeout in seconds: `--codex-timeout` when given (the command already rejected
      values outside 1 to 3,600), else by tier: low `1200`, medium `2400`, high `3600`.
      In a headless session, or when unsure whether a user can answer (the judgment
@@ -230,8 +235,8 @@ for each batch `<k>` it answers, numbered from 2 (step 9).
        headers and `missing` checks id-colon lines, not bodies.
 
      With no thread id, send it as a fresh call in the same form, and the file then also
-     names `common.md`, `audit-brief.md`, and `ledger/5.md` by their absolute paths under
-     `codex/inputs/`, not the whole request again. Handle its status as in step 7,
+     names `common.md`, `audit-evidence.md`, `audit-brief.md`, and `ledger/5.md` by their
+     absolute paths under `codex/inputs/`, not the whole request again. Handle its status as in step 7,
      except that a swap is replaced by stage 6 failing, since the first answer already
      exists.
    - Still unacknowledged after the follow-up: stage 6 fails. Keep the answer, list the
@@ -334,9 +339,9 @@ for each batch `<k>` it answers, numbered from 2 (step 9).
     in the stage entry, with scope `second-opinion-<k>` for batch `<k>` (scope
     `second-opinion` when it fills the role with one batch). The prompt holds the scratch
     folder `tmp/agents/second-opinion[-<k>]/` and the paths
-    of `audit-brief.md`, `common.md`, and that batch's request (`codex/request.md` or
-    `codex/request-<k>.md`, which the fallback reads by path), with the
-    instruction to answer the request as it asks, within its caps, and write the answer
+    of `audit-brief.md`, `common.md`, `audit-evidence.md`, and that batch's request
+    (`codex/request.md` or `codex/request-<k>.md`, which the fallback reads by path), with
+    the instruction to answer the request as it asks, within its caps, and write the answer
     to `codex/response.md` (batch `<k>` from 2: `codex/response-<k>.md`) ending with
     `status: complete`. Record a swap (role second opinion, from Codex `<model>` to
     `cca:adversary` on `fable`, reason; for the batches Codex did not carry, the partial swap

@@ -47,16 +47,16 @@ const heading = (dir, line) => {
 };
 
 test('release sets the suite version and the range everywhere, then lint asks for the changelog heading', () => inCopy((d) => {
-  const r = release(d, 'ccx', '0.7.0', '--floor', '0.7.0');
+  const r = release(d, 'ccx', '0.7.1', '--floor', '0.7.1');
   assert.equal(r.status, 1, r.out);
-  assert.ok(r.out.includes('CHANGELOG.md: no heading "## 0.7.0 - <YYYY-MM-DD>" for the suite version'), r.out);
+  assert.ok(r.out.includes('CHANGELOG.md: no heading "## 0.7.1 - <YYYY-MM-DD>" for the suite version'), r.out);
   assert.deepEqual(versions(d), {
-    suite: '0.7.0', ccx: '0.7.0', loop: '0.7.0', range: '>=0.7.0 <1.0.0', codex: '0.7.0',
-    docsClaude: '0.1.6', docsCodex: '0.1.6', cca: '0.10.2', catalog: '0.7.0', entries: { ccx: '0.7.0', 'ccx-loop': '0.7.0', cca: '0.10.2', 'repo-docs': '0.1.6' },
+    suite: '0.7.1', ccx: '0.7.1', loop: '0.7.1', range: '>=0.7.1 <1.0.0', codex: '0.7.1',
+    docsClaude: '0.1.6', docsCodex: '0.1.6', cca: '0.11.0', catalog: '0.7.1', entries: { ccx: '0.7.1', 'ccx-loop': '0.7.1', cca: '0.11.0', 'repo-docs': '0.1.6' },
   });
-  assert.ok(lines(d, 'plugins/ccx-loop/.claude-plugin/plugin.json').includes('    { "name": "ccx", "version": ">=0.7.0 <1.0.0" }'));
-  heading(d, '## 0.7.0 - 2026-10-04');
-  const again = release(d, 'ccx', '0.7.0', '--floor', '0.7.0');
+  assert.ok(lines(d, 'plugins/ccx-loop/.claude-plugin/plugin.json').includes('    { "name": "ccx", "version": ">=0.7.1 <1.0.0" }'));
+  heading(d, '## 0.7.1 - 2026-10-04');
+  const again = release(d, 'ccx', '0.7.1', '--floor', '0.7.1');
   assert.equal(again.status, 0, again.out);
   assert.match(again.out, /^lint: ok /m);
 }));
@@ -65,43 +65,43 @@ test('release sets repo-docs in its two manifests and its catalog entry only', (
   const r = release(d, 'repo-docs', '0.1.7');
   assert.equal(r.status, 0, r.out);
   assert.deepEqual(versions(d), {
-    suite: '0.6.2', ccx: '0.6.2', loop: '0.6.2', range: '>=0.2.0 <1.0.0', codex: '0.6.2',
-    docsClaude: '0.1.7', docsCodex: '0.1.7', cca: '0.10.2', catalog: '0.6.2', entries: { ccx: '0.6.2', 'ccx-loop': '0.6.2', cca: '0.10.2', 'repo-docs': '0.1.7' },
+    suite: '0.7.0', ccx: '0.7.0', loop: '0.7.0', range: '>=0.2.0 <1.0.0', codex: '0.7.0',
+    docsClaude: '0.1.7', docsCodex: '0.1.7', cca: '0.11.0', catalog: '0.7.0', entries: { ccx: '0.7.0', 'ccx-loop': '0.7.0', cca: '0.11.0', 'repo-docs': '0.1.7' },
   });
   assert.ok(lines(d, 'plugins/repo-docs/.codex-plugin/plugin.json').includes('  "author": { "name": "vibecodedapps.net" },'));
 }));
 
 test('release sets cca in its manifest and its catalog entry only', () => inCopy((d) => {
-  const r = release(d, 'cca', '0.10.3');
+  const r = release(d, 'cca', '0.11.1');
   assert.equal(r.status, 0, r.out);
   assert.deepEqual(versions(d), {
-    suite: '0.6.2', ccx: '0.6.2', loop: '0.6.2', range: '>=0.2.0 <1.0.0', codex: '0.6.2',
-    docsClaude: '0.1.6', docsCodex: '0.1.6', cca: '0.10.3', catalog: '0.6.2', entries: { ccx: '0.6.2', 'ccx-loop': '0.6.2', cca: '0.10.3', 'repo-docs': '0.1.6' },
+    suite: '0.7.0', ccx: '0.7.0', loop: '0.7.0', range: '>=0.2.0 <1.0.0', codex: '0.7.0',
+    docsClaude: '0.1.6', docsCodex: '0.1.6', cca: '0.11.1', catalog: '0.7.0', entries: { ccx: '0.7.0', 'ccx-loop': '0.7.0', cca: '0.11.1', 'repo-docs': '0.1.6' },
   });
   assert.ok(lines(d, 'plugins/cca/.claude-plugin/plugin.json').includes('  "license": "Apache-2.0",'));
-  assert.ok(lines(d, 'plugins/cca/skills/cca/SKILL.md').includes('  "plugin_version": "0.10.3",'));
-  assert.ok(lines(d, 'plugins/cca/skills/cca/stages/1-orient.md').some((l) => l.includes('`plugin_version` `0.10.3`, empty `approvals`')));
-  assert.ok(lines(d, 'plugins/cca/skills/cca/stages/resume.md').includes('   - `plugin_version`, which for this release is `0.10.3`.'));
+  assert.ok(lines(d, 'plugins/cca/skills/cca/SKILL.md').includes('  "plugin_version": "0.11.1",'));
+  assert.ok(lines(d, 'plugins/cca/skills/cca/stages/1-orient.md').some((l) => l.includes('`plugin_version` `0.11.1`, empty `approvals`')));
+  assert.ok(lines(d, 'plugins/cca/skills/cca/stages/resume.md').includes('   - `plugin_version`, which for this release is `0.11.1`.'));
   assert.ok(r.out.includes('plugins/cca/skills/cca/SKILL.md, plugins/cca/skills/cca/stages/1-orient.md, plugins/cca/skills/cca/stages/resume.md'), r.out);
 }));
 
 test('release rejects a malformed request', () => inCopy((d) => {
-  for (const args of [['ccx', '0.2'], ['repo-docs', '0.1.3', '--floor', '0.1.0'], ['cca', '0.9.1', '--floor', '0.1.0'], ['ccx-loop', '0.6.2'], ['ccx', '0.6.2', '--floor']]) {
+  for (const args of [['ccx', '0.2'], ['repo-docs', '0.1.3', '--floor', '0.1.0'], ['cca', '0.9.1', '--floor', '0.1.0'], ['ccx-loop', '0.7.0'], ['ccx', '0.7.0', '--floor']]) {
     const r = release(d, ...args);
     assert.equal(r.status, 2, `${args.join(' ')}: ${r.out}`);
     assert.ok(r.out.startsWith('usage: node tools/release.mjs ccx <version> [--floor <version>]'), r.out);
   }
-  assert.equal(versions(d).suite, '0.6.2');
+  assert.equal(versions(d).suite, '0.7.0');
 }));
 
 test('release writes no file when one cannot be edited cleanly', () => inCopy((d) => {
   const p = join(d, 'plugins/ccx-codex/plugin.json');
-  writeFileSync(p, readFileSync(p, 'utf8').replace('\n  "version": "0.6.2",', '\n\t"version": "0.6.2",'));
-  const r = release(d, 'ccx', '0.7.0');
+  writeFileSync(p, readFileSync(p, 'utf8').replace('\n  "version": "0.7.0",', '\n\t"version": "0.7.0",'));
+  const r = release(d, 'ccx', '0.7.1');
   assert.equal(r.status, 1, r.out);
   assert.ok(r.out.includes('release: plugins/ccx-codex/plugin.json: cannot set the version without changing anything else; no file was written'), r.out);
-  assert.equal(versions(d).suite, '0.6.2');
-  assert.equal(versions(d).ccx, '0.6.2');
+  assert.equal(versions(d).suite, '0.7.0');
+  assert.equal(versions(d).ccx, '0.7.0');
 }));
 
 test('release raises a plugin changed since its tag, so lint passes again', () => inCopy((d) => {
@@ -110,13 +110,13 @@ test('release raises a plugin changed since its tag, so lint passes again', () =
   git('init', '-q', '-b', 'main');
   git('add', '-A');
   git('commit', '-q', '-m', 'release');
-  git('tag', 'ccx--v0.6.2');
-  git('tag', 'ccx-loop--v0.6.2');
+  git('tag', 'ccx--v0.7.0');
+  git('tag', 'ccx-loop--v0.7.0');
   appendFileSync(join(d, 'plugins/ccx-loop/README.md'), 'More.\n');
-  heading(d, '## 0.6.3 - 2026-10-04');
-  const r = release(d, 'ccx', '0.6.3');
+  heading(d, '## 0.7.1 - 2026-10-04');
+  const r = release(d, 'ccx', '0.7.1');
   assert.equal(r.status, 0, r.out);
-  assert.deepEqual([versions(d).loop, versions(d).range], ['0.6.3', '>=0.2.0 <1.0.0']);
+  assert.deepEqual([versions(d).loop, versions(d).range], ['0.7.1', '>=0.2.0 <1.0.0']);
 }));
 
 test('release keeps CRLF line endings, as in a Windows checkout', () => inCopy((d) => {

@@ -78,7 +78,7 @@ inputs:
 flags:
   effort: auto | low | medium | high
   no-codex: true | false
-  codex-model: gpt-6.1-sol | <id>
+  codex-model: default | <id>
   codex-timeout: default | <seconds>
   models: none | role=model,...
   questions: default | <file>
@@ -118,8 +118,9 @@ run can resume.
 ### Hard rules
 
 The eight hard rules are in `${CLAUDE_PLUGIN_ROOT}/skills/cca/common.md`, which stage 1 copies into the run
-directory. Read them now and hold to them for the whole run. In the orchestrator they
-mean, in addition:
+directory (with `audit-evidence.md`, the rules only the auditor and the adversary use).
+Read them now and hold to them for the whole run. In the orchestrator they mean, in
+addition:
 
 1. You are the only component that talks to the user, calls Codex, runs `git fetch`,
    exports pinned trees, and writes `stages.json`, `runs.json`, the ledger files,
@@ -164,11 +165,11 @@ Approvals recorded in `stages.json` are not asked again.
 | Role | Default | Fallback when the default fails |
 |---|---|---|
 | Orchestrator | you, in the main session | none, the run ends `blocked` |
-| Digester (stage 2) | `cca:digester`, opus | retry once, then the same agent on fable, else the scope fails |
-| Domain mapper (stage 3) | `cca:mapper`, opus | as for the digester |
+| Digester (stage 2) | `cca:digester`, haiku | retry once, then the same agent on fable, else the scope fails |
+| Domain mapper (stage 3) | `cca:mapper`, sonnet | as for the digester |
 | Auditor (stage 4, top-ups) | `cca:auditor`, opus | as for the digester |
 | Adversary (stages 5 and 7) | `cca:adversary`, opus, fresh context | as for the digester |
-| Second opinion (stage 6) | Codex, `--codex-model` (default `gpt-6.1-sol`), through `ccx:ask` | `cca:adversary` on fable, else opus, launched once per batch, each given its Codex request; also for the batches of ids that neither the Codex request nor its follow-up carried (a partial swap) |
+| Second opinion (stage 6) | Codex, `--codex-model` (default by tier: `gpt-6-luna` at low, `gpt-6.1-sol` at medium and high), through `ccx:ask` | `cca:adversary` on fable, else opus, launched once per batch, each given its Codex request; also for the batches of ids that neither the Codex request nor its follow-up carried (a partial swap) |
 | Merger (stage 7) | `cca:merger`, sonnet | you merge |
 
 An agent **fails** when it returns an error, or when its output file lacks
@@ -201,7 +202,9 @@ is recorded and the run ends `partial`.
    not learn the effective model, so the report says "requested", never "used".
 3. Keep the prompt short: the absolute paths of `audit-brief.md`, `common.md`, the
    scope file or scope list, and the output file, plus the scope's questions and any
-   stage-specific item the stage file names. An agent with Bash (digester, mapper,
+   stage-specific item the stage file names. The prompt of an auditor or an adversary,
+   in every mode, also gives the absolute path of `audit-evidence.md`; the digester,
+   mapper, and merger prompts do not. An agent with Bash (digester, mapper,
    auditor, adversary) also gets its scratch folder, `<run dir>/tmp/agents/<stage>-<scope>[-<n>]/`,
    unique per launch (`<n>` for a top-up or a batch), which you create before the launch
    and name in the prompt next to the output file. It is for the agent's own command
@@ -486,7 +489,7 @@ Read `runs.json` with the Read tool and branch on this run's entry:
 
 ```json
 {
-  "plugin_version": "0.10.2",
+  "plugin_version": "0.11.0",
   "approvals": [ { "kind": "fetch", "target": "<repo name>:<remote>",
                    "decision": "approved", "time": "2026-09-30T14:15:00Z",
                    "commands": ["git -C <repo> fetch --no-tags --refmap= ..."] } ],
@@ -494,7 +497,8 @@ Read `runs.json` with the Read tool and branch on this run's entry:
     "4": {
       "status": "complete",
       "inputs": { "audit-brief.md": "<hash>", "groups.md": "<hash>",
-                  "claims.md": "<hash>", "common.md": "<hash>" },
+                  "claims.md": "<hash>", "common.md": "<hash>",
+                  "audit-evidence.md": "<hash>" },
       "outputs": ["pass1/g1.md", "pass1/tests.md"],
       "agents": [ { "type": "cca:auditor", "model": "opus", "scope": "g1",
                     "started": "...", "ended": "...", "tokens": 81234,

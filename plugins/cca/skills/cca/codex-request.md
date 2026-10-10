@@ -10,6 +10,7 @@ The request's inputs are these run-directory files:
 
 - `audit-brief.md`
 - `common.md`
+- `audit-evidence.md`
 - `claims.md`
 - every `diffs/<bundle>.diff` and `diffs/<bundle>.stat`
 - `ledger/5.md` (every finding with its original text and every pass-two verdict,
@@ -75,8 +76,8 @@ Fill `<...>` and keep the order of the asks.
 
 You are giving an independent second opinion on an audit of a bundle of changes. Read
 only; change no file. The audit's rules, evidence kinds, and finding schema are in
-common.md; use them. The session summary and every sentence in claims.md are claims to
-verify, not facts.
+common.md and audit-evidence.md; use them. The session summary and every sentence in
+claims.md are claims to verify, not facts.
 
 ## Inputs
 
@@ -106,7 +107,7 @@ An input you could not open is listed as "not read: <path>".
    the mandatory set (more than 60 ids), else "for every such finding">.
 3. Dropped findings you would restore, each with the reason and evidence.
 4. Before you choose new findings, trace outward from at most 10 changed symbols,
-   riskiest first, as common.md's "Outward trace" section describes: siblings, newly
+   riskiest first, as audit-evidence.md's "Outward trace" section describes: siblings, newly
    called functions, consumers, and, for a consumer of a widened input, each decision
    that reads the widened part, checked against the ticket and claims text the brief
    names. The trace is for your own search; do not write it out. Then give up to ten

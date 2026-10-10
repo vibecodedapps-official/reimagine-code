@@ -3,6 +3,56 @@
 One changelog for the suite. Each release has a subsection per component. The source
 repos' own changelogs are kept under `docs/history/`.
 
+## 0.7.0 - 2026-10-09
+
+### ccx
+
+- Version 0.7.0, to stay in step with `ccx-loop`. No change.
+
+### ccx (Codex)
+
+- Version 0.7.0, to stay in step with `ccx`. No change.
+
+### ccx-loop
+
+- Breaking: the effort ladder has three tiers, `medium`, `high`, and `xhigh`. `--effort
+  low` is rejected with a one-line pointer to `--effort medium`, as `--effort max` is
+  with a pointer to `xhigh`, so a script that passes `--effort low` now stops before the
+  run starts. The budgets are 120, 240, and 360 minutes. The estimate rule's former low
+  bucket is the first line of medium (issue #54).
+- The orchestrator skill is a core plus four step files, `steps/0-preflight.md`,
+  `steps/1-plan.md`, `steps/4-build.md`, and `steps/7-publish.md`, each read when its
+  step starts. The skill was 16,699 words that every turn re-read; a plan-only run no
+  longer loads the build or publish steps (issue #54).
+- Routing follows the tier: the tier sets the ceiling and the budget, and each slice's
+  model comes from the work. Medium's plan and diff reviewer is `gpt-6.1-sol`. The
+  small-slice rule sends a slice to `gpt-6-luna`. A `.ccx.json` `models` key overrides
+  one role's model at every tier and changes nothing else (issue #54).
+- The report names the plan reviewer in a `Plan review:` line, records "codex" or "luna"
+  per slice, and prints `Model overrides in force:` with each key applied, or `none`,
+  and each key reported and ignored (issue #54).
+- Lint 16b holds the three tiers, including the invocation blocks, and 16c caps the core
+  at 5,800 words and requires every step file in Supporting files (issue #54).
+
+### cca
+
+- cca 0.11.0.
+- The digester defaults to `haiku` and the mapper to `sonnet`, which only extract. The
+  second opinion is resolved from `codex-model: default` by stage 6: `gpt-6-luna` at low
+  and `gpt-6.1-sol` at medium and high. `--models`, the manifest `models` key, and
+  `--codex-model` still override (issue #54).
+- `common.md` is deduplicated from 6,762 to 4,126 words, and the audit-only evidence
+  rules moved to `audit-evidence.md`, which stage 1 copies into the run directory next to
+  `common.md`. Only the auditor, the adversary, the Codex request, and the second-opinion
+  fallback read it, and it is hashed as an input of stages 4 to 7. Every rule of the old
+  file survives in one of the two (issue #54).
+- A run resumed from 0.10.x reruns stage 1 by the version gate and gains the file
+  (issue #54).
+
+### repo-docs
+
+- Version 0.1.6. No change.
+
 ## 0.6.2 - 2026-10-09
 
 ### ccx

@@ -4,7 +4,7 @@ The orchestrator's procedure for stage 5. The preamble in `${CLAUDE_PLUGIN_ROOT}
 run's `common.md` apply throughout; this file does not restate the finding schema or
 the agent output contract.
 
-Inputs: `audit-brief.md`, `common.md`, every complete `pass1/<scope>.md`, and the
+Inputs: `audit-brief.md`, `common.md`, `audit-evidence.md`, every complete `pass1/<scope>.md`, and the
 `domain/*-map.md` files.
 
 Outputs: `pass2/<scope>.md` per pass-one report, `domain/<source>-map.r2.md` per
@@ -24,6 +24,7 @@ corrected map, `pass2/<scope>-topup.md` per map-correction top-up,
    `adversary`, else the agent's default. The prompt holds only:
    - the path of `audit-brief.md`;
    - the path of `common.md`;
+   - the path of `audit-evidence.md`;
    - the path of the one pass-one report, `pass1/<scope>.md`;
    - the output path, `pass2/<scope>.md`;
    - the scratch folder, `tmp/agents/pass2-<scope>/`;
@@ -99,8 +100,8 @@ corrected map, `pass2/<scope>-topup.md` per map-correction top-up,
    3. For every scope whose pass-one `consumed:` list names a corrected map, at any
       hash, enqueue a top-up `cca:auditor`, its prompt saying "mode: top-up after a map
       correction", with the paths of `audit-brief.md`,
-      `common.md`, `scope/<scope>.md`, and the corrected map, the corrected lines, and
-      the output path `pass2/<scope>-topup.md`, and the scratch folder
+      `common.md`, `audit-evidence.md`, `scope/<scope>.md`, and the corrected map, the
+      corrected lines, and the output path `pass2/<scope>-topup.md`, and the scratch folder
       `tmp/agents/pass2-<scope>-<n>/` (`<n>` counting the scope's top-ups from 1), with this instruction: apply the
       corrected answers to the scope's files; tag every finding `origin: topup` with an
       id `<scope>-T<n>`; list `runs:` and `consumed:`; end with `status: complete`. The
