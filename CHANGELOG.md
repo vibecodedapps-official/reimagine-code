@@ -3,6 +3,47 @@
 One changelog for the suite. Each release has a subsection per component. The source
 repos' own changelogs are kept under `docs/history/`.
 
+## 0.7.1 - 2026-10-10
+
+### ccx
+
+- The installed Windows rule for Codex says "PowerShell", not "PowerShell 7", since Codex
+  runs the PowerShell it finds. `/ccx:rules` offers the update as for any changed block
+  (issue #51).
+
+### ccx (Codex)
+
+- Version 0.7.1, to stay in step with `ccx`. No change.
+
+### ccx-loop
+
+- Each step file ends with its hand-off: Step 0 to `steps/1-plan.md`, Step 3.6 to
+  `steps/4-build.md` for a run that goes on, and Step 6 to `steps/7-publish.md` on the
+  `github` host and to Final report handling and `report.md` at every end. A lint check
+  keeps the hand-offs (issue #56).
+- `--no-publish` withholds publication, not Step 7: on the `github` host the run reads
+  `steps/7-publish.md`, whose opening ends it `prepared` and writes a continued PR's
+  body first when that applies (issue #56).
+- Check discovery names the standard entries of any build tool manifest, with Cargo, Go,
+  and Gradle beside the npm, make, and Python examples (issue #51).
+
+### cca
+
+- cca 0.12.0.
+- Stage 1 reads the open pull requests on a GitHub bundle's base when its run-once list
+  adds a name, and `collisions.sh` lists other PRs' files in the same directory with the
+  same file name or leading version token. The brief gives them as candidates; the
+  auditor compares the runner's journal keys before filing a finding. The result is
+  hashed for resume, and a failed read is a gap that resume retries (issue #27).
+- Ignored build output is grouped under a logged run for any build output directory the
+  repo's ignore rules exclude, not only `bin/` and `obj/` (issue #51).
+- The handoff's ticket fields say how each forge fills them (issue #51).
+- A run resumed from 0.11.0 reruns stage 1 by the version gate.
+
+### repo-docs
+
+- Version 0.1.6. No change.
+
 ## 0.7.0 - 2026-10-09
 
 ### ccx
