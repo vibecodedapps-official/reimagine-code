@@ -133,7 +133,7 @@ prompt assigns, in addition to steps 1 to 11.
 
 ## Matcher and run-once checks
 
-A group scope or the `combined` scope runs both checks on its files, in every tree mode,
+A group scope or the `combined` scope runs these checks on its files, in every tree mode,
 with `git show`, `git log`, and `git grep` only. A specialist scope does not run them.
 
 1. Matchers. For each literal string or data shape the change adds or alters a match on (a
@@ -164,6 +164,20 @@ with `git show`, `git log`, and `git grep` only. A specialist scope does not run
    `audit-evidence.md` says. For each such file in your scope, read the old script with
    `git show <merge-base>:<old path>` and the new one at the head sha, and compare the
    two directly.
+3. Open pull request candidates. Under a new name, the brief's run-once list may give
+   `candidate:` lines: another open PR adds or renames a file in the same directory with
+   the same file name or the same leading version token. A candidate is a lead, not a
+   finding. Find how the runner turns a script into its journal key, as "Rerun of a
+   renamed run-once script" in `audit-evidence.md` says, and compare the keys of both
+   names, whatever the line's kind (a same-name line also has the same version token).
+   Keys that differ, shown by quoted runner lines, clear the candidate: say so in your
+   output with the quote. Keys that match, or no runner found, are a finding on the new
+   script: state the forge fact apart from its effect (the other PR's URL and path, and
+   that the brief read the list at stage 1), then the effect (where both merge, the
+   runner applies one script and skips the other, or fails). Label it `unverified
+   assumption`, so severity is at most `medium`, and fill `live check` with which PR
+   merges first and, when no runner was found, how the runner keys its journal. A `cut`
+   line, or `open PRs not read`, is a gap in what could be checked, never a finding.
 
 ## Top-up mode
 

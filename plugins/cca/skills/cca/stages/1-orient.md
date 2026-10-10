@@ -568,6 +568,30 @@ For each bundle, record:
   moved in from outside the patterns shows as `A` and is listed as new. The command only
   reads. A `run_once` key that matches no changed file gives the list `none`. A bundle
   without the key has no list.
+- the open pull request check, for a bundle whose PR is a `github:` PR and whose run-once
+  list has a new name (an `A` entry, or the new path of an `R` or `C` entry). Two open
+  PRs on one base can each add a script that a runner journals under the same key, and
+  the bundle's own PR shows only one of them. Read the open PRs on the bundle's base by
+  shell redirect, as step 2's reads, with `<host>`, `<owner>`, `<repo>`, and
+  `<baseRefName>` from `forge/<bundle>/pr.json`:
+  `gh pr list -R <host>/<owner>/<repo> --base <baseRefName> --state open --limit 100 --json number,url,headRefName,changedFiles,files > forge/<bundle>/open-prs.json`
+  Then run
+  `sh ${CLAUDE_PLUGIN_ROOT}/skills/cca/scripts/collisions.sh forge/<bundle>/open-prs.json <PR number> 100 <new path>... > forge/<bundle>/collisions.tsv`,
+  one argument per new path, and hash `collisions.tsv` with `git hash-object
+  --no-filters` into `forge_hashes` (step 2), not `open-prs.json`, so an open PR that
+  collides with nothing does not invalidate stage 1 on resume. The script's header gives
+  the rule: a candidate is another PR's file, not deleted, in the same directory as a new
+  path, with the same file name or the same leading version token. Other directories are
+  not compared. gh returns at most 100 files per PR, and the script prints a `cut` line
+  for a PR with more (its `changedFiles`); `cut-list` means the first 100 open PRs only.
+  When the `gh` read fails, it is a gap, as step 2's closing-issue reads: remove the
+  file it left, write no `collisions.tsv`, record `forge/<bundle>/collisions.tsv` in
+  `forge_gaps` with the PR's `url` from `pr.json`, and list it in the brief's Forge
+  section with the host and gh's first error line. A script exit of 2 stops the run with
+  its line, and so does a refusal of the script by the session's permission check; a
+  refusal is never a gap. No other bundle is read: an export PR, a non-GitHub host, a
+  bundle with no `run_once`, and a list with no new name get no check, and the brief
+  says which.
 
 For every reference and source of truth with a `path`, record its pinned sha:
 `git -C <path> rev-parse <ref>^{commit}`.
@@ -839,7 +863,13 @@ claim has a scope that stage 4 schedules; reassign any that does not by rule 3.
    files changed on both sides, stack, the `ticket_token` patterns when the bundle has
    them, the run-once list of step 3 when the bundle has `run_once`: the patterns, then
    one line per file with its status letter and score, its path, for `R` and `C` its old
-   path (`from <old path>`), and `exists at merge-base` or `new`, or `none`; for a
+   path (`from <old path>`), and `exists at merge-base` or `new`, or `none`; under each
+   new name, the open pull request check of step 3: one `candidate:` line per
+   `collision` row (the kind, the other PR's URL, its path, and its change type), or
+   `no candidate among <k> open PRs` (`<k>` from `open-prs.json`, the bundle's own PR
+   left out), then one line per `cut` or `cut-list` row saying no candidate was found
+   among the files read, or `open PRs not read` with the gap, or the reason no check
+   ran; for a
    bundle with `test_command`, step 6b's line: the path
    `revert/<bundle>.md` and its verdict counts line, or `no changed tests to run`; the
    head sha is recorded as `headRefOid` for a GitHub PR, and the

@@ -37,6 +37,7 @@ allowed-tools:
   - Bash(git -C * ls-tree *)
   - Bash(git -C * cat-file *)
   - Bash(gh pr view *)
+  - Bash(gh pr list *)
   - Bash(gh issue view *)
 ---
 
@@ -54,8 +55,8 @@ state-file, and probe commands (such as the export script, `rm -rf` and `mkdir` 
 directory, the lock's `mkdir` and `rmdir`, `sleep`, `stat`, `find`,
 `sha256sum`, `shasum`, `command -v jq`, `jq`, `awk`, `mv -f`, `wc -c`, `codex --version`,
 and the `sh` runs of the scripts in `${CLAUDE_PLUGIN_ROOT}/skills/cca/scripts/`:
-`readonly.sh`, `handoff.sh`, `work-items.sh`, `working-tree.sh`, `live.sh`, and
-`ledger.sh`) follow the session's permission mode; tell the user once, before stage 1,
+`readonly.sh`, `handoff.sh`, `work-items.sh`, `working-tree.sh`, `live.sh`, `ledger.sh`,
+and `collisions.sh`) follow the session's permission mode; tell the user once, before stage 1,
 that they may prompt. `git fetch` (with its `git ls-remote --tags` check) and every act
 write are not pre-approved, and you also ask for them in words first.
 
@@ -535,10 +536,12 @@ Read `runs.json` with the Read tool and branch on this run's entry:
 5. Stage-specific keys: stage 1 `inputs` also records `forge_hashes` (the hashed `gh`
    files under `forge/`: `pr.hash.json`, a `jq` projection of the unprojected
    `pr.json` that leaves out the head and base shas and viewer-dependent fields,
-   `pr-threads.json`, `<ticket>.json`, and `<ticket>.parent.json`, by run-relative
-   path, each with its hash, compared by resume; `pr.json` itself is not hashed),
-   `forge_gaps` (each such file a failed closing-issue or parent read did not write, by
-   run-relative path, with the ticket's URL, retried by resume), the
+   `pr-threads.json`, `<ticket>.json`, `<ticket>.parent.json`, and the open pull
+   request check's `collisions.tsv`, by run-relative path, each with its hash, compared
+   by resume; `pr.json` and `open-prs.json` are not hashed), `forge_gaps` (each such
+   file a failed closing-issue, parent, or open pull request read did not write, by
+   run-relative path, with the ticket's URL, or the PR's URL for `collisions.tsv`,
+   retried by resume), the
    `headRefOid` of each
    GitHub PR bundle, which is its pinned head, and its `baseRefOid`, information only
    (the base as GitHub last evaluated it, never pinned or compared: the pinned base is

@@ -169,14 +169,25 @@ never loses a finished one. With `--live`, it first imports approved live check 
      failure stops resume with one line, since the brief's evidence cannot be confirmed
      current; it is never treated as a difference. A difference invalidates stage 1.
      So does a stage 1 entry of a run with any `github:` PR or ticket that has no
-     `forge_hashes` map (a run recorded before the map existed). Keep each
+     `forge_hashes` map (a run recorded before the map existed). For
+     `forge/<bundle>/collisions.tsv`, rerun the open pull request check of `1-orient.md`
+     step 3 into a temporary directory, not over the run's files: the new paths from
+     that step's run-once `git diff` at the recorded shas (step 3 has already confirmed
+     them) with the patterns of the saved `manifest.json`, the `gh pr list` with the
+     host, owner, and repo of the `url` and the `baseRefName` and `number` in
+     `forge/<bundle>/pr.json.new`, then the script; hash the script's output. Check the
+     exit code of each of the three, as above: a failed one stops resume, and an empty
+     path list from a failed `git diff` is never read as no new name. Keep each
      `forge/<bundle>/pr.json.new` until step 6 picks the first stage to rerun; step 6
      removes them unless that stage is 1 (then stage 1 renames them, `1-orient.md`
      section C), and any stop removes them;
    - the stage 1 `forge_gaps`: for each path in the map, run the `gh` command of
      `1-orient.md` step 2 that would have written it (the ticket read for
      `<ticket>.json`, the parent read for `<ticket>.parent.json`), with the host,
-     owner, repo, and number of the ticket URL the map gives, and its output discarded.
+     owner, repo, and number of the ticket URL the map gives, and its output discarded;
+     for a path ending in `collisions.tsv`, the `gh pr list` of `1-orient.md` step 3,
+     with the host, owner, and repo of the PR URL the map gives and the `baseRefName`
+     in `forge/<bundle>/pr.json.new`.
      Exit 0 means the evidence can now be read, which invalidates stage 1, so the rerun
      reads it. A non-zero exit leaves the gap as it was: it is neither a difference nor
      a stop, since the read can keep failing for a reason that does not change, such as
