@@ -207,8 +207,8 @@ name a plugin are rerun under the new names and recorded here.
     0.3.0, and 2026-10-05 for 0.3.1, each on macOS and Windows, from the public
     repository, 2026-10-06 for 0.3.2, cca 0.9.1, and repo-docs 0.1.5 on macOS and
     Windows, 2026-10-06 for 0.4.0 and 0.5.0 on macOS, and 2026-10-07 for 0.6.0 and cca
-    0.10.0 on Windows, and 2026-10-10 for 0.7.0 and cca 0.11.0 on macOS; see the
-    records.
+    0.10.0 on Windows, and 2026-10-10 for 0.7.0 and cca 0.11.0 on macOS and Windows;
+    see the records.
 19. **Windows.** Setup: a Windows 11 machine with both CLIs from npm, the suite
     installed as in item 18, and a test repository checked out under a path that holds
     a space. Command: `/ccx:ask` and `/ccx:implement` with a one-line change;
@@ -219,8 +219,9 @@ name a plugin are rerun under the new names and recorded here.
     hook adds its reminder on both hosts. Covers R53. Rerun when the bridge's spawn code,
     the rules command, or the hook changes. Run 2026-10-03, 2026-10-04 for 0.2.0,
     2026-10-05 for 0.3.1 except the symbolic links and a real Ctrl-C, and 2026-10-06 for
-    0.3.2 except the symbolic links and a folder name ending in a space; see the
-    records.
+    0.3.2 except the symbolic links and a folder name ending in a space, and
+    2026-10-10 for 0.7.0 except the Ctrl-C, the symbolic links, and the trailing space;
+    see the records.
 20. **Reviewer routing.** Setup: scratch git repositories as in item 7, with a local bare
     `origin`; `ccx-loop` installed from this repository's catalog; Codex logged in.
     Command:
@@ -3104,4 +3105,49 @@ set its own `CODEX_HOME`.
 - **Item 16 passed for this release.** In the new profile, `claude plugin details`
   reported about 956 always-on tokens for `ccx` and about 318 for `ccx-loop`, under 1,300
   and 510.
-- Not run: Windows, items 18 and 19, for this release.
+- Items 18 and 19 on Windows: see the next record.
+
+### 2026-10-10: release ccx 0.7.0, ccx-loop 0.7.0, and cca 0.11.0, items 18 and 19, Windows
+
+Windows 11 Pro 10.0.26200, PowerShell 7.6.6, Git 2.56.0.windows.2, Node 26.4.0, with
+Claude Code 2.1.288 and codex-cli 0.160.0 installed from npm into a scratch prefix (the
+newest versions the machine's seven-day `min-release-age` allowed; npm's allow-scripts
+rule skipped Claude Code's postinstall, and both CLIs ran). Git credentials were off as
+in the 0.6.0 Windows record. `git ls-remote` read `main` at 3dc918e and the three tags
+peeling to it.
+
+- **Item 18 passed on Windows for 0.7.0, from the public repository.**
+  - New scratch profiles `claude-070` and `codex-070`, with copies of the author's logins.
+    `claude plugin marketplace add vibecodedapps-official/reimagine-code`, then `claude
+    plugin install ccx-loop@reimagine-code` first, which printed "(+ 1 dependency:
+    ccx)"; `install ccx` then said it was already installed. `ccx` and `ccx-loop` 0.7.0,
+    `cca` 0.11.0, and `repo-docs` 0.1.6 installed and enabled, each recording 3dc918e.
+    The install printed "1 userConfig option not yet set", as in 0.6.0.
+  - `codex plugin marketplace add` and `codex plugin add` for `ccx` and `repo-docs`:
+    `codex plugin list` showed `ccx` 0.7.0 from `plugins/ccx-codex` and `repo-docs` 0.1.6,
+    installed and enabled.
+  - In a new repository under `C:\recode accept\ccx070\repo`, headless `/ccx:setup`
+    passed: `windows sandbox: elevated` from the scratch `config.toml`, the ChatGPT login,
+    `workspace-write` proven, and the allow rule naming the 0.7.0 `scripts/ccx.mjs` with
+    forward slashes. `/ccx:ask` printed "51" and `status: ok`; `git status` stayed clean.
+- **Item 19 passed on Windows for 0.7.0.**
+  - `/ccx:implement` through a project skill added one line to `math.mjs`, reported HEAD
+    unchanged and ` M math.mjs`, and `status: ok`. A first run made no change, because
+    the fixture copied from 0.3.2 already held the line the skill named; the skill was
+    pointed at a new line and run again.
+  - `/ccx:rules --options core,windows` on a `CLAUDE.md` of 4 CRLF lines: both targets
+    planned `ready`; after apply the file held 90 CRLF lines and no bare LF, the four
+    lines above the block kept, and a backup written. Status read `current` for both
+    targets, and still `current` after the file was converted to LF.
+  - Hook, Claude Code: `git commit --allow-empty` through `PreToolUse:Bash` and `git -C
+    "<path>" commit --allow-empty` through `PreToolUse:PowerShell` each carry the
+    reminder in their transcripts; `echo "git commit"` got none.
+  - Hook, Codex: a `codex exec` commit run by the author before trusting the hook got no
+    reminder. After the author trusted the two `pre_tool_use` entries in `/hooks`, the
+    same commit's session file holds the reminder as a developer message.
+  - Observed: step 3 of the rules command asks about each target separately, but the
+    session asked about both in one message and took one "yes" as applying both.
+  - The login copies were deleted after each run.
+- Not run: the Ctrl-C, symbolic-link, and trailing-space cases.
+- Left on the machine: the scratch profiles `claude-070` and `codex-070` without the
+  Codex login, the test repository, and the logs under `~/.cache/recode-acceptance/i070`.
