@@ -1541,20 +1541,19 @@ Issues #27, #51, and #56, planned with three Codex `gpt-6-astra` critique rounds
 blocking objections in the first, two in the second, none in the third) and built in
 one pull request. Each issue 51 item is decided here before its change.
 
-1. **Issue 56: the miss did not reproduce; the hand-offs are added anyway.** On Windows
-   the two item 27 build runs and three more override runs on 0.7.0's skill all read
-   `steps/4-build.md` after the plan was final and `report.md` before the report, one of
-   them through `cat` in Bash calls (acceptance record "ccx-loop 0.7.1, the step
-   hand-offs"). So the macOS override run is 1 miss in 7 build runs, and its cause is
-   unverified. Its evidence was pulled from the log by a reader, and a read inside a
-   combined `cat` is the one way it could have been missed; the macOS log was not
-   reachable from this machine to check. Found while reading, and true on its own: the
+1. **Issue 56: the miss was a measurement error; the hand-offs are added anyway.** On
+   Windows the two item 27 build runs and three more override runs on 0.7.0's skill all
+   read `steps/4-build.md` after the plan was final and `report.md` before the report,
+   one of them through `cat` in Bash calls (acceptance record "ccx-loop 0.7.1, the step
+   hand-offs"). The macOS override run's log, rechecked on macOS, shows it read both
+   too, each through a `cat` at the end of a long Bash call that the first reader cut
+   short (acceptance record "item 27's override run log rechecked for issue 56"). So
+   it is 0 misses in 7 build runs. Found while reading, and true on its own: the
    only text that sent a run from Step 3.6 to `steps/4-build.md` was the core's
    Supporting files line, far back in context, and nothing at the end of Step 6 named
    `report.md`. Each step file now ends with its hand-off, and lint 16d keeps them; the
    lint guards the text, it is not a behavioral check. Three override runs on the
-   branch read the same files at the same points. The issue stays open: more macOS runs
-   would close it, or a miss on 0.7.1 would show the hand-offs are not enough.
+   branch read the same files at the same points. The recheck closes the issue.
 2. **`--no-publish` withholds publication, not Step 7.** `steps/7-publish.md` is where a
    `--no-publish` run "ends in `prepared` here" and where a `continue` run with one open
    PR writes the continued-PR body that the `prepared` report's `gh pr comment` command
