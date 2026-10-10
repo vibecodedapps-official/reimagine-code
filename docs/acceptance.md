@@ -447,9 +447,10 @@ name a plugin are rerun under the new names and recorded here.
     the report has a finding on `002_add_status.sql` for B, labeled `unverified
     assumption`, with a live check on merge order; C is cleared in the auditor's output
     with the quoted runner lines, since the runner keys by name. A resume with no
-    change reuses stage 1; closing B and resuming reruns stage 1. With the token's read
-    access to the repository removed, the brief says `open PRs not read`, and
-    `forge_gaps` holds `collisions.tsv`. Covers R77. Rerun when stage 1's open pull
+    change reuses stage 1; closing B and resuming reruns stage 1. The gap path (`open PRs
+    not read` and the `forge_gaps` entry) cannot be forced on demand, since a token that
+    cannot list the PRs cannot read the bundle's own PR either; it is checked by reading
+    stage 1 step 3 and resume step 5. Covers R77. Rerun when stage 1's open pull
     request check, `collisions.sh`, or the auditor's candidate rule changes. Not run: it
     needs a GitHub repository with open PRs, which this release did not create.
 

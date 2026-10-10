@@ -150,10 +150,10 @@ never loses a finished one. With `--live`, it first imports approved live check 
      again with the recorded prompt inputs and flags and normalized, then compared with
      `manifest.json`), each claims file, the questions file, the content hash of
      every `file:` ticket or PR export, and `plugin_version`;
-   - the stage 1 `forge_hashes`: recompute each path in the map (`1-orient.md` step 2:
-     `pr.hash.json`, `pr-threads.json`, `<ticket>.json`, `<ticket>.parent.json`) and
-     compare it with the recorded hash. For `pr.hash.json`, project the one file step
-     3 already fetched with the identical `jq` command of step 2, reading
+   - the stage 1 `forge_hashes`: recompute each path in the map (`1-orient.md` steps 2
+     and 3: `pr.hash.json`, `pr-threads.json`, `<ticket>.json`, `<ticket>.parent.json`,
+     `collisions.tsv`) and compare it with the recorded hash. For `pr.hash.json`,
+     project the one file step 3 already fetched with the identical `jq` command of step 2, reading
      `forge/<bundle>/pr.json.new`, and hash the result, with no second query:
      `jq '<filter>' forge/<bundle>/pr.json.new | git hash-object --no-filters --stdin`.
      The projection leaves out `headRefOid` and `baseRefOid`, which step 3 compares on
