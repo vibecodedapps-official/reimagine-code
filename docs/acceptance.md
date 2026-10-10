@@ -427,7 +427,8 @@ name a plugin are rerun under the new names and recorded here.
     `opus` for the auditors and the adversary, `sonnet` for the merger, and `codex_model`
     `gpt-6-luna`; `audit-evidence.md` is in the run directory and in the stage 4 to 7
     input hashes. Covers R72 to R76. Rerun when a tier, a model default, a step file's
-    read-at point, or `audit-evidence.md`'s readers change. Not yet run.
+    read-at point, or `audit-evidence.md`'s readers change. Run 2026-10-10 on
+    Windows, the audit through stage 4; see the record.
 
 ## Record of runs
 
@@ -2890,3 +2891,56 @@ three with no rerun. repo-docs stays at 0.1.6 and was not tagged.
   7b5fe58, and no bare `v` tag. `npm run lint` on `main` printed `lint: ok` with the tags
   present.
 - Not run: items 11 and 18, the installs from GitHub, and item 16, for this release.
+
+### 2026-10-10: ccx-loop 0.7.0 and cca 0.11.0, item 27, before the merge, Windows
+
+Windows 11 Pro 10.0.26200, Git Bash, Claude Code 2.1.296, codex-cli 0.162.1, Node
+26.4.0. A scratch `CLAUDE_CONFIG_DIR` at `~/.cache/recode-acceptance/survey-54/profile-after`,
+with a copy of the author's login, added a clone of the branch as a directory marketplace
+(at 9414f03 for the audit, 42497ae for the loop runs) and installed `ccx-loop` 0.7.0
+(with `ccx` 0.7.0) and `cca` 0.11.0 from it. Every run was headless as in the items 25
+and 26 record, driven by the same script, one message, ended on the result event. The
+loop fixtures were fresh clones of the three-file repository with a local bare `origin`;
+the audit used `sh tests/cca/fixture/build.sh full` from the clone. The runs doubled as
+the after-survey of decisions Part 23 item 9, which holds their token figures.
+
+- **`--effort low` rejected.** `/ccx-loop:plan "<the change>" --effort low`: one turn,
+  no Skill call, the reply "Rejected: the `--effort low` tier no longer exists, so
+  nothing was run. Use `--effort medium` instead:" followed by the same command with
+  `--effort medium`. Passed.
+- **Plan-only at medium.** `/ccx-loop:plan "<the change>" --no-codex --effort medium`:
+  ended `plan-only` with `Tier: medium`, `Run budget: 120 (tier default)`, `Plan review:
+  Claude subagent, model fable (fallback for Codex gpt-6.1-sol, swapped because of
+  --no-codex)`, `Model overrides in force: none (no .ccx.json)`, and the slice recorded
+  as luna by the small-slice rule with `sonnet` effective under `--no-codex`. The Read
+  calls on the skill directory named `steps/0-preflight.md`, `steps/1-plan.md`,
+  `tiers.md`, and `report.md`, and neither `steps/4-build.md` nor `steps/7-publish.md`.
+  Passed.
+- **Codex run at medium.** `/ccx-loop:run "<the change>" --effort medium --no-publish`:
+  ended `prepared` with `npm test` passing on the uncommitted change; `Plan review:
+  Codex gpt-6.1-sol`; the Step 5 reviewer `gpt-6.1-sol`; `Implementer per slice: slice
+  1, gpt-6-luna ("luna"), --timeout 1200`; `Model overrides in force: none`; no swap.
+  The Codex rollouts show the plan review and the final review on `gpt-6.1-sol` and the
+  implement thread on `gpt-6-luna`. `steps/4-build.md` was read after the plan was
+  final and `steps/7-publish.md` not at all under `--no-publish`. Passed.
+- **The override run.** The same run on a clone whose `main` commits `.ccx.json` as
+  `{"models": {"plan-review": "gpt-6-astra", "small-slice": "off", "final-review":
+  "nope"}}`: ended `prepared`; `Plan review: Codex gpt-6-astra (.ccx.json override
+  models.plan-review)`; `Model overrides in force: plan-review = gpt-6-astra,
+  small-slice = off. Reported and ignored: final-review = "nope", which is not a full
+  Codex model id, so Step 5 used the tier's gpt-6.1-sol`; the slice on `gpt-6.1-sol`
+  with "codex", "rather than luna, because the .ccx.json override small-slice: off
+  disabled the small-slice rule"; the deviations table lists the ignored key. Passed.
+- **The audit at low: passed through stage 4, stopped in stage 5 by the account.**
+  `/cca:audit <full manifest> --effort low`: `stages.json` records `haiku` for each of
+  the three digesters, `sonnet` for the mapper, `opus` for the pass-one auditor and its
+  top-up, and `opus` for the adversary; `audit-evidence.md` is in the run directory and
+  in the stage 4 and stage 5 input hashes beside `common.md`. The session ended in
+  stage 5, during a map-correction top-up, with "You've hit your monthly spend limit";
+  stages 6 to 8 did not run, so `codex_model` `gpt-6-luna`, the merger's `sonnet`, and
+  `reported` are not shown by this run. Not resumed; decisions Part 23 item 10 lists the
+  resume as open.
+- Left on the machine: `~/.cache/recode-acceptance/survey-54/` with the profiles, the
+  clones, the fixtures, and the logs (`S1-after.jsonl`, `S2-after.jsonl`,
+  `S3-after.jsonl`, `A27-reject.jsonl`, `A27-override.jsonl`), and the cca fixture in
+  the temp directory named by `after-manifest.txt` there.
