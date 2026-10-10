@@ -435,6 +435,24 @@ name a plugin are rerun under the new names and recorded here.
     Windows, the audit through stage 4, and on macOS, the audit to `reported`; see the
     records.
 
+28. **Open pull request collisions in the audit.** Setup: a GitHub repository the
+    author owns, with `migrations/` holding `001_init.sql` on `main`, and three open PRs on
+    `main`: A adds `migrations/002_add_status.sql`, B adds the same path, and C adds
+    `migrations/002_add_index.sql`; the repository's runner journals by file name (a
+    script that records each applied file's name). Command, headless:
+    `/cca:audit <manifest with A as a github: PR and "run_once": ["migrations/*.sql"]>
+    --effort low`. Expected: `forge/<bundle>/open-prs.json` and `collisions.tsv` are in the
+    run directory, and `collisions.tsv` is in the stage 1 `forge_hashes`; the brief lists
+    B as a `same name` candidate and C as a `same version` candidate under the new name;
+    the report has a finding on `002_add_status.sql` for B, labeled `unverified
+    assumption`, with a live check on merge order; C is cleared in the auditor's output
+    with the quoted runner lines, since the runner keys by name. A resume with no
+    change reuses stage 1; closing B and resuming reruns stage 1. With the token's read
+    access to the repository removed, the brief says `open PRs not read`, and
+    `forge_gaps` holds `collisions.tsv`. Covers R77. Rerun when stage 1's open pull
+    request check, `collisions.sh`, or the auditor's candidate rule changes. Not run: it
+    needs a GitHub repository with open PRs, which this release did not create.
+
 ## Record of runs
 
 Each entry gives the date, the machine, the Claude Code, Codex, and Node versions, the
@@ -3151,3 +3169,31 @@ peeling to it.
 - Not run: the Ctrl-C, symbolic-link, and trailing-space cases.
 - Left on the machine: the scratch profiles `claude-070` and `codex-070` without the
   Codex login, the test repository, and the logs under `~/.cache/recode-acceptance/i070`.
+
+### 2026-10-10: ccx-loop 0.7.1, the step hand-offs of issue 56, item 27's override run, Windows
+
+Windows 11 Pro 10.0.26200, Git Bash, Claude Code 2.1.296, codex-cli 0.162.1, Node
+26.4.0, git 2.56.0. Each run was the item 27 override run, headless (`claude -p
+--output-format stream-json --verbose --permission-mode auto --model opus`, one
+message, ended on the result event): `/ccx-loop:run "add a sub function that subtracts
+two numbers to math.mjs and test it" --effort medium --no-publish` on a fresh clone of
+the override fixture with its own local bare `origin`, so the host was `other`. The
+reads were counted from the logs, Read calls and `cat` calls both.
+
+- **Before, on 0.7.0's skill** (the item 27 clone at 42497ae, whose loop skill equals
+  `main` at fd2b1d7): three runs, all ended `prepared`, and each read
+  `steps/0-preflight.md`, `steps/1-plan.md`, `tiers.md`, `steps/4-build.md` after the
+  plan was final, and the skill's `report.md` before the report; one read them through
+  `cat` in Bash calls, two with the Read tool. With the two item 27 build runs on this
+  machine, that is 0 misses in 5; the macOS miss did not reproduce, so its cause is
+  unverified.
+- **After, on the branch's 0.7.1 skill** (a copy of the working tree as a directory
+  marketplace): three runs, all ended `prepared`, each read the same five files at the
+  same points, and none read `steps/7-publish.md`, as the Step 6 hand-off says for the
+  `other` host. Passed for the hand-offs. Not run: the `github` host under
+  `--no-publish`, where the run now reads `steps/7-publish.md`, and a continued PR's
+  body; both need a GitHub remote.
+- Cost: $1.53 to $1.81 per run, six runs.
+- Left on the machine: `~/.cache/recode-acceptance/i56/` with the two profiles, the six
+  fixture clones, and the logs `before-1.jsonl` to `before-3.jsonl` and `after-1.jsonl`
+  to `after-3.jsonl`.
