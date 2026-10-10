@@ -425,6 +425,23 @@ for (const f of checked20) {
   text.split("\n").forEach((line, i) => { if (retired.test(line)) fail(`${f}:${i + 1}: names the retired source repository`); });
 }
 
+// 21. cca's default Codex model by tier has one place of truth, stage 6 step 2; the Roles row of SKILL.md and the README rows
+// restate it, and every codex_model example in stage 6 is one of its ids (R75).
+const stage6 = read("plugins/cca/skills/cca/stages/6-second-opinion.md");
+const tierMap = stage6?.match(/resolve it by the run's tier: low `([^`]+)`, medium and high `([^`]+)`/);
+if (stage6 !== null && !tierMap) fail("plugins/cca/skills/cca/stages/6-second-opinion.md: step 2 must give the tier mapping as \"resolve it by the run's tier: low `<id>`, medium and high `<id>`\"");
+if (tierMap) {
+  const [, low, high] = tierMap;
+  for (const [f, want] of [["plugins/cca/skills/cca/SKILL.md", 1], ["plugins/cca/README.md", 2]]) {
+    const text = read(f);
+    if (text === null) continue;
+    const found = [...text.matchAll(/`([^`]+)` at low(?: effort)?, `([^`]+)` at medium and high/g)];
+    if (found.length !== want) fail(`${f}: must state cca's default Codex model by tier ${want} time(s); found ${found.length}`);
+    for (const m of found) if (m[1] !== low || m[2] !== high) fail(`${f}: names \`${m[1]}\` at low and \`${m[2]}\` at medium and high, but stage 6 step 2 says \`${low}\` and \`${high}\``);
+  }
+  for (const m of stage6.matchAll(/"codex_model": "([^"]+)"/g)) if (m[1] !== low && m[1] !== high) fail(`plugins/cca/skills/cca/stages/6-second-opinion.md: the codex_model example ${m[1]} is not a tier default`);
+}
+
 if (failures.length) {
   console.error(`lint: ${failures.length} failure(s)\n${failures.map((f) => `- ${f}`).join("\n")}`);
   process.exit(1);

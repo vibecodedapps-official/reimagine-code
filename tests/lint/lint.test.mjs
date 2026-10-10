@@ -285,6 +285,15 @@ test('lint rejects a step file without its hand-off to the next read', () => fai
   },
   'plugins/ccx-loop/skills/ccx-loop/steps/1-plan.md: its last paragraph must name `steps/4-build.md`, the hand-off to the next read'));
 
+test('lint rejects a cca README tier default that differs from stage 6', () => fails(
+  (d) => {
+    const p = join(d, 'plugins/cca/README.md');
+    const s = readFileSync(p, 'utf8');
+    assert.ok(s.includes('`gpt-6-luna` at low effort'), 'README lacks the roles row');
+    writeFileSync(p, s.replace('`gpt-6-luna` at low effort', '`gpt-6-astra` at low effort'));
+  },
+  'plugins/cca/README.md: names `gpt-6-astra` at low and `gpt-6.1-sol` at medium and high, but stage 6 step 2 says `gpt-6-luna` and `gpt-6.1-sol`'));
+
 test('lint rejects a codex catalog with another name', () => fails(
   (d) => editJson(d, '.agents/plugins/marketplace.json', (j) => { j.name = 'codex-code-review'; }),
   '.agents/plugins/marketplace.json: name must be reimagine-code, not codex-code-review'));
