@@ -13,9 +13,11 @@ Inputs: `ledger/5.md` and the other run-directory inputs `${CLAUDE_PLUGIN_ROOT}/
 lists (`audit-brief.md`, `common.md`, `audit-evidence.md`, `claims.md`, the diffs and
 stats, the `pass2/` files), and the live inputs: `live/findings.md`, each `live/carried/<id>.md` it names,
 and its result copies (`${CLAUDE_PLUGIN_ROOT}/skills/cca/live.md`, "Derivation"). The
-result copies are not hashed, as `live.md` says. Each other live input is recorded in
-the stage entry with its hash, or `absent` when it does not exist; absent to present, or
-present to absent, is a change that reruns the stage (`resume.md`, step 5). `live/findings.md`
+result copies are not hashed, as `live.md` says. Every other input, `ledger/5.md`, each
+run-directory file the request lists, and each live input, is recorded in the stage
+entry's `inputs` with its hash (the `sentinels` map is not a substitute), or `absent`
+when a live input does not exist; absent to present, or present to absent, is a change
+that reruns the stage (`resume.md`, step 5). `live/findings.md`
 exists only on a run resumed with a live finding result. A `_test.drop_ack` naming
 `live/findings.md` applies like any other input.
 

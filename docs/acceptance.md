@@ -3050,7 +3050,9 @@ from the fixture's `app` directory. Sonnet runners pulled the evidence from the 
   `inputs` records, a changed `audit-evidence.md` would not rerun stage 6 on resume.
   The stage 6 file's "Inputs" paragraph lists the request's run-directory files but
   says only the live inputs are "recorded in the stage entry with its hash", so the
-  orchestrator followed its text; the fix is open. Nothing in the fixture's
+  orchestrator followed its text. Fixed after this run: the paragraph now says every
+  input is recorded in `inputs` with its hash and the `sentinels` map is not a
+  substitute; not rerun. Nothing in the fixture's
   repositories changed (`verify full:
   ok`; the auditor's `run-tests.sh` left the ignored `.test-output/` in `app`). Cost
   $10.13: opus 13.8M input and 152,889 output, haiku 6.7M input and 57,152 output,
