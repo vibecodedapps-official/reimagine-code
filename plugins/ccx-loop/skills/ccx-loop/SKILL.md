@@ -85,7 +85,9 @@ flags:
 The run is plan-only when `mode` is `plan-only` or the `plan-only` flag is `true`. Step 0.5
 writes this block, with a timestamp, as the first section of `inputs.md`. Both modes run
 build mode. Repair mode and merging are not part of this version. The only worktree use is
-the narrow one in Step 0.3. `--no-publish` withholds Step 7. `--confirm-plan` pauses once
+the narrow one in Step 0.3. `--no-publish` withholds publication: on the `github` host the
+run still reads `steps/7-publish.md` at Step 7, whose opening ends it in `prepared`.
+`--confirm-plan` pauses once
 the plan is final and asks the user to approve it before anything is implemented; see Step
 3.5. `continue` names an existing remote branch that the run continues instead of creating
 one; see Step 0.2 and Step 7.2. It is not repair mode: the run reads no review comments
@@ -243,9 +245,10 @@ every one of them and follow Final report handling below.
 - `done`: PR open and CI green or not applicable. Report written.
 - `plan-only`: plan final and written, nothing else run. It also covers a `--confirm-plan`
   run whose plan the user did not approve in Step 3.5.
-- `prepared`: every step through Step 6 is complete with no blocking defect open, and Step 7
-  was withheld before anything was pushed: by `--no-publish`, by a non-GitHub host, or by
-  the user answering a Step 7 ask-first prompt with anything other than a clear yes. The
+- `prepared`: every step through Step 6 is complete with no blocking defect open, and
+  publication was withheld before anything was pushed: by `--no-publish`, by a non-GitHub
+  host, or by the user answering a Step 7 ask-first prompt with anything other than a clear
+  yes. The
   report names the branch and the commit state: uncommitted; or committed, and with
   `"commit": true` that the commit carries the `specs/ccx/<run-id>/` snapshot in state
   `publishing`. It gives how to publish: the exact `git add <paths>` and `git commit`
@@ -310,7 +313,8 @@ continued branch's pull requests as Step 7.2 does.
   the Implementer prompt, and Steps 3.5, 3.7, 4, 5, and 6. Read when Step 3 ends with a
   final plan in a run that is not plan-only: at the start of Step 3.5 with
   `confirm-plan`, else at the start of Step 3.7.
-- `steps/7-publish.md`: Step 7. Read at the start of Step 7.
+- `steps/7-publish.md`: Step 7. Read at the start of Step 7, which every `github` run that
+  passes Step 6 reaches, `--no-publish` included, since its opening decides `prepared`.
 - `tiers.md`: the tier table, the estimate rule, the implementer choice, the risk floor,
   re-evaluation, and the roles table with each stage's reviewer and implementer, its
   fallback, and the exact model names to use. Read it once Step 1.1 to 1.5 are done, before

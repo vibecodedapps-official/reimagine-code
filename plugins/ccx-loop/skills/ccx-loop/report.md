@@ -10,7 +10,7 @@ Every run ends in exactly one terminal state, writes the report, and prints it.
 - Terminal states: `done` (PR open, CI green or not applicable), `plan-only` (plan final
   and written, nothing else run, or a `--confirm-plan` run the user did not approve),
   `prepared` (every step through Step 6 is complete with no
-  blocking defect open, and Step 7 was withheld before anything was pushed: by
+  blocking defect open, and publication was withheld before anything was pushed: by
   `--no-publish`, by a non-GitHub host, or by the user answering a Step 7 ask-first prompt
   with anything other than a clear yes; not a failure), `blocked` (a blocking defect, a
   denied permission, a budget exceeded, or a preflight failure), `stopped` (the run stopped

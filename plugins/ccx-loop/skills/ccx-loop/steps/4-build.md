@@ -415,3 +415,8 @@ listed.
    cap is already used up, end in `blocked`, naming the round cap).
    Then run the full set again. Step 6 runs at most 3 times. A failure still open after the
    third ends the run in `blocked`.
+
+Next, on the `github` host, a run that passes Step 6 reads `steps/7-publish.md` and starts
+Step 7, `--no-publish` included, since Step 7's opening decides `prepared`. On `other`,
+the run ends in `prepared` after Step 6. Every terminal state goes to Final report
+handling, which reads `report.md` first.

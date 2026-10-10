@@ -173,3 +173,6 @@ Codex reviewer, `gpt-6.1-sol` at medium and `gpt-6-astra` at high and xhigh, unl
 
 If the run is plan-only, stop here at every tier. Print the plan. It is already written. Nothing else runs: no branch, no checks, no comments. End in
 `plan-only`.
+
+A run that is not plan-only reads `steps/4-build.md` now, and goes on to Step 3.5 with
+`confirm-plan`, else to Step 3.7.

@@ -276,6 +276,15 @@ test('lint rejects a step file that Supporting files does not name', () => fails
   (d) => writeFileSync(join(d, 'plugins/ccx-loop/skills/ccx-loop/steps/9-extra.md'), '# Extra\n'),
   'plugins/ccx-loop/skills/ccx-loop/steps/9-extra.md: not named in the Supporting files section of SKILL.md'));
 
+test('lint rejects a step file without its hand-off to the next read', () => fails(
+  (d) => {
+    const p = join(d, 'plugins/ccx-loop/skills/ccx-loop/steps/1-plan.md');
+    const s = readFileSync(p, 'utf8');
+    assert.ok(s.includes('reads `steps/4-build.md` now'), '1-plan.md lacks the hand-off');
+    writeFileSync(p, s.replace('reads `steps/4-build.md` now', 'reads the build file now'));
+  },
+  'plugins/ccx-loop/skills/ccx-loop/steps/1-plan.md: its last paragraph must name `steps/4-build.md`, the hand-off to the next read'));
+
 test('lint rejects a codex catalog with another name', () => fails(
   (d) => editJson(d, '.agents/plugins/marketplace.json', (j) => { j.name = 'codex-code-review'; }),
   '.agents/plugins/marketplace.json: name must be reimagine-code, not codex-code-review'));

@@ -292,3 +292,5 @@ it. Step 0 creates nothing except artifacts.
 Branch creation and the baseline check happen in Step 3.7.2 and 3.7.3. Planning changes no
 file content and discards none. The one tree change before Step 3.7.2 is a consented `git
 switch` or fast-forward of a clean checkout (Step 0.2), recorded in `run.md`.
+
+Next is Step 1: read `steps/1-plan.md` at its start.

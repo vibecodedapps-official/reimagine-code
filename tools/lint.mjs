@@ -338,6 +338,13 @@ if (loopCore !== null) {
     }
   }
 }
+// 16d. Each step file ends with its hand-off: the read of the next step file, and for the last build step the report template.
+for (const [f, next] of [["0-preflight.md", ["steps/1-plan.md"]], ["1-plan.md", ["steps/4-build.md"]], ["4-build.md", ["steps/7-publish.md", "report.md"]]]) {
+  const text = read(`${loopSkill}/steps/${f}`);
+  if (text === null) continue;
+  const last = text.trimEnd().split(/\n\n/).at(-1);
+  for (const n of next) if (!last.includes(`\`${n}\``)) fail(`${loopSkill}/steps/${f}: its last paragraph must name \`${n}\`, the hand-off to the next read`);
+}
 
 // 17. The Codex catalog lists exactly the Codex plugins above, each available and authenticated on install (R2), and agrees with
 // their manifests; the root plugin.json form is pinned to the agent-plugins.org 1.0.0 schema, which Codex accepts (R27); a plugin
