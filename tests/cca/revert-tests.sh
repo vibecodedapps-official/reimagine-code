@@ -39,6 +39,8 @@
 #    other fork-time line kept (18a); a job started outside its own group fails the start
 #    with exit 2 (18b); bg with a directory at `<result>.fork` fails with exit 2 and leaves no
 #    .err or .exit (18c)
+# 19 stopdog, from the script's own text: the watchdog, stopped at once 200 times under the
+#    script's TERM trap, leaves stderr empty
 #
 # Prints one line per mismatch, then `revert-tests test: ok` when there were none. Exit 0
 # when every case matches, otherwise 1.
@@ -823,6 +825,28 @@ rc=$?
 fails "revert-tests: cannot write $tmp/res.fork"
 nosides
 rmdir "$tmp/res.fork"
+
+# 19. stopdog, taken from the script's own text with the watchdog and the TERM trap the
+# watchdog is forked under. bash 3.2 prints a trap warning on stderr when a TERM reaches a
+# child in its first moments, and the script stops the watchdog right after a fast command.
+# The race cannot be forced: the case stops 200 watchdogs at once, which catches a TERM in
+# nearly every run, not in every run.
+case_id="case 19"
+sed -n '/^watchdog() {/,/^}/p; /^stopdog() {/,/^}/p; /^trap .trap "" HUP INT TERM; exit 2. HUP INT TERM$/p' \
+	"$rt" > "$tmp/sd.sh"
+[ "$(grep -cE '^(watchdog\(\) \{|stopdog\(\) \{|trap )' "$tmp/sd.sh")" = 3 ] ||
+	mismatch "$case_id: the watchdog, stopdog, or the trap line is not in the script"
+bash -c '. "$1"; w=$2; n=0
+	while [ "$n" -lt 200 ]; do
+		watchdog 1 600 &
+		wdog=$!
+		stopdog
+		wait "$wdog" 2> /dev/null
+		n=$((n + 1))
+	done' x "$tmp/sd.sh" "$tmp" > "$tmp/out" 2> "$tmp/err"
+rc=$?
+[ "$rc" = 0 ] || mismatch "$case_id: exit $rc, expected 0"
+[ ! -s "$tmp/err" ] || mismatch "$case_id: stderr [$(head -n 2 "$tmp/err" | tr '\n' '|')]"
 
 if [ "$bad" -gt 0 ]; then
 	exit 1
