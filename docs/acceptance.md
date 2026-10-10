@@ -428,7 +428,8 @@ name a plugin are rerun under the new names and recorded here.
     `gpt-6-luna`; `audit-evidence.md` is in the run directory and in the stage 4 to 7
     input hashes. Covers R72 to R76. Rerun when a tier, a model default, a step file's
     read-at point, or `audit-evidence.md`'s readers change. Run 2026-10-10 on
-    Windows, the audit through stage 4; see the record.
+    Windows, the audit through stage 4, and on macOS, the audit to `reported`; see the
+    records.
 
 ## Record of runs
 
@@ -2944,3 +2945,119 @@ the after-survey of decisions Part 23 item 9, which holds their token figures.
   clones, the fixtures, and the logs (`S1-after.jsonl`, `S2-after.jsonl`,
   `S3-after.jsonl`, `A27-reject.jsonl`, `A27-override.jsonl`), and the cca fixture in
   the temp directory named by `after-manifest.txt` there.
+
+### 2026-10-10: ccx-loop 0.7.0 and cca 0.11.0, item 27, before the merge, macOS
+
+macOS 27.0.1, Claude Code 2.1.293, codex-cli 0.162.0, Node 26.4.0, git 2.54.0 (Apple
+Git-157). The branch head was 4ec2c5c for every run. A clone of the branch at
+`/tmp/acc-54/clone` replaced the M4 profile's `reimagine-code` catalog as a directory
+marketplace, and `ccx` 0.7.0, `ccx-loop` 0.7.0, and `cca` 0.11.0 were installed from
+it, each read from the clone; the loop's `codex` option was unset. Observed, not judged:
+installing `ccx-loop` alone resolved its `ccx` dependency to 0.6.2 at 7b5fe58, not the
+catalog's 0.7.0, so `ccx` was installed first and `ccx-loop` after it. The profile was
+backed up first and restored from the backup afterwards; the Codex login was copied into
+the scratch `CODEX_HOME` for the runs and deleted after them; `~/.codex` had the same
+sha256s after the runs as before, and the only `~/.claude` files that changed were the
+author's own session's bookkeeping (`history.jsonl`, the two usage caches, and
+`.last-cleanup`). `npm run lint`, `npm test` (499 tests, 487 passed, 0 failed, 12
+skipped, exit 0), and `claude plugin validate --strict` on the root and each plugin
+passed on the clone before the runs, each as its own command. Every run was headless,
+`claude -p --output-format stream-json --verbose --permission-mode auto --model opus`,
+one message, ended on the result event. The loop fixtures were fresh clones of the
+three-file repository, each with its own local bare `origin`; the change was "Add a
+function half(n) to math.mjs that returns n divided by 2, and a test for it in
+test.mjs."; the audit used `sh tests/cca/fixture/build.sh full` from the clone, started
+from the fixture's `app` directory. Sonnet runners pulled the evidence from the logs.
+
+- **Two runs discarded for a fixture mistake.** The first plan-only and Codex runs
+  shared one bare `origin` with the override clone, whose `.ccx.json` commit reached it
+  before they fetched, so both reported the override in force (plan review
+  `gpt-6-astra`, slice `codex`). They are not judged; the two runs below reran on
+  clones with their own origins.
+- **`--effort low` rejected.** `/ccx-loop:plan "<the change>" --effort low`: one turn,
+  no Skill call, the reply "Rejected: `--effort low` isn't accepted because the low tier
+  is gone. Use `--effort medium`, or leave out `--effort` to get `auto`. Nothing was
+  run." Passed.
+- **Plan-only at medium.** `/ccx-loop:plan "<the change>" --no-codex --effort medium`:
+  ended `plan-only` with `Tier: medium`, `Run budget: 120 (tier default)`, `Plan review:
+  fable (Claude fallback for Codex gpt-6.1-sol, because --no-codex is set)`, `Model
+  overrides in force: none`, and `Implementer per slice: Slice 1 (math.mjs, test.mjs):
+  planned as gpt-6-luna ("luna", small-slice rule); not run`. The skill files were read
+  through `cat` in Bash calls, not the Read tool: `steps/0-preflight.md` at Step 0,
+  `steps/1-plan.md` at Step 1, `tiers.md` before the estimate, and `report.md` before the
+  report, and neither `steps/4-build.md` nor `steps/7-publish.md`. No `codex` call; one
+  Agent call, the `fable` plan reviewer, which ended with no blocking objection. The tree
+  was clean on `main` after the run, with `.ccx/` in `.git/info/exclude`. Passed.
+  Observed: the run id was the title truncated to
+  `2026-10-10-add-a-function-half-n-to-math-mjs-that-r`.
+- **Codex run at medium.** `/ccx-loop:run "<the change>" --effort medium --no-publish`:
+  ended `prepared` on `work/add-a-function-half-n-to-math-mjs-that` with `math.mjs` and
+  `test.mjs` modified, nothing committed or pushed, and `npm test` passing at baseline,
+  Step 5.1, and Step 6; `Plan review: Codex gpt-6.1-sol`; `Step 5 reviewer role
+  resolved: Codex gpt-6.1-sol`; `Implementer per slice: slice 1 used gpt-6-luna
+  ("luna"), --timeout 1200, no cap, no swap`; `Model overrides in force: none`. The
+  bridge calls were `ccx:ask --model gpt-6.1-sol --timeout 600`, `ccx:implement --model
+  gpt-6-luna --timeout 1200`, and `ccx:review --base <main sha> --model gpt-6.1-sol
+  --timeout 600`, and the Codex rollouts in the scratch `CODEX_HOME` show the plan
+  review on `gpt-6.1-sol`, the implement thread on `gpt-6-luna`, and the review thread
+  and its review subagent on `gpt-6.1-sol`. `steps/4-build.md` was read (through `cat`)
+  in the same Bash call that recorded "NO BLOCKING OBJECTIONS. Plan final." in `run.md`,
+  before Step 3.7 began; `steps/7-publish.md` was not read; the skill's `report.md` was
+  read before the run's report was written. Passed.
+- **The override run: the models passed; two read-at points were skipped.** The same
+  run on a clone whose `main` commits `.ccx.json` as `{"models": {"plan-review":
+  "gpt-6-astra", "small-slice": "off", "final-review": "nope"}}`: ended `prepared` with
+  the same tree shape; `Plan review: gpt-6-astra (.ccx.json models.plan-review
+  override)`; `Model overrides in force: plan-review = gpt-6-astra (applied);
+  small-slice = off (applied). final-review = "nope" is not a Codex model id, so it was
+  reported and ignored`; `Implementer per slice: S1 used gpt-6.1-sol ("codex";
+  small-slice off)`; the Step 5 reviewer `gpt-6.1-sol`; the rollouts show
+  `gpt-6-astra` for the plan review and `gpt-6.1-sol` for the implement and review
+  threads, and no rollout names `gpt-6-luna`. The ignored key is listed under "Deferred
+  items", not in a deviations table. Judged against the core's read-at lines, not the
+  item's text for this run: the orchestrator read `steps/0-preflight.md`,
+  `steps/1-plan.md`, and `tiers.md`, then ran Steps 3.7 to 6 and wrote the report
+  without reading `steps/4-build.md` or the skill's `report.md`, which the core says to
+  read at Step 3.7 and at every terminal state, and which R73 claims for every step
+  file. The Codex run above read both. Not fixed; one miss in two runs with the same
+  core, so the cause is unverified.
+- **The audit at low: passed to `reported`, with one gap in stage 6's input list.**
+  `/cca:audit <full manifest> --effort low`: ended `reported` with the verdict `not
+  ready | counted: 1 blocker, 3 high, 4 medium, 4 low, 1 note | provisional: 0 |
+  contested: 1 | dismissed: 0`, `act first: C1 ... C10`, the `/cca:act` line, `your
+  decision: C7 contested ...`, and the `--live` resume line. The `full` fixture's
+  expected outcomes are in the report: the drift as C1 (blocker), the skipped test and
+  the false claim as C2 (high), the export break as C3 (high), the paging as C5 (high)
+  with the off-by-one C4 and its test C6, the migration claim as C10 (`unverified
+  assumption`, medium), and the `MUST` rule as C8 citing
+  `guidelines@cfda47b:style/shell-scripts.md:5`. The two expected `contested` outcomes
+  (`formatRow`, C9; `print_page`, C4) came out `agreed`, as in the survey; the one
+  contested item is C7, the audit log, where the adversary's downgrade was refused by
+  the second opinion. `stages.json` records every stage `complete`, with `haiku` for each
+  of the three digesters, `sonnet` for the mapper, `opus` for the pass-one auditor and
+  its top-up after the barrier, `opus` for the adversary, `sonnet` for the merger, and
+  stage 6 `codex_model` `gpt-6-luna`, `codex_timeout` 1200, called once, status `ok`,
+  thread `01a12582-b624-7f72-9350-02041fde0306`, `unacknowledged: []`; the rollout
+  shows `gpt-6-luna`, 8 calls, 290,538 tokens. `audit-evidence.md` is in the run
+  directory, byte-equal to the plugin's, named by the auditor, top-up, and adversary
+  prompts and by `codex/request.md`, and not by the digester, mapper, or merger
+  prompts; it is in the stage 4, 5, and 7 `inputs` beside `common.md`. In stage 6 it is
+  under `sentinels` (with `common.md`, `audit-brief.md`, `claims.md`, the diffs and
+  stats, `ledger/5.md`, and `pass2/combined.md`), and the stage's `inputs` holds only
+  `ledger/5.md`, `pass2/combined.md`, and `live/findings.md: absent`. So the item's
+  "stage 4 to 7 input hashes" clause, and R76's "hashed as an input of stages 4 to 7",
+  fail for stage 6 as written, and since `resume.md` step 5 recomputes only what
+  `inputs` records, a changed `audit-evidence.md` would not rerun stage 6 on resume.
+  The stage 6 file's "Inputs" paragraph lists the request's run-directory files but
+  says only the live inputs are "recorded in the stage entry with its hash", so the
+  orchestrator followed its text; the fix is open. Nothing in the fixture's
+  repositories changed (`verify full:
+  ok`; the auditor's `run-tests.sh` left the ignored `.test-output/` in `app`). Cost
+  $10.13: opus 13.8M input and 152,889 output, haiku 6.7M input and 57,152 output,
+  sonnet 200K input and 9,346 output; 166 orchestrator turns.
+- Left on the machine: `/tmp/acc-54/` (the clone, the profile backups, the used
+  profiles as `claude-after` with the audit run under its plugin data and `codex-after`
+  with the rollouts and no login, the loop clones with their origins, and the logs
+  `A27-reject.jsonl`, `A27-planonly2.jsonl`, `A27-codex2.jsonl`, `A27-override.jsonl`,
+  `A27-audit.jsonl`, plus the discarded `A27-planonly.jsonl` and `A27-codex.jsonl`),
+  and the cca fixture in the temp directory named by `full-manifest.txt` there.
