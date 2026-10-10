@@ -103,10 +103,10 @@ for (const file of ['SKILL.md', 'stages/1-orient.md', 'stages/resume.md']) {
     (d) => {
       const p = join(d, path);
       const s = readFileSync(p, 'utf8');
-      assert.ok(s.includes('0.12.0'), `${path} lacks the version`);
-      writeFileSync(p, s.replace('0.12.0', '0.9.0'));
+      assert.ok(s.includes('0.12.1'), `${path} lacks the version`);
+      writeFileSync(p, s.replace('0.12.1', '0.9.0'));
     },
-    `${path}: plugin_version 0.9.0 differs from the cca manifest version 0.12.0`));
+    `${path}: plugin_version 0.9.0 differs from the cca manifest version 0.12.1`));
 }
 
 test('lint rejects a non-ASCII byte in a shipped file', () => fails(
