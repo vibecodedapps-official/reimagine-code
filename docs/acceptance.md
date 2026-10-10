@@ -181,8 +181,8 @@ name a plugin are rerun under the new names and recorded here.
     `ccx-loop`. Covers R8. Rerun at each release. Run 2026-10-03 for 0.1.0, and
     2026-10-04 for 0.1.1, 0.1.2, 0.1.3, 0.2.0, and 0.3.0, 2026-10-05 for 0.3.1 before
     and after the merge, 2026-10-06 for 0.3.2 and 0.4.0 before the merge, and
-    2026-10-07 for 0.6.0 on Windows, 2026-10-10 for 0.7.0 on macOS, and 2026-10-10 for
-    0.7.1 on Windows; see the records.
+    2026-10-07 for 0.6.0 on Windows, 2026-10-10 for 0.7.0 on macOS without a login, and
+    2026-10-10 for 0.7.1 on Windows; see the records.
 17. **Tags.** Setup: the release commit on `main`. Command: `claude plugin tag --push`
     on `plugins/ccx`, then `plugins/ccx-loop`, then `plugins/repo-docs`; then
     `git ls-remote --tags origin`. Expected: each tag command checks the manifest against
@@ -452,8 +452,8 @@ name a plugin are rerun under the new names and recorded here.
     not read` and the `forge_gaps` entry) cannot be forced on demand, since a token that
     cannot list the PRs cannot read the bundle's own PR either; it is checked by reading
     stage 1 step 3 and resume step 5. Covers R77. Rerun when stage 1's open pull
-    request check, `collisions.sh`, or the auditor's candidate rule changes. Not run: it
-    needs a GitHub repository with open PRs, which this release did not create.
+    request check, `collisions.sh`, or the auditor's candidate rule changes. Run
+    2026-10-10 for cca 0.12.0 on Windows; see the record.
 
 ## Record of runs
 
@@ -3292,3 +3292,88 @@ deleted after the runs.
   fixture's `npm test` line printed nothing in the driver's filter and is not judged.
 - Left on the machine: the scratch profiles `claude-071` and `codex-071` without logins,
   the test repository, and the logs under `~/.cache/recode-acceptance/i071`.
+
+### 2026-10-10: item 16's figures for 0.7.1 explained, Windows
+
+Windows 11 Pro 10.0.26200. The `claude-071` profile of the record above, with `ccx` and
+`ccx-loop` 0.7.1 installed from GitHub at bf32784, unchanged. `claude plugin details`
+for each, under Claude Code 2.1.288 and 2.1.296 in turn:
+
+- With no login in the profile, both versions reported about 956 always-on tokens for
+  `ccx` and about 318 for `ccx-loop`.
+- With a copy of the author's login, both versions reported about 1,245 and about 500,
+  the figures of the record above. The copy was deleted after.
+
+So the login moves the estimate and the Claude Code version does not, as the record
+"M3, recode 0.1.0" found. The 0.7.0 macOS figures, 956 and 318, came from a new profile
+its record says had no login, so they are not measurements under item 16's setup.
+Nothing grew: `ccx-loop` read 497 to 504 in the earlier logged-in records, so its 10
+tokens under 510 are its usual margin.
+
+### 2026-10-10: item 28 and the loop's `github` paths under `--no-publish`, ccx-loop 0.7.1 and cca 0.12.0, Windows
+
+Windows 11 Pro 10.0.26200, Claude Code 2.1.296, codex-cli 0.162.1, Node 26.4.0, Git
+2.56.0.windows.2, gh 2.91.0. The `claude-071` and `codex-071` profiles of the release
+record, with the plugins installed from GitHub at bf32784 and the `CLAUDE.md` block that
+item 19 applied there, with copies of the author's logins deleted after each run, and the
+author's own gh and git credentials. The repository was a new private
+`vibecodedapps-dev/ccx-acceptance-scratch`, seeded with the three-file loop fixture.
+Every run was headless through the stream-json driver of the issue 56 record, `--model
+opus`, each in a new clone, with `git ls-remote` and the PR list saved before and after.
+
+- **The `github` host under `--no-publish` passed.** `/ccx-loop:run "<the item 27
+  change>" --effort medium --no-codex --no-publish` read `steps/4-build.md` in the call
+  that logged the plan review and `steps/7-publish.md` in the call that logged the diff
+  review, both through `cat` in Bash calls, then `report.md`. It ended `prepared` on a
+  local `work/` branch with the change uncommitted. The remote heads and the PR list
+  were the same after as before.
+- **A continued PR's body under `--no-publish` passed.** A `feat-mul` branch with one
+  commit was pushed and opened as PR 1. The same command with `--continue feat-mul` asked
+  to switch from `main`, took the driver's `yes`, and read `steps/0-preflight.md`,
+  `steps/1-plan.md`, `steps/4-build.md`, `steps/7-publish.md`, `pr-body.md`, and
+  `report.md` with the Read tool, in that order. It wrote the continued-PR body to
+  `.ccx/<run-id>/pr-body.md` and ended `prepared`. The report gave `git push origin
+  feat-mul` and `gh pr comment 1 --body-file "<absolute path of that body>"`, and said the
+  commit, push, and comment were held back. The remote heads and PR 1's comments were
+  unchanged. PR 1 was closed after.
+- **Item 28 passed.** `main` gained `migrations/001_init.sql` and `migrate.mjs`, which
+  journals each applied file's name to `journal.txt`. Then PR 3 (A, `a-status`) added
+  `migrations/002_add_status.sql`, PR 4 (B, `b-status`) the same path, and PR 5 (C,
+  `c-index`) `migrations/002_add_index.sql`, with issue 2 as A's ticket. The manifest
+  named A as `github:vibecodedapps-dev/ccx-acceptance-scratch#3` with `"run_once":
+  ["migrations/*.sql"]`, from a clone holding `main` and `a-status`.
+  - `/cca:audit <manifest> --effort low`, with Codex: ended `reported`, verdict `ready to
+    merge`. `forge/repo/open-prs.json` and `collisions.tsv` were in the run directory,
+    and `collisions.tsv` in stage 1's `forge_hashes`. The brief listed B as `same name`
+    and C as `same version` under `002_add_status.sql`, with "open PRs on main read: 2
+    besides this one; no cut rows". The auditor filed B as a medium finding labeled
+    `unverified assumption`, quoting `migrate.mjs` lines 2, 8, and 10, with a live check
+    on which PR merges first. It cleared C with the same quoted lines, since the journal
+    keys by file name. The second opinion recalibrated B's finding to low, so the report
+    counts it as contested at low. Stage 6 recorded `codex_model` `gpt-6-luna`, `called`
+    true, status `ok`.
+  - `/cca:resume <run id>` with no change: "The run is already up to date, so nothing
+    was rerun", with the open PRs read again and the same two candidates.
+  - B was closed, then `/cca:resume <run id>`: stage 1 reran. `collisions.tsv` held only
+    C's row, its `forge_hashes` entry changed from 0268c07 to 33c0965, the earlier
+    outputs moved to `superseded/1/`, and the run ended `reported` with no finding on B.
+  - Observed, not judged: the auditor tried `git show b-status:...` and `c-index:...`,
+    which failed because the clone held neither branch, so the report says B's and C's
+    contents were not read.
+- Cost by the result events: $2.25 and $2.64 for the two loop runs, and $5.88, $0.85,
+  and $5.80 for the audit and its two resumes.
+- Left: the scratch repository, kept as item 28's fixture, with PR 3, PR 5, and issue 2
+  open (reopen PR 4 before a rerun); the logs and clones under
+  `~/.cache/recode-acceptance/i3`; and the audit run under the `claude-071` profile's
+  plugin data.
+
+### 2026-10-10: item 19's Codex hook for 0.7.1, Windows
+
+Windows 11 Pro 10.0.26200, codex-cli 0.160.0 from the scratch npm prefix. The release
+record left the Codex hook not run, because the author had trusted the hook in
+`codex-070`, the 0.7.0 scratch home, and in `~/.codex`, but not in `codex-071`. 0.7.1
+did not release `repo-docs`: its `hooks/hooks.json` and `hooks/pre-commit.sh` have the
+same sha256 in both scratch homes. So the check ran with `CODEX_HOME` at `codex-070`, a
+copy of the Codex login deleted after, in the 0.7.1 test repository: `codex exec` made
+the commit 8d0c98d, exit 0, and the session file carries the line "repo-docs: this
+command commits" once. Passed.

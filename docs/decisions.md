@@ -1563,7 +1563,8 @@ one pull request. Each issue 51 item is decided here before its change.
    publication was withheld; Step 7's opening says publication, items 1 onward, runs
    only on `github` without `--no-publish`. On `other` the run still ends `prepared`
    after Step 6, since Step 0.2 reads no pull request there and there is no body to
-   write. Not run: the `github` and continued-PR paths, which need a GitHub remote.
+   write. The `github` and continued-PR paths were run after the release, on a scratch
+   GitHub repository (acceptance record "item 28 and the loop's `github` paths").
 3. **Issue 27 part A: open pull request collisions.** For a `github:` PR bundle whose
    run-once list adds a name, stage 1 step 3 reads the first 100 open PRs on its base
    (`gh pr list ... --json number,url,headRefName,changedFiles,files`) and runs the new
@@ -1584,7 +1585,7 @@ one pull request. Each issue 51 item is decided here before its change.
    for both names, whatever the row's kind, and clears a candidate with quoted runner
    lines or files a finding labeled `unverified assumption` with a live check on merge
    order. Part B, rerun safety, shipped in cca 0.8.0. The script has its own suite;
-   acceptance item 28 needs a GitHub repository with open PRs and was not run.
+   acceptance item 28 passed after the release, on the same scratch repository.
 4. **Issue 51, item by item.**
    1. Check discovery: changed. A principle with examples: the standard entries of each
       build tool manifest, with Cargo, Go, and Gradle beside npm, make, and Python;
@@ -1646,3 +1647,10 @@ one pull request. Each issue 51 item is decided here before its change.
    `models` override, the step files and their hand-offs, cca's cheaper roles and
    `audit-evidence.md`), the inverted role tables marked as proposals, the files to
    read first, and the open questions; the original text is kept below it.
+7. **Part 23's open items, after the release.** `codex_model` `gpt-6-luna` at stage 6
+   was shown by the macOS item 27 run and by the item 28 run on Windows, each ending
+   `reported`. Item 16's figures are explained by the login (acceptance record "item
+   16's figures for 0.7.1 explained"). The three items Part 23 item 8 deferred are
+   tracked together in #61. Part 23 item 9's audit figure through stage 8 is dropped:
+   the table's rows are single-session figures, and resuming the stopped run would start
+   a new session that reuses stages 1 to 4, so its sum could not complete that row.
