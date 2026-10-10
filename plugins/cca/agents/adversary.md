@@ -68,8 +68,9 @@ the Verified OK list and of the outward trace the tier lets you attack.
    file, the line, what is wrong, and the source quote at its sha that shows it, or
    `none`.
 9. At every tier, write `## Claims challenged`: a line for every `verification` claim the
-   report marks `true, reproduced`. Reproduce the stated result yourself, by a run or a
-   quote; a quote of other text saying it was checked does not reproduce it. Mark the
+   report marks `true, reproduced`. Reproduce the stated result yourself, by a run, or by a
+   quote when the stated result is a fact of the code at the pinned sha; a quote of other
+   text saying it was checked does not reproduce it. Mark the
    line `upheld`, or `overturned to <...>` with the evidence, as "Pass-two verdicts"
    gives. An `overturned to false, contradicted` needs counter-evidence from a run under
    the stated setup. You may add a line for any other claim you find misjudged. Write
