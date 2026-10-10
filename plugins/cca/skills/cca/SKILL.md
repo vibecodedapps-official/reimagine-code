@@ -361,9 +361,11 @@ and before writing that stage's final entry:
    read those agents' `runs:` headings. A difference is accounted for when a logged run's
    directory is inside that repo. Any pending difference no logged run accounts for
    ends the run `blocked` now. Differences still waiting on running agents stay
-   pending. Ignored-file changes under `bin/` or `obj/` of a repo with a logged run since
-   the last check are grouped under that run in one record in the check file that lists
-   every path, without asking; changes with no matching logged run are handled as above.
+   pending. Ignored-file changes inside a build output directory that the repo's own
+   ignore rules exclude as a whole, such as `bin/`, `obj/`, `target/`, `build/`, or
+   `dist/`, of a repo with a logged run since the last check are grouped under that run in
+   one record in the check file that lists every path, without asking; changes with no
+   matching logged run are handled as above.
 6. Write `baseline/<stage>-check.md`: the stage, the time, the repos checked, the
    result (`pass` or `blocked: <reason>`), the ignored-file differences accepted (each
    labeled as another cca run's or a handoff's file, or with the agent and run that accounts
